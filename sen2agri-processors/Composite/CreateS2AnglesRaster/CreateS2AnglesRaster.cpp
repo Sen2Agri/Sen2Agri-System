@@ -44,6 +44,9 @@
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
+
+#include <boost/filesystem.hpp>
+
 #include "otbWrapperTypes.h"
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
@@ -70,7 +73,6 @@
 #include "itkResampleImageFilter.h"
 #include "itkIndent.h"
 #include <vector>
-#include "libgen.h"
 
 #define ANGLES_GRID_SIZE    23
 
@@ -233,10 +235,14 @@ private:
     // using BandMathFilter
     void DoExecute()
     {
-       MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
-       m_Resampler = 0;
-        std::string xmlDesc = GetParameterAsString("xml");
-        m_DirName = dirname(xmlDesc);
+        MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+        m_Resampler = 0;
+        const auto &xmlDesc = GetParameterAsString("xml");
+
+        boost::filesystem::path p(xmlDesc);
+        p.remove_filename();
+
+        m_DirName = p.native();
         m_DirName += '/';
         auto meta = maccsMetadataReader->ReadMetadata(xmlDesc);
         // check if it is a sentinel 2 product, otherwise -> exception

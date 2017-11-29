@@ -24,8 +24,6 @@
 #include "otbImageFileWriter.h"
 #include "otbImageListToVectorImageFilter.h"
 
-#include "libgen.h"
-
 //Transform
 #include "itkScalableAffineTransform.h"
 #include "GlobalDefs.h"

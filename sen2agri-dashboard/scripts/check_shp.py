@@ -88,7 +88,13 @@ def main():
             layer.SetSpatialFilter(g0)
             for f1 in layer:
                 g1 = f1.GetGeometryRef()
-                if g0.Overlaps(g1) and g0.Intersection(g1).Area() > 0:
+
+                # why is this needed?
+                if g0.Overlaps(g1):
+                    intersection = g0.Intersection(g1)
+                else:
+                    intersection = None
+                if intersection is not None and intersection.Area() > 0:
                     if code_field_idx is not None:
                         c0, c1 = f0.GetField(
                             code_field_idx), f1.GetField(code_field_idx)

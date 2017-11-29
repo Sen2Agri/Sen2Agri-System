@@ -66,7 +66,6 @@
 #include "otbImageListToVectorImageFilter.h"
 #include "otbWrapperTypes.h"
 #include "MaskHandlerFunctor.h"
-#include "libgen.h"
 #include "MACCSMetadataReader.hpp"
 #include "SPOT4MetadataReader.hpp"
 //  Software Guide : EndCodeSnippet

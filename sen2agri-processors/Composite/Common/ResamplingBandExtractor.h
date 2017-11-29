@@ -23,8 +23,6 @@
 #include "otbImageFileReader.h"
 #include "otbImageListToVectorImageFilter.h"
 
-#include "libgen.h"
-
 //Transform
 #include "itkScalableAffineTransform.h"
 

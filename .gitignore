@@ -4,6 +4,12 @@ build-*
 # CMake shadow build directory
 *-build
 
+# Build script output
+packaging/Sen2AgriPlatform/
+
+# rendered FAQ
+FAQ.html
+
 # Qt Creator user files
 *.pro.user
 *.user.*

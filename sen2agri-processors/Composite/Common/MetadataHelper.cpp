@@ -17,23 +17,8 @@
 #include <time.h>
 #include <ctime>
 #include <cmath>
-#include "libgen.h"
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
-
-
-std::string dirname(const std::string &path)
-{
-    boost::filesystem::path p(path);
-    p.remove_filename();
-    return p.native();
-}
-
-std::string basename(const std::string &path)
-{
-    boost::filesystem::path p(path);
-    return p.filename().native();
-}
 
 MetadataHelper::MetadataHelper()
 {
@@ -43,7 +28,6 @@ MetadataHelper::MetadataHelper()
 
 MetadataHelper::~MetadataHelper()
 {
-
 }
 
 bool MetadataHelper::LoadMetadataFile(const std::string& file, int nResolution)
@@ -51,7 +35,10 @@ bool MetadataHelper::LoadMetadataFile(const std::string& file, int nResolution)
     Reset();
     m_inputMetadataFileName = file;
     m_nResolution = nResolution;
-    m_DirName = dirname(m_inputMetadataFileName);
+
+    boost::filesystem::path p(m_inputMetadataFileName);
+    p.remove_filename();
+    m_DirName = p.native();
 
     return DoLoadMetadata();
 }

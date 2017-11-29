@@ -20,6 +20,9 @@
 // set and the validation set.
 // These sets are composed of polygons, not individual pixels.
 
+#include <random>
+#include <unordered_map>
+
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbOGRDataSourceToLabelImageFilter.h"
@@ -77,7 +80,7 @@ private:
         AddParameter(ParameterType_OutputFilename, "vp", "Validation Polygons");
 
         SetDefaultParameterFloat("ratio", 0.75);
-        SetDefaultParameterInt("seed", std::time(0));
+        SetDefaultParameterInt("seed", std::mt19937::default_seed);
 
         SetDocExampleParameterValue("ref", "reference_polygons.shp");
         SetDocExampleParameterValue("ratio", "0.75");
@@ -101,7 +104,7 @@ private:
         otb::ogr::DataSource::Pointer ogrTp;
         otb::ogr::DataSource::Pointer ogrVp;
 
-        std::multimap<int, ogr::Feature> featuresMap;
+        std::unordered_multimap<int, ogr::Feature> featuresMap;
 
         // Create the reader over the reference file
         ogrRef =
@@ -114,6 +117,8 @@ private:
         const float ratio = GetParameterFloat("ratio");
         // get the random seed
         const int seed = GetParameterInt("seed");
+
+        std::mt19937 urng(seed);
 
         // Create the writers over the outut files
         ogrTp = otb::ogr::DataSource::New(GetParameterString("tp"),
@@ -139,7 +144,7 @@ private:
         for (ogr::Feature &feature : sourceLayer) {
             if (!filter || feature.ogr().GetFieldAsInteger("CROP")) {
                 featuresMap.insert(std::pair<int, ogr::Feature>(
-                    feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
+                    feature.ogr().GetFieldAsInteger("CODE"), feature));
             }
         }
         std::cerr << '\n';
@@ -159,62 +164,69 @@ private:
             vpLayer.CreateField(fieldDefn);
         }
 
-        int lastcode = -1;
-        int featTrainingTarget = 0;
-        int featValidationTarget = 0;
-        int featTrainingCount = 0;
-        int featValidationCount = 0;
+        size_t featTrainingTarget = 0;
+        size_t featValidationTarget = 0;
+        size_t featTrainingCount = 0;
+        size_t featValidationCount = 0;
 
-        // initialise the random number generator
-        std::srand(seed);
         // Loop through the entries
-        std::multimap<int, ogr::Feature>::iterator it;
-        for (it = featuresMap.begin(); it != featuresMap.end(); ++it) {
-            // get the feature
-            ogr::Feature &f = it->second;
+        decltype (featuresMap.equal_range(0)) range;
+        auto itEnd = featuresMap.end();
+        std::vector<ogr::Feature> classFeatures;
+        for (auto it = featuresMap.begin(); it != itEnd; it = range.second) {
+            range = featuresMap.equal_range(it->first);
 
-            if (it->first != lastcode) {
-                lastcode = it->first;
+            classFeatures.clear();
+            classFeatures.reserve(std::distance(range.first, range.second));
 
-                // get the number of features with the same code
-                int featCount = featuresMap.count(lastcode);
+            for (auto itGroup = range.first; itGroup != range.second; ++itGroup) {
+                ogr::Feature &f = itGroup->second;
+                if (f.GetGeometry()) {
+                    classFeatures.emplace_back(f);
+                } else {
+                    otbAppLogWARNING("Feature " << f.ogr().GetFieldAsInteger("ID")
+                                                << " has no associated geometry");
+                }
+            }
+            std::shuffle(classFeatures.begin(), classFeatures.end(), urng);
 
-                // compute the target training features
-                featTrainingTarget = std::max(1, (int)std::round((float)featCount * ratio));
-                featValidationTarget = featCount - featTrainingTarget;
-                featTrainingCount = 0;
-                featValidationCount = 0;
-
-                // Add info message to log
-                otbAppLogINFO("Found " << featCount << " features with CODE = " << lastcode << ". "
-                                       << "Using " << featTrainingTarget << " for training and "
-                                       << featValidationTarget << " for validation. ");
+            auto featCount = classFeatures.size();
+            if (!featCount) {
+                otbAppLogWARNING("No valid features found for CODE = " << it->first);
+                continue;
             }
 
-            // generate a random number and convert it to the [0..1] interval
-            float random = (float)std::rand() / (float)RAND_MAX;
+            // compute the target training features
+            featTrainingTarget = static_cast<size_t>(featCount * ratio + 0.5f);
+            featValidationTarget = featCount - featTrainingTarget;
 
-            // select the target file for this feature
-            if (f.GetGeometry()) {
-                if ((random <= ratio && featTrainingCount < featTrainingTarget) ||
-                    featValidationCount == featValidationTarget) {
-                    tpLayer.CreateFeature(f.Clone());
-                    featTrainingCount++;
-                } else {
-                    vpLayer.CreateFeature(f.Clone());
-                    featValidationCount++;
-                }
-            } else {
-                otbAppLogWARNING("Feature " << f.ogr().GetFieldAsInteger("ID")
-                                            << " has no associated geometry");
+            if (!featTrainingTarget || !featValidationTarget) {
+                otbAppLogWARNING("Too few features for code CODE = " << it->first << ", using all of them for validation and training. Validation accuracy might suffer.");
+                featTrainingTarget = featValidationTarget = featCount;
+            }
+
+            // Add info message to log
+            otbAppLogINFO("Found " << featCount << " features with CODE = " << it->first << ". "
+                                   << "Using " << featTrainingTarget << " for training and "
+                                   << featValidationTarget << " for validation. ");
+
+            for (size_t i = 0; i < featTrainingTarget; i++) {
+                const auto &f = classFeatures[i];
+
+                tpLayer.CreateFeature(f);
+                featTrainingCount++;
+            }
+            for (size_t i = featCount - featValidationTarget; i < featCount; i++) {
+                const auto &f = classFeatures[i];
+
+                vpLayer.CreateFeature(f);
+                featValidationCount++;
             }
         }
 
         ogrTp->SyncToDisk();
         ogrVp->SyncToDisk();
 
-        featTrainingCount = tpLayer.GetFeatureCount(true);
-        featValidationCount = vpLayer.GetFeatureCount(true);
         otbAppLogINFO("Total features: " << featTrainingCount + featValidationCount
                                          << ", training features: " << featTrainingCount
                                          << ", validation features: " << featValidationCount);

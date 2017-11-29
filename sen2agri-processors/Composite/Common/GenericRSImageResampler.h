@@ -25,8 +25,6 @@
 #include "otbImageListToVectorImageFilter.h"
 #include "otbGenericRSResampleImageFilter.h"
 
-#include "libgen.h"
-
 //Transform
 #include "itkScalableAffineTransform.h"
 #include "GlobalDefs.h"

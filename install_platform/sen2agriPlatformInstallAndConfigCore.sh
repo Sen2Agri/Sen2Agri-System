@@ -15,9 +15,6 @@
 ## sudo ./sen2agriPlatormInstallAndConfigCore.sh
 ################################################################################################
 : ${SYS_ACC_NAME:="sen2agri-service"}
-#-----------------------SEN2AGRI RPMS------------------------------------------------------#
-SEN2AGRI_CUR_VER="1.7"
-SEN2AGRI_PROCESSORS_RPM="../rpm_binaries/sen2agri-processors-${SEN2AGRI_CUR_VER}.centos7.x86_64.rpm"
 #-----------------------------------------------------------------------------------------#
 function create_system_account()
 {
@@ -38,7 +35,7 @@ function install_RPMs()
    yum -y install ../rpm_binaries/otb-*.rpm
 
    ##install Sen2Agri Processors
-   yum -y install ${SEN2AGRI_PROCESSORS_RPM}
+   yum -y install ../rpm_binaries/sen2agri-processors-*.centos7.x86_64.rpm
 
    ln -s /usr/lib64/libproj.so.0 /usr/lib64/libproj.so
    ldconfig

@@ -1,4 +1,33 @@
+# Known issues
+ - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
+ - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
+ - The SAFE and L2A product previews are not gamma-corrected and can be too dark
+ - The SAFE validation step flags as invalid products with even a single tile having a low-variance band as invalid (`NOTV`)
+ - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
+ - The crop type and mask training step sometimes crashes while loading the OpenCV models
+ - MACCS can sometimes crash or hang under high load: https://github.com/InsightSoftwareConsortium/ITK/commit/d68c1c0f23fea97ab782c185095b4ef3259cec68
+ - The MACCS launcher script does not process different tiles of the same site in parallel
+ - The product formatting and tile aggregation steps are inefficient
+ - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
+ - The trimming step of the Crop Mask processor still uses a large amount of memory
+ - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
+ - The dashboard previews don't match their bounds rectangle because of projection mismatch
+ - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
+ - The website has display issues on Safari
+
 # Change Log
+
+## [1.8.0] - TBD
+### Added
+ - The L4A/L4B processors use a platform-independent algorithm for the training/validation split. This is a step towards allowing the processor to work on other platforms and give the same results.
+
+### Changed
+ - Breaking change: the L4A and L4B processors now use a different algorithm for the trainig/validation split. Output files will be different from the ones in the previous versions. The accuracy scores will often be lower because poorly-represented classes will now be present in the validation set. They weren't taken into account previously.
+ - The SampleSelection application places all the features in both the training and the validation sets if there are too few of them and one of them would end up empty according to the configured split (e.g. 75% training with only 2 features). This allows taking them into account for validation, although with lower accuracy.
+
+### Fixed
+ - Fixed crash in the SampleSelection application used by the L4 processors when a feature with no geometry is present
+ - The SampleSelection application always puts features in one of the training or validation set. Previously, they were sometimes lost.
 
 ## [1.7.0] - TBD
 ### Added
@@ -26,24 +55,6 @@
  - Fixed new L8 support in `insert_l2a_product_to_db.py`
  - Fixed crash `offline_l1_handler.py` related to season dates that include years
 
-### Known issues
- - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
- - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
- - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
- - The SAFE and L2A product previews are not gamma-corrected and can be too dark
- - The SAFE validation step flags as invalid products with even a single tile having a low-variance band as invalid (`NOTV`)
- - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
- - The crop type and mask training step sometimes crashes while loading the OpenCV models
- - MACCS can sometimes crash or hang under high load: https://github.com/InsightSoftwareConsortium/ITK/commit/d68c1c0f23fea97ab782c185095b4ef3259cec68
- - The MACCS launcher script does not process different tiles of the same site in parallel
- - The product formatting and tile aggregation steps are inefficient
- - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
- - The trimming step of the Crop Mask processor still uses a large amount of memory
- - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
- - The dashboard previews don't match their bounds rectangle because of projection mismatch
- - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
- - The website has display issues on Safari
-
 ## [1.6.1] - 2017-07-05
 ### Added
  - Landsat 8 collections support for the downloader
@@ -51,23 +62,6 @@
 ### Fixed
  - The Landsat 8 downloader now properly reports USGS authentication errors when using a proxy
  - Fixed an issue in the retrieval of season dates for sites with more than one season
-
-### Known issues
- - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
- - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
- - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
- - The SAFE and L2A product previews are not gamma-corrected and can be too dark
- - The SAFE validation step eagerly flags products with a tile having a low-variance band as invalid (`NOTV`)
- - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
- - The crop type and mask training step sometimes crashes while loading the OpenCV models
- - MACCS can sometimes crash or hang under high load: https://github.com/InsightSoftwareConsortium/ITK/commit/d68c1c0f23fea97ab782c185095b4ef3259cec68
- - The product formatting and tile aggregation steps are inefficient
- - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
- - The trimming step of the Crop Mask processor still uses a large amount of memory
- - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
- - The dashboard previews don't match their bounds rectangle because of projection mismatch
- - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
- - The website has display issues on Safari
 
 ## [1.6.0] - 2017-06-08
 ### Added
@@ -94,23 +88,6 @@
  - Corrected the date order in the creation of L3C/L3D products.
  - Fixed a crash in the crop type processor when one of the tiles was missing Landsat 8 data
  - Website custom L4A jobs use a value of `40 000` training samples / tile instead of `4 000` to match the processor default
-
-### Known issues
- - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
- - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
- - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
- - The SAFE and L2A product previews are not gamma-corrected and can be too dark
- - The SAFE validation step eagerly flags products with a tile having a low-variance band as invalid (`NOTV`)
- - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
- - The crop type and mask training step sometimes crashes while loading the OpenCV models
- - MACCS can sometimes crash or hang under high load: https://github.com/InsightSoftwareConsortium/ITK/commit/d68c1c0f23fea97ab782c185095b4ef3259cec68
- - The product formatting and tile aggregation steps are inefficient
- - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
- - The trimming step of the Crop Mask processor still uses a large amount of memory
- - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
- - The dashboard previews don't match their bounds rectangle because of projection mismatch
- - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
- - The website has display issues on Safari
 
 ## [1.5.0] - 2017-01-20
 ### Added
@@ -148,21 +125,6 @@
  - Correction in L3A aggregate tiles in order to have both 10M and 20M bands (not only 20m bands)
  - Improved training pixel sampling in crop mask and crop type processors
 
-### Known issues
- - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
- - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
- - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
- - The SAFE and L2A product previews are not gamma-corrected and can be too dark
- - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
- - The crop type and mask training step sometimes crashes while loading the OpenCV models
- - MACCS and quicklook generation sometimes crash or hang
- - The product formatting and tile aggregation steps are inefficient
- - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
- - The trimming step of the Crop Mask processor still uses a large amount of memory
- - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
- - The dashboard previews don't match their bounds rectangle because of projection mismatch
- - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
-
 ## [1.4] - 2016-11-17
 ### Added
  - Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space [Forge #150414]
@@ -194,25 +156,6 @@
  - The L3A, L3B, L3C and quality flags extraction step of the L4A and L4B processors no longer crash when input products are in the current directory [Forge #150394]
  - Fixed misleading `demmaccs.py` command line help message (positional arguments placed after optional arguments taking multiple values)
  - Improved startup ordering between sen2agri-executor, SLURM and Postgres
-
-### Known issues
- - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented [Forge #150462]
- - SNAP adapters need to be updated
- - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
- - With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
- - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
- - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
- - The SAFE and L2A product previews are not gamma-corrected and can be too dark
- - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
- - The crop type and mask training step sometimes crashes while loading the OpenCV models
- - MACCS and quicklook generation sometimes crash or hang
- - The NDVI no data filling step is inefficient
- - The product formatting and tile aggregation steps are inefficient
- - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
- - The trimming step of the Crop Mask processor still uses a large amount of memory
- - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
- - The dashboard previews don't match their bounds rectangle because of projection mismatch
- - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
 
 ## [1.3.1] - 2016-10-10
 ### Added
@@ -253,23 +196,3 @@
 
 ### Security
  - The dashboard no longer calls via AJAX an unauthenticated web service endpoint
-
-### Known issues
- - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
- - With multiple input tiles, the training pixel sampling distribution for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
- - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products
- - The trimming step of the Crop Mask processor still uses a large amount of memory
- - The SAFE formatting application uses both segmented and raw crop masks for the mosaic
- - The SAFE formatting application outputs mosaics that are outside of the SRS bounds for products spanning multiple SRSs. It should use `EPSG:4326/WGS 84` unless told otherwise.
- - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges when some tiles need to be reprojected.
- - The SAFE formatting application sometimes outputs unusable previews
- - The SAFE formatting application uses bilinear resampling for the crop type and crop mask mosaics. It should use nearest-neighbour instead.
- - The L4A and L4B products don't contain a QGIS style file [Forge #150435]
- - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels. It should expect a binary map.
- - The SAFE and L2A product previews are not gamma-corrected and can be too dark
- - The version number of the RPM packages is incorrect [Forge #150393]
- - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented in the manual [Forge #150462]
- - The L3A, L3B, L3C processors and the quality flags extraction step of the L4A and L4B processors fail when one of the input product paths contains no directory separator. A workaround is to place a `./` before the product file. [Forge #150394]
- - The dashboard previews don't match their bounds rectangle because of WGS 84 / Web Mercator projection mismatch
- - The `demmaccs.py` command line help message contains positional arguments (`input` and `output`) placed immediately after optional arguments taking multiple values (`--prev-l2a-tiles` and `--prev-l2a-products-paths`). This can prove troublesome for unsuspecting users. The workaround is to put a `--` or a different optional argument before the positional arguments
- - For LAI the model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.

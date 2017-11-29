@@ -7,4 +7,6 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
+include_directories(../../Common/Filters)
+
 install(TARGETS otbapp_Trimming DESTINATION usr/lib/otb/applications/)

@@ -59,7 +59,6 @@
 #include "MaskExtractorFilter.hxx"
 
 #include <vector>
-#include "libgen.h"
 #include "MaskHandlerFunctor.h"
 #include "MetadataHelperFactory.h"
 
