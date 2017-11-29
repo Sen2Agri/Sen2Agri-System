@@ -18,7 +18,7 @@
 #include <sstream>
 #include <itkMacro.h>
 #include <algorithm>    // std::sort
-#include <boost/regex.hpp>
+//#include <boost/regex.hpp>
 
 /********************************************************************
  *
@@ -220,17 +220,15 @@ int BandsMappingConfig::GetIndexInPresenceArray(int nRes, const std::string &mis
 }
 
 bool BandsMappingConfig::IsMatchingMission(const std::string &missionName, const std::string &missionRegex) const {
-    if (missionName == missionRegex) {
-        return true;
-    }
-    try {
-        boost::regex re(missionRegex);
-        return boost::regex_match(missionName, re);
-    } catch (boost::regex_error& e) {
-        std::cerr << "Invalid regular expression found in bands mapping file for " << missionRegex <<
-                          ". The exception was \"" << e.what() << "\"";
-        throw e;
-    }
+//    try {
+//        boost::regex re(missionRegex);
+//        return boost::regex_match(missionName, re);
+//    } catch (boost::regex_error& e) {
+//        std::cerr << "Invalid regular expression found in bands mapping file for " << missionRegex <<
+//                          ". The exception was \"" << e.what() << "\"";
+//        throw e;
+//    }
+    return true;
 }
 
 /********************************************************************

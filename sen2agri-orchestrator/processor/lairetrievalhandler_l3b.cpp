@@ -14,6 +14,17 @@
 #define MODEL_GEN_TASKS_PER_PRODUCT 4
 
 #define DEFAULT_GENERATED_SAMPLES_NO    "40000"
+
+#define DEFAULT_MIN_LAI  "0.0"
+#define DEFAULT_MAX_LAI  "5.0"
+#define DEFAULT_MOD_LAI  "0.5"
+#define DEFAULT_STD_LAI  "1.0"
+
+#define DEFAULT_MIN_ALA  "5.0"
+#define DEFAULT_MAX_ALA  "80.0"
+#define DEFAULT_MOD_ALA  "40.0"
+#define DEFAULT_STD_ALA  "20.0"
+
 #define DEFAULT_NOISE_VAR               "0.01"
 #define DEFAULT_BEST_OF                 "1"
 #define DEFAULT_REGRESSOR               "nn"
@@ -659,10 +670,29 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
 }
 
 QStringList LaiRetrievalHandlerL3B::GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile) {
-    QString samplesNo = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.samples", DEFAULT_GENERATED_SAMPLES_NO);
+    const QString &samplesNo = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.samples", DEFAULT_GENERATED_SAMPLES_NO);
+
+    const QString &minlai = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.minlai", DEFAULT_MIN_LAI);
+    const QString &maxlai = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.maxlai", DEFAULT_MAX_LAI);
+    const QString &modlai = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.modlai", DEFAULT_MOD_LAI);
+    const QString &stdlai = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.stdlai", DEFAULT_STD_LAI);
+
+    const QString &minala = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.minala", DEFAULT_MIN_ALA);
+    const QString &maxala = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.maxala", DEFAULT_MAX_ALA);
+    const QString &modala = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.modala", DEFAULT_MOD_ALA);
+    const QString &stdala = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.stdala", DEFAULT_STD_ALA);
+
     return { "BVInputVariableGeneration",
                 "-samples", samplesNo,
-                "-out", strGenSampleFile
+                "-out", strGenSampleFile,
+                "-minlai", minlai,
+                "-maxlai", maxlai,
+                "-modlai", modlai,
+                "-stdlai", stdlai,
+                "-minala", minala,
+                "-maxala", maxala,
+                "-modala", modala,
+                "-stdala", stdala
     };
 }
 

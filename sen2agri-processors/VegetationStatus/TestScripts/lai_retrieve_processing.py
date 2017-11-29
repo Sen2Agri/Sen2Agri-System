@@ -232,11 +232,34 @@ class LaiModel(object):
         newModelsNamesFile = outDir + '/new_models_names.txt'
 
         #generating Input BV Distribution file
-        print("Generating Input BV Distribution file ...")
+        print("Generating Input BV Distribution file with parameters :")
+        print("\tminlai: {}".format(args.minlai))
+        print("\tmaxlai: {}".format(args.maxlai))
+        print("\tmodlai: {}".format(args.modlai))
+        print("\tstdlai: {}".format(args.stdlai))
+        print("\tminala: {}".format(args.minala))
+        print("\tmaxala: {}".format(args.maxala))
+        print("\tmodala: {}".format(args.modala))
+        print("\tstdala: {}".format(args.stdala))
+        
         runCmd(["otbcli", "BVInputVariableGeneration", appLocation,
                 "-samples", str(GENERATED_SAMPLES_NO),
-                "-out",  outGeneratedSampleFile])
+                "-out",  outGeneratedSampleFile,
+                "-minlai", args.minlai,
+                "-maxlai", args.maxlai,
+                "-modlai", args.modlai,
+                "-stdlai", args.stdlai,
+                "-minala", args.minala,
+                "-maxala", args.maxala,
+                "-modala", args.modala,
+                "-stdala", args.stdala])
 
+        if args.useSystemBVDistFile :
+            outGeneratedSampleFile = "/usr/share/sen2agri/LaiCommonBVDistributionSamples.txt"
+            print ("##########################################")
+            print("Using the SYSTEM BV Distribution file {}!".format(outGeneratedSampleFile))
+            print ("##########################################")
+            
         # Generating simulation reflectances
         print("Generating simulation reflectances ...")
         if not rsrCfg:
@@ -244,30 +267,30 @@ class LaiModel(object):
                 print("Please provide the rsrcfg or rsrfile!")
                 exit(1)
             else:
-                runCmd(["otbcli", "ProSailSimulator", appLocation,
+                runCmd(["otbcli", "ProSailSimulatorNew", appLocation,
                         "-xml", curXml,
                         "-bvfile", outGeneratedSampleFile,
                         "-rsrfile", rsrFile,
                         "-out", outSimuReflsFile,
                         "-outangles", outAnglesFile,
-                        "-noisevar", str(NOISE_VAR)])
+                        "-laicfgs", args.laiBandsCfg])
         else:
-            runCmd(["otbcli", "ProSailSimulator", appLocation,
+            runCmd(["otbcli", "ProSailSimulatorNew", appLocation,
                     "-xml", curXml,
                     "-bvfile", outGeneratedSampleFile,
                     "-rsrcfg", rsrCfg,
                     "-out", outSimuReflsFile,
                     "-outangles", outAnglesFile,
-                    "-noisevar", str(NOISE_VAR)])
+                    "-laicfgs", args.laiBandsCfg])
 
         # Generating training file
         print("Generating training file ...")
-        runCmd(["otbcli", "TrainingDataGenerator", appLocation,
+        runCmd(["otbcli", "TrainingDataGeneratorNew", appLocation,
                 "-xml", curXml,
                 "-biovarsfile", outGeneratedSampleFile,
                 "-simureflsfile", outSimuReflsFile,
                 "-outtrainfile", outTrainingFile,
-                "-addrefls", str(ADD_REFLS)])
+                "-laicfgs", args.laiBandsCfg])
 
         # Reading the used angles from the file and build the out model file name and the out err model file name
         with open(outAnglesFile) as f:
@@ -364,18 +387,20 @@ class LaiMonoDate(object):
         
         #Compute NDVI and RVI
         if resolution == 0:
-            runCmd(["otbcli", "NdviRviExtraction2", appLocation,
+            runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
             "-xml", xml,
-            "-ndvi", curOutSingleNDVIImg,
             "-msks", curOutLaiMonoMskFlgsImg,
-            "-fts", curOutNDVIRVIImg])
+            "-ndvi", curOutSingleNDVIImg,
+            "-fts", curOutNDVIRVIImg,
+            "-laicfgs", args.laiBandsCfg])
         else:
-            runCmd(["otbcli", "NdviRviExtraction2", appLocation,
+            runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
             "-xml", xml,
-            "-outres", resolution,
-            "-ndvi", curOutSingleNDVIImg,
             "-msks", curOutLaiMonoMskFlgsImg,
-            "-fts", curOutNDVIRVIImg])
+            "-ndvi", curOutSingleNDVIImg,
+            "-fts", curOutNDVIRVIImg,
+            "-outres", resolution,
+            "-laicfgs", args.laiBandsCfg])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
         # Retrieve the LAI model
@@ -436,7 +461,19 @@ if __name__ == '__main__':
     parser.add_argument('--genfittedlai', help='Generate the Fitted LAI (YES/NO)', required=False)
     parser.add_argument('--siteid', help='The site ID', required=False)
     parser.add_argument('--useintermlaifiles', help='Specify if intermediate files or the final product files should be used', required=False)
-
+    
+    parser.add_argument('--minlai', help='Minimum value for LAI', required=False, default="0.0")
+    parser.add_argument('--maxlai', help='Maximum value for LAI', required=False, default="5.0")
+    parser.add_argument('--modlai', help='Mode value for LAI', required=False, default="0.5")
+    parser.add_argument('--stdlai', help='Standard deviation value for LAI', required=False, default="1.0")
+    parser.add_argument('--minala', help='Minimum value for ALA', required=False, default="5.0")
+    parser.add_argument('--maxala', help='Maximum value for ALA', required=False, default="80.0")
+    parser.add_argument('--modala', help='Mode value for ALA', required=False, default="40.0")
+    parser.add_argument('--stdala', help='Standard deviation for ALA', required=False, default="20.0")
+    
+    parser.add_argument('--laiBandsCfg', help='LAI bands to be used configuration file', required=False, default="/usr/share/sen2agri/Lai_Bands_Cfgs.cfg")
+    parser.add_argument('--useSystemBVDistFile', help='Specifies if the system BV distribution file should be used or it should be generated at each execution', required=False, default=False)
+    
     args = parser.parse_args()
     
     appLocation = args.applocation
@@ -449,6 +486,7 @@ if __name__ == '__main__':
     rsrCfg = args.rsrcfg
     if not rsrFile and not rsrCfg :
         rsrCfg = "/usr/share/sen2agri/rsr_cfg.txt"
+        
     generatemonodate = False
     if (args.generatemonodate == "YES"):
         generatemonodate = True

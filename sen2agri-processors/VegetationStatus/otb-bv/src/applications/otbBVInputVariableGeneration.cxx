@@ -77,19 +77,19 @@ private:
     SetParameterDescription("minlai", "Minimum value for LAI");
 
     AddParameter(ParameterType_Float, "maxlai", "Maximum value for LAI");
-    SetDefaultParameterFloat("maxlai", 5.0);
+    SetDefaultParameterFloat("maxlai", 15.0);
     SetParameterDescription("maxlai", "Maximum value for LAI");
 
     AddParameter(ParameterType_Float, "modlai", "Mode value for LAI");
-    SetDefaultParameterFloat("modlai", 0.5);
+    SetDefaultParameterFloat("modlai", 2.0);
     SetParameterDescription("modlai", "Mode value for LAI");
 
     AddParameter(ParameterType_Float, "stdlai", "Standard deviation value for LAI");
-    SetDefaultParameterFloat("stdlai", 1.0);
+    SetDefaultParameterFloat("stdlai", 2.0);
     SetParameterDescription("stdlai", "Standard deviation value for LAI");
 
     AddParameter(ParameterType_Float, "minala", "Minimum value for ALA");
-    SetDefaultParameterFloat("minala", 5.0);
+    SetDefaultParameterFloat("minala", 30.0);
     SetParameterDescription("minala", "Minimum value for ALA");
 
     AddParameter(ParameterType_Float, "maxala", "Maximum value for ALA");
@@ -97,7 +97,7 @@ private:
     SetParameterDescription("maxala", "Maximum value for ALA");
 
     AddParameter(ParameterType_Float, "modala", "Mode value for ALA");
-    SetDefaultParameterFloat("modala", 40.0);
+    SetDefaultParameterFloat("modala", 60.0);
     SetParameterDescription("modala", "Mode value for ALA");
 
     AddParameter(ParameterType_Float, "stdala", "Standard deviation value for ALA");
