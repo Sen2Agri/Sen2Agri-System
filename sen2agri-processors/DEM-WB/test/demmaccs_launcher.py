@@ -19,7 +19,7 @@ _____________________________________________________________________________
 from __future__ import print_function
 import argparse
 import re
-import os
+import os, errno
 from os.path import isfile, isdir, join
 import glob
 import sys
@@ -90,6 +90,42 @@ def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_o
             l2a_tiles_paths.append(l2a_tile)
     return (l2a_tiles, l2a_tiles_paths)
 
+def validate_L1C_product_dir(l1cDir):
+    print('--\nChecking ROOT for valid symlink = ' + l1cDir)
+    for root, subdirs, files in os.walk(l1cDir):
+#        print('--\nChecking ROOT for valid symlink = ' + root)
+
+        for subdir in subdirs:
+            subdir_path = os.path.join(root, subdir)
+#            print('\t- subdirectory ' + subdir_path)
+            try:
+                os.stat(subdir_path)
+            except OSError, e:
+                if e.errno == errno.ENOENT:
+                    print ("###################################")
+                    print ("Path {} does not exist or is a broken symlink".format(subdir_path))
+                    print ("###################################")
+                    return False
+                else:
+                    raise e            
+ 
+        for filename in files:
+            file_path = os.path.join(root, filename)
+            #print('\t- file %s (full path: %s)' % (filename, file_path))
+            try:
+                os.stat(file_path)
+            except OSError, e:
+                if e.errno == errno.ENOENT:
+                    print ("###################################")
+                    print ("Path {} does not exist or is a broken symlink".format(file_path))
+                    print ("###################################")
+                    return False
+                else:
+                    raise e            
+            
+    return True
+
+    
 def launch_demmaccs(l1c_context):
     global general_log_path
     global general_log_filename
@@ -106,6 +142,10 @@ def launch_demmaccs(l1c_context):
         site_output_path += "/"
 
     for l1c in l1c_context.l1c_list:
+        if not validate_L1C_product_dir(l1c[3]):
+            print ("The product {} is not valid or temporary unavailable!!!".format(file_path))
+            sys.exit(-1)
+            
         # l1c is a record from downloader_history table. the indexes are :
         # 0  | 1       | 2            | 3         | 4            | 5
         # id | site_id | satellite_id | full_path | product_date | orbit_id
