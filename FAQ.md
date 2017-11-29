@@ -307,7 +307,37 @@ sudo systemctl enable sen2agri-landsat-downloader.timer
 
 ## How can I use products from a local `L1C` store like the IPT Cloud platform?
 
-TBD
+Currently, this can only be done by modifying the downloader command line. You can use the following commands to see and edit the `systemd` downloader units:
+
+```bash
+systemctl cat sen2agri-{sentinel,landsat}-downloader
+
+sudo systemctl edit sen2agri-sentinel-downloader
+sudo systemctl edit sen2agri-landsat-downloader
+```
+
+In the override file, add a `Service` section with an additional argument in the `ExecStart` clause, e.g.:
+
+```ini
+[Service]
+ExecStart=/usr/share/sen2agri/sen2agri-downloaders/downloader.py -r s2 -s /usr/share/sen2agri/sen2agri-downloaders/apihub.txt -l local -i /eodata/Sentinel-2/MSI/L1C
+```
+
+making sure to replace the source path (after `-i`). The path needs to be quoted if it contains spaces or other special characters.
+
+After making the changes you need restart the services:
+
+```bash
+sudo systemctl restart sen2agri-{sentinel,landsat}-downloader
+```
+
+To undo these changes, simply remove the override file, reload and restart:
+
+```bash
+sudo rm -rf /etc/systemd/system/sen2agri-{sentinel,landsat}-downloader.service.d
+sudo systemctl daemon-reload
+sudo systemctl restart sen2agri-{sentinel,landsat}-downloader
+```
 
 # Other questions
 
