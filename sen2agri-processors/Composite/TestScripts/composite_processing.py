@@ -48,7 +48,31 @@ def prettify(elem):
     rough_string = ET.tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
+
+def getFileName(fileName, cntStr, res=""):
+    fileName = fileName.replace("#", cntStr)
+    if res != "":
+        fileName = fileName.replace("%", res)
+    return fileName
     
+def checkInputProducts(inputFiles) :
+    i = 0
+    for filePath in inputFiles:
+        i += 1
+    if i == 0:
+        print("No L2A products found !")
+        exit(1)
+
+def removeFiles(filesToRemove):
+    print("The following files will be deleted:")
+    for fileToRemove in filesToRemove:
+        print(fileToRemove)
+        try:
+            #runCmd(["rm", "-fr", fileToRemove])
+            os.remove(fileToRemove)
+        except:
+            pass
+        
 def areMultiMissionFiles(inputFiles) :
     missions = []
     for filePath in inputFiles:
@@ -107,6 +131,30 @@ def isMasterMissionFile(inputFile, bandsMappingFile) :
     print("File {} is secondary mission file".format(inputFile))
     return False
     
+def writeParamsFileXml(paramsFilenameXML) :
+    with open(paramsFilenameXML, 'w') as paramsFileXML:
+        root = ET.Element('metadata')
+        wAOT = ET.SubElement(root, "Weight_AOT")
+        ET.SubElement(wAOT, "weight_aot_min").text = WEIGHT_AOT_MIN
+        ET.SubElement(wAOT, "weight_aot_max").text = WEIGHT_AOT_MAX
+        ET.SubElement(wAOT, "aot_max").text = AOT_MAX
+        wCLD = ET.SubElement(root, "Weight_On_Clouds")
+        ET.SubElement(wCLD, "coarse_res").text = COARSE_RES
+        ET.SubElement(wCLD, "sigma_small_cloud").text = SIGMA_SMALL_CLD
+        ET.SubElement(wCLD, "sigma_large_cloud").text = SIGMA_LARGE_CLD
+        wDATE = ET.SubElement(root, "Weight_On_Date")
+        ET.SubElement(wDATE, "weight_date_min").text = WEIGHT_DATE_MIN
+        ET.SubElement(wDATE, "l3a_product_date").text = syntDate
+        ET.SubElement(wDATE, "half_synthesis").text = syntHalf
+        dates = ET.SubElement(root, "Dates_information")
+        ET.SubElement(dates, "synthesis_date").text = syntDate
+        ET.SubElement(dates, "synthesis_half").text = syntHalf
+        usedXMLs = ET.SubElement(root, "XML_files")
+        i = 0
+        for xml in args.input:
+            ET.SubElement(usedXMLs, "XML_" + str(i)).text = xml
+            i += 1
+        paramsFileXML.write(prettify(root))        
 
 parser = argparse.ArgumentParser(description='Composite Python processor')
 
@@ -114,7 +162,7 @@ parser.add_argument('--applocation', help='The path where the sen2agri is built'
 parser.add_argument('--syntdate', help='L3A synthesis date', required=True)
 parser.add_argument('--synthalf', help='Half synthesis', required=True)
 parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
-parser.add_argument('--res', help='The requested resolution in meters', required=True)
+parser.add_argument('--res', help='The requested resolution in meters', required=False, default=0)
 parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument('--bandsmap', help="Bands mapping file location", required=True)
 parser.add_argument('--scatteringcoef', help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
@@ -129,11 +177,27 @@ args = parser.parse_args()
 
 syntDate = args.syntdate
 syntHalf = args.synthalf
-resolution = args.res
+resolutions = [str(args.res)]
+if (str(args.res) != "10") and (str(args.res) != "20"):
+    resolutions = ["10", "20"]
+
+print("The product will be created at resolutions: ")
+print(*resolutions, sep='\n')
+    
 bandsMap = args.bandsmap
 appLocation = args.applocation
+
 outDir = args.outdir
+if os.path.exists(outDir):
+    if not os.path.isdir(outDir):
+        print("Can't create the output directory because there is a file with the same name")
+        print("Remove: " + outDir)
+        exit(1)
+else:
+    os.makedirs(outDir)
+
 siteId = "nn"
+checkInputProducts(args.input)
 multisatelites = areMultiMissionFiles(args.input)
 firstMasterFile = ""
 if multisatelites :
@@ -145,27 +209,13 @@ else :
 if args.siteid:
     siteId = args.siteid
 
-#defintion for filenames
-outSpotMasks = outDir + '/spot_masks.tif'
-
-outUnclippedImgBands = outDir + '/res' + resolution + '.tif'
-outUnclippedCld = outDir + '/cld' + resolution + '.tif'
-outUnclippedWat = outDir + '/wat' + resolution + '.tif'
-outUnclippedSnow = outDir + '/snow' + resolution + '.tif'
-outUnclippedAot = outDir + '/aot' + resolution + '.tif'
-
-outImgBands = outDir + '/res_clipped' + resolution + '.tif'
-outCld = outDir + '/cld_clipped' + resolution + '.tif'
-outWat = outDir + '/wat_clipped' + resolution + '.tif'
-outSnow = outDir + '/snow_clipped' + resolution + '.tif'
-outAot = outDir + '/aot_clipped' + resolution + '.tif'
 
 masterInfoFile = outDir + 'MasterInfo_#.txt'
 
-outWeightAotFile = outDir + '/WeightAot#.tif'
-outWeightCloudFile = outDir + '/WeightCloud#.tif'
-outTotalWeightFile = outDir + '/WeightTotal#.tif'
-outL3AFile = outDir + '/L3AResult#_' + resolution + 'M.tif'
+outWeightAotFile = outDir + '/WeightAot#_%.tif'
+outWeightCloudFile = outDir + '/WeightCloud#_%.tif'
+outTotalWeightFile = outDir + '/WeightTotal#_%.tif'
+outL3AFile = outDir + '/L3AResult#_%M.tif'
 
 WEIGHT_AOT_MIN="0.33"
 WEIGHT_AOT_MAX="1"
@@ -177,24 +227,15 @@ SIGMA_LARGE_CLD="10"
 
 WEIGHT_DATE_MIN="0.5"
 
-outWeights = outDir + '/L3AResult#_weights.tif'
-outDates = outDir + '/L3AResult#_dates.tif'
-outRefls = outDir + '/L3AResult#_refls.tif'
-outFlags = outDir + '/L3AResult#_flags.tif'
-outRGB = outDir + '/L3AResult#_rgb.tif'
-shapeFile = outDir + '/ClippingShape.shp'
+outWeights = outDir + '/L3AResult#_%_weights.tif'
+outDates = outDir + '/L3AResult#_%_dates.tif'
+outRefls = outDir + '/L3AResult#_%_refls.tif'
+outFlags = outDir + '/L3AResult#_%_flags.tif'
+outRGB = outDir + '/L3AResult#_%_rgb.tif'
 
 fullScatCoeffs=[]
 fullLut=[]
 tileID="TILE_none"
-
-if os.path.exists(outDir):
-    if not os.path.isdir(outDir):
-        print("Can't create the output directory because there is a file with the same name")
-        print("Remove: " + outDir)
-        exit(1)
-else:
-    os.makedirs(outDir)
 
 shutil.copyfile(bandsMap, os.path.join(outDir, os.path.basename(bandsMap)))
 
@@ -212,185 +253,94 @@ if args.tileid:
     tileID = "TILE_{}".format(args.tileid)
 
 paramsFilenameXML= outDir + '/params.xml'
-with open(paramsFilenameXML, 'w') as paramsFileXML:
-    root = ET.Element('metadata')
-    wAOT = ET.SubElement(root, "Weight_AOT")
-    ET.SubElement(wAOT, "weight_aot_min").text = WEIGHT_AOT_MIN
-    ET.SubElement(wAOT, "weight_aot_max").text = WEIGHT_AOT_MAX
-    ET.SubElement(wAOT, "aot_max").text = AOT_MAX
-    wCLD = ET.SubElement(root, "Weight_On_Clouds")
-    ET.SubElement(wCLD, "coarse_res").text = COARSE_RES
-    ET.SubElement(wCLD, "sigma_small_cloud").text = SIGMA_SMALL_CLD
-    ET.SubElement(wCLD, "sigma_large_cloud").text = SIGMA_LARGE_CLD
-    wDATE = ET.SubElement(root, "Weight_On_Date")
-    ET.SubElement(wDATE, "weight_date_min").text = WEIGHT_DATE_MIN
-    ET.SubElement(wDATE, "l3a_product_date").text = syntDate
-    ET.SubElement(wDATE, "half_synthesis").text = syntHalf
-    dates = ET.SubElement(root, "Dates_information")
-    ET.SubElement(dates, "synthesis_date").text = syntDate
-    ET.SubElement(dates, "synthesis_half").text = syntHalf
-    usedXMLs = ET.SubElement(root, "XML_files")
-    i = 0
-    for xml in args.input:
-        ET.SubElement(usedXMLs, "XML_" + str(i)).text = xml
-        i += 1
-    paramsFileXML.write(prettify(root))
+writeParamsFileXml(paramsFilenameXML)
 
-paramsFilename = outDir + '/params.txt'
-with open(paramsFilename, 'w') as paramsFile:
-    paramsFile.write("Weight AOT\n")
-    paramsFile.write("    weight aot min    = " + WEIGHT_AOT_MIN + "\n")
-    paramsFile.write("    weight aot max    = " + WEIGHT_AOT_MAX + "\n")
-    paramsFile.write("    aot max           = " + AOT_MAX + "\n")
-    paramsFile.write("Weight on clouds\n")
-    paramsFile.write("    coarse res        = " + COARSE_RES + "\n")
-    paramsFile.write("    sigma small cloud = " + SIGMA_SMALL_CLD + "\n")
-    paramsFile.write("    sigma large cloud = " + SIGMA_LARGE_CLD + "\n")
-    paramsFile.write("Weight on Date\n")
-    paramsFile.write("    weight date min   = " + WEIGHT_DATE_MIN + "\n")
-    paramsFile.write("    l3a product date  = " + syntDate + "\n")
-    paramsFile.write("    half synthesis    = " + syntHalf + "\n")
-    paramsFile.write("Dates information\n")
-    paramsFile.write("    synthesis date    = " + syntDate + "\n")
-    paramsFile.write("    synthesis half    = " + syntHalf + "\n")
-    paramsFile.write(" ")
-    paramsFile.write("Used XML files\n")
-    for xml in args.input:
-        paramsFile.write("  " + xml + "\n")
-
-prevL3A=[]
-i = 0
+l3aOutRefls=[]
+l3aOutWeights=[]
+l3aOutFlags=[]
+l3aOutDates=[]
+l3aOutRgbs=[]
 
 print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
-for xml in args.input:
 
-    runCmd(["otbcli", "MaskHandler", appLocation, "-xml", xml, "-out", outSpotMasks, "-sentinelres", resolution])
-
-    counterString = str(i)
-    mod=outL3AFile.replace("#", counterString)
-    out_w=outWeights.replace("#", counterString)
-    out_d=outDates.replace("#", counterString)
-    out_r=outRefls.replace("#", counterString)
-    out_f=outFlags.replace("#", counterString)
-    out_rgb=outRGB.replace("#", counterString)
-
-    out_w_Aot=outWeightAotFile.replace("#", counterString)
-    out_w_Cloud=outWeightCloudFile.replace("#", counterString)
-    out_w_Total=outTotalWeightFile.replace("#", counterString)
-    curMasterInfoFile=masterInfoFile.replace("#", counterString)
-
-    if (not multisatelites) or isMasterMissionFile(xml, bandsMap):
-        runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outSpotMasks, "-outres", outUnclippedImgBands, "-outcmres", outUnclippedCld, "-outwmres", outUnclippedWat, "-outsmres", outUnclippedSnow, "-outaotres", outUnclippedAot, "-masterinfo", curMasterInfoFile])
-    else:
-        runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outSpotMasks, "-outres", outUnclippedImgBands, "-outcmres", outUnclippedCld, "-outwmres", outUnclippedWat, "-outsmres", outUnclippedSnow, "-outaotres", outUnclippedAot, "-masterinfo", curMasterInfoFile, "-pmxml", firstMasterFile])
+for resolution in resolutions :
+    i = 0
+    prevL3A=[]
     
-    # if we have a shape file, then we will apply it on all files from preprocessing
-    # else, if we don't have a shape file then 
-    #   Check if it is a master product and create the shape
-    #
-#    unclippedImgs = False
-#    if multisatelites:
-#        if (not os.path.isfile(shapeFile)):
-#            firstMasterFile = getFirstMasterFile(args.input, bandsMap)
-#            if firstMasterFile != "" :
-#                runCmd(["otbcli", "CreateFootprint", appLocation, "-in", firstMasterFile, "-mode", "metadata", "-out", shapeFile])
-#        if os.path.isfile(curMasterInfoFile): 
-#            unclippedImgs = True
-#        else :
-#            if os.path.isfile(shapeFile):
-#                print("Executing GDALWARP for all files ...")
-#                runCmd(["gdalwarp", "-dstnodata", "-10000", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedImgBands, outImgBands])
-#                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedCld, outCld])
-#                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedWat, outWat])
-#                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedSnow, outSnow])
-#                runCmd(["gdalwarp", "-dstnodata", "-10000", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedAot, outAot])
-#            else :
-#                unclippedImgs = True
-#    else:
-#        unclippedImgs = True
-#
-#    if unclippedImgs:
-    outImgBands = outUnclippedImgBands
-    outCld = outUnclippedCld
-    outWat = outUnclippedWat
-    outSnow = outUnclippedSnow
-    outAot = outUnclippedAot
+    #defintion for filenames
+    outExtractedMasks = outDir + '/masks' + resolution + '.tif'
+    outImgBands = outDir + '/res' + resolution + '.tif'
+    outCld = outDir + '/cld' + resolution + '.tif'
+    outWat = outDir + '/wat' + resolution + '.tif'
+    outSnow = outDir + '/snow' + resolution + '.tif'
+    outAot = outDir + '/aot' + resolution + '.tif'
+    tmpFilesToRemove = [outExtractedMasks, outImgBands, outCld, outWat, outSnow, outAot]
+
+    fullScatCoeffs = ["-scatcoef", getFileName("/usr/share/sen2agri/scattering_coeffs_%m.txt", "", resolution)]
+    for xml in args.input:
+    
+        runCmd(["otbcli", "MaskHandler", appLocation, "-xml", xml, "-out", outExtractedMasks, "-sentinelres", resolution])
+
+        counterString = str(i)
+        mod=getFileName(outL3AFile, counterString, resolution)
+        out_w=getFileName(outWeights, counterString, resolution)
+        out_d=getFileName(outDates, counterString, resolution)
+        out_r=getFileName(outRefls, counterString, resolution)
+        out_f=getFileName(outFlags, counterString, resolution)
+        out_rgb=getFileName(outRGB, counterString, resolution)
+
+        out_w_Aot=getFileName(outWeightAotFile, counterString, resolution)
+        out_w_Cloud=getFileName(outWeightCloudFile, counterString, resolution)
+        out_w_Total=getFileName(outTotalWeightFile, counterString, resolution)
+        curMasterInfoFile=getFileName(masterInfoFile, counterString, resolution)
+
+        if (not multisatelites) or isMasterMissionFile(xml, bandsMap):
+            runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile])
+        else:
+            runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile, "-pmxml", firstMasterFile])
         
-    runCmd(["otbcli", "WeightAOT", appLocation, "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
+        runCmd(["otbcli", "WeightAOT", appLocation, "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
 
-    runCmd(["otbcli", "WeightOnClouds", appLocation, "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
+        runCmd(["otbcli", "WeightOnClouds", appLocation, "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
 
-    runCmd(["otbcli", "TotalWeight", appLocation, "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
+        runCmd(["otbcli", "TotalWeight", appLocation, "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
 
-    runCmd(["otbcli", "UpdateSynthesis", appLocation, "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
+        runCmd(["otbcli", "UpdateSynthesis", appLocation, "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
 
-    tmpOut_w = out_w
-    tmpOut_d = out_d
-    tmpOut_r = out_r
-    tmpOut_f = out_f
-    tmpOut_rgb = out_rgb
+        tmpOut_w = out_w
+        tmpOut_d = out_d
+        tmpOut_r = out_r
+        tmpOut_f = out_f
+        tmpOut_rgb = out_rgb
 
-    if USE_COMPRESSION:
-        tmpOut_w += '?gdal:co:COMPRESS=DEFLATE'
-        tmpOut_d += '?gdal:co:COMPRESS=DEFLATE'
-        tmpOut_r += '?gdal:co:COMPRESS=DEFLATE'
-        tmpOut_f += '?gdal:co:COMPRESS=DEFLATE'
-        tmpOut_rgb += '?gdal:co:COMPRESS=DEFLATE'
+        if USE_COMPRESSION:
+            tmpOut_w += '?gdal:co:COMPRESS=DEFLATE'
+            tmpOut_d += '?gdal:co:COMPRESS=DEFLATE'
+            tmpOut_r += '?gdal:co:COMPRESS=DEFLATE'
+            tmpOut_f += '?gdal:co:COMPRESS=DEFLATE'
+            tmpOut_rgb += '?gdal:co:COMPRESS=DEFLATE'
 
-    runCmd(["otbcli", "CompositeSplitter2", appLocation, "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
+        runCmd(["otbcli", "CompositeSplitter2", appLocation, "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
 
-    prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
+        prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
 
-    if REMOVE_TEMP:
-        try:
-            os.remove(outWeightAotFile.replace("#", counterString))
-        except:
-            pass
-        try:
-            os.remove(outWeightCloudFile.replace("#", counterString))
-        except:
-            pass
-        try:
-            os.remove(outTotalWeightFile.replace("#", counterString))
-        except:
-            pass
+        if REMOVE_TEMP:
+            removeFiles([out_w_Aot, out_w_Cloud, out_w_Total])
 
-    runCmd(["rm", "-fr", mod, outSpotMasks, outImgBands, outCld, outWat, outSnow, outAot])
-    if REMOVE_TEMP and i > 0:
-        counterString = str(i - 1)
-        print("The following files will be deleted:")
-        print(outWeights.replace("#", counterString))
-        print(outDates.replace("#", counterString))
-        print(outRefls.replace("#", counterString))
-        print(outFlags.replace("#", counterString))
-        print(outRGB.replace("#", counterString))
-        try:
-            os.remove(outWeights.replace("#", counterString))
-        except:
-            pass
-        try:
-            os.remove(outDates.replace("#", counterString))
-        except:
-            pass
-        try:
-            os.remove(outRefls.replace("#", counterString))
-        except:
-            pass
-        try:
-            os.remove(outFlags.replace("#", counterString))
-        except:
-            pass
-        try:
-            os.remove(outRGB.replace("#", counterString))
-        except:
-            pass
-    i += 1
-if i == 0:
-    print("No L2A products found !")
-    exit(1)
+        tmpFilesToRemove.append(mod)
+        removeFiles(tmpFilesToRemove)
+        if REMOVE_TEMP and i > 0:
+            counterString = str(i - 1)
+            removeFiles([getFileName(outWeights, counterString, resolution), getFileName(outDates, counterString, resolution), getFileName(outRefls, counterString, resolution), getFileName(outFlags, counterString, resolution), getFileName(outRGB, counterString, resolution)])
+        i += 1
+    l3aOutRefls.append(out_r)
+    l3aOutWeights.append(out_w)
+    l3aOutFlags.append(out_f)
+    l3aOutDates.append(out_d)
+    l3aOutRgbs.append(out_rgb)
 
-i -= 1
+
 runCmd(["otbcli", "ProductFormatter", appLocation, 
     "-destroot", outDir, 
     "-fileclass", "SVT1", 
@@ -399,42 +349,20 @@ runCmd(["otbcli", "ProductFormatter", appLocation,
     "-baseline", "01.00", 
     "-siteid",siteId, 
     "-processor", "composite", 
-    "-processor.composite.refls", tileID, out_r, 
-    "-processor.composite.weights", tileID, out_w, 
-    "-processor.composite.flags", tileID, out_f, 
-    "-processor.composite.dates", tileID, out_d, 
-    "-processor.composite.rgb", tileID, out_rgb, 
-    "-il"] + args.input + [
+    "-processor.composite.refls", tileID] + l3aOutRefls +
+    ["-processor.composite.weights", tileID] + l3aOutWeights + 
+    ["-processor.composite.flags", tileID] + l3aOutFlags + 
+    ["-processor.composite.dates", tileID] + l3aOutDates +
+    ["-processor.composite.rgb", tileID] + l3aOutRgbs +
+    ["-il"] + args.input + [
     "-gipp", paramsFilenameXML] + 
     fullLut)
 
 if REMOVE_TEMP:
+    i -= 1
     counterString = str(i)
-    print("The following files will be deleted:")
-    print(outWeights.replace("#", counterString))
-    print(outDates.replace("#", counterString))
-    print(outRefls.replace("#", counterString))
-    print(outFlags.replace("#", counterString))
-    try:
-        os.remove(outWeights.replace("#", counterString))
-    except:
-        pass
-    try:
-        os.remove(outDates.replace("#", counterString))
-    except:
-        pass
-    try:
-        os.remove(outRefls.replace("#", counterString))
-    except:
-        pass
-    try:
-        os.remove(outFlags.replace("#", counterString))
-    except:
-        pass
-#    try:
-#        os.remove(outRGB.replace("#", counterString))
-#    except:
-#        pass
+    for resolution in [10, 20] :
+        removeFiles([getFileName(outWeights, counterString, resolution), getFileName(outDates, counterString, resolution), getFileName(outRefls, counterString, resolution), getFileName(outFlags, counterString, resolution)])    
 
 
 print("Processing finished: " + str(datetime.datetime.now()))
