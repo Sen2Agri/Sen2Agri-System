@@ -703,11 +703,6 @@ class AOIContext(object):
             print("tiles:")
             print(" ".join(self.aoiTiles))
 
-        if len(self.aoiHistoryFiles) <= 0:
-            print("historyFiles: NONE")
-        else:
-            print("historyFiles:")
-            print(" ".join(self.aoiHistoryFiles))
         sys.stdout.flush()
 
 
