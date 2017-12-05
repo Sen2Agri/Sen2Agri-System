@@ -195,6 +195,12 @@ private:
     AddParameter(ParameterType_Int, "seed", "The seed for the random number generation");
     MandatoryOff("seed");
 
+    // This application is called in the context of the unsupervised crop mask processor, where the input has more features
+    // than should be used for trimming. It would be better to make the channel list configurable, but for now allow the
+    // user to disable that hard-coded selection for inputs which don't have 5 bands.
+    AddParameter(ParameterType_Empty, "allbands", "Use all bands from the input file");
+    MandatoryOff("allbands");
+
     AddParameter(ParameterType_OutputImage, "out", "The training samples raster file");
 
 
@@ -253,6 +259,7 @@ private:
       const double alpha = GetParameterFloat("alpha");
       const int nbSamples = GetParameterInt("nbsamples");
       const int seed = GetParameterInt("seed");
+      auto allbands = GetParameterEmpty("allbands");
 
       //Read the Features input file
       m_FeaturesReader->SetFileName(GetParameterString("feat"));
@@ -261,7 +268,7 @@ private:
       bool needExtract = false;
 
       int comp = m_FeaturesReader->GetOutput()->GetNumberOfComponentsPerPixel();
-      if (comp != 5) {
+      if (comp != 5 && !allbands) {
           // Extract only the Green, Red and NIR bands at max NDVI and the Red and NIR bands at min NDVI
           m_BandsExtractor->SetInput(m_FeaturesReader->GetOutput());
 
