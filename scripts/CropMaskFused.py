@@ -57,6 +57,7 @@ class CropMaskProcessor(ProcessorBase):
 
         parser.add_argument('-bm', help='Use benchmarking (vs. ATBD) features (default False)', required=False, type=bool, default=False)
         parser.add_argument('-window', help='The window, expressed in number of records, used for the temporal features extraction (default 6)', required=False, type=int, default=6)
+        parser.add_argument('-crop-classes', help='List of crop classes (default 10, 11, 20)', required=False, type=int, nargs='+', default=[10, 11, 20])
         parser.add_argument('-lmbd', help='The lambda parameter used in data smoothing (default 2)', required=False, metavar='lmbd', default=2)
         parser.add_argument('-eroderad', help='The radius used for erosion (default 1)', required=False, metavar='erode_radius', default='1')
         parser.add_argument('-alpha', help='The parameter alpha used by the mahalanobis function (default 0.01)', required=False, metavar='alpha', default='0.01')
@@ -145,6 +146,7 @@ class CropMaskProcessor(ProcessorBase):
         if self.args.refr is not None:
             tile_reference_eroded = self.get_output_path("reference-eroded-{}.tif", tile.id)
             tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
+            tile_reference_trimmed_full = self.get_output_path("reference-trimmed-full-{}.tif", tile.id)
             tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
 
             step_args = ["otbcli", "Trimming", self.args.buildfolder,
@@ -154,9 +156,23 @@ class CropMaskProcessor(ProcessorBase):
                                    "-seed", self.args.rseed,
                                    "-feat", tile_spectral_features,
                                    "-ref", tile_reference_eroded,
-                                   "-out", tile_reference_trimmed]
+                                   "-out", tile_reference_trimmed_full]
 
             run_step(Step("Trimming_" + tile.id, step_args))
+
+            bm_exp = "im1b1 == -10000 ? -10000 : 0"
+            for cl in self.args.crop_classes:
+                bm_exp += " || im1b1 == " + str(cl)
+            bm_exp += " ? 1 : 0"
+            step_args = ["otbcli_BandMath",
+                         "-progress", "false",
+                         "-il", tile_reference_trimmed_full,
+                         "-out", tile_reference_trimmed,
+                         "-exp", bm_exp]
+
+            run_step(Step("ClassifyReference_" + tile.id, step_args))
+            if not self.args.keepfiles:
+                os.remove(tile_reference_trimmed_full)
 
     def train_stratum(self, stratum):
         area_model = self.get_output_path("model-{}.txt", stratum.id)

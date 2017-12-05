@@ -103,14 +103,8 @@ MahalanobisTrimmingFilter< TInputImage, TOutputImage >
 
     // loop through each class
     for (auto& points : m_Points) {
-        OutputPixelType pix;
-        if (points.first == 10 || points.first == 11 || points.first == 20) {
-            //Crop
-            pix = static_cast<OutputPixelType>(1);
-        } else {
-            //No Crop
-            pix = static_cast<OutputPixelType>(0);
-        }
+        OutputPixelType pix = points.first;
+
         typename IndexVectorType::iterator si = points.second.begin();
         typename IndexVectorType::iterator li = points.second.end();
 
