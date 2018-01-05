@@ -209,11 +209,11 @@ The database connection settings can be found in `/etc/sen2agri/sen2agri.conf`.
 
 # Administration
 
-## How can I delete or cancel a running job?
+## How can I pause, resume or delete a running job?
 
-If you want to stop a running job, you first need to find out its identifier. For that, you can use the "Monitoring" tab of the web interface. In this context, a job is only created shortly before it starts running. See [the corresponding section](#how-can-i-cancel-a-scheduled-jobtask) for stopping a scheduled task.
+If you want to control a running job, you first need to find out its identifier. For that, you can use the "Monitoring" tab of the web interface. In this context, a job is only created shortly before it starts running. See [the corresponding section](#how-can-i-cancel-a-scheduled-jobtask) for cancelling a scheduled task.
 
-Once you have the `id`, you can use the `job_operations.py` script:
+Once you have the `id`, you can use the `job_operations.py` script to cancel it:
 
 ```bash
 # display the usage information
@@ -224,6 +224,13 @@ python job_operations.py -j JOB_ID -o delete
 ```
 
 The difference between the two operations is that `cancel` is supposed to stop the job execution, while `delete` will remove its tracking information from the system.
+
+You might also want to pause a running job. In this case, use the `pause` operation. To start the job again, use the `resume` operation.
+
+```bash
+python job_operations.py -j JOB_ID -o pause
+python job_operations.py -j JOB_ID -o resume
+```
 
 Note that the job cancellation, pause and resume functionality is experimental and might not work properly.
 
