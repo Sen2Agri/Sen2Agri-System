@@ -544,6 +544,35 @@ sudo -u postgres psql sen2agri -c \
        and product_name like 'S2B%';"
 ```
 
+## Jobs are not running or `SLURM` does not start
+
+You can check the `SLURM` status with:
+
+```bash
+systemctl status slurm{dbd,ctld,d}
+```
+
+Each of the three daemons has a log file in `/var/log/slurm`:
+
+```bash
+sudo tail /var/log/slurm/slurm{dbd,d,}.log
+```
+
+One common issue is `MariaDB` not starting after an improper shutdown or reboot. That's apparent from the log files as follows:
+
+```text
+[2018-01-03T16:13:08.725] error: mysql_query failed: 145 Table './mysql/proc' is marked as crashed and should be repaired
+```
+
+It can be fixed by running:
+
+```bash
+$ sudo mysql -p mysql
+MariaDB [(mysql)]> repair table proc;
+MariaDB [(mysql)]> \q
+$ systemctl restart mariadb slurm{dbd,ctld,d}
+```
+
 ## I have another issue
 
-To request assistance, you need an account on the [Sentinel-2 for Agriculture portal](http://www.esa-sen2agri.org/). The [forum](http://www.esa-sen2agri.org/forum/?view=forum&id=2) is accessible to logged-in users.
+To request assistance, you need an account on the [Sentinel-2 for Agriculture portal](http://www.esa-sen2agri.org/). The [forum](http://forum.esa-sen2agri.org/) is accessible to logged-in users.
