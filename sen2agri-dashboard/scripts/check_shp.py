@@ -47,7 +47,16 @@ def main():
     features = []
     for feature in layer:
         geometry = feature.GetGeometryRef()
-        if not geometry.IsValid():
+        if not geometry:
+            if id_field_idx is not None:
+                feature_id = feature.GetField(id_field_idx)
+                print("Feature with no geometry: ID={}".format(feature_id))
+            else:
+                print("Feature with no geometry")
+            if not args.fix:
+                status = 2
+            continue
+        elif not geometry.IsValid():
             if id_field_idx is not None:
                 feature_id = feature.GetField(id_field_idx)
                 print("Invalid feature: ID={}".format(feature_id))
