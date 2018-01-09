@@ -27,6 +27,9 @@ namespace otb
         bool bUseNdvi;
         bool bUseRvi;
         std::vector<int> rsrColumnFilterIdxs;
+        std::string laiModelFilePath;
+        std::string faparModelFilePath;
+        std::string fcoverModelFilePath;
     } LAIBandsConfigInfos;
 
     std::vector<std::string> split(std::string str, char delimiter) {
@@ -64,7 +67,7 @@ namespace otb
                   boost::trim(value);
                   if (key == "LAI_BANDS") {
                       bHasBandsKey = true;
-                      std::vector<std::string> bandIdxsVect = split(value, ',');
+                      const std::vector<std::string> &bandIdxsVect = split(value, ',');
                       for (size_t i = 0; i < bandIdxsVect.size(); i++) {
                           try {
                               int nValIdx = std::stoi(bandIdxsVect[i]);
@@ -86,7 +89,7 @@ namespace otb
                           infos.bUseRvi = true;
                       }
                   } else if (key == "RSR_COLS_FILTER") {
-                      std::vector<std::string> rsrColsIdxsVect = split(value, ',');
+                      const std::vector<std::string> &rsrColsIdxsVect = split(value, ',');
                       for (size_t i = 0; i < rsrColsIdxsVect.size(); i++) {
                           try {
                               int nValIdx = std::stoi(rsrColsIdxsVect[i]);
@@ -99,6 +102,12 @@ namespace otb
                               std::cout << "WARNING: Invalid band index found in RSR_COLS_FILTER key! Ignored!" << std::endl;
                           }
                       }
+                  } else if (key == "LAI_MODEL_PATH") {
+                      infos.laiModelFilePath = value;
+                  } else if (key == "FAPAR_MODEL_PATH") {
+                      infos.faparModelFilePath = value;
+                  } else if (key == "FCOVER_MODEL_PATH") {
+                      infos.fcoverModelFilePath = value;
                   }
               }
           }
@@ -117,8 +126,8 @@ namespace otb
           infos.bandsIdxs = std::vector<int> (arr, arr + sizeof(arr) / sizeof(arr[0]) );
       }
       // also sort the array of bands
-      std::sort (infos.bandsIdxs.begin(), infos.bandsIdxs.end());
-      std::sort (infos.rsrColumnFilterIdxs.begin(), infos.rsrColumnFilterIdxs.end());
+      //std::sort (infos.bandsIdxs.begin(), infos.bandsIdxs.end());
+      //std::sort (infos.rsrColumnFilterIdxs.begin(), infos.rsrColumnFilterIdxs.end());
 
       // print the indexes
       std::cout << "======================" << std::endl;
@@ -157,7 +166,7 @@ namespace otb
                 std::cout << "Checking line: " << line << std::endl;
                 size_t lastindex = line.find_last_of("=");
                 if((lastindex != std::string::npos) && (lastindex != (line.length()-1))) {
-                    std::string keyStr = line.substr(0, lastindex);
+                    const std::string &keyStr = line.substr(0, lastindex);
                     std::string cfgFileName = line.substr(lastindex+1);
                     std::string missionName = keyStr;   // by default, mission name is the key
                     std::string sensorInstrument;

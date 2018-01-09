@@ -22,6 +22,7 @@ void LaiRetrievalHandler::SetProcessorDescription(const ProcessorDescription &pr
     this->processorDescr = procDescr;
     m_ndviHandler.SetProcessorDescription(procDescr);
     m_l3bHandler.SetProcessorDescription(procDescr);
+    m_l3bHandlerNew.SetProcessorDescription(procDescr);
     m_l3cHandler.SetProcessorDescription(procDescr);
 }
 
@@ -43,6 +44,8 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     if(bMonoDateLai) {
         if (IsGenNdviMonoDateOnly(configParameters)) {
             m_ndviHandler.HandleJobSubmitted(ctx, event);
+        } else if (IsNewLaiMonoDateVersion(configParameters)) {
+            m_l3bHandlerNew.HandleJobSubmitted(ctx, event);
         } else {
             m_l3bHandler.HandleJobSubmitted(ctx, event);
         }
@@ -56,6 +59,7 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 {
     this->m_ndviHandler.HandleTaskFinished(ctx, event);
     this->m_l3bHandler.HandleTaskFinished(ctx, event);
+    this->m_l3bHandlerNew.HandleTaskFinished(ctx, event);
     this->m_l3cHandler.HandleTaskFinished(ctx, event);
 }
 
@@ -71,6 +75,8 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
         if(productType.value == "L3B") {
             if (IsGenNdviMonoDateOnly(configParameters)) {
                 return this->m_ndviHandler.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
+            } else if (IsNewLaiMonoDateVersion(configParameters)) {
+                m_l3bHandlerNew.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
             } else {
                 return this->m_l3bHandler.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
             }
@@ -98,6 +104,10 @@ bool LaiRetrievalHandler::IsGenMonoDate(const QJsonObject &parameters, std::map<
 
 bool LaiRetrievalHandler::IsGenNdviMonoDateOnly(std::map<QString, QString> &configParameters) {
     return ((configParameters["processor.l3b.mono_date_ndvi_only"]).toInt() != 0);
+}
+
+bool LaiRetrievalHandler::IsNewLaiMonoDateVersion(std::map<QString, QString> &configParameters) {
+    return ((configParameters["processor.l3b.lai.use_belcam_version"]).toInt() != 0);
 }
 
 bool LaiRetrievalHandler::IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {

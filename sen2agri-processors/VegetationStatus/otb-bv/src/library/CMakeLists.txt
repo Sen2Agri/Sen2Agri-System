@@ -14,4 +14,12 @@
 
 add_library(OTBBVUtil otbBVUtil.cxx)
 
+set(BelcamNeural_SRCS
+  belcamApplyTrainedNeuralNetwork.cpp
+)
+
+add_executable(ApplyTrainedNeuralNetwork ${BelcamNeural_SRCS})
+
+target_link_libraries(ApplyTrainedNeuralNetwork ${OTB_LIBRARIES})
+
 install(TARGETS OTBBVUtil DESTINATION usr/lib/)

@@ -39,7 +39,8 @@ SOURCES += main.cpp \
     processor/phenondvihandler.cpp \
     processorhandlerhelper.cpp \
     schedulingcontext.cpp \
-    processor/ndvihandler.cpp
+    processor/ndvihandler.cpp \
+    processor/lairetrievalhandler_l3b_new.cpp
 
 HEADERS += \
     pch.hpp \
@@ -58,7 +59,8 @@ HEADERS += \
     processor/phenondvihandler.hpp \
     processorhandlerhelper.h \
     schedulingcontext.h \
-    processor/ndvihandler.hpp
+    processor/ndvihandler.hpp \
+    processor/lairetrievalhandler_l3b_new.hpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \

@@ -80,6 +80,11 @@ otb_create_application(
   SOURCES        otbGenerateLaiMonoDateMaskFlags.cpp
   LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES})
 
+otb_create_application(
+  NAME           BVLaiNewProcessor
+  SOURCES        otbBVLaiNewProcessor.cxx
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES} OTBBVUtil)
+
 add_executable(testSimus testSimus.cxx)
 target_link_libraries(testSimus ${OTB_LIBRARIES} OTBBVUtil gsl gslcblas)
 
@@ -98,3 +103,4 @@ install(TARGETS otbapp_TimeSeriesBuilder DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_GetLaiRetrievalModel DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_ReprocessedProfileSplitter2 DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_GenerateLaiMonoDateMaskFlags DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_BVLaiNewProcessor DESTINATION usr/lib/otb/applications/)

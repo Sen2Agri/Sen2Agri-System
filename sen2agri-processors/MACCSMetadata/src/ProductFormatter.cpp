@@ -47,6 +47,8 @@
 #define COMPOSITE_FLAGS_SUFFIX          "MFLG"
 #define LAI_NDVI_SUFFIX                 "SNDVI"
 #define LAI_MDATE_SUFFIX                "SLAIMONO"
+#define FAPAR_MDATE_SUFFIX              "SFAPARMONO"
+#define FCOVER_MDATE_SUFFIX             "SFCOVERMONO"
 #define LAI_MDATE_ERR_SUFFIX            "MLAIERR"
 #define LAI_REPR_SUFFIX                 "SLAIR"
 #define LAI_FIT_SUFFIX                  "SLAIF"
@@ -137,6 +139,8 @@ typedef enum{
     LAI_MONO_DATE_RASTER,
     LAI_MONO_DATE_ERR_RASTER,
     LAI_MONO_DATE_FLAGS,
+    FAPAR_MONO_DATE_RASTER,
+    FCOVER_MONO_DATE_RASTER,
     LAI_REPROC_FLAGS,
     LAI_FITTED_FLAGS,
     LAI_REPR_RASTER,
@@ -278,6 +282,12 @@ private:
 
         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laimonodateerr", "LAI Mono-date Error raster files list for vegetation  separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.vegetation.laimonodateerr");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.faparmonodate", "LAI FAPAR Mono-date raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.faparmonodate");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.fcovermonodate", "LAI FCOVER Mono-date raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.fcovermonodate");
 
         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laimdateflgs", "LAI Mono date flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.vegetation.laimdateflgs");
@@ -427,6 +437,8 @@ private:
       m_strProductDirectoryName = BuildProductDirectoryName();
       std::string strMainFolderFullPath = m_strDestRoot + "/" + m_strProductDirectoryName;
 
+      // Create the lock file
+      createMainFolderLockFile(strMainFolderFullPath);
       //created all folders ierarchy
       bool bDirStructBuiltOk = createsAllFolders(strMainFolderFullPath);
 
@@ -477,6 +489,12 @@ private:
           UnpackRastersList(rastersList, LAI_NDVI_RASTER, false);
           rastersList = this->GetParameterStringList("processor.vegetation.laimonodate");
           UnpackRastersList(rastersList, LAI_MONO_DATE_RASTER, false);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.faparmonodate");
+          UnpackRastersList(rastersList, FAPAR_MONO_DATE_RASTER, false);
+          rastersList = this->GetParameterStringList("processor.vegetation.fcovermonodate");
+          UnpackRastersList(rastersList, FCOVER_MONO_DATE_RASTER, false);
+
           rastersList = this->GetParameterStringList("processor.vegetation.laimonodateerr");
           UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, true);
           rastersList = this->GetParameterStringList("processor.vegetation.laimdateflgs");
@@ -598,6 +616,9 @@ private:
                 itkGenericExceptionMacro(<< "Could not open file " << outPropsFileName);
             }
       }
+
+      // finally, delete the lock file
+      deleteMainFolderLockFile(strMainFolderFullPath);
   }
 
   void CreateAndFillTile(tileInfo &tileInfoEl, const std::string &strMainFolderFullPath)
@@ -783,6 +804,27 @@ private:
       }
       return bResult;
   }
+
+  void createMainFolderLockFile(const std::string &strMainFolderPath) {
+      // ensure that the root folder is created
+      if(mkPath(m_strDestRoot) == false)
+      {
+          itkExceptionMacro("Fail to create destination root directory " << m_strDestRoot);
+      }
+
+      std::ofstream f( strMainFolderPath + ".lock" );
+      if ( !f ) {
+          // if the lock file cannot be created, we throw an error as probably the other files cannot be created too
+          itkGenericExceptionMacro(<< "Error creating lock file for " << strMainFolderPath);
+          return;
+      }
+      f << "lock";
+  }
+
+  bool deleteMainFolderLockFile(const std::string &strMainFolderPath) {
+    return boost::filesystem::remove(strMainFolderPath + ".lock");
+  }
+
 
   std::string ReplaceString(std::string subject, const std::string& search,
                             const std::string& replace) {
@@ -1398,6 +1440,10 @@ private:
               return true;
           case LAI_MONO_DATE_ERR_RASTER:
               return true;
+          case FAPAR_MONO_DATE_RASTER:
+              return true;
+          case FCOVER_MONO_DATE_RASTER:
+              return true;
           case LAI_REPR_RASTER:
               return true;
           case LAI_FIT_RASTER:
@@ -1448,6 +1494,12 @@ private:
                 case LAI_MONO_DATE_ERR_RASTER:
                     rasterCateg = LAI_MDATE_ERR_SUFFIX;
                   break;
+                case FAPAR_MONO_DATE_RASTER:
+                    rasterCateg = FAPAR_MDATE_SUFFIX;
+                    break;
+                case FCOVER_MONO_DATE_RASTER:
+                    rasterCateg = FCOVER_MDATE_SUFFIX;
+                    break;
                 case LAI_REPR_RASTER:
                     rasterCateg = LAI_REPR_SUFFIX;
                    break;

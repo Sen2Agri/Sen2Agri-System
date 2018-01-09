@@ -14,6 +14,7 @@ cat migrations/migration-1.4-1.5.sql | su -l postgres -c "psql sen2agri"
 cat migrations/migration-1.5-1.6.sql | su -l postgres -c "psql sen2agri"
 cat migrations/migration-1.6-1.6.2.sql | su -l postgres -c "psql sen2agri"
 cat migrations/migration-1.6.2-1.7.sql | su -l postgres -c "psql sen2agri"
+cat migrations/migration-1.7-1.7.1.sql | su -l postgres -c "psql sen2agri"
 
 systemctl daemon-reload
 
