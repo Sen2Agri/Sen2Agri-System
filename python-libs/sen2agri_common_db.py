@@ -1248,6 +1248,17 @@ class L1CInfo(object):
 
         return DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir)
 
+    def is_site_enabled(self, site_id):
+        if self.database_connect():
+            try:
+                self.cursor.execute("select enabled from site where id = %s;", (site_id, ))
+                return self.cursor.fetchone()[0]
+            finally:
+                try:
+                    self.database_disconnect()
+                except:
+                    pass
+
     def get_short_name(self, table, use_id):
         if not self.database_connect():
             return ""

@@ -7,7 +7,7 @@ _____________________________________________________________________________
    Language:     Python
    Copyright:    2015-2016, CS Romania, office@c-s.ro
    See COPYRIGHT file for details.
-   
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -107,8 +107,8 @@ def validate_L1C_product_dir(l1cDir):
                     print ("###################################")
                     return False
                 else:
-                    raise e            
- 
+                    raise e
+
         for filename in files:
             file_path = os.path.join(root, filename)
             #print('\t- file %s (full path: %s)' % (filename, file_path))
@@ -121,11 +121,11 @@ def validate_L1C_product_dir(l1cDir):
                     print ("###################################")
                     return False
                 else:
-                    raise e            
-            
+                    raise e
+
     return True
 
-    
+
 def launch_demmaccs(l1c_context):
     global general_log_path
     global general_log_filename
@@ -142,14 +142,20 @@ def launch_demmaccs(l1c_context):
         site_output_path += "/"
 
     for l1c in l1c_context.l1c_list:
-        if not validate_L1C_product_dir(l1c[3]):
-            print ("The product {} is not valid or temporary unavailable!!!".format(file_path))
+        file_path = l1c[3]
+        site_id = l1c[1]
+        if not l1c_context.is_site_enabled(site_id):
+            print("Aborting processing for site {} because it's disabled".format(site_id))
+            return
+
+        if not validate_L1C_product_dir(file_path):
+            print("The product {} is not valid or temporary unavailable!!!".format(file_path))
             sys.exit(-1)
-            
+
         # l1c is a record from downloader_history table. the indexes are :
         # 0  | 1       | 2            | 3         | 4            | 5
         # id | site_id | satellite_id | full_path | product_date | orbit_id
-        l2a_basename = os.path.basename(l1c[3][:len(l1c[3]) - 1]) if l1c[3].endswith("/") else os.path.basename(l1c[3])
+        l2a_basename = os.path.basename(file_path[:len(file_path) - 1]) if file_path.endswith("/") else os.path.basename(file_path)
         satellite_id = int(l1c[2])
         if satellite_id != SENTINEL2_SATELLITE_ID and satellite_id != LANDSAT8_SATELLITE_ID:
             log(general_log_path, "Unkown satellite id :{}".format(satellite_id), general_log_filename)
@@ -177,13 +183,13 @@ def launch_demmaccs(l1c_context):
         if not create_recursive_dirs(output_path):
             log(general_log_path, "Could not create the output directory", general_log_filename)
             continue
-            
-        l2a_tiles, l2a_tiles_paths = get_previous_l2a_tiles_paths(satellite_id, l1c[3], l1c[4], l1c[5], l1c_context.l1c_db, l1c[1])
+
+        l2a_tiles, l2a_tiles_paths = get_previous_l2a_tiles_paths(satellite_id, l1c[3], l1c[4], l1c[5], l1c_context.l1c_db, site_id)
 
         if len(l2a_tiles) != len(l2a_tiles_paths):
             log(output_path, "The lengths of lists l1c tiles and previous l2a tiles are different for {}".format(l2a_basename), general_log_filename)
             continue
-        
+
         l2a_processed_tiles = []
         wkt = []
         sat_id = 0
@@ -208,8 +214,8 @@ def launch_demmaccs(l1c_context):
                 if satellite_id == SENTINEL2_SATELLITE_ID:
                     tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
                 else: #satellite_id is LANDSAT8_SATELLITE_ID:
-                    tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))                
-                
+                    tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
+
                 if len(tile_img) > 0:
                     wgs84_extent_list.append(get_footprint(tile_img[0])[0])
             wkt = get_envelope(wgs84_extent_list)
@@ -218,9 +224,9 @@ def launch_demmaccs(l1c_context):
                 log(output_path, "Could not create the footprint", general_log_filename)
             else:
                 sat_id, acquisition_date = get_product_info(os.path.basename(output_path[:len(output_path) - 1]))
-                if sat_id > 0 and acquisition_date != None:                    
+                if sat_id > 0 and acquisition_date != None:
                     #check for MACCS tiles output. If none was processed, only the record from
-                    #downloader_history table will be updated. No l2a product will be added into product table                    
+                    #downloader_history table will be updated. No l2a product will be added into product table
                     for tile_dbl_dir in tiles_dir_list:
                         tile = None
                         print("tile_dbl_dir {}".format(tile_dbl_dir))
@@ -239,7 +245,7 @@ def launch_demmaccs(l1c_context):
             log(output_path, "Insert info in product table and set state as processed in downloader_history table for product {}".format(output_path), general_log_filename)
         else:
             log(output_path, "Only set the state as processed in downloader_history (no l2a tiles found after maccs) for product {}".format(output_path), general_log_filename)
-        l1c_db.set_processed_product(1, l1c[1], l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, l1c[5])
+        l1c_db.set_processed_product(1, site_id, l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, l1c[5])
 
 
 parser = argparse.ArgumentParser(
@@ -258,7 +264,7 @@ if not config.loadConfig(args.config):
     log(general_log_path, "Could not load the config from configuration file", general_log_filename)
     sys.exit(-1)
 
-#load configuration from db for demmaccs processor 
+#load configuration from db for demmaccs processor
 l1c_db = L1CInfo(config.host, config.database, config.user, config.password)
 demmaccs_config = l1c_db.get_demmaccs_config()
 if demmaccs_config is None:
