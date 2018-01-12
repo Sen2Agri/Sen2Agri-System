@@ -19,7 +19,6 @@ void belcamApplyTrainedNeuralNetworkFilter<TI, TO>
   itk::ImageRegionConstIterator<TI> iIt(this->GetInput(), inputRegionForThread);
 
   typename TO::PixelType pixelO(1);
-  typename TI::PixelType pixelI(nbBands);
 
   if(m_net.layers[0].weights[0].size() != nbBands) {
     printf("the number of bands and the number of inputs in txt file have to be identical !! (%d vs %d)\n", nbBands, (int)m_net.layers[0].weights[0].size());
@@ -37,7 +36,7 @@ void belcamApplyTrainedNeuralNetworkFilter<TI, TO>
   for(oIt.GoToBegin(), iIt.GoToBegin(); ! oIt.IsAtEnd(); ++oIt, ++iIt)
   {
     // normalisation of inputs
-    pixelI = iIt.Get();
+    const typename TI::PixelType &pixelI = iIt.Get();
     for(int iB = 0; iB < nbBands; ++iB)
       inputs[0][iB] = 2.0 * (pixelI[iB] / m_scale - m_net.min_norm_in[iB]) / (m_net.max_norm_in[iB] - m_net.min_norm_in[iB]) - 1.0;
 
