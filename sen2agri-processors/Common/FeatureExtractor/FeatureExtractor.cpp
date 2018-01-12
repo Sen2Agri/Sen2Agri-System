@@ -169,8 +169,6 @@ private:
         preprocessors->PushBack(m_Preprocessor);
 
         const auto &sensorOutDays = getOutputDays(preprocessors, resamplingMode, mission, sp);
-        std::cerr << "descriptors: " << descriptors.size() << std::endl;
-        std::cerr << "output days: " << sensorOutDays[0].days.size() << sensorOutDays[1].days.size() << std::endl;
         auto output = m_Preprocessor->GetOutput(sensorOutDays);
         output->UpdateOutputInformation();
         output->Print(std::cerr);
