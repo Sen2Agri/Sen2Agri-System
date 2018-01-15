@@ -281,7 +281,7 @@ if (isset ( $_REQUEST ['delete_site'] ) && $_REQUEST ['delete_site'] == 'Delete 
 							<div class="row">
 								<div class="col-md-1">
 									<div class="form-group  form-group-sm">
-										<label class="control-label" for="edit_sitename">Site name: </label>
+										<label class="control-label" for="delete_site">Site name: </label>
 										<input type="text" class="form-control" id="edit_sitename" name="edit_sitename" value="" readonly>
 										<input type="hidden" class="form-control" id="edit_siteid" name="edit_siteid" value="">
 									</div>
@@ -306,7 +306,7 @@ if (isset ( $_REQUEST ['delete_site'] ) && $_REQUEST ['delete_site'] == 'Delete 
 							
 							
 							<div class="submit-buttons">
-								<input class="delete-btn" name="delete_site" type="delete" value="Confirm Delete Site">
+								<input class="delete-btn" name="delete_site" type="button" value="Confirm Delete Site">
 								<input class="add-edit-btn" name="abort_add" type="button" value="Abort" onclick="abortEditAdd('delete_site')">
 							</div>
 						</form>
@@ -605,9 +605,11 @@ function formAddSite(){
 }
 
 // open delete site dialog
-function formDeleteSite(name){
+function formDeleteSite(){
 	// set values for fields
-	$("#delete_sitename").val(name);
+//	name=document.getElementById("edit_sitename").
+    //$("#delete_site").val(($(this).parent().find('.edit_sitename').html());
+	//$("#delete_site").val(name);
 	//$("#delete_siteid").val(id);
 	//$("#shortname").val(short_name);
 	
@@ -616,7 +618,7 @@ function formDeleteSite(name){
 	$("#div_addsite").dialog("close");
 	$("#div_deletesite").dialog("open");
 		$.ajax({
-		url: "deletSite.php",
+		url: "deleteSite.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
@@ -708,7 +710,7 @@ function resetEditAdd(formName) {
 		getSiteSeasons(site_id);
 		$("#div_editsite").removeData("id");
 	}
-	else if (formName == "delete") {
+	else if (formName == "delete_site") {
 		var validator = $("#siteform_delete").validate();
 		validator.resetForm();
 		$("#siteform_delete")[0].reset();
@@ -727,7 +729,7 @@ function abortEditAdd(abort){
 		$("#div_addsite").dialog("close");
 	} else if (abort == 'edit') {
 		$("#div_editsite").dialog("close");
-	} else if (abort == 'delete') {
+	} else if (abort == 'delete_site') {
 		$("#div_deletesite").dialog("close");
 	}
 }
