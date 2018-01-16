@@ -192,13 +192,15 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 	// Prevent updating site when refreshing page
 	die(Header("Location: {$_SERVER['PHP_SELF']}"));
 }
-// processing  delete_site
 
-if (isset ( $_REQUEST ['delete_site'] ) && $_REQUEST ['delete_site'] == 'Delete Site') {
-	$site_id      = $_REQUEST ['edit_siteid'];
-	$shortname    = $_REQUEST ['shortname'];
-//	$site_enabled = empty($_REQUEST ['edit_enabled']) ? "0" : "1";
+
+// processing  delete_site
+if (isset ( $_REQUEST ['delete_site'] ) && $_REQUEST ['delete_site'] == 'Confirm Delete Site') {
 	
+	$site_id      = $_REQUEST ['delete_siteid'];
+	$shortname    = $_REQUEST ['delete_sitename'];
+//	$site_enabled = empty($_REQUEST ['edit_enabled']) ? "0" : "1";
+		
 	function deleteSite($id) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		$res = pg_query_params ( $db, "SELECT sp_delete_site($1)", array (
@@ -208,20 +210,17 @@ if (isset ( $_REQUEST ['delete_site'] ) && $_REQUEST ['delete_site'] == 'Delete 
 	
 	$date = date_create();
 	$time_stamp = date_timestamp_get($date);
-	
 	$status     = "OK";
 	$message    = "";
-
 	if ($status == "OK") {
-		//updateSite($site_id, $site_enabled);
-		$message = "Your site has been successfully removed!";
+		//deleteSite($site_id);
+		$message = "Your site [$shortname] has been successfully removed!";
 	}
 	$_SESSION['status'] =  $status; $_SESSION['message'] = $message;
-	
+
 	// Prevent updating site when refreshing page
 	die(Header("Location: {$_SERVER['PHP_SELF']}"));
 }
-
 //end - delete site
 
 ?>
@@ -247,6 +246,13 @@ if (isset ( $_REQUEST ['delete_site'] ) && $_REQUEST ['delete_site'] == 'Delete 
 									<div class="form-group  form-group-sm">
 										<label class="control-label" for="sitename">Site name:</label>
 										<input type="text" class="form-control" id="sitename" name="sitename">
+									</div>
+									<div class="form-group form-group-sm sensor">
+												<label  style="">Enabled sensor:</label>
+												<input class="form-control chkS2" id="l3b_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+												<label class="control-label" for="l3b_chkS2">S2</label>
+												<input class="form-control chkL8" id="l3b_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
+												<label class="control-label" for="l3b_chkL8">L8</label>
 									</div>
 								</div>
 							</div>
@@ -282,8 +288,8 @@ if (isset ( $_REQUEST ['delete_site'] ) && $_REQUEST ['delete_site'] == 'Delete 
 								<div class="col-md-1">
 									<div class="form-group  form-group-sm">
 										<label class="control-label" for="delete_site">Site name: </label>
-										<input type="text" class="form-control" id="edit_sitename" name="edit_sitename" value="" readonly>
-										<input type="hidden" class="form-control" id="edit_siteid" name="edit_siteid" value="">
+										<input type="text" class="form-control" id="delete_sitename" name="delete_sitename" value="" readonly>
+										<input type="hidden" class="form-control" id="delete_siteid" name="delete_siteid" value="">
 									</div>
 								</div>
 							</div>
@@ -306,7 +312,7 @@ if (isset ( $_REQUEST ['delete_site'] ) && $_REQUEST ['delete_site'] == 'Delete 
 							
 							
 							<div class="submit-buttons">
-								<input class="delete-btn" name="delete_site" type="button" value="Confirm Delete Site">
+								<input class="delete-btn" name="delete_site" type="submit" value="Confirm Delete Site">
 								<input class="add-edit-btn" name="abort_add" type="button" value="Abort" onclick="abortEditAdd('delete_site')">
 							</div>
 						</form>
@@ -323,6 +329,14 @@ if (isset ( $_REQUEST ['delete_site'] ) && $_REQUEST ['delete_site'] == 'Delete 
 										<input type="text" class="form-control" id="edit_sitename" name="edit_sitename" value="" readonly>
 										<input type="hidden" class="form-control" id="edit_siteid" name="edit_siteid" value="">
 									</div>
+																		<div class="form-group form-group-sm sensor">
+												<label  style="">Enabled sensor:</label>
+												<input class="form-control chkS2" id="l3b_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+												<label class="control-label" for="l3b_chkS2">S2</label>
+												<input class="form-control chkL8" id="l3b_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
+												<label class="control-label" for="l3b_chkL8">L8</label>
+									</div>
+
 								</div>
 							</div>
 							<div class="row">
@@ -605,32 +619,34 @@ function formAddSite(){
 }
 
 // open delete site dialog
-function formDeleteSite(){
+function formDeleteSite(id){
 	// set values for fields
-//	name=document.getElementById("edit_sitename").
-    //$("#delete_site").val(($(this).parent().find('.edit_sitename').html());
+	//name=document.getElementById("delete_sitename").
+    //id = $("#delete_site").val(($(this).parent().find('.delete_siteid').html());
 	//$("#delete_site").val(name);
 	//$("#delete_siteid").val(id);
 	//$("#shortname").val(short_name);
+	
+//	$("#div_deletesite").data("id", id);
 	
 	// open add site dialog and close all others
 //	$("#div_editsite").dialog("close");
 	$("#div_addsite").dialog("close");
 	$("#div_deletesite").dialog("open");
-		$.ajax({
-		url: "deleteSite.php",
-		type: "get",
-		cache: false,
-		crosDomain: true,
-		data:  { "siteId": id, "action": "get" },
-		dataType: "html",
-		success: function(data) {
-			$("#delete_site").html(data);
-		},
-		error: function (responseData, textStatus, errorThrown) {
-			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
-		}
-	});	
+//		$.ajax({
+//		url: "deletSite.php",
+//		type: "get",
+//		cache: false,
+//		crosDomain: true,
+//		data:  { "action": "call_this" },
+//		dataType: "html",
+//		success: function(data) {
+//			$("#delete_site").html(data);
+//		},
+//		error: function (responseData, textStatus, errorThrown) {
+//			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+//		}
+//	});	
 
 };
 
@@ -671,6 +687,9 @@ function formEditSite(id, name, short_name, site_enabled) {
 	$("#edit_siteid").val(id);
 	$("#shortname").val(short_name);
 	$("#edit_enabled").bootstrapSwitch('state', site_enabled);
+
+	$("#delete_sitename").val(name);
+	$("#delete_siteid").val(id);
 	
 	// open edit site dialog and close all others
 	$("#div_addsite").dialog("close");
