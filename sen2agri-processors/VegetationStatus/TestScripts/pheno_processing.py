@@ -50,6 +50,7 @@ parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument('--tileid', help="Tile id", required=False)
 parser.add_argument('--resolution', help="Resample to this resolution. Use the same resolution as input files if you don't want any resample", required=True)
 parser.add_argument('--siteid', help='The site ID', required=False)
+parser.add_argument('--mainmission', help='The primary mission: SENTINEL|LANDSAT|SPOT', required=False)
 
 args = parser.parse_args()
 
@@ -59,6 +60,10 @@ siteId = "nn"
 if args.siteid:
     siteId = args.siteid
 
+mission = "SENTINEL"
+if args.mainmission and args.mainmission in ['SENTINEL', 'LANDSAT', 'SPOT']:
+    mission = args.mainmission
+    
 tileID="TILE_none"
 if args.tileid:
     tileID = "TILE_{}".format(args.tileid)
@@ -91,7 +96,7 @@ outMetricFlags = "{}/metric_estimation_flags.tif".format(outDir)
 print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 
-runCmd(["otbcli", "BandsExtractor", appLocation, "-il"] + args.input + ["-pixsize", args.resolution, "-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates])
+runCmd(["otbcli", "BandsExtractor", appLocation, "-il"] + args.input + ["-pixsize", args.resolution, "-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates, "-mission", mission])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 runCmd(["otbcli", "FeatureExtraction", appLocation, "-rtocr", outBands, "-ndvi", outNdvi])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
