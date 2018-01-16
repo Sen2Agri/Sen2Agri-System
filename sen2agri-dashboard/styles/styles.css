@@ -556,6 +556,40 @@ input.right {
   color:red;
 }
 
+.inputlabel {
+    font-size: 15px;
+    color: #333;
+    height: 25px;
+    width: 150px;
+    margin-top: 10px;
+    margin-left: 5px;
+    text-align: right;
+    margin-right:15px;
+    float:left;
+}
+.labelinput {
+    height: 25px;
+    width: 300px;
+    border: 1px solid #000;
+    margin-top: 5px;
+    margin-left: 5px;
+}
+
+.labelinput2 {
+    height: 25px;
+    width: 300px;
+    border: 1px solid #000;
+    margin-top: 5px;
+    margin-left: 0px;
+    float:left;
+}
+
+.labelinputbutton {
+    margin-top: 10px;
+    margin-left: 5px;
+}
+
+
 /* SITES related styles --------------------------------------------- */
 div.create-site .panel-heading{margin-top:-10px}
 div.create-site table.table{margin:0px}
