@@ -128,6 +128,48 @@ There is no need to.
     sudo rm -rf /mnt/{archive,scratch,upload}
     ```
 
+## How to set up a reverse proxy?
+
+If you're planning to make the web interface available from outside, it's a good idea to use a reverse proxy like `nginx` instead of directly exposing the server running the Sen2-Agri system. For example, as mentioned in [another section](#does-the-sen2-agri-installer-change-any-system-settings).
+
+For `nginx`, the following (untested) configuration snippet can be used as a starting point:
+
+```nginx
+upstream sen2agri {
+    server 127.0.0.1:8001 fail_timeout=0;
+}
+
+server {
+    listen 80;
+    server_name sen2agri.host.domain;
+    root /dev/null;
+
+    location / {
+            proxy_read_timeout 300;
+            proxy_connect_timeout 300;
+            proxy_redirect off;
+            proxy_set_header Host $host;
+            proxy_pass http://sen2agri;
+    }
+}
+```
+
+It expects the site to be accessible from a subdomain, which simplifies the configuration by avoiding the use of rewrite rules. At this point, the web interface currently does not support running in a subdirectory (it expects to be found under `http://sen2agri.example.com/` instead of e.g. `http://example.com/sen2agri`).
+
+Depending on your `nginx` configuration structure, you can either place that in `/etc/nginx/nginx.conf`, or in a new file under `/etc/nginx/sites-available`. In the latter case, you should make a symlink to it under `/etc/nginx/sites-enabled`.
+
+You will also need to edit `/etc/httpd/conf/httpd.conf` and change the port `httpd` is listening on (look for the `Listen` directive). The snippet above uses `8001`.
+
+After modifying the `nginx` settings, you can test them and reload the configuration:
+
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+sudo systemctl reload httpd
+```
+
+For more information about setting up `nginx` or another reverse proxy, consult its official documentation or your system administrator.
+
 # System status
 
 ## How can I check the system status?
@@ -331,6 +373,8 @@ sudo ln -s /mnt/large_disk/sen2agri /mnt/archive
 
 If you forgot to do this when installing the system, you should [stop the services](#how-do-i-stop-or-restart-the-sen2-agri-services), replace or re-mount the directories and start the system back up after copying the data.
 
+If you are using `SMB` (`CIFS` or Windows-like) shares and encounter permission issues while writing to them, you can use something like `file_mode=0777,dir_mode=0777,noperm` as mount options, which will make the files world-writable. To improve performance, you can add `vers=2.1,cache=loose`. See the `mount.cifs` `man` page for more details.
+
 ## Can I disable the Landsat 8 download?
 
 If, for some reason you want to disable the Landsat 8 download for all sites, you can run the following command:
@@ -424,7 +468,7 @@ disown
 
 Initially, you will need to create a new connection. The host is `localhost` if `pgadmin` is running on the server, or the server name or address otherwise. You should use the default port (`5432`). Use anything for the connection name, `admin` as the user name and the `sen2agri` password. The database is called `sen2agri`.
 
-## How can I edit files
+## How can I edit files?
 
 The base CentOS 7 install has `vi` available. You can install `joe` or `nano`, or `vim` as a friendlier version of `vi`.
 
