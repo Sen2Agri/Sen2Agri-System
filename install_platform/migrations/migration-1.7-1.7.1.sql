@@ -23,7 +23,7 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             if not exists (select * from config_metadata where key = 'processor.l3b.lai.tiles_filter') then
                 _statement := $str$
                 INSERT INTO config_metadata VALUES ('processor.l3b.lai.tiles_filter', 'L3B LAI processor tiles filter', 'string', false, 4);
@@ -38,7 +38,7 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             if not exists (select * from config_metadata where key = 'processor.l3b.lai.produce_ndvi') then
                 _statement := $str$
                 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_ndvi', 'L3B LAI processor will produce NDVI', 'int', false, 4);
@@ -53,7 +53,7 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             if not exists (select * from config_metadata where key = 'processor.l3b.lai.produce_lai') then
                 _statement := $str$
                 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_lai', 'L3B LAI processor will produce LAI', 'int', false, 4);
@@ -68,7 +68,7 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             if not exists (select * from config_metadata where key = 'processor.l3b.lai.produce_fapar') then
                 _statement := $str$
                 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_fapar', 'L3B LAI processor will produce FAPAR', 'int', false, 4);
@@ -97,7 +97,13 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
+
+            _statement := $str$
+            drop function if exists sp_insert_product(smallint, smallint, integer, smallint, integer, character varying, timestamp with time zone, character varying, character varying, geography, json);
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
 
             _statement := 'update meta set version = ''1.7.1'';';
             raise notice '%', _statement;
