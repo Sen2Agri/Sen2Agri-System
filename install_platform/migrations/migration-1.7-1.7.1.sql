@@ -9,9 +9,9 @@ begin
         if exists (select * from meta where version = '1.7') then
             raise notice 'upgrading from 1.7 to 1.7.1';
 
-            if not exists (select * from config_metadata where key = 'processor.l3b.lai.use_belcam_version') then
+            if not exists (select * from config_metadata where key = 'processor.l3b.lai.use_inra_version') then
                 _statement := $str$
-                INSERT INTO config_metadata VALUES ('processor.l3b.lai.use_belcam_version', 'L3B LAI processor will use Belcam implementation', 'int', false, 4);
+                INSERT INTO config_metadata VALUES ('processor.l3b.lai.use_belcam_version', 'L3B LAI processor will use INRA algorithm implementation', 'int', false, 4);
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
@@ -99,11 +99,26 @@ begin
                 execute _statement;
             end if;
 
+            if exists (select * from config where key = 'processor.l4a.reference-map' and site_id is null) then
+                _statement := $str$
+                UPDATE config SET VALUE = '/mnt/archive/reference_data/ESACCI-LC-L4-LCCS-Map-300m-P1Y-2015-v2.0.7.tif' where key = 'processor.l4a.reference-map' and site_id is null;
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            
+            if not exists (select * from downloader_status where status_description = 'processing') then
+                raise notice 'INSERT INTO downloader_status VALUES (7, ''processing'');';
+                INSERT INTO downloader_status VALUES (7, 'processing');
+            end if;
+            
             _statement := $str$
             drop function if exists sp_insert_product(smallint, smallint, integer, smallint, integer, character varying, timestamp with time zone, character varying, character varying, geography, json);
             $str$;
             raise notice '%', _statement;
             execute _statement;
+            
+            
 
             _statement := 'update meta set version = ''1.7.1'';';
             raise notice '%', _statement;

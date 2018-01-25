@@ -18,4 +18,10 @@ cat migrations/migration-1.7-1.7.1.sql | su -l postgres -c "psql sen2agri"
 
 systemctl daemon-reload
 
+mkdir -p /mnt/archive/reference_data
+echo "Copying reference data"
+if [ -d ../reference_data/ ]; then
+    cp -rf ../reference_data/* /mnt/archive/reference_data
+fi
+
 systemctl start sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent sen2agri-scheduler

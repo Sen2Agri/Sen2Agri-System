@@ -35,11 +35,15 @@ target_link_libraries(explore-sg ${OTB_LIBRARIES} OTBPheno)
 
 otb_create_application(NAME           PhenologicalNDVIMetrics
   SOURCES        PhenologicalNDVIMetrics.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
+  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno;MetadataHelper)
 
 otb_create_application(NAME           PhenoMetricsSplitter
   SOURCES        otbPhenoMetricsSplitter.cpp
   LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno;MetadataHelper)
+
+otb_create_application(NAME           NdviMaskSeriesExtractor
+  SOURCES        NdviMaskSeriesExtractor.cpp
+  LINK_LIBRARIES ${OTB_LIBRARIES};MetadataHelper)
 
 add_executable(test-sigmo test-sigmo.cxx)
 target_link_libraries(test-sigmo ${OTB_LIBRARIES} OTBPheno)
@@ -55,3 +59,4 @@ target_link_libraries(pheno-metrics-estimator ${OTB_LIBRARIES} OTBPheno)
 
 install(TARGETS otbapp_PhenologicalNDVIMetrics DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_PhenoMetricsSplitter DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_NdviMaskSeriesExtractor DESTINATION usr/lib/otb/applications/)

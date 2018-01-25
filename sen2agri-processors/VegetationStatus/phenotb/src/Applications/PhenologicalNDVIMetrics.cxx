@@ -32,6 +32,7 @@
 #include "otbWrapperChoiceParameter.h"
 
 #include "phenoFunctions.h"
+#include "GlobalDefs.h"
 
 // we have 4 phenological parameters and 1 band for the flags
 #define RESULT_BANDS_NO     5
@@ -70,10 +71,9 @@ public:
       vec[i] = pix[i];
     }
 
-
     // A date is valid if it is not NaN and the mask value == 0.
     auto pred = [=](int e) { return !(std::isnan(vec[e])) && (vec[e] >= 0) &&
-                             (mask[e]==(typename PixelType::ValueType{0})); };
+                             (mask[e]==(typename PixelType::ValueType{IMG_FLG_LAND})); };
     auto f_profiles = filter_profile_fast(vec, dv, pred);
 
     decltype(vec) profile=f_profiles.first;

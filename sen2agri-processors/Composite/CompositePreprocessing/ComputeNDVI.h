@@ -25,47 +25,6 @@
 #include "GlobalDefs.h"
 #include "ImageResampler.h"
 
-template< class TInput, class TOutput>
-class NdviFunctor
-{
-public:
-    NdviFunctor() {}
-    ~NdviFunctor() {}
-    void Initialize(int nRedBandIdx, int nNirBandIdx) {
-        m_nRedBandIdx = nRedBandIdx;
-        m_nNirBandIdx = nNirBandIdx;
-  }
-
-  bool operator!=( const NdviFunctor & ) const
-  {
-    return false;
-  }
-  bool operator==( const NdviFunctor & other ) const
-  {
-    return !(*this != other);
-  }
-  inline TOutput operator()( const TInput & A ) const
-  {
-      TOutput ret;
-      double redVal = A[m_nRedBandIdx];
-      double nirVal = A[m_nNirBandIdx];
-      if((fabs(redVal - NO_DATA_VALUE) < 0.000001) || (fabs(nirVal - NO_DATA_VALUE) < 0.000001)) {
-          ret = 0;
-      } else {
-        if(fabs(redVal + nirVal) < 0.000001) {
-            ret = 0;
-        } else {
-            ret = (nirVal - redVal)/(nirVal+redVal);
-        }
-      }
-
-      return ret;
-  }
-private:
-  int m_nRedBandIdx;
-  int m_nNirBandIdx;
-};
-
 class ComputeNDVI
 {
 public:

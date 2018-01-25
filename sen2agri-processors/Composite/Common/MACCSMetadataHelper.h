@@ -44,6 +44,15 @@ class MACCSMetadataHelper : public MetadataHelper
 
         // The expected order in the array would be : Cloud, Saturation, Valid, (Water or Snow)
         TOutput operator()( const std::vector< TInput > & B) {
+            TOutput res = computeOutput(B);
+            if (m_bBinarizeResult) {
+                // return 0 if LAND and 1 otherwise
+                return (res != IMG_FLG_LAND);
+            }
+            return res;
+        }
+
+        TOutput computeOutput( const std::vector< TInput > & B) {
             // The order is MSK_CLOUD, MSK_SAT, MSK_VALID, (MSK_SNOW/MSK_WATTER)
             switch (B.size())
             {
@@ -155,7 +164,7 @@ class MACCSMetadataHelper : public MetadataHelper
                 if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[3] & 0x20) != 0)) return IMG_FLG_SNOW;
                 break;
             }
-            return m_bBinarizeResult ? 0 : IMG_FLG_LAND;
+            return IMG_FLG_LAND;
         }
 
     private:

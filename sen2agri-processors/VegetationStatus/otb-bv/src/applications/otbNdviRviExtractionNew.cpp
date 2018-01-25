@@ -42,69 +42,6 @@ typedef otb::ImageListToVectorImageFilter<ImageListType, ImageType>       ImageL
 
 typedef otb::StreamingResampleImageFilter<InternalImageType, InternalImageType, double>     ResampleFilterType;
 
-template< class TInput, class TOutput, class TInput2=TInput>
-class NdviRviFunctor
-{
-public:
-    NdviRviFunctor() {}
-    ~NdviRviFunctor() {}
-    void Initialize(int nRedBandIdx, int nNirBandIdx) {
-        m_nRedBandIdx = nRedBandIdx;
-        m_nNirBandIdx = nNirBandIdx;
-  }
-
-  bool operator!=( const NdviRviFunctor &a) const
-  {
-      return (this->m_nRedBandIdx != a.m_nRedBandIdx) || (this->m_nNirBandIdx != a.m_nNirBandIdx);
-  }
-  bool operator==( const NdviRviFunctor & other ) const
-  {
-    return !(*this != other);
-  }
-  inline TOutput operator()( const TInput & A ) const
-  {
-      TOutput ret(2);
-      double redVal = A[m_nRedBandIdx];
-      double nirVal = A[m_nNirBandIdx];
-      if((fabs(redVal - NO_DATA_VALUE) < NO_DATA_EPSILON) || (fabs(nirVal - NO_DATA_VALUE) < NO_DATA_EPSILON)) {
-          // if one of the values is no data, then we set the NDVI and RVI to 0
-          ret[0] = NO_DATA_VALUE;
-          ret[1] = NO_DATA_VALUE;
-      } else {
-        if(fabs(redVal + nirVal) < EPSILON) {
-            ret[0] = 0;
-        } else {
-            ret[0] = (nirVal - redVal)/(nirVal+redVal);
-        }
-        ret[1] = nirVal/redVal;
-        // we limit the RVI to a maximum value of 30
-        if(ret[1] < EPSILON || std::isnan(ret[1])) {
-            ret[1] = 0;
-        } else {
-            if(ret[1] > 30 || std::isinf(ret[1])) {
-                ret[1] = 30;
-            }
-        }
-      }
-
-      return ret;
-  }
-
-  inline TOutput operator()( const TInput & A, const TInput2 & B ) const
-  {
-        TOutput ret = (*this)(A);
-        if(B[0] != IMG_FLG_LAND) {
-            ret[0] = NO_DATA_VALUE;
-            ret[1] = NO_DATA_VALUE;
-        }
-        return ret;
-  }
-
-private:
-  int m_nRedBandIdx;
-  int m_nNirBandIdx;
-};
-
 namespace otb
 {
 namespace Wrapper

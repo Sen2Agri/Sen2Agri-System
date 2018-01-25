@@ -107,7 +107,7 @@ bool LaiRetrievalHandler::IsGenNdviMonoDateOnly(std::map<QString, QString> &conf
 }
 
 bool LaiRetrievalHandler::IsNewLaiMonoDateVersion(std::map<QString, QString> &configParameters) {
-    return ((configParameters["processor.l3b.lai.use_belcam_version"]).toInt() != 0);
+    return ((configParameters["processor.l3b.lai.use_inra_version"]).toInt() != 0);
 }
 
 bool LaiRetrievalHandler::IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {

@@ -76,19 +76,10 @@ if os.path.exists(outDir):
 else:
     os.makedirs(outDir)
 
-#OUT_BANDS="$OUT_FOLDER/spot_bands.tif"
-outBands = "{}/spot_bands.tif".format(outDir)
-#OUT_MASKS="$OUT_FOLDER/spot_masks.tif"
-outMasks = "{}/spot_masks.tif".format(outDir)
-#OUT_DATES="$OUT_FOLDER/spot_dates.txt"
-outDates = "{}/spot_dates.txt".format(outDir)
-#OUT_SHAPE="$OUT_FOLDER/spot_shapes.shp"
-outShape = "{}/spot_shapes.shp".format(outDir)
-#OUT_NDVI="$OUT_FOLDER/spot_ndvi.tif"
-outNdvi = "{}/spot_ndvi.tif".format(outDir)
-#OUT_SIGMO="$OUT_FOLDER/spot_sigmo.tif"
-outSigmo = "{}/spot_sigmo.tif".format(outDir)
-#OUT_METRIC="$OUT_FOLDER/metric_estimation.tif"
+outBands = "{}/all_bands.tif".format(outDir)
+outMasks = "{}/all_masks.tif".format(outDir)
+outDates = "{}/all_dates.txt".format(outDir)
+outNdvi = "{}/all_ndvis.tif".format(outDir)
 outMetric = "{}/metric_estimation.tif".format(outDir)
 outMetricParams = "{}/metric_estimation_params.tif".format(outDir)
 outMetricFlags = "{}/metric_estimation_flags.tif".format(outDir)
@@ -96,17 +87,10 @@ outMetricFlags = "{}/metric_estimation_flags.tif".format(outDir)
 print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 
-runCmd(["otbcli", "BandsExtractor", appLocation, "-il"] + args.input + ["-pixsize", args.resolution, "-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates, "-mission", mission])
-print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-runCmd(["otbcli", "FeatureExtraction", appLocation, "-rtocr", outBands, "-ndvi", outNdvi])
+runCmd(["otbcli", "NdviMaskSeriesExtractor", appLocation, "-il"] + args.input + ["-pixsize", args.resolution, "-outndvis", outNdvi, "-outmasks", outMasks, "-ndh", "true", "-outdate", outDates, "-mission", mission])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 runCmd(["otbcli", "PhenologicalNDVIMetrics", appLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outMetric])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-
-# DEPRECATED CALLS
-#runCmd(["otbcli", "SigmoFitting2", vegetationStatusLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outSigmo])
-#try otbcli MetricsEstimation $VEGETATIONSTATUS_OTB_LIBS_ROOT -ipf $OUT_SIGMO -indates $OUT_DATES -opf $OUT_METRIC
-#runCmd(["otbcli", "MetricsEstimation2", vegetationStatusLocation, "-ipf", outSigmo, "-opf", outMetric])
 
 runCmd(["otbcli", "PhenoMetricsSplitter", appLocation, "-in", outMetric, "-outparams", outMetricParams, "-outflags", outMetricFlags, "-compress", "1"])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
@@ -125,7 +109,7 @@ print("Processing finished: " + str(datetime.datetime.now()))
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 #os.remove(outMasks)
-os.remove(outBands)
+#os.remove(outBands)
 #os.remove(outDates)
 #os.remove(outNdvi)
 #os.remove(outSigmo)
