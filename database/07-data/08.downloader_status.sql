@@ -39,3 +39,10 @@ status_description)
 VALUES (
 6,
 'processing_failed');
+
+INSERT INTO downloader_status(
+id,
+status_description)
+VALUES (
+7,
+'processing');

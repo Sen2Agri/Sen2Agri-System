@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION "sp_changePassword"("userId" smallint, "oldPassword" character varying, "newPassword" character varying)
+CREATE OR REPLACE FUNCTION "sp_changepassword"("userId" smallint, "oldPassword" character varying, "newPassword" character varying)
   RETURNS void AS
 $BODY$UPDATE public.user
 	     SET password = crypt($3, gen_salt('md5'))

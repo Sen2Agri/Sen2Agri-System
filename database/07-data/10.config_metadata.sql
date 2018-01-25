@@ -192,10 +192,32 @@ INSERT INTO config_metadata VALUES ('processor.l3b.mono_date_ndvi_only', 'L3B pr
 INSERT INTO config_metadata VALUES ('processor.l3b.ndvi.tiles_filter', 'L3B NDVI only processor tiles filter', 'string', false, 4);
 
 
-INSERT INTO config_metadata VALUES ('processor.l3b.lai.use_belcam_version', 'L3B LAI processor will use Belcam implementation', 'int', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.lai.use_inra_version', 'L3B LAI processor will use INRA algorithm implementation', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.tiles_filter', 'processor.l3b.lai.tiles_filter', 'string', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_ndvi', 'L3B LAI processor will produce NDVI', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_lai', 'L3B LAI processor will produce LAI', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_fapar', 'L3B LAI processor will produce FAPAR', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_fcover', 'L3B LAI processor will produce FCOVER', 'int', false, 4);
 
+INSERT INTO config_metadata VALUES ('downloader.stopped', 'Downloader is stopped', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.S1.stopped', 'S1 downloader is stopped', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.S2.stopped', 'S2 downloader is stopped', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.L8.stopped', 'L8 downloader is stopped', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('S1.enabled', 'S1 is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('S2.enabled', 'S2 is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('L8.enabled', 'L8 is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('scheduled.lookup.enabled', 'Scheduled lookup is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('scheduled.retry.enabled', 'Scheduled retry is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.enabled', 'Scheduled object storage move enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s2.datasource.query', 'S2 datasource query location', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s2.datasource.query.user', 'S2 datasource query location user', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s2.datasource.query.password', 'S2 datasource query location password', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s2.datasource.download', 'S2 datasource download location', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s2.datasource.download.user', 'S2 datasource download location user', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s2.datasource.download.password', 'S2 datasource download location password', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.l8.datasource.query', 'L8 datasource query location', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.l8.datasource.query.user', 'L8 datasource query location user', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.l8.datasource.query.password', 'L8 datasource query location password', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download', 'L8 datasource download location', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download.user', 'L8 datasource download location user', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download.password', 'L8 datasource download location password', 'string', false, 15);
