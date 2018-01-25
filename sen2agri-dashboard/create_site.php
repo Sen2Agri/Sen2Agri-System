@@ -1,6 +1,53 @@
 <?php include 'master.php'; ?>
 <?php
 
+
+function CallRestAPI($method, $url, $data = false)
+{
+    $curl = curl_init();
+
+    switch ($method)
+    {
+        case "POST":
+            curl_setopt($curl, CURLOPT_POST, 1);
+
+            if ($data) {
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+                curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen($data)));
+            }
+            break;
+        case "DELETE":
+            curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+
+            if ($data) {
+                curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+                curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen($data)));
+            }
+            
+            echo "Delete " . $data . "      ";
+            break;            
+        case "PUT":
+            curl_setopt($curl, CURLOPT_PUT, 1);
+            break;
+        default:
+            if ($data)
+                $url = sprintf("%s?%s", $url, http_build_query($data));
+    }
+
+    // Optional Authentication:
+    //curl_setopt($curl, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+    //curl_setopt($curl, CURLOPT_USERPWD, "username:password");
+
+    curl_setopt($curl, CURLOPT_URL, $url);
+    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+
+    $result = curl_exec($curl);
+
+    curl_close($curl);
+
+    return $result;
+}
+
 function endsWith($str, $sub) {
     return (substr ( $str, strlen ( $str ) - strlen ( $sub ) ) === $sub);
 }
@@ -35,6 +82,27 @@ function getInsituFileName($siteId, $isStrata) {
         //echo "Newest file " . $newest_file . "\r\n";
     }   
     return $newest_file;
+}
+
+function get_product_types_from_db() {
+    function cmp($a, $b)
+    {
+        return strcmp($a["description"], $b["description"]);
+    }
+
+    $restResult = CallRestAPI("GET", "http://localhost:8080/products/types/");
+    $jsonArr = json_decode($restResult, true);
+    if (count($jsonArr) > 0) {
+        usort($jsonArr, "cmp");
+        foreach($jsonArr as $productTypeInfo) {
+            $id = $productTypeInfo['id'];
+            $short = substr(strtoupper($productTypeInfo['description']), 0, 3);
+            ?>
+            <input class="form-control" id="delete_chk<?=$short?>" type="checkbox" name="delete_chk<?=$short?>" value="<?=$id?>" checked="checked">
+            <label class="control-label" for="delete_chk<?=$short?>"><?=$short?></label>  
+<?php             
+        }
+    }
 }
 
 function createCustomUploadFolder($siteId, $timestamp, $subDir) {
@@ -142,6 +210,10 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp, $subDir) {
     return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg );
 }
 
+function getSatelliteEnableStatus($siteId, $satId) {
+    return CallRestAPI("GET", "http://localhost:8080/products/enable/status/" . $satId . "/" . $siteId);
+}
+
 // processing add site
 if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site') {
     // first character to uppercase.
@@ -183,6 +255,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
     $site_id      = $_REQUEST ['edit_siteid'];
     $shortname    = $_REQUEST ['shortname'];
     $site_enabled = empty($_REQUEST ['edit_enabled']) ? "0" : "1";
+    $l8_enabled = empty($_REQUEST ['chkL8Edit']) ? "0" : "1";
     
     function polygonFileSelected($name) {
         foreach($_FILES as $key => $val){
@@ -239,6 +312,9 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
         }
     }
     
+    // update also the L8 enable/disable status
+    $restResult = CallRestAPI("GET", "http://localhost:8080/products/" . ($l8_enabled ? "enable":"disable") . "/2/" . $site_id);
+    
     /*
     $shape_file = null;
     if (polygonFileSelected("zip_fileEdit")) {
@@ -276,24 +352,27 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 // processing  delete_site
 if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confirm'] == 'Confirm Delete Site') {
     $shortname      = $_REQUEST ['delete_site_short_name'];
-    $deleteL1C      = $_REQUEST ['delete_chkL1C'];
-        
-//    function deleteSite($id) {
-//        $db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-//        $res = pg_query_params ( $db, "SELECT sp_delete_site($1)", array (
-//                $id
-//        ) ) or die ( "An error occurred.!Delete!" );
-//    }
     
-    $date = date_create();
-    $time_stamp = date_timestamp_get($date);
-    
+    foreach($_POST as $key => $value) {
+        if (strpos($key, 'delete_chk') === 0) {
+            // value starts with delete_chk
+            $arr_result[] = (int)$value;
+        }
+    }
+    $dataObj = new \stdClass();
+    $dataObj->siteId = -1;
+    $dataObj->siteShortName = $shortname;
+    $dataObj->productTypeIds = $arr_result;
+    $jsonObj = json_encode($dataObj);
+
+    $restResult = CallRestAPI("DELETE", "http://localhost:8080/sites/" , $jsonObj);
+
     $status     = "OK";
     $message    = "";
 
     if ($status == "OK") {
         //updateSite($site_id, $site_enabled);
-        $message = "Your site " . $shortname . " has been successfully removed with " . $deleteL1C . "!";
+        $message = "Your site " . $shortname . " has been successfully removed!";
     }
     $_SESSION['status'] =  $status; $_SESSION['message'] = $message;
 
@@ -329,10 +408,10 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                     </div>
                                     <div class="form-group form-group-sm sensor">
                                                 <label  style="">Enabled sensor:</label>
-                                                <input class="form-control chkS2" id="l3b_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
-                                                <label class="control-label" for="l3b_chkS2">S2</label>
-                                                <input class="form-control chkL8" id="l3b_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
-                                                <label class="control-label" for="l3b_chkL8">L8</label>
+                                                <input class="form-control chkS2" id="chkS2Add" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+                                                <label class="control-label" for="lchkS2Add">S2</label>
+                                                <input class="form-control chkL8" id="chkL8Add" type="checkbox" name="sensor" value="L8" checked="checked">
+                                                <label class="control-label" for="chkL8Add">L8</label>
                                     </div>
                                 </div>
                             </div>
@@ -373,24 +452,12 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                     </div>
                                 </div>
                             </div>
-                                            <div class="form-group form-group-sm sensor">
-                                                <label  style="">To delete:</label>
-                                <input class="form-control chkL1C" id="delete_chkL1C" type="checkbox" name="delete_chkL1C" value="L1C" checked="checked">
-                                                <label class="control-label" for="delete_chkL1C">L1C</label>
-                                <input class="form-control chkL2A" id="delete_chkL2A" type="checkbox" name="delete_chkL2A" value="L2A" checked="checked">
-                                                <label class="control-label" for="delete_chkL2A">L2A</label>
-                                <input class="form-control chkL3A" id="delete_chkL3A" type="checkbox" name="delete_chkL3A" value="L3A" checked="checked">
-                                                <label class="control-label" for="delete_chkL3A">L3A</label>
-                                <input class="form-control chkL3B" id="delete_chkL3B" type="checkbox" name="delete_chkL3B" value="L3B" checked="checked">
-                                                <label class="control-label" for="delete_chkL3b">L3B</label>
-                                <input class="form-control chkL4A" id="delete_chkL4A" type="checkbox" name="delete_chkL4A" value="L4A" checked="checked">
-                                                <label class="control-label" for="delete_chkL4A">L4A</label>
-                                <input class="form-control chkL4B" id="delete_chkL4B" type="checkbox" name="delete_chkL4B" value="L4B" checked="checked">
-                                                <label class="control-label" for="delete_chkL4B">L4B</label>
-                                            </div>
-                            
+                            <div class="form-group form-group-sm sensor" id="delete_checkboxes_div">
+                                <label  style="">To delete:</label>
+                                <?php get_product_types_from_db(); ?>
+                            </div>
                             <div class="submit-buttons">
-                                <input class="delete-btn" name="delete_site_confirm" type="submit" value="Confirm Delete Site">
+                                <input class="delete-btn" name="delete_site_confirm" type="submit" value="Confirm Delete Site"<!-- onclick="onDeleteSiteBtn() -->">
                                 <input class="add-edit-btn" name="abort_add" type="button" value="Abort" onclick="abortEditAdd('delete_site')">
                             </div>
                         </form>
@@ -407,12 +474,12 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                         <input type="text" class="form-control" id="edit_sitename" name="edit_sitename" value="" readonly>
                                         <input type="hidden" class="form-control" id="edit_siteid" name="edit_siteid" value="">
                                     </div>
-                                                                        <div class="form-group form-group-sm sensor">
-                                                <label  style="">Enabled sensor:</label>
-                                                <input class="form-control chkS2" id="l3b_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
-                                                <label class="control-label" for="l3b_chkS2">S2</label>
-                                                <input class="form-control chkL8" id="l3b_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
-                                                <label class="control-label" for="l3b_chkL8">L8</label>
+                                    <div class="form-group form-group-sm sensor">
+                                        <label  style="">Enabled sensor:</label>
+                                        <input class="form-control chkS2" id="chkS2Edit" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+                                        <label class="control-label" for="chkS2Edit">S2</label>
+                                        <input class="form-control chkL8" id="chkL8Edit" type="checkbox" name="sensor" value="L8" checked="checked">
+                                        <label class="control-label" for="chkL8Edit">L8</label>
                                     </div>
 
                                 </div>
@@ -520,28 +587,43 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                         </thead>
                         <tbody>
                         <?php
-                        $result = "";
-                        $db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-                        if (empty($_SESSION['siteId'])) {
-                            $sql_select = "SELECT * FROM sp_get_sites(null)";
-                            $result = pg_query_params ( $db, $sql_select, array () ) or die ( "Could not execute." );
-                        } else {
-                            $sql_select = "SELECT * FROM sp_get_sites($1)";
-                            $result = pg_query_params ( $db, $sql_select, array($_SESSION['siteId']) ) or die ( "Could not execute." );
-                        }
-                        while ( $row = pg_fetch_row ( $result ) ) {
-                            $siteId        = $row[0];
-                            $siteName      = $row[1];
-                            $shortName     = $row[2];
-                            $site_enabled  =($row[3] == "t") ? true : false;
+                        
+                        $restResult = CallRestAPI("GET", "http://localhost:8080/sites/");
+                        $jsonArr = json_decode($restResult, true);
+                        foreach($jsonArr as $site) {
+                            $siteId        = $site['id'];
+                            $siteName      = $site['name'];
+                            $shortName     = $site['shortName'];
+                            $site_enabled  = $site['enabled'];
                             $siteInsituFile = getInsituFileName($shortName, false);
                             $siteStrataFile = getInsituFileName($shortName, true);
+                            $siteL8Enabled = getSatelliteEnableStatus($siteId, 2);  // only L8 for now
+                        //}
+                        //
+                        //
+                        //$result = "";
+                        //$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+                        //if (empty($_SESSION['siteId'])) {
+                        //    $sql_select = "SELECT * FROM sp_get_sites(null)";
+                        //    $result = pg_query_params ( $db, $sql_select, array () ) or die ( "Could not execute." );
+                        //} else {
+                        //    $sql_select = "SELECT * FROM sp_get_sites($1)";
+                        //    $result = pg_query_params ( $db, $sql_select, array($_SESSION['siteId']) ) or die ( "Could not execute." );
+                        //}
+                        //while ( $row = pg_fetch_row ( $result ) ) {
+                        //    $siteId        = $row[0];
+                        //    $siteName      = $row[1];
+                        //    $shortName     = $row[2];
+                        //    $site_enabled  =($row[3] == "t") ? true : false;
+                        //    $siteInsituFile = getInsituFileName($shortName, false);
+                        //    $siteStrataFile = getInsituFileName($shortName, true);
                             ?>
                             <tr data-id="<?= $siteId ?>">
                                 <td><?= $siteName ?></td>
                                 <td><?= $shortName ?></td>
                                 <td class="seasons"></td>
-                                <td class="link"><a onclick='formEditSite(<?= $siteId ?>,"<?= $siteName ?>","<?= $shortName ?>",<?= $site_enabled ? "true" : "false" ?>, "<?= $siteInsituFile ?>", "<?= $siteStrataFile ?>")'>Edit</a></td>
+                                <td class="link"><a onclick='formEditSite(<?= $siteId ?>,"<?= $siteName ?>","<?= $shortName ?>",<?= $site_enabled ? "true" : "false" ?>, "<?= $siteInsituFile ?>", "<?= $siteStrataFile ?>",
+                                "<?= $siteL8Enabled ?>")'>Edit</a></td>
                                 <td><input type="checkbox" name="enabled-checkbox"<?= $site_enabled ? "checked" : "" ?>></td>
                             </tr>
                         <?php } ?>
@@ -684,6 +766,9 @@ $(document).ready( function() {
             error.appendTo(element.parent());
         },
         submitHandler: function(form) {
+            // first send the enable status of the satellite for this site
+            //sendSatelliteEnableStatus();
+            
             $.ajax({
                 url: $(form).attr('action'),
                 type: $(form).attr('method'),
@@ -713,6 +798,27 @@ $(document).ready( function() {
     }
     ?>
 });
+
+// TODO : Use this version when removing completely the PHP
+//function sendSatelliteEnableStatus() {
+//    var l3bchkL8Btn = $("#chkL8Edit");
+//    var siteId =  ($("#edit_siteid")[0].value);
+//    var l8Enabled = $("#chkL8Edit")[0].checked;
+//    var url = "http://localhost:8080/products/" + (l8Enabled ? "enable":"disable") + "/2/" + siteId;
+//    $.ajax({
+//        url: url,
+//        type: "get",
+//        cache: false,
+//        crosDomain: true,
+//        dataType: "html",
+//        success: function(data) {
+//            
+//        },
+//        error: function (responseData, textStatus, errorThrown) {
+//            alert("Satellite enable/disable was not performed! Error was " + errorThrown);
+//        }
+//    });    
+//}
 
 function getSiteSeasons(site_id) {
     var collection = "table.table tr[data-id='" + site_id + "'] td.seasons";
@@ -746,6 +852,86 @@ function getSiteSeasons(site_id) {
     });
 }
 
+// TODO : Use this version when removing completely the PHP
+//function getSiteSeasons(site_id) {
+//    var collection = "table.table tr[data-id='" + site_id + "'] td.seasons";
+//    $(collection).each(function() {
+//        var season = this;
+//        $.ajax({
+//            url: "http://localhost:8080/sites/seasons/" + $(season).parent().data("id"),
+//            type: "get",
+//            cache: false,
+//            crosDomain: true,
+//            dataType: "html",
+//            success: function(data) {
+//                var tableElem = getSeasonsHtml(data);
+//                if (tableElem != null) {
+//                    $(season).html(tableElem);
+//                    $(season).find("input[name='season_enabled']").bootstrapSwitch({
+//                        size: "mini",
+//                        onColor: "success",
+//                        offColor: "default",
+//                        disabled: true,
+//                        handleWidth: 25
+//                    });
+//                } else {
+//                    $(season).html("-");
+//                }
+//            },
+//            error: function (responseData, textStatus, errorThrown) {
+//                console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+//            }
+//        });    
+//    });
+//}
+
+
+// TODO : Use this version when removing completely the PHP
+//function getSeasonsHtml(json) {
+//    var arr = $.parseJSON(json);
+//    if (arr.length > 0) {
+//        var tableElem = document.createElement('table');
+//        tableElem.setAttribute("class", "subtable");
+//        for (var i = 0; i<arr.length; i++) {
+//            var trElem = document.createElement('tr');
+//
+//            var tdElem = document.createElement('td');
+//            tdElem.innerHTML = arr[i].name;
+//            trElem.appendChild(tdElem);
+//            
+//            tdElem = document.createElement('td');
+//            tdElem.innerHTML = formatDateFromJSonObj(arr[i].startDate);
+//            trElem.appendChild(tdElem);
+//
+//            tdElem = document.createElement('td');
+//            tdElem.innerHTML = formatDateFromJSonObj(arr[i].midDate);
+//            trElem.appendChild(tdElem);
+//
+//            tdElem = document.createElement('td');
+//            tdElem.innerHTML = formatDateFromJSonObj(arr[i].endDate);
+//            trElem.appendChild(tdElem);
+//            
+//            tdElem = document.createElement('td');
+//            var input = document.createElement('input');
+//            input.setAttribute("class", "form-control");
+//            input.setAttribute("type", "checkbox");
+//            input.setAttribute("name", "season_enabled");
+//            input.setAttribute("checked", arr[i].enabled ? "checked" : "");
+//            tdElem.appendChild(input);
+//            trElem.appendChild(tdElem);
+//            
+//            tableElem.appendChild(trElem);
+//            
+//        }
+//        return tableElem;
+//    }
+//    return null;
+//}
+
+function formatDateFromJSonObj(jsonObj) {
+    return (jsonObj.year + "-" + ("0" + jsonObj.monthValue).slice(-2) + "-" + ("0" + jsonObj.dayOfMonth).slice(-2));
+}
+
 function onNewFileSelected(id) {
     document.getElementById(id).innerHTML = document.getElementById(id).innerHTML + "<font color=\"red\"> (changed)</font>";
 }
@@ -766,55 +952,85 @@ function formDeleteSite(){
     // $("#div_editsite").dialog({style : "display:none;"});
     $("#div_addsite").dialog("close");
     $("#div_deletesite").dialog("open");
-//        $.ajax({
-//        url: "deleteSite.php",
+    
+     // TODO : Use this version when removing completely the PHP
+    //createDeleteCheckboxes();    
+};
+
+ // TODO : Use this version when removing completely the PHP
+//function createDeleteCheckboxes() {
+//    $.ajax({
+//        url: "http://localhost:8080/products/types/",
 //        type: "get",
 //        cache: false,
+//        contentType: 'application/json',
+//        mimeType: 'application/json',        
 //        crosDomain: true,
-//        data:  { "siteId": id, "action": "get" },
-//        dataType: "html",
 //        success: function(data) {
-//            $("#delete_site").html(data);
+//            // sort the array by description
+//            data.sort(function(a,b) {return (a.description > b.description) ? 1 : ((b.description > a.description) ? -1 : 0);} );
+//            for (var i = 0; i<data.length; i++) {
+//                var entry = data[i];
+//                var shortName = data[i].description.substring(0,3);
+//                var input = document.createElement('input');
+//                input.setAttribute("class", "form-control");
+//                input.setAttribute("id", "delete_chk" + shortName);
+//                input.setAttribute("type", "checkbox");
+//                input.setAttribute("name", "delete_chk" + shortName);
+//                input.setAttribute("value", data[i].id);
+//                input.setAttribute("checked", "checked");
+//                
+//                var label = document.createElement('label');
+//                label.setAttribute("class", "control-label");
+//                label.setAttribute("for", "delete_chk" + shortName);
+//                label.innerHTML = shortName;
+//                
+//                var body = $("#delete_checkboxes_div")[0];
+//                body.appendChild(input);
+//                body.appendChild(label);
+//            }
 //        },
 //        error: function (responseData, textStatus, errorThrown) {
-//            console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+//            alert ("Cannot extract product types! \r\n The Error was: " + errorThrown);
 //        }
 //    });    
+//}
 
-};
-
-/*
-function checkDelete(id){
-
-    ids = $(parent).data("id");
-
-    //ids=$(parent).data.val(id);
-    conf = confirm("Are you sure you want to delete? id: " + id);
-    if (conf)
-        
-        $.ajax({
-        url: "deleteSite.php",
-        type: "get",
+function onDeleteSiteBtn() {
+    var selectedFiles = $('*[id^="delete_chk"]');
+    var siteShortName =  ($("#delete_site_short_name")[0].value);
+    var idsArr = [];
+    for (var i = 0; i<selectedFiles.length; i++) {
+        if (selectedFiles[i].checked) {
+            idsArr.push(parseInt(selectedFiles[i].value));
+        }
+    }
+    var postData = JSON.stringify({siteId:-1,siteShortName:siteShortName,productTypeIds:idsArr});
+    $.ajax({
+        url: "http://localhost:8080/sites/",
+        type: "delete",
+        data: postData,
         cache: false,
+        contentType: 'application/json',
+        mimeType: 'application/json',        
         crosDomain: true,
-        data:  { "siteId": id, "action": "get" },
-        dataType: "html",
         success: function(data) {
-            $("#delete_site").html(data);
+            alert ("Site successfully deleted!");
+            // close both the delete and edit site forms
+            $("#div_deletesite").dialog("close");
+            $("#div_editsite").dialog("close");
+            location.reload(); 
         },
         error: function (responseData, textStatus, errorThrown) {
-            console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+            //console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+            alert ("Site couldn't be deleted! \r\n The Error was: " + errorThrown);
+            $("#div_deletesite").dialog("close");
         }
     });    
-
-    else
-        return confirm("false");
-    
-};
-*/
+}
 
 // Open edit site form
-function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteStrataFile) {
+function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteStrataFile, l8Enabled) {
     // set values for all edited fields
     removeAppendedColoredText("siteInsituDataAccHref");
     removeAppendedColoredText("siteStrataDataAccHref");
@@ -835,6 +1051,9 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
     $("#div_editsite").data("id", id);
     $("#div_editsite").dialog("open");
     
+    document.getElementById("chkL8Edit").checked = l8Enabled;
+    document.getElementById("chkL8Add").checked = l8Enabled;
+    
     $.ajax({
         url: "getSiteSeasons.php",
         type: "get",
@@ -848,8 +1067,22 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
         error: function (responseData, textStatus, errorThrown) {
             console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
         }
-    });    
-    
+    }); 
+
+    // TODO : Use this version when removing completely the PHP
+//    $.ajax({
+//        url: "http://localhost:8080/products/enable/status/2/" + id,
+//        type: "get",
+//        cache: false,
+//        crosDomain: true,
+//        dataType: "html",
+//        success: function(data) {
+//            document.getElementById("chkL8Edit").checked = (data == "true") ? true : false;
+//        },
+//        error: function (responseData, textStatus, errorThrown) {
+//            console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+//        }
+//    });        
 };
 
 function removeAppendedColoredText(id) {
