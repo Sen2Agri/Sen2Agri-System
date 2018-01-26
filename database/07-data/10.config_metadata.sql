@@ -152,6 +152,8 @@ INSERT INTO config_metadata VALUES ('processor.l4a.training-samples-number', 'Th
 INSERT INTO config_metadata VALUES ('processor.l4a.classifier.svm.k', 'Classifier SVM K', 'string', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.classifier.svm.opt', 'Classifier SVM Opt', 'string', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.reference-map', 'Reference map for crop mask with no in-situ data', 'string', false, 5);
+INSERT INTO config_metadata VALUES ('processor.l4a.tile-threads-hint', 'Threads to use for classification of a tile', 'int', false, 5);
+INSERT INTO config_metadata VALUES ('processor.l4a.max-parallelism', 'Tiles to classify in parallel', 'int', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4b.classifier', 'Random forest clasifier / SVM classifier choices=[rf, svm]', 'string', false, 6);
 INSERT INTO config_metadata VALUES ('processor.l4a.classifier', 'Random forest clasifier / SVM classifier choices=[rf, svm]', 'string', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4b.classifier.field', 'Training samples feature name', 'string', false, 6);
@@ -164,6 +166,8 @@ INSERT INTO config_metadata VALUES ('processor.l4b.sample-ratio', 'The ratio bet
 INSERT INTO config_metadata VALUES ('processor.l4b.temporal_resampling_mode', 'The temporal resampling mode choices=[resample, gapfill]', 'string', false, 6);
 INSERT INTO config_metadata VALUES ('processor.l4b.mission', 'The main mission for the time series', 'string', false, 6);
 INSERT INTO config_metadata VALUES ('processor.l4b.random_seed', 'The random seed used for training', 'float', false, 6);
+INSERT INTO config_metadata VALUES ('processor.l4b.tile-threads-hint', 'Threads to use for classification of a tile', 'int', false, 6);
+INSERT INTO config_metadata VALUES ('processor.l4b.max-parallelism', 'Tiles to classify in parallel', 'int', false, 6);
 INSERT INTO config_metadata VALUES ('downloader.s2.max-retries', 'Maximum retries for downloading a product', 'int', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.l8.max-retries', 'Maximum retries for downloading a product', 'int', false, 15);
 INSERT INTO config_metadata VALUES ('executor.processor.l3a.keep_job_folders', 'Keep L3A temporary product files for the orchestrator jobs', 'int', false, 8);
