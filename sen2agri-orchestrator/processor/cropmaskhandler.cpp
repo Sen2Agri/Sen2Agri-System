@@ -106,6 +106,10 @@ void CropMaskHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmitte
 
     cfg.alpha = configParameters["processor.l4a.mahalanobis-alpha"];
     if(cfg.alpha.length() == 0) cfg.alpha = "0.01";
+
+    cfg.tileThreadsHint = configParameters["processor.l4a.tile-threads-hint"].toInt();
+    auto maxParallelism = configParameters["processor.l4a.max-parallelism"].toInt();
+    cfg.maxParallelism = maxParallelism > 0 ? std::experimental::optional<int>(maxParallelism) : std::experimental::nullopt;
 }
 
 QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateTasks(QList<TaskToSubmit> &outAllTasksList) {
@@ -157,6 +161,7 @@ QStringList CropMaskHandler::GetCropTypeTaskArgs(EventProcessingContext &ctx, co
                                  "-ranger", cfg.ranger,
                                  "-minsize", cfg.minsize,
                                  "-minarea", cfg.minarea,
+                                 "-tile-threads-hint", QString::number(cfg.tileThreadsHint),
                                  "-siteid", QString::number(cfg.siteId),
                                  "-outdir", outputDir,
                                  "-targetfolder", targetFolder,
@@ -168,6 +173,11 @@ QStringList CropMaskHandler::GetCropTypeTaskArgs(EventProcessingContext &ctx, co
     } else if(cfg.referenceRaster.length() > 0) {
         cropMaskArgs += "-refr";
         cropMaskArgs += cfg.referenceRaster;
+    }
+
+    if (cfg.maxParallelism) {
+        cropMaskArgs += "-max-parallelism";
+        cropMaskArgs += QString::number(cfg.maxParallelism.value());
     }
 
     // normally, we can use only one list by we want (not necessary) to have the

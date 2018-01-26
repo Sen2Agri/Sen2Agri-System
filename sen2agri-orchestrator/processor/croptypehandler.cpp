@@ -68,6 +68,10 @@ void CropTypeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmitte
 
     cfg.classifierSvmKernel = configParameters["processor.l4b.classifier.svm.k"];
     cfg.classifierSvmOptimize = configParameters["processor.l4b.classifier.svm.opt"];
+
+    cfg.tileThreadsHint = configParameters["processor.l4b.tile-threads-hint"].toInt();
+    auto maxParallelism = configParameters["processor.l4b.max-parallelism"].toInt();
+    cfg.maxParallelism = maxParallelism > 0 ? std::experimental::optional<int>(maxParallelism) : std::experimental::nullopt;
 }
 
 QList<std::reference_wrapper<TaskToSubmit>> CropTypeHandler::CreateTasks(QList<TaskToSubmit> &outAllTasksList) {
@@ -110,6 +114,7 @@ QStringList CropTypeHandler::GetCropTypeTaskArgs(EventProcessingContext &ctx, co
                                  "-rfnbtrees", cfg.classifierRfNbTrees,
                                  "-rfmax", cfg.classifierRfMaxDepth,
                                  "-rfmin", cfg.classifierRfMinSamples,
+                                 "-tile-threads-hint", QString::number(cfg.tileThreadsHint),
                                  "-siteid", QString::number(cfg.siteId),
                                  "-outdir", outputDir,
                                  "-targetfolder", targetFolder,
@@ -152,6 +157,11 @@ QStringList CropTypeHandler::GetCropTypeTaskArgs(EventProcessingContext &ctx, co
     if(cfg.lutPath.size() > 0) {
         cropTypeArgs += "-lut";
         cropTypeArgs += cfg.lutPath;
+    }
+
+    if (cfg.maxParallelism) {
+        cropTypeArgs += "-max-parallelism";
+        cropTypeArgs += QString::number(cfg.maxParallelism.value());
     }
 
     return cropTypeArgs;

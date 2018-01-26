@@ -1,6 +1,7 @@
 #pragma once
 
 #include "processorhandler.hpp"
+#include "optional.hpp"
 
 class CropTypeHandler : public ProcessorHandler
 {
@@ -27,8 +28,10 @@ class CropTypeHandler : public ProcessorHandler
         QString classifierSvmKernel;
         QString classifierSvmOptimize;
 
-        QString strataShp;
+        int tileThreadsHint;
+        std::experimental::optional<int> maxParallelism;
 
+        QString strataShp;
     } CropTypeJobConfig;
 
 private:

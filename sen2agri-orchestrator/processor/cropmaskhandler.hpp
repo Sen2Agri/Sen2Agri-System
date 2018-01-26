@@ -1,6 +1,7 @@
 #pragma once
 
 #include "processorhandler.hpp"
+#include "optional.hpp"
 
 typedef struct {
     int jobId;
@@ -37,6 +38,9 @@ typedef struct {
     QString alpha;
 
     bool skipSegmentation;
+
+    int tileThreadsHint;
+    std::experimental::optional<int> maxParallelism;
 } CropMaskJobConfig;
 
 class CropMaskHandler : public ProcessorHandler
