@@ -106,19 +106,19 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             if not exists (select * from downloader_status where status_description = 'processing') then
                 raise notice 'INSERT INTO downloader_status VALUES (7, ''processing'');';
                 INSERT INTO downloader_status VALUES (7, 'processing');
             end if;
-            
+
             _statement := $str$
             drop function if exists sp_insert_product(smallint, smallint, integer, smallint, integer, character varying, timestamp with time zone, character varying, character varying, geography, json);
             $str$;
             raise notice '%', _statement;
             execute _statement;
-            
-            
+
+
             if not exists (select * from config_metadata where key = 'downloader.stopped') then
                 _statement := $str$
                 INSERT INTO config_metadata VALUES ('downloader.stopped', 'Downloader is stopped', 'bool', false, 15);
@@ -132,7 +132,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.S1.stopped') then
                 _statement := $str$
@@ -147,7 +147,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.S2.stopped') then
                 _statement := $str$
@@ -162,7 +162,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.L8.stopped') then
                 _statement := $str$
@@ -177,7 +177,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'S1.enabled') then
                 _statement := $str$
@@ -192,7 +192,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'S2.enabled') then
                 _statement := $str$
@@ -207,7 +207,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'L8.enabled') then
                 _statement := $str$
@@ -222,7 +222,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'scheduled.lookup.enabled') then
                 _statement := $str$
@@ -237,7 +237,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'scheduled.retry.enabled') then
                 _statement := $str$
@@ -252,8 +252,8 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
-            
+            end if;
+
             if not exists (select * from config_metadata where key = 'scheduled.object.storage.move.enabled') then
                 _statement := $str$
                 INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.enabled', 'Scheduled object storage move enabled', 'bool', false, 15);
@@ -267,8 +267,8 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
-            
+            end if;
+
             if not exists (select * from config_metadata where key = 'downloader.s2.datasource.query') then
                 _statement := $str$
                 INSERT INTO config_metadata VALUES ('downloader.s2.datasource.query', 'S2 datasource query location', 'string', false, 15);
@@ -282,7 +282,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.s2.datasource.query.user') then
                 _statement := $str$
@@ -297,7 +297,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.s2.datasource.query.password') then
                 _statement := $str$
@@ -312,7 +312,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.s2.datasource.download') then
                 _statement := $str$
@@ -327,7 +327,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.s2.datasource.download.user') then
                 _statement := $str$
@@ -342,7 +342,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.s2.datasource.download.password') then
                 _statement := $str$
@@ -357,7 +357,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.l8.datasource.query') then
                 _statement := $str$
@@ -372,7 +372,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.l8.datasource.query.user') then
                 _statement := $str$
@@ -387,7 +387,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.l8.datasource.query.password') then
                 _statement := $str$
@@ -402,7 +402,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.l8.datasource.download') then
                 _statement := $str$
@@ -417,7 +417,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;            
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.l8.datasource.download.user') then
                 _statement := $str$
@@ -432,7 +432,7 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
-            end if;         
+            end if;
 
             if not exists (select * from config_metadata where key = 'downloader.l8.datasource.download.password') then
                 _statement := $str$
@@ -449,6 +449,65 @@ begin
                 execute _statement;
             end if;
 
+            if not exists (select * from config_metadata where key = 'processor.l4a.tile-threads-hint') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('processor.l4a.tile-threads-hint', 'Threads to use for classification of a tile', 'int', false, 5);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'processor.l4a.tile-threads-hint' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.tile-threads-hint', NULL, '4', '2018-01-26 17:17:52+02:00');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            if not exists (select * from config_metadata where key = 'processor.l4a.max-parallelism') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('processor.l4a.max-parallelism', 'Tiles to classify in parallel', 'int', false, 5);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'processor.l4a.max-parallelism' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.max-parallelism', NULL, '0', '2018-01-26 17:17:52+02:00');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            if not exists (select * from config_metadata where key = 'processor.l4b.tile-threads-hint') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('processor.l4b.tile-threads-hint', 'Threads to use for classification of a tile', 'int', false, 6);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'processor.l4b.tile-threads-hint' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.tile-threads-hint', NULL, '4', '2018-01-26 17:17:52+02:00');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            if not exists (select * from config_metadata where key = 'processor.l4b.max-parallelism') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('processor.l4b.max-parallelism', 'Tiles to classify in parallel', 'int', false, 6);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'processor.l4b.max-parallelism' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.max-parallelism', NULL, '0', '2018-01-26 17:17:52+02:00');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
 
             _statement := 'update meta set version = ''1.7.1'';';
             raise notice '%', _statement;
