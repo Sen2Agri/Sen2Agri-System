@@ -54,18 +54,18 @@ private:
                                 const QStringList &listProducts, bool bIsReproc);
 
     // Arguments getters
-    QStringList GetTimeSeriesBuilderArgs(const QStringList &monoDateLaiFileNames, const QString &allLaiTimeSeriesFileName, const QString &mainImg);
-    QStringList GetErrTimeSeriesBuilderArgs(const QStringList &monoDateErrLaiFileNames, const QString &allErrTimeSeriesFileName, const QString &mainImg);
-    QStringList GetMskFlagsTimeSeriesBuilderArgs(const QStringList &monoDateMskFlagsLaiFileNames, const QString &allMskFlagsTimeSeriesFileName, const QString &mainImg);
-    QStringList GetProfileReprocessingArgs(std::map<QString, QString> configParameters, const QString &allLaiTimeSeriesFileName,
+    QStringList GetTimeSeriesBuilderArgs(const std::map<QString, QString> &configParameters, const QStringList &monoDateLaiFileNames,
+                                         const QString &allLaiTimeSeriesFileName, const QString &mainImg, bool bIsFlg = false);
+    QStringList GetProfileReprocessingArgs(const std::map<QString, QString> &configParameters, const QString &allLaiTimeSeriesFileName,
                                            const QString &allErrTimeSeriesFileName, const QString &allMsksTimeSeriesFileName,
                                            const QString &reprocTimeSeriesFileName, const QStringList &listDates);
-    QStringList GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
+    QStringList GetReprocProfileSplitterArgs(const std::map<QString, QString> &configParameters,
+                                             const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
                                              const QString &reprocFlagsFileListFileName, const QStringList &listDates);
     QStringList GetFittedProfileReprocArgs(const QString &allLaiTimeSeriesFileName, const QString &allErrTimeSeriesFileName,
                                            const QString &allMsksTimeSeriesFileName, const QString &fittedTimeSeriesFileName,
                                            const QStringList &ildates);
-    QStringList GetFittedProfileReprocSplitterArgs(const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
+    QStringList GetFittedProfileReprocSplitterArgs(const std::map<QString, QString> &configParameters, const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
                                                    const QString &fittedFlagsFileListFileName, const QStringList &allXmlsFileName);
 
     QStringList GetLaiMonoProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
@@ -75,7 +75,7 @@ private:
                                         const JobSubmittedEvent &event, const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles,
                                         const QStringList &listProducts, const QList<LAIProductFormatterParams> &productParams, bool isFitted);
 
-    NewStepList GetStepsForMultiDateReprocessing(std::map<QString, QString> &configParameters, const TileTemporalFilesInfo &tileTemporalFilesInfo,
+    NewStepList GetStepsForMultiDateReprocessing(const std::map<QString, QString> &configParameters, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                                  QList<TaskToSubmit> &allTasksList, bool bNDayReproc, bool bFittedReproc,
                                                  LAIProductFormatterParams &productFormatterParams, int tasksStartIdx, bool bRemoveTempFiles);
 
@@ -116,9 +116,10 @@ private:
                                                  QList<TaskToSubmit> &allTasksList, bool bNDayReproc,
                                                  LAIProductFormatterParams &productFormatterParams, int tasksStartIdx, bool bRemoveTempFiles);
 
-    QStringList GetProfileReprocessingArgs_New(std::map<QString, QString> configParameters, QStringList &monoDateLaiFileNames, QStringList &errFileNames, QStringList &flgsFileNames,
+    QStringList GetProfileReprocessingArgs_New(const std::map<QString, QString> &configParameters, QStringList &monoDateLaiFileNames, QStringList &errFileNames, QStringList &flgsFileNames,
                                            const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates);
-    QStringList GetFittedProfileReprocArgs_New(QStringList &monoDateLaiFileNames, QStringList &errFileNames,
+    QStringList GetFittedProfileReprocArgs_New(const std::map<QString, QString> &configParameters,
+                                               QStringList &monoDateLaiFileNames, QStringList &errFileNames,
                                            QStringList &flgsFileNames, const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates);
     QMap<QString, TileTemporalFilesInfo> FilterSecondaryProductTiles(const QMap<QString, TileTemporalFilesInfo> &mapTiles,
                                  const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles);

@@ -48,6 +48,8 @@ typedef struct {
 
     bool keepJobFiles;
 
+    std::map<QString, QString> allCfgMap;
+
 } CompositeJobConfig;
 
 class CompositeHandler : public ProcessorHandler

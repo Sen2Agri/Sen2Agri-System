@@ -156,7 +156,7 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
         const auto & monoDateMskFlgsFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
         auto monoDateMskFlgsResFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img_resampled.tif");
         QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                     "\"" + monoDateMskFlgsResFileName+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                     BuildProcessorOutputFileName(configParameters, monoDateMskFlgsResFileName),
                                                                      resolutionStr);
         // add these steps to the steps list to be submitted
         steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
@@ -168,7 +168,7 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
             TaskToSubmit &ndviRviExtractorTask = allTasksList[curTaskIdx++];
             auto singleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
             const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionNewArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                         "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                         BuildProcessorOutputFileName(configParameters, singleNdviFile),
                                                                          resolutionStr, laiCfgFile);
             steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtractionNew", ndviRviExtractionArgs));
             // save the file to be sent to product formatter
@@ -183,7 +183,7 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
             const QStringList &laiProcessorArgs = GetLaiProcessorArgs(prdTileInfo.tileFile, resolutionStr, laiCfgFile,
                                                                       monoDateLaiFileName, "lai");
             steps.append(laiProcessorTask.CreateStep("BVLaiNewProcessor", laiProcessorArgs));
-            const QStringList &quantifyLaiImageArgs = GetQuantifyImageArgs(monoDateLaiFileName, quantifiedLaiFileName);
+            const QStringList &quantifyLaiImageArgs = GetQuantifyImageArgs(configParameters, monoDateLaiFileName, quantifiedLaiFileName);
             steps.append(quantifyLaiImageTask.CreateStep("QuantifyImage", quantifyLaiImageArgs));
             // save the file to be sent to product formatter
             laiList.append(quantifiedLaiFileName);
@@ -198,7 +198,7 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
             const QStringList &faparProcessorArgs = GetLaiProcessorArgs(prdTileInfo.tileFile, resolutionStr, laiCfgFile,
                                                                       faparFileName, "fapar");
             steps.append(faparProcessorTask.CreateStep("BVLaiNewProcessor", faparProcessorArgs));
-            const QStringList &quantifyFaparImageArgs = GetQuantifyImageArgs(faparFileName, quantifiedFaparFileName);
+            const QStringList &quantifyFaparImageArgs = GetQuantifyImageArgs(configParameters, faparFileName, quantifiedFaparFileName);
             steps.append(quantifyFaparImageTask.CreateStep("QuantifyImage", quantifyFaparImageArgs));
             // save the file to be sent to product formatter
             faparList.append(quantifiedFaparFileName);
@@ -213,7 +213,7 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
             const QStringList &fcoverlaiProcessorArgs = GetLaiProcessorArgs(prdTileInfo.tileFile, resolutionStr, laiCfgFile,
                                                                       fcoverFileName, "fcover");
             steps.append(fcoverProcessorTask.CreateStep("BVLaiNewProcessor", fcoverlaiProcessorArgs));
-            const QStringList &quantifyFcoverImageArgs = GetQuantifyImageArgs(fcoverFileName, quantifiedFcoverFileName);
+            const QStringList &quantifyFcoverImageArgs = GetQuantifyImageArgs(configParameters, fcoverFileName, quantifiedFcoverFileName);
             steps.append(quantifyFcoverImageTask.CreateStep("QuantifyImage", quantifyFcoverImageArgs));
             // save the file to be sent to product formatter
             fcoverList.append(quantifiedFcoverFileName);
@@ -425,12 +425,6 @@ void LaiRetrievalHandlerL3BNew::HandleTaskFinishedImpl(EventProcessingContext &c
     }
 }
 
-QStringList LaiRetrievalHandlerL3BNew::GetCompressImgArgs(const QString &inFile, const QString &outFile) {
-    return { "-in", inFile,
-             "-out", "\"" + outFile+"?gdal:co:COMPRESS=DEFLATE\""
-           };
-}
-
 QStringList LaiRetrievalHandlerL3BNew::GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile,
                                                           const QString &ndviFile, const QString &resolution, const QString &laiBandsCfg) {
     return { "NdviRviExtractionNew",
@@ -453,10 +447,11 @@ QStringList LaiRetrievalHandlerL3BNew::GetLaiProcessorArgs(const QString &xmlFil
     };
 }
 
-QStringList LaiRetrievalHandlerL3BNew::GetQuantifyImageArgs(const QString &inFileName, const QString &outFileName)  {
+QStringList LaiRetrievalHandlerL3BNew::GetQuantifyImageArgs(const std::map<QString, QString> &configParameters,
+                                                            const QString &inFileName, const QString &outFileName)  {
     return { "QuantifyImage",
         "-in", inFileName,
-        "-out", "\"" + outFileName+"?gdal:co:COMPRESS=DEFLATE\""
+        "-out", BuildProcessorOutputFileName(configParameters, outFileName)
     };
 }
 

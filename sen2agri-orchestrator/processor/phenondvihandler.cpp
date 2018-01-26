@@ -70,11 +70,14 @@ void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
         "-in", ndviImg, "-mask", allMasksImg, "-dates", dates, "-out", metricsEstimationImg
     };
 
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3e.");
     QStringList metricsSplitterArgs = { "PhenoMetricsSplitter",
                                         "-in", metricsEstimationImg,
                                         "-outparams", metricsParamsImg,
                                         "-outflags", metricsFlagsImg,
-                                        "-compress", "1" };
+                                        "-compress", "1",
+                                        "-cog", IsCloudOptimizedGeotiff(configParameters) ? "1":"0"
+                                      };
 
     globalExecInfos.allStepsList = {
         bandsExtractorTask.CreateStep("BandsExtractor", bandsExtractorArgs),

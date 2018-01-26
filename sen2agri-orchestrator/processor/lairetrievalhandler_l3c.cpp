@@ -116,9 +116,9 @@ void LaiRetrievalHandlerL3C::CreateTasksForNewProducts(QList<TaskToSubmit> &outA
     }
 }
 
-NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QString, QString> &configParameters,
-                const TileTemporalFilesInfo &tileTemporalFilesInfo, QList<TaskToSubmit> &allTasksList,
-                bool bNDayReproc, bool bFittedReproc, LAIProductFormatterParams &productFormatterParams,
+NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(
+                const std::map<QString, QString> &configParameters, const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                QList<TaskToSubmit> &allTasksList, bool bNDayReproc, bool bFittedReproc, LAIProductFormatterParams &productFormatterParams,
                int tasksStartIdx, bool bRemoveTempFiles)
 {
     NewStepList steps;
@@ -164,9 +164,10 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QS
     const auto & allErrTimeSeriesFileName = errTimeSeriesBuilderTask.GetFilePath("Err_time_series.tif");
     const auto & allMskFlagsTimeSeriesFileName = mskFlagsTimeSeriesBuilderTask.GetFilePath("Mask_Flags_time_series.tif");
 
-    QStringList timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(quantifiedLaiFileNames2, allLaiTimeSeriesFileName, mainLaiImg);
-    QStringList errTimeSeriesBuilderArgs = GetErrTimeSeriesBuilderArgs(quantifiedErrLaiFileNames2, allErrTimeSeriesFileName, mainLaiErrImg);
-    QStringList mskFlagsTimeSeriesBuilderArgs = GetMskFlagsTimeSeriesBuilderArgs(monoDateMskFlagsLaiFileNames2, allMskFlagsTimeSeriesFileName, mainMsksImg);
+    QStringList timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, quantifiedLaiFileNames2, allLaiTimeSeriesFileName, mainLaiImg);
+    QStringList errTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, quantifiedErrLaiFileNames2, allErrTimeSeriesFileName, mainLaiErrImg);
+    QStringList mskFlagsTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, monoDateMskFlagsLaiFileNames2,
+                                                                                 allMskFlagsTimeSeriesFileName, mainMsksImg, true);
 
     steps.append(imgTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", timeSeriesBuilderArgs));
     steps.append(errTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", errTimeSeriesBuilderArgs));
@@ -189,7 +190,7 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QS
                                                              allErrTimeSeriesFileName, allMskFlagsTimeSeriesFileName,
                                                              reprocTimeSeriesFileName, listDates);
     }
-    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName,
+    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(configParameters, reprocTimeSeriesFileName, reprocFileListFileName,
                                                                          reprocFlagsFileListFileName, listDates);
     steps.append(profileReprocTask.CreateStep("ProfileReprocessing", profileReprocessingArgs));
     steps.append(profileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", reprocProfileSplitterArgs));
@@ -309,12 +310,12 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing_New(std::ma
                                                               quantifiedErrLaiFileNames2, monoDateMskFlagsLaiFileNames2, mainLaiImg,
                                                               reprocTimeSeriesFileName, listDates);
     } else {
-        profileReprocessingArgs = GetFittedProfileReprocArgs_New(quantifiedLaiFileNames2,
+        profileReprocessingArgs = GetFittedProfileReprocArgs_New(configParameters, quantifiedLaiFileNames2,
                                                              quantifiedErrLaiFileNames2, monoDateMskFlagsLaiFileNames2, mainLaiImg,
                                                              reprocTimeSeriesFileName, listDates);
     }
 
-    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName,
+    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(configParameters, reprocTimeSeriesFileName, reprocFileListFileName,
                                                                          reprocFlagsFileListFileName, listDates);
     steps.append(profileReprocTask.CreateStep("ProfileReprocessing", profileReprocessingArgs));
     steps.append(profileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", reprocProfileSplitterArgs));
@@ -976,54 +977,37 @@ void LaiRetrievalHandlerL3C::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     }
 }
 
-QStringList LaiRetrievalHandlerL3C::GetTimeSeriesBuilderArgs(const QStringList &monoDateLaiFileNames,
-                                                             const QString &allLaiTimeSeriesFileName, const QString &mainImg) {
+QStringList LaiRetrievalHandlerL3C::GetTimeSeriesBuilderArgs(const std::map<QString, QString> &configParameters,
+                                                             const QStringList &monoDateFileNames,
+                                                             const QString &allTimeSeriesFileName, const QString &mainImg,
+                                                             bool bIsFlg) {
     QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
-      "-out", "\"" + allLaiTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
+      "-out", BuildProcessorOutputFileName(configParameters, allTimeSeriesFileName, true, !bIsFlg),
       "-main", mainImg,
       "-il"
     };
-    timeSeriesBuilderArgs += monoDateLaiFileNames;
+    timeSeriesBuilderArgs += monoDateFileNames;
+    if (bIsFlg) {
+        timeSeriesBuilderArgs += "-isflg";
+        timeSeriesBuilderArgs += "1";
+    }
 
     return timeSeriesBuilderArgs;
 }
 
-QStringList LaiRetrievalHandlerL3C::GetErrTimeSeriesBuilderArgs(const QStringList &monoDateErrLaiFileNames,
-                                                                const QString &allErrTimeSeriesFileName, const QString &mainImg) {
-    QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
-      "-out", "\"" + allErrTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
-      "-main", mainImg,
-      "-il"
-    };
-    timeSeriesBuilderArgs += monoDateErrLaiFileNames;
 
-    return timeSeriesBuilderArgs;
-}
-
-QStringList LaiRetrievalHandlerL3C::GetMskFlagsTimeSeriesBuilderArgs(const QStringList &monoDateMskFlagsLaiFileNames,
-                                                                     const QString &allMskFlagsTimeSeriesFileName,  const QString &mainImg) {
-    QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
-      "-out", "\"" + allMskFlagsTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE\"",
-      "-main", mainImg,
-      "-isflg", "1",
-      "-il"
-    };
-    timeSeriesBuilderArgs += monoDateMskFlagsLaiFileNames;
-
-    return timeSeriesBuilderArgs;
-}
-
-QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(std::map<QString, QString> configParameters, const QString &allLaiTimeSeriesFileName,
+QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(const std::map<QString, QString> &configParameters,
+                                       const QString &allLaiTimeSeriesFileName,
                                        const QString &allErrTimeSeriesFileName, const QString &allMsksTimeSeriesFileName,
                                        const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
-    const auto &localWindowBwr = configParameters["processor.l3b.lai.localwnd.bwr"];
-    const auto &localWindowFwr = configParameters["processor.l3b.lai.localwnd.fwr"];
+    const auto &localWindowBwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
+    const auto &localWindowFwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
 
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
           "-lai", allLaiTimeSeriesFileName,
           "-err", allErrTimeSeriesFileName,
           "-msks", allMsksTimeSeriesFileName,
-          "-opf", "\"" + reprocTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
+          "-opf", BuildProcessorOutputFileName(configParameters, reprocTimeSeriesFileName, true, true),
           "-algo", "local",
           "-algo.local.bwr", localWindowBwr,
           "-algo.local.fwr", localWindowFwr,
@@ -1033,15 +1017,15 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(std::map<QString,
     return profileReprocessingArgs;
 }
 
-QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs_New(std::map<QString, QString> configParameters,
+QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs_New(const std::map<QString, QString> &configParameters,
                                        QStringList &monoDateLaiFileNames, QStringList &errFileNames, QStringList &flgsFileNames,
                                        const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
-    const auto &localWindowBwr = configParameters["processor.l3b.lai.localwnd.bwr"];
-    const auto &localWindowFwr = configParameters["processor.l3b.lai.localwnd.fwr"];
+    const auto &localWindowBwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
+    const auto &localWindowFwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
 
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
           "-main", mainImg,
-          "-opf", "\"" + reprocTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
+          "-opf", BuildProcessorOutputFileName(configParameters, reprocTimeSeriesFileName, true, true),
           "-algo", "local",
           "-algo.local.bwr", localWindowBwr,
           "-algo.local.fwr", localWindowFwr
@@ -1055,11 +1039,12 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs_New(std::map<QStr
     return profileReprocessingArgs;
 }
 
-QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocArgs_New(QStringList &monoDateLaiFileNames, QStringList &errFileNames, QStringList &flgsFileNames,
-                                                                   const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
+QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocArgs_New(const std::map<QString, QString> &configParameters,
+        QStringList &monoDateLaiFileNames, QStringList &errFileNames, QStringList &flgsFileNames,
+        const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
           "-main", mainImg,
-          "-opf", "\"" + reprocTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
+          "-opf", BuildProcessorOutputFileName(configParameters, reprocTimeSeriesFileName, true, true),
           "-genall", "1",
           "-algo", "fit"
     };
@@ -1072,14 +1057,16 @@ QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocArgs_New(QStringList &
     return profileReprocessingArgs;
 }
 
-QStringList LaiRetrievalHandlerL3C::GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
-                                                              const QString &reprocFlagsFileListFileName,
-                                                              const QStringList &listDates) {
+QStringList LaiRetrievalHandlerL3C::GetReprocProfileSplitterArgs(const std::map<QString, QString> &configParameters,
+                                     const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
+                                     const QString &reprocFlagsFileListFileName,
+                                     const QStringList &listDates) {
     QStringList args = { "ReprocessedProfileSplitter2",
             "-in", reprocTimeSeriesFileName,
             "-outrlist", reprocFileListFileName,
             "-outflist", reprocFlagsFileListFileName,
             "-compress", "1",
+            "-cog", IsCloudOptimizedGeotiff(configParameters) ? "1":"0",
             "-ildates"
     };
     args += listDates;
@@ -1101,14 +1088,16 @@ QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocArgs(const QString &al
     return fittedProfileReprocArgs;
 }
 
-QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocSplitterArgs(const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
-                                                                    const QString &fittedFlagsFileListFileName,
-                                                                    const QStringList &allXmlsFileName) {
+QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocSplitterArgs(const std::map<QString, QString> &configParameters,
+                                           const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
+                                           const QString &fittedFlagsFileListFileName,
+                                           const QStringList &allXmlsFileName) {
     QStringList args = { "ReprocessedProfileSplitter2",
                 "-in", fittedTimeSeriesFileName,
                 "-outrlist", fittedFileListFileName,
                 "-outflist", fittedFlagsFileListFileName,
                 "-compress", "1",
+                "-cog", IsCloudOptimizedGeotiff(configParameters) ? "1":"0",
                 "-ilxml"
     };
     args += allXmlsFileName;

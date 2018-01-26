@@ -75,9 +75,13 @@ private:
         AddParameter(ParameterType_String,  "in",   "The phenologic parameters and the flags raster");
         AddParameter(ParameterType_OutputImage, "outparams", "The output phenologic parameters raster.");
         AddParameter(ParameterType_OutputImage, "outflags", "The output flags raster.");
-        AddParameter(ParameterType_Int, "compress", "Specifies if output files should be compressed or not.");
+        AddParameter(ParameterType_Int, "compress", "If set to a value different of 0, the output is compressed");
         MandatoryOff("compress");
         SetDefaultParameterInt("compress", 0);
+
+        AddParameter(ParameterType_Int, "cog", "If set to a value different of 0, the output is created in cloud optimized geotiff and compressed.");
+        MandatoryOff("cog");
+        SetDefaultParameterInt("cog", 0);
     }
 
     void DoUpdateParameters()
@@ -130,11 +134,14 @@ private:
 
     std::string GetFileName(const std::string &outParamName) {
         bool bUseCompression = (GetParameterInt("compress") != 0);
+        bool bClodOptimizedGeotiff = (GetParameterInt("cog") != 0);
         std::string ofname = GetParameterString(outParamName);
         std::ostringstream fileNameStream;
         fileNameStream << ofname;
-        if(bUseCompression) {
-            fileNameStream << "?gdal:co:COMPRESS=DEFLATE";
+        if (bClodOptimizedGeotiff) {
+            fileNameStream << "?gdal:co:TILED=YES&gdal:co:COPY_SRC_OVERVIEWS=YES&gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES";
+        } else if (bUseCompression) {
+            fileNameStream << "?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES";
         }
         return fileNameStream.str();
     }

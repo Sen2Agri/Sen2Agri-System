@@ -261,155 +261,6 @@ bool IsInSeason(const QDate &startSeasonDate, const QDate &endSeasonDate, const 
     return false;
 }
 
-/*
-// TODO: to be removed
-QDate ProcessorHandler::GetSeasonDate(const QString &seasonDateStr, const QDateTime &executionDate, bool &bDateHasYear)
-{
-    //Logger::debug(QStringLiteral("GetSeasonDate0: %1!").arg(seasonDateStr));
-    QDate currentDate = executionDate.date();
-    int curYear = currentDate.year();
-    //Logger::debug(QStringLiteral("GetSeasonDate1: %1!").arg(seasonDateStr));
-
-    bDateHasYear = true;
-    QDate seasonDate = QDate::fromString(seasonDateStr, "MMddyyyy");
-    //Logger::debug(QStringLiteral("GetSeasonDate2: %1!").arg(seasonDateStr));
-    if(seasonDate.isValid()) {
-        return seasonDate;
-    }
-    seasonDate = QDate::fromString(seasonDateStr, "MMddyy");
-    //Logger::debug(QStringLiteral("GetSeasonDate3: %1!").arg(seasonDateStr));
-    if(seasonDate.isValid()) {
-        // this date is relative to 1900
-        seasonDate = seasonDate.addYears(100);
-        return seasonDate;
-    }
-
-    //Logger::debug(QStringLiteral("GetSeasonDate4: %1!").arg(seasonDateStr));
-    bDateHasYear = false;
-    return QDate::fromString(seasonDateStr, "MMdd").addYears(curYear-1900);
-}
-
-// TODO: to be removed
-void ProcessorHandler::EnsureStartSeasonLessThanEndSeasonDate(QDate &startSeasonDate, QDate &endSeasonDate, const QDateTime &executionDate,
-                                                              bool bStartDateHadYear, bool bEndDateHadYear)
-{
-    // we are using as reference the end of season as the start of season might be returned without year
-    // due to the MACCS initialization
-    if (!startSeasonDate.isValid() || !endSeasonDate.isValid()) {
-        return;
-    }
-    if (bStartDateHadYear) {
-        if(!bEndDateHadYear) {
-            // we compute the end date after the start date
-            while(startSeasonDate > endSeasonDate) {
-                endSeasonDate = endSeasonDate.addYears(1);
-            }
-        }
-        // TODO: here we should check that there is no more than 9 months between them
-    } else if (bEndDateHadYear) {
-        while(startSeasonDate > endSeasonDate) {
-            startSeasonDate = startSeasonDate.addYears(-1);
-        }
-        // TODO: here we should check that there is no more than 9 months between them
-    } else {
-        // none of them had year. In this case, we compute according to the execution date
-        QDate currentDate = executionDate.date();
-        // correct the start/end season dates
-        while(startSeasonDate > endSeasonDate) {
-            startSeasonDate = startSeasonDate.addYears(-1);
-        }
-        // now try to match the execution date in the interval
-        if (startSeasonDate > currentDate) {
-            while(startSeasonDate > currentDate) {
-                startSeasonDate = startSeasonDate.addYears(-1);
-                endSeasonDate = endSeasonDate.addYears(-1);
-            }
-        }
-        if (endSeasonDate < currentDate) {
-            while (endSeasonDate < currentDate) {
-                startSeasonDate = startSeasonDate.addYears(1);
-                endSeasonDate = endSeasonDate.addYears(1);
-            }
-        }
-    }
-}
-
-// TODO: to be removed
-bool ProcessorHandler::GetSeasonStartEndDates(const ConfigurationParameterValueMap &seasonCfgValues, int siteId,
-                                              QDateTime &startTime, QDateTime &endTime,
-                                              const QString &keyStart, const QString &keyEnd, const QDateTime &executionDate)
-{
-    QString startSeasonDateStr = seasonCfgValues[keyStart].value;
-    QString endSeasonDateStr = seasonCfgValues[keyEnd].value;
-
-    if (startSeasonDateStr.length() == 0 || endSeasonDateStr.length() == 0) {
-        Logger::debug(QStringLiteral("GetSeasonStartDate: Nothing to do: Empty start or end season date"));
-        return false;
-    }
-    Logger::debug(QStringLiteral("GetSeasonStartEndDates: Season start dates for site %1 for date %2: Start: %3, End: %4!")
-                  .arg(siteId)
-                  .arg(executionDate.toString())
-                  .arg(startSeasonDateStr)
-                  .arg(endSeasonDateStr));
-    if(startSeasonDateStr == "0229") { startSeasonDateStr = "0228"; }
-    if(endSeasonDateStr == "0229") { endSeasonDateStr = "0301"; }
-
-    bool startDateHasYear;
-    bool endDateHasYear;
-    QDate startSummerSeasonDate = GetSeasonDate(startSeasonDateStr, executionDate, startDateHasYear);
-//    Logger::debug(QStringLiteral("GetSeasonEndDate: Season start date for site %1 is: %2!")
-//                  .arg(siteId)
-//                  .arg(startSummerSeasonDate.toString()));
-    if(!startSummerSeasonDate.isValid()) {
-        Logger::debug(QStringLiteral("GetSeasonStartDate: Error: invalid season start date."));
-        return false;
-    }
-
-    QDate endSummerSeasonDate = GetSeasonDate(endSeasonDateStr, executionDate, endDateHasYear);
-//    Logger::debug(QStringLiteral("GetSeasonEndDate: Season end date for site %1 is: %2!")
-//                  .arg(siteId)
-//                  .arg(endSummerSeasonDate.toString()));
-    if(!endSummerSeasonDate.isValid()) {
-        Logger::debug(QStringLiteral("GetSeasonStartDate: Error: invalid season start date."));
-        return false;
-    }
-
-    EnsureStartSeasonLessThanEndSeasonDate(startSummerSeasonDate, endSummerSeasonDate, executionDate, startDateHasYear, endDateHasYear);
-    QDate currentDate = executionDate.date();
-    if(IsInSeason(startSummerSeasonDate, endSummerSeasonDate, currentDate, startTime, endTime)) {
-        Logger::debug(QStringLiteral("GetSeasonStartDate: Not in season ... ignoring ...."));
-        return true;
-    }
-    return false;
-}
-
-// TODO: to be removed
-
-bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,
-                                              QDateTime &startTime, QDateTime &endTime,
-                                              const QDateTime &executionDate,
-                                              const ConfigurationParameterValueMap &requestOverrideCfgValues) {
-    ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters("downloader.", siteId, requestOverrideCfgValues);
-
-    Logger::debug(QStringLiteral("GetSeasonStartDate: Checking summer season ..."));
-    if (GetSeasonStartEndDates(seasonCfgValues, siteId, startTime, endTime, "downloader.summer-season.start", "downloader.summer-season.end",
-                               executionDate)) {
-        return true;
-    }
-    Logger::debug(QStringLiteral("GetSeasonStartDate: Checking winter season ..."));
-    if (GetSeasonStartEndDates(seasonCfgValues, siteId, startTime, endTime, "downloader.winter-season.start", "downloader.winter-season.end",
-                               executionDate)) {
-        return true;
-    }
-
-    Logger::debug(QStringLiteral("GetSeasonStartEndDates: Error getting season start dates for site %1 for date %2: ")
-                  .arg(siteId)
-                  .arg(executionDate.toString()));
-
-    return false;
-}
-*/
-
 bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,
                                               QDateTime &startTime, QDateTime &endTime,
                                               const QDateTime &executionDate,
@@ -626,6 +477,52 @@ ProcessorHandlerHelper::SatelliteIdType ProcessorHandler::GetSatIdForTile(const 
     }
     return ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN;
 }
+
+QString ProcessorHandler::BuildProcessorOutputFileName(const std::map<QString, QString> &configParameters,
+                                                       QString fileName, bool compress, bool bigTiff)
+{
+    bool bIsCog = IsCloudOptimizedGeotiff(configParameters);
+    if (bIsCog || compress || bigTiff) {
+        QString ret = "\"" + fileName+"?";
+        bool appendAmp = false;
+        if(bIsCog) {
+            ret += "gdal:co:TILED=YES&gdal:co:COPY_SRC_OVERVIEWS=YES&gdal:co:COMPRESS=DEFLATE";
+            appendAmp = true;
+        } else {
+            if(compress) {
+                ret += "gdal:co:COMPRESS=DEFLATE";
+                appendAmp = true;
+            }
+        }
+        if (bigTiff) {
+            if (appendAmp) {
+                ret += "&";
+            }
+            ret += "gdal:co:BIGTIFF=YES";
+        }
+        ret += "\"";
+        return ret;
+    }
+    return fileName;
+}
+
+bool ProcessorHandler::IsCloudOptimizedGeotiff(const std::map<QString, QString> &configParameters) {
+    const QStringList &tokens = processorDescr.shortName.split('_');
+    const QString &strKey = "processor." + tokens[0] + ".cloud_optimized_geotiff_output";
+    auto isCog = GetMapValue(configParameters, strKey);
+    bool bIsCog = false;
+    if(isCog == "1") bIsCog = true;
+    return bIsCog;
+}
+
+QString ProcessorHandler::GetMapValue(const std::map<QString, QString> &configParameters, const QString &key) {
+    std::map<QString, QString>::const_iterator it = configParameters.find(key);
+    if(it != configParameters.end()) {
+        return it->second;
+    }
+    return "";
+}
+
 /*
 ProductList GetInsertedOrCreatedProducts(int siteId, const ProductType &productType, const QDateTime &startDate, const QDateTime &endDate,
                                          const QDateTime &seasonStartDate, const QDateTime &seasonEndDate)

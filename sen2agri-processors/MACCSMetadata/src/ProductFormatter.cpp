@@ -438,7 +438,7 @@ private:
       std::string strMainFolderFullPath = m_strDestRoot + "/" + m_strProductDirectoryName;
 
       // Create the lock file
-      createMainFolderLockFile(strMainFolderFullPath);
+      const std::string &lockFileName = createMainFolderLockFile(strMainFolderFullPath);
       //created all folders ierarchy
       bool bDirStructBuiltOk = createsAllFolders(strMainFolderFullPath);
 
@@ -618,7 +618,7 @@ private:
       }
 
       // finally, delete the lock file
-      deleteMainFolderLockFile(strMainFolderFullPath);
+      deleteMainFolderLockFile(lockFileName);
   }
 
   void CreateAndFillTile(tileInfo &tileInfoEl, const std::string &strMainFolderFullPath)
@@ -805,24 +805,27 @@ private:
       return bResult;
   }
 
-  void createMainFolderLockFile(const std::string &strMainFolderPath) {
+  std::string createMainFolderLockFile(const std::string &strMainFolderPath) {
       // ensure that the root folder is created
       if(mkPath(m_strDestRoot) == false)
       {
           itkExceptionMacro("Fail to create destination root directory " << m_strDestRoot);
       }
 
-      std::ofstream f( strMainFolderPath + ".lock" );
+      std::string lockFileName = strMainFolderPath + ".lock";
+      std::ofstream f( lockFileName );
       if ( !f ) {
           // if the lock file cannot be created, we throw an error as probably the other files cannot be created too
           itkGenericExceptionMacro(<< "Error creating lock file for " << strMainFolderPath);
-          return;
+          return lockFileName;
       }
       f << "lock";
+
+      return lockFileName;
   }
 
-  bool deleteMainFolderLockFile(const std::string &strMainFolderPath) {
-    return boost::filesystem::remove(strMainFolderPath + ".lock");
+  bool deleteMainFolderLockFile(const std::string &lockFileName) {
+    return boost::filesystem::remove(lockFileName);
   }
 
 

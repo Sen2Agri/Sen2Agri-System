@@ -25,8 +25,6 @@ private:
                                 const QList<TileInfos> &tilesInfosList);
 
     // Arguments getters
-    QStringList GetCutImgArgs(const QString &shapePath, const QString &inFile, const QString &outFile);
-    QStringList GetCompressImgArgs(const QString &inFile, const QString &outFile);
     QStringList GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile,
                                             const QString &ndviFile, const QString &resolution, const QString &laiBandsCfg);
     QStringList GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile, const QString &ndviFile, const QString &resolution);

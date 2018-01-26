@@ -249,16 +249,16 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
         bool isLastProduct = (i == (listProducts.size() - 1));
         QStringList compositeSplitterArgs = { "CompositeSplitter2",
                                               "-in", outL3AResultFile, "-xml", inputProduct, "-bmap", bandsMapping,
-                                              "-outweights", (isLastProduct ? ("\"" + outL3AResultWeightsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultWeightsFile),
-                                              "-outdates", (isLastProduct ? ("\"" + outL3AResultDatesFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultDatesFile),
-                                              "-outrefls", (isLastProduct ? ("\"" + outL3AResultReflsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultReflsFile),
-                                              "-outflags", (isLastProduct ? ("\"" + outL3AResultFlagsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultFlagsFile),
+                                              "-outweights", (isLastProduct ? (BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultWeightsFile)) : outL3AResultWeightsFile),
+                                              "-outdates", (isLastProduct ? (BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultDatesFile)) : outL3AResultDatesFile),
+                                              "-outrefls", (isLastProduct ? (BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultReflsFile)) : outL3AResultReflsFile),
+                                              "-outflags", (isLastProduct ? (BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultFlagsFile)) : outL3AResultFlagsFile),
                                               "-isfinal", (isLastProduct ? "1" : "0")
                                             };
         // we need to create the rgb file only if the last product
         if(isLastProduct) {
             compositeSplitterArgs.append("-outrgb");
-            compositeSplitterArgs.append("\"" + outL3AResultRgbFile+"?gdal:co:COMPRESS=DEFLATE\"");
+            compositeSplitterArgs.append(BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultRgbFile));
         }
         steps.append(compositeSplitter.CreateStep("CompositeSplitter", compositeSplitterArgs));
 
@@ -455,7 +455,7 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 }
 
 void CompositeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CompositeJobConfig &cfg) {
-    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
+    cfg.allCfgMap = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
     std::map<QString, QString> executorConfigParameters = ctx.GetJobConfigurationParameters(event.jobId, "executor.shapes_dir");
     auto execProcConfigParameters = ctx.GetJobConfigurationParameters(event.jobId, "executor.processor.l3a.keep_job_folders");
     //auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.working-mem");
@@ -469,7 +469,7 @@ void CompositeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmitt
         cfg.resolution = 10;
     }
 
-    const QString &generate20MS2ResStr = configParameters["processor.l3a.generate_20m_s2_resolution"];
+    const QString &generate20MS2ResStr = cfg.allCfgMap["processor.l3a.generate_20m_s2_resolution"];
     cfg.bGenerate20MS2Res = (generate20MS2ResStr.toInt() != 0);
 
 
@@ -479,23 +479,23 @@ void CompositeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmitt
     // Get the parameters from the configuration
     // Get the Half Synthesis interval value if it was not specified by the user
     if(cfg.synthalf.length() == 0) {
-        cfg.synthalf = configParameters["processor.l3a.half_synthesis"];
+        cfg.synthalf = cfg.allCfgMap["processor.l3a.half_synthesis"];
         if(cfg.synthalf.length() == 0) {
             cfg.synthalf = "25";
         }
     }
-    cfg.lutPath = configParameters["processor.l3a.lut_path"];
+    cfg.lutPath = cfg.allCfgMap["processor.l3a.lut_path"];
 
-    cfg.bandsMapping = configParameters["processor.l3a.bandsmapping"];
-    cfg.scatCoeffs10M = configParameters["processor.l3a.preproc.scatcoeffs_10m"];
-    cfg.scatCoeffs20M = configParameters["processor.l3a.preproc.scatcoeffs_20m"];
-    cfg.weightAOTMin = configParameters["processor.l3a.weight.aot.minweight"];
-    cfg.weightAOTMax = configParameters["processor.l3a.weight.aot.maxweight"];
-    cfg.AOTMax = configParameters["processor.l3a.weight.aot.maxaot"];
-    cfg.coarseRes = configParameters["processor.l3a.weight.cloud.coarseresolution"];
-    cfg.sigmaSmallCloud = configParameters["processor.l3a.weight.cloud.sigmasmall"];
-    cfg.sigmaLargeCloud = configParameters["processor.l3a.weight.cloud.sigmalarge"];
-    cfg.weightDateMin = configParameters["processor.l3a.weight.total.weightdatemin"];
+    cfg.bandsMapping = cfg.allCfgMap["processor.l3a.bandsmapping"];
+    cfg.scatCoeffs10M = cfg.allCfgMap["processor.l3a.preproc.scatcoeffs_10m"];
+    cfg.scatCoeffs20M = cfg.allCfgMap["processor.l3a.preproc.scatcoeffs_20m"];
+    cfg.weightAOTMin = cfg.allCfgMap["processor.l3a.weight.aot.minweight"];
+    cfg.weightAOTMax = cfg.allCfgMap["processor.l3a.weight.aot.maxweight"];
+    cfg.AOTMax = cfg.allCfgMap["processor.l3a.weight.aot.maxaot"];
+    cfg.coarseRes = cfg.allCfgMap["processor.l3a.weight.cloud.coarseresolution"];
+    cfg.sigmaSmallCloud = cfg.allCfgMap["processor.l3a.weight.cloud.sigmasmall"];
+    cfg.sigmaLargeCloud = cfg.allCfgMap["processor.l3a.weight.cloud.sigmalarge"];
+    cfg.weightDateMin = cfg.allCfgMap["processor.l3a.weight.total.weightdatemin"];
 
     cfg.shapeFilesFolder = executorConfigParameters["executor.shapes_dir"];
 

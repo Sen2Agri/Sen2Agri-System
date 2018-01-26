@@ -32,14 +32,12 @@ private:
                                 const QList<TileInfos> &tilesInfosList);
 
     // Arguments getters
-    QStringList GetCutImgArgs(const QString &shapePath, const QString &inFile, const QString &outFile);
-    QStringList GetCompressImgArgs(const QString &inFile, const QString &outFile);
     QStringList GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile,
                                             const QString &ndviFile, const QString &resolution, const QString &laiBandsCfg);
     QStringList GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile, const QString &ndviFile, const QString &resolution);
     QStringList GetBvImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateLaiFileName);
     QStringList GetBvErrImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateErrFileName);
-    QStringList GetQuantifyImageArgs(const QString &inFileName, const QString &outFileName);
+    QStringList GetQuantifyImageArgs(const std::map<QString, QString> &configParams, const QString &inFileName, const QString &outFileName);
     QStringList GetMonoDateMskFlagsArgs(const QString &inputProduct, const QString &monoDateMskFlgsFileName, const QString &monoDateMskFlgsResFileName, const QString &resStr);
     QStringList GetLaiMonoProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                                const QList<TileInfos> &products, const QStringList &ndviList,

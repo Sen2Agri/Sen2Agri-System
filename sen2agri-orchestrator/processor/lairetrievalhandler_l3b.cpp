@@ -282,28 +282,22 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
         const auto & quantifiedErrFileName = quantifyErrImageTask.GetFilePath("LAI_mono_date_ERR_img_16.tif");
 
         QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                     "\"" + monoDateMskFlgsResFileName+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                     BuildProcessorOutputFileName(configParameters, monoDateMskFlgsResFileName),
                                                                      resolutionStr);
 
         // add these steps to the steps list to be submitted
         steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
 
-//        if (useLaiBandsCfg) {
-            const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionNewArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                         ftsFile, "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
-                                                                         resolutionStr, laiCfgFile);
-            steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtractionNew", ndviRviExtractionArgs));
-//        } else {
-//            const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-//                                                                         ftsFile, "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
-//                                                                         resolutionStr);
-//            steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtraction2", ndviRviExtractionArgs));
-//        }
+        const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionNewArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
+                                                                     ftsFile,
+                                                                     BuildProcessorOutputFileName(configParameters, singleNdviFile),
+                                                                     resolutionStr, laiCfgFile);
+        steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtractionNew", ndviRviExtractionArgs));
 
         QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, monoDateMskFlgsResFileName, prdTileInfo.tileFile, modelsFolder, monoDateLaiFileName);
         QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, monoDateMskFlgsResFileName, prdTileInfo.tileFile, modelsFolder, monoDateErrFileName);
-        QStringList quantifyImageArgs = GetQuantifyImageArgs(monoDateLaiFileName, quantifiedLaiFileName);
-        QStringList quantifyErrImageArgs = GetQuantifyImageArgs(monoDateErrFileName, quantifiedErrFileName);
+        QStringList quantifyImageArgs = GetQuantifyImageArgs(configParameters, monoDateLaiFileName, quantifiedLaiFileName);
+        QStringList quantifyErrImageArgs = GetQuantifyImageArgs(configParameters, monoDateErrFileName, quantifiedErrFileName);
 
         // save the mono date LAI file name list
         ndviList.append(singleNdviFile);
@@ -532,12 +526,6 @@ void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     }
 }
 
-QStringList LaiRetrievalHandlerL3B::GetCompressImgArgs(const QString &inFile, const QString &outFile) {
-    return { "-in", inFile,
-             "-out", "\"" + outFile+"?gdal:co:COMPRESS=DEFLATE\""
-           };
-}
-
 QStringList LaiRetrievalHandlerL3B::GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile,
                                                           const QString &ndviFile, const QString &resolution, const QString &laiBandsCfg) {
     return { "NdviRviExtractionNew",
@@ -586,10 +574,12 @@ QStringList LaiRetrievalHandlerL3B::GetBvErrImageInvArgs(const QString &ftsFile,
     };
 }
 
-QStringList LaiRetrievalHandlerL3B::GetQuantifyImageArgs(const QString &inFileName, const QString &outFileName)  {
+QStringList LaiRetrievalHandlerL3B::GetQuantifyImageArgs(const std::map<QString, QString> &configParams,
+                                                         const QString &inFileName, const QString &outFileName)  {
+    ;
     return { "QuantifyImage",
         "-in", inFileName,
-        "-out", "\"" + outFileName+"?gdal:co:COMPRESS=DEFLATE\""
+        "-out", BuildProcessorOutputFileName(configParams, outFileName)
     };
 }
 

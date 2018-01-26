@@ -91,9 +91,13 @@ private:
         MandatoryOff("grprasters");
         SetDefaultParameterInt("grprasters", 1);
 
-        AddParameter(ParameterType_Int, "compress", "Specifies if output files should be compressed or not.");
+        AddParameter(ParameterType_Int, "compress", "If set to a value different of 0, the output is compressed");
         MandatoryOff("compress");
         SetDefaultParameterInt("compress", 0);
+
+        AddParameter(ParameterType_Int, "cog", "If set to a value different of 0, the output is created in cloud optimized geotiff and compressed.");
+        MandatoryOff("cog");
+        SetDefaultParameterInt("cog", 0);
     }
 
     void DoUpdateParameters()
@@ -114,6 +118,7 @@ private:
         }
 
         bool bUseCompression = (GetParameterInt("compress") != 0);
+        bool bClodOptimizedGeotiff = (GetParameterInt("cog") != 0);
         bool bGroupRasters = (GetParameterInt("grprasters") != 0);
 
         std::string strOutRasterFilesList = GetParameterString("outrlist");
@@ -184,9 +189,12 @@ private:
             // we might have also compression and we do not want that in the name file
             // to be saved into the produced files list file
             std::string simpleFileName = fileNameStream.str();
-            if(bUseCompression) {
+            if (bClodOptimizedGeotiff) {
+                fileNameStream << "?gdal:co:TILED=YES&gdal:co:COPY_SRC_OVERVIEWS=YES&gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES";
+            } else if (bUseCompression) {
                 fileNameStream << "?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES";
             }
+
             const std::string &fileName = fileNameStream.str();
 
             // Set the extract filter input image

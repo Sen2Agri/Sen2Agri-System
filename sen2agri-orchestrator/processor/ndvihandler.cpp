@@ -106,14 +106,14 @@ NewStepList NdviHandler::GetSteps(EventProcessingContext &ctx, const JobSubmitte
         auto monoDateMskFlgsResFileName = genMonoDateMskFagsTask.GetFilePath("msk_flgs_img_resampled.tif");
         auto singleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
         QStringList genMonoDateMskFagsArgs = GetMskFlagsArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                     "\"" + monoDateMskFlgsResFileName+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                     BuildProcessorOutputFileName(configParameters, monoDateMskFlgsResFileName),
                                                                      resolutionStr);
 
         // add these steps to the steps list to be submitted
         steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
 
         const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionNewArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                     "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                     BuildProcessorOutputFileName(configParameters, singleNdviFile),
                                                                      resolutionStr, laiCfgFile);
         steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtractionNew", ndviRviExtractionArgs));
 
@@ -305,12 +305,6 @@ void NdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             //ctx.MarkJobFailed(event.jobId);
         }
     }
-}
-
-QStringList NdviHandler::GetCompressImgArgs(const QString &inFile, const QString &outFile) {
-    return { "-in", inFile,
-             "-out", "\"" + outFile+"?gdal:co:COMPRESS=DEFLATE\""
-           };
 }
 
 QStringList NdviHandler::GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile,

@@ -31,11 +31,10 @@ private:
                                 const QList<TileInfos> &tilesInfosList);
 
     // Arguments getters
-    QStringList GetCompressImgArgs(const QString &inFile, const QString &outFile);
     QStringList GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile,
                                             const QString &ndviFile, const QString &resolution, const QString &laiBandsCfg);
     QStringList GetLaiProcessorArgs(const QString &xmlFile, const QString &resolution, const QString &laiBandsCfg, const QString &monoDateLaiFileName, const QString &indexName);
-    QStringList GetQuantifyImageArgs(const QString &inFileName, const QString &outFileName);
+    QStringList GetQuantifyImageArgs(const std::map<QString, QString> &configParameters, const QString &inFileName, const QString &outFileName);
     QStringList GetMonoDateMskFlagsArgs(const QString &inputProduct, const QString &monoDateMskFlgsFileName, const QString &monoDateMskFlgsResFileName, const QString &resStr);
     QStringList GetLaiMonoProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                                const QList<TileInfos> &products, const QStringList &ndviList,

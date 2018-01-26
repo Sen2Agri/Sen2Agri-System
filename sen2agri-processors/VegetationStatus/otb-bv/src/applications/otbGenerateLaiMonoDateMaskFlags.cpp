@@ -57,9 +57,13 @@ private:
         AddDocTag(Tags::Vector);
         AddParameter(ParameterType_String,  "inxml",   "Input XML corresponding to the LAI mono date");
         AddParameter(ParameterType_String,  "out",   "The out mask flags image corresponding to the LAI mono date");
-        AddParameter(ParameterType_Int, "compress", "Specifies if output files should be compressed or not.");
+        AddParameter(ParameterType_Int, "compress", "If set to a value different of 0, the output is compressed");
         MandatoryOff("compress");
         SetDefaultParameterInt("compress", 0);
+
+        AddParameter(ParameterType_Int, "cog", "If set to a value different of 0, the output is created in cloud optimized geotiff and compressed.");
+        MandatoryOff("cog");
+        SetDefaultParameterInt("cog", 0);
 
         AddParameter(ParameterType_Int, "outres", "Output resolution. If not specified, is the same as the input resolution.");
         MandatoryOff("outres");
@@ -76,13 +80,12 @@ private:
     {
         const std::string inXml = GetParameterAsString("inxml");
         std::string outImg = GetParameterAsString("out");
-        bool bUseCompression = (GetParameterInt("compress") != 0);
 
         auto factory = MetadataHelperFactory::New();
         auto pHelper = factory->GetMetadataHelper(inXml);
         MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
 
-        WriteOutput(imgMsk, outImg, -1, bUseCompression);
+        WriteOutput(imgMsk, outImg, -1);
 
         if(HasValue("outres")) {
             if(HasValue("outresampled")) {
@@ -91,16 +94,22 @@ private:
                 if(nOutRes != 10 && nOutRes != 20) {
                     itkExceptionMacro("Invalid output resolution specified (only 10 and 20 accepted)" << nOutRes);
                 }
-                WriteOutput(imgMsk, outImgRes, nOutRes, bUseCompression);
+                WriteOutput(imgMsk, outImgRes, nOutRes);
             } else {
                 itkExceptionMacro("If you provide the outres parameter you must also provide an outresampled file name!");
             }
         }
     }
 
-    void WriteOutput(MetadataHelper::SingleBandShortImageType::Pointer imgMsk, const std::string &outImg, int nRes, bool bUseCompression) {
+    void WriteOutput(MetadataHelper::SingleBandShortImageType::Pointer imgMsk, const std::string &outImg, int nRes) {
         std::string fileName(outImg);
-        if(bUseCompression) {
+
+        bool bCompress = (GetParameterInt("compress") != 0);
+        bool bClodOptimizedGeotiff = (GetParameterInt("cog") != 0);
+
+        if (bClodOptimizedGeotiff) {
+            fileName += "?gdal:co:TILED=YES&gdal:co:COPY_SRC_OVERVIEWS=YES&gdal:co:COMPRESS=DEFLATE";
+        } else if (bCompress) {
             fileName += std::string("?gdal:co:COMPRESS=DEFLATE");
         }
 

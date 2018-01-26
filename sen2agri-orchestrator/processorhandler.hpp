@@ -7,6 +7,7 @@
 
 #define PRODUCTS_LOCATION_CFG_KEY "archiver.archive_path"
 #define PRODUCT_FORMATTER_OUT_PROPS_FILE "product_properties.txt"
+#define CLOUD_OPTIMIZED_GEOTIFF_ENABLED "processor."
 
 typedef ProcessorHandlerHelper::TileTemporalFilesInfo TileTemporalFilesInfo;
 
@@ -59,6 +60,10 @@ protected:
     QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> GetSiteTiles(EventProcessingContext &ctx, int siteId);
     ProcessorHandlerHelper::SatelliteIdType GetSatIdForTile(const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &mapSatTiles,
                                                                            const QString &tileId);
+    QString BuildProcessorOutputFileName(const std::map<QString, QString> &configParameters, QString fileName,
+                                         bool compress=true, bool bigTiff=false);
+    bool IsCloudOptimizedGeotiff(const std::map<QString, QString> &configParameters);
+    QString GetMapValue(const std::map<QString, QString> &configParameters, const QString &key);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

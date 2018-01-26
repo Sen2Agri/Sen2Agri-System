@@ -263,7 +263,7 @@ private:
 
         const std::string &outImgFileName = GetParameterAsString(outparamName);
         // write the output
-        WriteOutput(maskedImg, outImgFileName, true);
+        WriteOutput(maskedImg, outImgFileName);
     }
 
     /**
@@ -374,13 +374,7 @@ private:
         }
     }
 
-    void WriteOutput(OutImageType::Pointer inImg, const std::string &outImg,
-                     bool bUseCompression) {
-        std::string fileName(outImg);
-        if(bUseCompression) {
-            fileName += std::string("?gdal:co:COMPRESS=DEFLATE");
-        }
-
+    void WriteOutput(OutImageType::Pointer inImg, const std::string &outImg) {
         inImg->UpdateOutputInformation();
 
         // Create an output parameter to write the current output image
