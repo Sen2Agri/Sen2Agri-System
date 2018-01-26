@@ -171,7 +171,6 @@ private:
         const auto &sensorOutDays = getOutputDays(preprocessors, resamplingMode, mission, sp);
         auto output = m_Preprocessor->GetOutput(sensorOutDays);
         output->UpdateOutputInformation();
-        output->Print(std::cerr);
 
         SetParameterOutputImage<OutputImageType>("out", output);
     }
