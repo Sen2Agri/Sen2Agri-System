@@ -11,14 +11,14 @@ begin
 
             if not exists (select * from config_metadata where key = 'processor.l3b.lai.use_inra_version') then
                 _statement := $str$
-                INSERT INTO config_metadata VALUES ('processor.l3b.lai.use_belcam_version', 'L3B LAI processor will use INRA algorithm implementation', 'int', false, 4);
+                INSERT INTO config_metadata VALUES ('processor.l3b.lai.use_inra_version', 'L3B LAI processor will use INRA algorithm implementation', 'int', false, 4);
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            if not exists (select * from config where key = 'processor.l3b.lai.use_belcam_version' and site_id is null) then
+            if not exists (select * from config where key = 'processor.l3b.lai.use_inra_version' and site_id is null) then
                 _statement := $str$
-                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.use_belcam_version', NULL, '0', '2017-10-24 14:56:57.501918+02');
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.use_inra_version', NULL, '0', '2017-10-24 14:56:57.501918+02');
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
