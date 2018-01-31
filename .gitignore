@@ -50,3 +50,7 @@ FAQ.html
 
 # Python bytecode
 *.pyc
+
+# Eclipse
+.project
+.settings
