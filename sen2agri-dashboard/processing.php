@@ -80,4 +80,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 	}
 	echo $result;
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST'){
+	// POST actions
+	$result = "";
+	$action = $_POST["action"];
+	$jobId = $_POST["jobId"];
+	
+	switch ($action) {
+		case "pauseJob":			
+			exec('job_operations.py -j '.$jobId.' -o pause', $output, $ret);
+			break;
+		case "resumeJob":
+			exec('job_operations.py -j '.$jobId.' -o resume', $output, $ret);					
+			break;
+		case "cancelJob":
+			exec('job_operations.py -j '.$jobId.' -o cancel', $output, $ret);
+			break;	
+	}
+	
+}
 ?>

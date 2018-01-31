@@ -111,6 +111,21 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 	$active_proc = $processorId + 0;
 }
+
+// Submited remove job; remove job with id $schedule_id in database
+if (isset ( $_REQUEST ['schedule_submit_delete'] ) && $_REQUEST ['schedule_submit_delete'] == 'Delete') {	
+	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+
+	$schedule_id = $_REQUEST ['scheduledID'];
+	
+	//remove task from scheduled task
+	$res = pg_query_params ( $db, "SELECT sp_dashboard_remove_scheduled_task($1)", array (
+			$schedule_id ) )or die ( "An error occurred." );
+
+	$processorId = $_REQUEST ['processorId'];
+	$active_proc = $processorId + 0;
+
+}
 ?>
 
 <div id="main">

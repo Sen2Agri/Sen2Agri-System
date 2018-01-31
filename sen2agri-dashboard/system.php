@@ -29,7 +29,7 @@
                                 <th rowspan="2">Status</th>
                                 <th rowspan="2" style="width: 1px;">Tasks Completed / Running</th>
                                 <th colspan="2">Current Task</th>
-                                <!--<th rowspan="2">Actions</th>-->
+                                <th rowspan="2">Actions</th>
                             </tr>
                             <tr>
                                 <th>Module</th>

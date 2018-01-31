@@ -15,7 +15,7 @@ function update_current_jobs(json_data) {
 	}
 	
 	json_data.current_jobs.forEach(function(job) {
-/*		
+
 		var action_buttons = "<div class=\"btn-group\">";
 		job.actions.forEach(function(action) {
 			switch(action) {
@@ -31,13 +31,13 @@ function update_current_jobs(json_data) {
 					//action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(cancel_job_url, " + job.id + ")\">Cancel</button>";
 					action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action('cancelJob', " + job.id + ")\">Cancel</button>";
 					break;
-				case 4:
+				/*case 4:
 					action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"get_job_config(" + job.id + ")\">View Config</button>";
-					break;
+					break;*/
 			}
 		});
 		action_buttons += "</div>";
-*/		
+		
 		if(!job.current_tasks) {
 			// Break if there aren't any tasks; should not happen in 'real life'
 			return;
@@ -53,7 +53,7 @@ function update_current_jobs(json_data) {
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.tasks_completed + " / " + job.tasks_remaining + "</td>" +
 		"<td>" + job.current_tasks[0].current_task_module + "</td>" +
 		"<td>" + job.current_tasks[0].current_task_steps_completed + " / " + job.current_tasks[0].current_task_steps_remaining + "</td>" +
-//		"<td rowspan=\"" + job.current_tasks.length + "\">" + action_buttons + "</td>" +
+		"<td rowspan=\"" + job.current_tasks.length + "\">" + action_buttons + "</td>" +
 		"</tr>";
 		
 		$("#pnl_current_jobs table:first").append(new_row);
@@ -460,7 +460,7 @@ function set_server_resource_refresh() {
 	//setInterval(get_server_resource_data, get_server_resource_data_interval);
 }
 
-/*
+
 function perform_job_action(action_url, job_id) {
 	$.ajax({
 		//url: action_url,
@@ -481,7 +481,7 @@ function perform_job_action(action_url, job_id) {
 			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 		}
 	});
-}
+}/*
 function get_job_config(job_id) {
 	$.ajax({
 		url: get_job_config_data_url,

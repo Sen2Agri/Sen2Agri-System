@@ -733,6 +733,22 @@ input.add-edit-btn:active,
 input.add-edit-btn:disabled{
 	background-color: #cccccc;
 }
+
+input.btn-success:disabled{
+	background-color: #cccccc;
+}
+input.btn-success[disabled]:hover{
+	background-color: #cccccc;
+	color:yellow;
+}
+
+input.btn-success[active]:hover {
+	background-color: #7EAF50;
+	color:yellow;
+}
+input.btn-success:hover, input.btn-danger:hover{
+	color:yellow;
+}
 /* End SITES related styles --------------------------------------------- */
 
 /* Dashboard Scheduled Jobs --------------------------------------------- */
@@ -750,7 +766,7 @@ input.add-edit-btn:disabled{
 .schedule-row select[name="schedule_add"]{width:100px}
 .schedule-row select[name="product_add"]{width:80px}
 .schedule-row input[type="number"]{width:30px;text-align:center}
-.schedule-row input[type="submit"]{padding:4px 20px;border:0}
+.schedule-row input[type="submit"]{padding:4px 10px;border:0}
 .schedule-row:nth-of-type(odd) {background-color: #f9f9f9}
 .schedule-row:hover{background-color:#E7F3D0}
 .schedule-row .error {display:block;text-align:left}

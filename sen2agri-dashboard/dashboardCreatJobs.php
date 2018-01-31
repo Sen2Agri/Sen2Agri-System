@@ -30,7 +30,7 @@ function get_scheduled_jobs_header($processorId) {
 		<span>Schedule type</span>
 		<span>First run time</span>
 		<span style="min-width:150px">Repeat</span>
-		<span>Action</span>
+		<span style="min-width:110px">Action</span>
 	</div>
 <?php
 }
@@ -109,8 +109,15 @@ function add_new_scheduled_jobs_layout($processorId) {
 			Every <input type="number" class="schedule_format" name="oneverydate" id="oneverydate" min="1" max="31" step="1" value=""> day of month
 		</span>
 		<span class="schedule_format">
-			<input type="submit" class="button add-edit-btn" name="schedule_saveJob" value="Save">
-		</span>
+			<!--  <input type="submit" class="button add-edit-btn" name="schedule_saveJob" value="Save">-->
+			
+			<div style="display: table-row">
+				<span class="schedule_format">
+				<input type="submit" class="button btn-success btn-xs" name="schedule_saveJob" value="Save">
+				<input type="submit" class="button btn-danger btn-xs"  name="schedule_submit_delete" value="Delete" style="visibility: hidden">
+				</span>
+			</div>
+		</span>		
 	</form>
 <?php
 	$_SESSION['proc_id'] = $processorId;
@@ -167,7 +174,13 @@ function update_scheduled_jobs_layout($processorId) {
 				Every <input type="number" class="schedule_format" name="oneverydate" id="oneverydate<?= $jobId ?>" value="<?= $repeatOnEvery ?>" onChange="setMin(<?= $jobId ?>)" min="0" max="31" step="1"> day of month
 			</span>
 			<span class="schedule_format">
-				<input type="submit" class="button add-edit-btn" name="schedule_submit" id="schedule_submit<?= $jobId ?>" value="Save" disabled>
+				<div style="display: table-row">
+					<span class="schedule_format" style="border-top: none;">
+					<!--  <input type="submit" class="button add-edit-btn" name="schedule_submit" id="schedule_submit<?= $jobId ?>" value="Save" disabled>-->
+					<input type="submit" class="button btn-success btn-xs" name="schedule_submit" id="schedule_submit<?= $jobId ?>" value="Save" disabled>
+					<input type="submit" class="button btn-danger btn-xs"  name="schedule_submit_delete" id="schedule_submit_delete<?= $jobId ?>" value="Delete">
+					</span>
+				</div>
 			</span>
 		</form>
 		<?php
