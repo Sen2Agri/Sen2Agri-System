@@ -1,6 +1,6 @@
 <?php
 class ConfigParams {
-    static $CONN_STRING  = 'host=192.168.60.52 port=5432 dbname=sen2agri user=admin password=sen2agri';
+    static $CONN_STRING  = 'host=localhost port=5432 dbname=sen2agri user=admin password=sen2agri';
     static $SERVICES_URL = 'http://localhost:8080/dashboard';
     static $SITE_ID;
     static $USER_NAME;
