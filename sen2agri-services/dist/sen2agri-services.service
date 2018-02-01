@@ -1,0 +1,9 @@
+[Unit]
+Description=Services for Sen2Agri
+
+[Service]
+ExecStart=/usr/share/sen2agri/sen2agri-services/bin/start.sh
+User=sen2agri-service
+
+[Install]
+WantedBy=multi-user.target
