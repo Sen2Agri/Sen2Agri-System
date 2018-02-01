@@ -226,3 +226,10 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.dat
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.datasource.download', NULL, '0', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.datasource.download.user', NULL, '0', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.datasource.download.password', NULL, '0', '2017-10-24 14:56:57.501918+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.cloud_optimized_geotiff_output', NULL, '0', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.cloud_optimized_geotiff_output', NULL, '0', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3e.cloud_optimized_geotiff_output', NULL, '0', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.cloud_optimized_geotiff_output', NULL, '0', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.cloud_optimized_geotiff_output', NULL, '0', '2017-10-24 14:56:57.501918+02');
+

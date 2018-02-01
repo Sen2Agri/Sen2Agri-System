@@ -225,3 +225,9 @@ INSERT INTO config_metadata VALUES ('downloader.l8.datasource.query.password', '
 INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download', 'L8 datasource download location', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download.user', 'L8 datasource download location user', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download.password', 'L8 datasource download location password', 'string', false, 15);
+
+INSERT INTO config_metadata VALUES ('processor.l3a.cloud_optimized_geotiff_output', 'Generate L3A Cloud Optimized Geotiff outputs', 'bool', false, 3);
+INSERT INTO config_metadata VALUES ('processor.l3b.cloud_optimized_geotiff_output', 'Generate L3B Cloud Optimized Geotiff outputs', 'bool', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3e.cloud_optimized_geotiff_output', 'Generate L3E Cloud Optimized Geotiff outputs', 'bool', false, 18);
+INSERT INTO config_metadata VALUES ('processor.l4a.cloud_optimized_geotiff_output', 'Generate L4A Cloud Optimized Geotiff outputs', 'bool', false, 5);
+INSERT INTO config_metadata VALUES ('processor.l4b.cloud_optimized_geotiff_output', 'Generate L4B Cloud Optimized Geotiff outputs', 'bool', false, 6);
