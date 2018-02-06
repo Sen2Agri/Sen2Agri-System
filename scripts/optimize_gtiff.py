@@ -15,14 +15,13 @@ def run_command(args):
     subprocess.call(args)
 
 
-def ilog2(n):
-    return len(bin(n)) - 3
-
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Create cloud-optimized GeoTIFFs')
     parser.add_argument('input', help='Input image')
-    parser.add_argument('-s', '--min-size', help='Smallest overview size', type=int, default=256)
+    parser.add_argument('-b', '--block-size', help='GeoTIFF block size', type=int, default=1024)
+    parser.add_argument('-s', '--min-size', help='Smallest overview size', type=int, default=1024)
+    parser.add_argument('-r', '--resampler', help='Overview resampling method', default='average')
+    parser.add_argument('-i', '--interleave', help='Interleaving type', choices=['BAND', 'PIXEL'], default='BAND')
 
     overviews = parser.add_mutually_exclusive_group(required=False)
     overviews.add_argument('--overviews', help="Add overviews (default)", default=True, action='store_true')
@@ -43,26 +42,38 @@ def get_image_size(image):
     ds = gdal.Open(image, gdal.gdalconst.GA_ReadOnly)
     return (ds.RasterXSize, ds.RasterYSize)
 
+def get_overview_levels(size, min_size):
+    levels = []
+    f = 1
+    while size > min_size:
+        size = size / 2
+        f = f * 2
+        levels.append(f)
+    return levels
 
 def main():
     args = parse_args()
     print(args)
 
+    run_command(['gdaladdo', '-clean', args.input])
+
+    command = ['gdal_translate', '-co', 'BIGTIFF=YES', '-co', 'INTERLEAVE=' + args.interleave]
     if args.overviews:
+        command += ['-co', 'COPY_SRC_OVERVIEWS=YES']
+
         size = get_image_size(args.input)
-        max_level = ilog2(max(size[0], size[1]) / args.min_size)
-        levels = [2**(x + 1) for x in xrange(max_level + 1)]
-        run_command(['gdaladdo', '-r', 'bilinear', args.input] + levels)
+        levels = get_overview_levels(max(size[0], size[1]), args.min_size)
+        if levels:
+            run_command(['gdaladdo', '-r', args.resampler, args.input] + levels)
 
     parts = os.path.splitext(args.input)
     temp = "".join([parts[0], ".tmpcog", parts[1]])
-    command = ['gdal_translate', '-co', 'BIGTIFF=YES', '-co', 'COPY_SRC_OVERVIEWS=YES']
 
     if args.compress:
         command += ['-co', 'COMPRESS=' + args.compress]
 
     if args.tiled:
-        command += ['-co', 'TILED=YES']
+        command += ['-co', 'TILED=YES', '-co', 'BLOCKXSIZE=' + str(args.block_size), '-co', 'BLOCKYSIZE=' + str(args.block_size)]
 
     command += [args.input, temp]
     run_command(command)
