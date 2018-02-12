@@ -424,10 +424,11 @@ function install_downloaders_demmacs()
 
    #start imediately the services for downloaders and demmacs
    # note that enable --now doesn't work for timers on CentOS 7
-   systemctl enable sen2agri-landsat-downloader.timer
-   systemctl start sen2agri-landsat-downloader.timer
-   systemctl enable sen2agri-sentinel-downloader.timer
-   systemctl start sen2agri-sentinel-downloader.timer
+   #NOTE: since 1.8 these downloaders are no longer used. The sen2agri-services are used instead
+#   systemctl enable sen2agri-landsat-downloader.timer
+#   systemctl start sen2agri-landsat-downloader.timer
+#   systemctl enable sen2agri-sentinel-downloader.timer
+#   systemctl start sen2agri-sentinel-downloader.timer
    #the demmaccs service may be started whenever it's time will come
    #starting it at the same time with downloaders, will do nothing 'cause it
    #will not find any downloaded product
@@ -657,6 +658,33 @@ function install_maccs()
     done
 }
 
+function install_sen2agri_services() 
+{
+    if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
+        zipArchive=$(ls -at ../sen2agri-services/sen2agri-services*.zip| head -n 1)
+        filename="${zipArchive%.*}"
+
+        echo "Extracting into /usr/share/sen2agri/sen2agri-services from archive $zipArchive ..."
+        
+        mkdir -p /usr/share/sen2agri/sen2agri-services && unzip ${zipArchive} -d /usr/share/sen2agri/sen2agri-services
+        if [ $? -ne 0 ]; then
+            echo "Unable to unpack the sen2agri-services into/usr/share/sen2agri/sen2agri-services"
+            echo "Exiting now"
+            exit 1
+        fi
+        # convert any possible CRLF into LF
+        tr -d '\r' < /usr/share/sen2agri/sen2agri-services/bin/start.sh > /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp && cp -f /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp /usr/share/sen2agri/sen2agri-services/bin/start.sh && rm /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp 
+        # ensure the execution flag
+        chmod a+x /usr/share/sen2agri/sen2agri-services/bin/start.sh
+        
+    else
+        echo "No sen2agri-services zip archive provided in ../sen2agri-services"
+        echo "Exiting now"
+        exit 1
+    fi
+    
+}
+
 function disable_selinux()
 {
     echo "Disabling SELinux"
@@ -691,6 +719,8 @@ disable_firewall
 ##install EPEL for packages dependencies installation
 yum -y install epel-release
 yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.3-x86_64/pgdg-centos94-9.4-3.noarch.rpm
+
+install_sen2agri_services
 
 install_maccs
 
@@ -727,6 +757,8 @@ install_downloaders_demmacs
 #-----------------------------------------------------------#
 ####  START ORCHESTRATOR SERVICES                       #####
 #-----------------------------------------------------------#
+systemctl enable sen2agri-services
+systemctl start sen2agri-services
 systemctl enable sen2agri-orchestrator
 systemctl start sen2agri-orchestrator
 systemctl enable sen2agri-scheduler
@@ -736,6 +768,7 @@ systemctl start sen2agri-http-listener
 systemctl enable sen2agri-monitor-agent
 systemctl start sen2agri-monitor-agent
 
-echo "Please edit the following files to set up your USGS and SciHub credentials:"
-echo "/usr/share/sen2agri/sen2agri-downloaders/usgs.txt"
-echo "/usr/share/sen2agri/sen2agri-downloaders/apihub.txt"
+echo "Please edit the USGS and SciHub credentials in the database for the downloaders!"
+#echo "Please edit the following files to set up your USGS and SciHub credentials:"
+#echo "/usr/share/sen2agri/sen2agri-downloaders/usgs.txt"
+#echo "/usr/share/sen2agri/sen2agri-downloaders/apihub.txt"

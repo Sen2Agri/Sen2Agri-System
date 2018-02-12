@@ -136,89 +136,89 @@ begin
 
             if not exists (select * from config_metadata where key = 'downloader.S1.stopped') then
                 _statement := $str$
-                INSERT INTO config_metadata VALUES ('downloader.S1.stopped', 'S1 downloader is stopped', 'bool', false, 15);
+                INSERT INTO config_metadata VALUES ('downloader.s1.stopped', 'S1 downloader is stopped', 'bool', false, 15);
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            if not exists (select * from config where key = 'downloader.S1.stopped' and site_id is null) then
+            if not exists (select * from config where key = 'downloader.s1.stopped' and site_id is null) then
                 _statement := $str$
-                INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.S1.stopped', NULL, '0', '2017-10-24 14:56:57.501918+02');
-                $str$;
-                raise notice '%', _statement;
-                execute _statement;
-            end if;
-
-            if not exists (select * from config_metadata where key = 'downloader.S2.stopped') then
-                _statement := $str$
-                INSERT INTO config_metadata VALUES ('downloader.S2.stopped', 'S2 downloader is stopped', 'bool', false, 15);
-                $str$;
-                raise notice '%', _statement;
-                execute _statement;
-            end if;
-            if not exists (select * from config where key = 'downloader.S2.stopped' and site_id is null) then
-                _statement := $str$
-                INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.S2.stopped', NULL, '0', '2017-10-24 14:56:57.501918+02');
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s1.stopped', NULL, '0', '2017-10-24 14:56:57.501918+02');
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
             end if;
 
-            if not exists (select * from config_metadata where key = 'downloader.L8.stopped') then
+            if not exists (select * from config_metadata where key = 'downloader.s2.stopped') then
                 _statement := $str$
-                INSERT INTO config_metadata VALUES ('downloader.L8.stopped', 'L8 downloader is stopped', 'bool', false, 15);
+                INSERT INTO config_metadata VALUES ('downloader.s2.stopped', 'S2 downloader is stopped', 'bool', false, 15);
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            if not exists (select * from config where key = 'downloader.L8.stopped' and site_id is null) then
+            if not exists (select * from config where key = 'downloader.s2.stopped' and site_id is null) then
                 _statement := $str$
-                INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.L8.stopped', NULL, '0', '2017-10-24 14:56:57.501918+02');
-                $str$;
-                raise notice '%', _statement;
-                execute _statement;
-            end if;
-
-            if not exists (select * from config_metadata where key = 'S1.enabled') then
-                _statement := $str$
-                INSERT INTO config_metadata VALUES ('S1.enabled', 'S1 is enabled', 'bool', false, 15);
-                $str$;
-                raise notice '%', _statement;
-                execute _statement;
-            end if;
-            if not exists (select * from config where key = 'S1.enabled' and site_id is null) then
-                _statement := $str$
-                INSERT INTO config(key, site_id, value, last_updated) VALUES ('S1.enabled', NULL, '0', '2017-10-24 14:56:57.501918+02');
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.stopped', NULL, '0', '2017-10-24 14:56:57.501918+02');
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
             end if;
 
-            if not exists (select * from config_metadata where key = 'S2.enabled') then
+            if not exists (select * from config_metadata where key = 'downloader.l8.stopped') then
                 _statement := $str$
-                INSERT INTO config_metadata VALUES ('S2.enabled', 'S2 is enabled', 'bool', false, 15);
+                INSERT INTO config_metadata VALUES ('downloader.l8.stopped', 'L8 downloader is stopped', 'bool', false, 15);
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            if not exists (select * from config where key = 'S2.enabled' and site_id is null) then
+            if not exists (select * from config where key = 'downloader.l8.stopped' and site_id is null) then
                 _statement := $str$
-                INSERT INTO config(key, site_id, value, last_updated) VALUES ('S2.enabled', NULL, '0', '2017-10-24 14:56:57.501918+02');
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.stopped', NULL, '0', '2017-10-24 14:56:57.501918+02');
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
             end if;
 
-            if not exists (select * from config_metadata where key = 'L8.enabled') then
+            if not exists (select * from config_metadata where key = 's1.enabled') then
                 _statement := $str$
-                INSERT INTO config_metadata VALUES ('L8.enabled', 'L8 is enabled', 'bool', false, 15);
+                INSERT INTO config_metadata VALUES ('s1.enabled', 'S1 is enabled', 'bool', false, 15);
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            if not exists (select * from config where key = 'L8.enabled' and site_id is null) then
+            if not exists (select * from config where key = 's1.enabled' and site_id is null) then
                 _statement := $str$
-                INSERT INTO config(key, site_id, value, last_updated) VALUES ('L8.enabled', NULL, '0', '2017-10-24 14:56:57.501918+02');
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('s1.enabled', NULL, '0', '2017-10-24 14:56:57.501918+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            if not exists (select * from config_metadata where key = 's2.enabled') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('s2.enabled', 'S2 is enabled', 'bool', false, 15);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 's2.enabled' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('s2.enabled', NULL, '0', '2017-10-24 14:56:57.501918+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            if not exists (select * from config_metadata where key = 'l8.enabled') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('l8.enabled', 'L8 is enabled', 'bool', false, 15);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'l8.enabled' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('l8.enabled', NULL, '0', '2017-10-24 14:56:57.501918+02');
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;

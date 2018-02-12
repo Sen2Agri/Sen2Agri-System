@@ -61,6 +61,15 @@ function build_SEN2AGRI_app_RPM_Package()
    ##create a temporary dir
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_app
 
+   ###########################################
+   #SEN2AGRI-SERVICES
+   ###########################################
+   ##sen2agri-services will be installed in folder : usr/share/sen2agri/sen2agri-services
+   mkdir -p ${APP_INSTALL_PATH}/usr/share/sen2agri/sen2agri-services
+   ##sen2agri-services services will be installed in folder : usr/lib/systemd/system
+   mkdir -p ${APP_INSTALL_PATH}/usr/lib/systemd/system
+   cp -f ${SOURCES_DIR_PATH}/sen2agri-services/dist/* ${APP_INSTALL_PATH}/usr/lib/systemd/system
+
    ##build RPM package
    fpm -s dir -t rpm -n sen2agri-app -C ${APP_INSTALL_PATH}/ ${PLATFORM_INSTALL_DEP} \
        -v $VERSION \

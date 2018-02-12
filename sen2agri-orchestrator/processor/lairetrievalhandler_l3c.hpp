@@ -50,7 +50,7 @@ private:
                             const TileTemporalFilesInfo &tileTemporalFilesInfo, LAIGlobalExecutionInfos &outGlobalExecInfos, bool bRemoveTempFiles);
 
     void WriteExecutionInfosFile(const QString &executionInfosPath,
-                                std::map<QString, QString> &configParameters, const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles,
+                                const std::map<QString, QString> &configParameters, const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles,
                                 const QStringList &listProducts, bool bIsReproc);
 
     // Arguments getters
@@ -59,15 +59,11 @@ private:
     QStringList GetProfileReprocessingArgs(const std::map<QString, QString> &configParameters, const QString &allLaiTimeSeriesFileName,
                                            const QString &allErrTimeSeriesFileName, const QString &allMsksTimeSeriesFileName,
                                            const QString &reprocTimeSeriesFileName, const QStringList &listDates);
-    QStringList GetReprocProfileSplitterArgs(const std::map<QString, QString> &configParameters,
-                                             const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
+    QStringList GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
                                              const QString &reprocFlagsFileListFileName, const QStringList &listDates);
     QStringList GetFittedProfileReprocArgs(const QString &allLaiTimeSeriesFileName, const QString &allErrTimeSeriesFileName,
                                            const QString &allMsksTimeSeriesFileName, const QString &fittedTimeSeriesFileName,
                                            const QStringList &ildates);
-    QStringList GetFittedProfileReprocSplitterArgs(const std::map<QString, QString> &configParameters, const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
-                                                   const QString &fittedFlagsFileListFileName, const QStringList &allXmlsFileName);
-
     QStringList GetLaiMonoProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                                const QStringList &products, const QStringList &tileIdsList, const QStringList &ndviList,
                                                const QStringList &laiList, const QStringList &laiErrList, const QStringList &laiFlgsList);

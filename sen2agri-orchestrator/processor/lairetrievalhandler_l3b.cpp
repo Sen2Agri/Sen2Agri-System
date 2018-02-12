@@ -164,16 +164,16 @@ void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAl
 
 }
 
-NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString> &configParameters,
+NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(const std::map<QString, QString> &configParameters,
                                              const QList<TileInfos> &listPrdTiles, QList<TaskToSubmit> &allTasksList,
                                              int tasksStartIdx, bool bForceGenModels)
 {
     NewStepList steps;
-    const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
-    const auto &rsrCfgFile = configParameters["processor.l3b.lai.rsrcfgfile"];
-    const auto &globalSampleFile = configParameters["processor.l3b.lai.global_bv_samples_file"];
+    const auto &modelsFolder = GetMapValue(configParameters, "processor.l3b.lai.modelsfolder");
+    const auto &rsrCfgFile = GetMapValue(configParameters, "processor.l3b.lai.rsrcfgfile");
+    const auto &globalSampleFile = GetMapValue(configParameters, "processor.l3b.lai.global_bv_samples_file");
     //bool useLaiBandsCfg = ((configParameters["processor.l3b.lai.use_lai_bands_cfg"]).toInt() != 0);
-    const auto &laiCfgFile = configParameters["processor.l3b.lai.laibandscfgfile"];
+    const auto &laiCfgFile = GetMapValue(configParameters, "processor.l3b.lai.laibandscfgfile");
 
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
     int curIdx = tasksStartIdx;
@@ -363,7 +363,7 @@ void LaiRetrievalHandlerL3B::HandleProduct(EventProcessingContext &ctx, const Jo
                                             const QList<TileInfos> &prdTilesInfosList, QList<TaskToSubmit> &allTasksList) {
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+    const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
 
     bool bForceGenModels = IsForceGenModels(parameters, configParameters);
     bool bRemoveTempFiles = NeedRemoveJobFolder(ctx, event.jobId, "l3b");
@@ -597,7 +597,7 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
                                                                 const QList<TileInfos> &prdTilesInfosList, const QStringList &ndviList,
                                                                 const QStringList &laiList, const QStringList &laiErrList, const QStringList &laiFlgsList) {
 
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+    const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
     QStringList tileIdsList;
     for(const TileInfos &tileInfo: prdTilesInfosList) {
         ProcessorHandlerHelper::SatelliteIdType satId;
@@ -610,7 +610,7 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    const auto &lutFile = configParameters["processor.l3b.lai.lut_path"];
+    const auto &lutFile = GetMapValue(configParameters, "processor.l3b.lai.lut_path");
 
     WriteExecutionInfosFile(executionInfosPath, prdTilesInfosList);
 
@@ -621,6 +621,7 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
                             "-baseline", "01.00",
                             "-siteid", QString::number(event.siteId),
                             "-processor", "vegetation",
+                            "-compress", "1",
                             "-gipp", executionInfosPath,
                             "-outprops", outPropsPath};
     productFormatterArgs += "-il";
@@ -656,21 +657,26 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
         productFormatterArgs += laiFlgsList[i];
     }
 
+    if (IsCloudOptimizedGeotiff(configParameters)) {
+        productFormatterArgs += "-cog";
+        productFormatterArgs += "1";
+    }
+
     return productFormatterArgs;
 }
 
-QStringList LaiRetrievalHandlerL3B::GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile) {
-    const QString &samplesNo = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.samples", DEFAULT_GENERATED_SAMPLES_NO);
+QStringList LaiRetrievalHandlerL3B::GetBVInputVariableGenerationArgs(const std::map<QString, QString> &configParameters, const QString &strGenSampleFile) {
+    const QString &samplesNo = GetMapValue(configParameters, "processor.l3b.lai.models.samples", DEFAULT_GENERATED_SAMPLES_NO);
 
-    const QString &minlai = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.minlai", DEFAULT_MIN_LAI);
-    const QString &maxlai = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.maxlai", DEFAULT_MAX_LAI);
-    const QString &modlai = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.modlai", DEFAULT_MOD_LAI);
-    const QString &stdlai = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.stdlai", DEFAULT_STD_LAI);
+    const QString &minlai = GetMapValue(configParameters, "processor.l3b.lai.models.minlai", DEFAULT_MIN_LAI);
+    const QString &maxlai = GetMapValue(configParameters, "processor.l3b.lai.models.maxlai", DEFAULT_MAX_LAI);
+    const QString &modlai = GetMapValue(configParameters, "processor.l3b.lai.models.modlai", DEFAULT_MOD_LAI);
+    const QString &stdlai = GetMapValue(configParameters, "processor.l3b.lai.models.stdlai", DEFAULT_STD_LAI);
 
-    const QString &minala = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.minala", DEFAULT_MIN_ALA);
-    const QString &maxala = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.maxala", DEFAULT_MAX_ALA);
-    const QString &modala = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.modala", DEFAULT_MOD_ALA);
-    const QString &stdala = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.stdala", DEFAULT_STD_ALA);
+    const QString &minala = GetMapValue(configParameters, "processor.l3b.lai.models.minala", DEFAULT_MIN_ALA);
+    const QString &maxala = GetMapValue(configParameters, "processor.l3b.lai.models.maxala", DEFAULT_MAX_ALA);
+    const QString &modala = GetMapValue(configParameters, "processor.l3b.lai.models.modala", DEFAULT_MOD_ALA);
+    const QString &stdala = GetMapValue(configParameters, "processor.l3b.lai.models.stdala", DEFAULT_STD_ALA);
 
     return { "BVInputVariableGeneration",
                 "-samples", samplesNo,
@@ -740,9 +746,9 @@ QStringList LaiRetrievalHandlerL3B::GetTrainingDataGeneratorArgs(const QString &
 
 QStringList LaiRetrievalHandlerL3B::GetInverseModelLearningArgs(const QString &trainingFile, const QString &product, const QString &modelFile,
                                                              const QString &errEstFile, const QString &modelsFolder,
-                                                             std::map<QString, QString> &configParameters) {
-    QString bestOf = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.bestof", DEFAULT_BEST_OF);
-    QString regressor = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.regressor", DEFAULT_REGRESSOR);
+                                                             const std::map<QString, QString> &configParameters) {
+    const QString &bestOf = GetMapValue(configParameters, "processor.l3b.lai.models.bestof", DEFAULT_BEST_OF);
+    const QString &regressor = GetMapValue(configParameters, "processor.l3b.lai.models.regressor", DEFAULT_REGRESSOR);
 
     return { "InverseModelLearning",
                 "-training", trainingFile,
@@ -755,20 +761,12 @@ QStringList LaiRetrievalHandlerL3B::GetInverseModelLearningArgs(const QString &t
     };
 }
 
-const QString& LaiRetrievalHandlerL3B::GetDefaultCfgVal(std::map<QString, QString> &configParameters, const QString &key, const QString &defVal) {
-    auto search = configParameters.find(key);
-    if(search != configParameters.end()) {
-        return search->second;
-    }
-    return defVal;
-}
-
-bool LaiRetrievalHandlerL3B::IsForceGenModels(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
+bool LaiRetrievalHandlerL3B::IsForceGenModels(const QJsonObject &parameters, const std::map<QString, QString> &configParameters) {
     bool bForceGenModels = false;
     if(parameters.contains("genmodel")) {
         bForceGenModels = (parameters["genmodel"].toInt() != 0);
     } else {
-        bForceGenModels = ((configParameters["processor.l3b.generate_models"]).toInt() != 0);
+        bForceGenModels = ((GetMapValue(configParameters, "processor.l3b.generate_models")).toInt() != 0);
     }
     return bForceGenModels;
 }
@@ -864,7 +862,12 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
         params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     } else {
         // processing of a season in progress, we get the products inserted in the last interval since the last scheduling
-        params.productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+        const ProductList &list  = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+        for (const Product &prd: list) {
+            if (prd.created >= seasonStartDate && prd.created < seasonEndDate.addDays(1)) {
+                params.productList.append(prd);
+            }
+        }
     }
     // TODO: Maybe we should perform also a filtering by the creation date, to be inside the season to avoid creation for the
     // products that are outside the season

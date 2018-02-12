@@ -522,6 +522,7 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
                                          "-baseline", "01.00",
                                          "-siteid", QString::number(cfg.siteId),
                                          "-processor", "composite",
+                                         "-compress", "1",
                                          "-gipp", executionInfosPath,
                                          "-outprops", outPropsPath};
     productFormatterArgs += "-il";
@@ -556,6 +557,10 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
     for(const CompositeProductFormatterParams &params: productParams) {
         productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.prevL3ARgbFile;
+    }
+    if (IsCloudOptimizedGeotiff(cfg.allCfgMap)) {
+        productFormatterArgs += "-cog";
+        productFormatterArgs += "1";
     }
 
     return productFormatterArgs;

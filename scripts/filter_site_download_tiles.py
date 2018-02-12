@@ -158,6 +158,46 @@ class L2AInfo(object):
                                 "satellite_id" : satId
                             })
             if (enableDownload and len(tilesList) > 0) or (not enableDownload):
+                try :
+                    # download already enabled, perform filtering or disable if needed
+                    self.cursor.execute("""insert into site_tiles (site_id, satellite_id, tiles) values (%(site_id)s :: smallint,
+                               %(satellite_id)s :: integer,
+                               %(tiles)s :: text[])""",
+                                {
+                                    "site_id" : siteId,
+                                    "satellite_id" : satId,                                        
+                                    "tiles" : '{' + ', '.join(['"' + t + '"' for t in tilesList]) + '}'
+                                })
+                except Exception, e:
+                    self.database_disconnect()
+                    if not self.database_connect():
+                        return False
+                    try :
+                        # download already enabled, perform filtering or disable if needed
+                        self.cursor.execute("""insert into site_tiles (site_id, satellite_id, tiles, id) values (%(site_id)s :: smallint,
+                               %(satellite_id)s :: integer,
+                               %(tiles)s :: text[],
+                               %(id)s :: integer)""",
+                                {
+                                    "site_id" : siteId,
+                                    "satellite_id" : satId,                                        
+                                    "tiles" : '{' + ', '.join(['"' + t + '"' for t in tilesList]) + '}',
+                                    "id" : 0
+                                })
+                    except Exception, e:
+                        print("Database insert query failed: {}".format(e))
+                        self.database_disconnect()
+                        return False
+            self.conn.commit()
+        except Exception, e:
+            print("Database update query failed: {}".format(e))
+            self.database_disconnect()
+            return False
+        self.database_disconnect()
+        return True
+
+    def executeInsert(siteId, satId, tilesList):
+        try :
                 # download already enabled, perform filtering or disable if needed
                 self.cursor.execute("""insert into site_tiles (site_id, satellite_id, tiles) values (%(site_id)s :: smallint,
                                %(satellite_id)s :: integer,
@@ -167,15 +207,23 @@ class L2AInfo(object):
                                     "satellite_id" : satId,                                        
                                     "tiles" : '{' + ', '.join(['"' + t + '"' for t in tilesList]) + '}'
                                 })
-            self.conn.commit()
         except Exception, e:
-            print("Database update query failed: {}".format(e))
-            self.database_disconnect()
-            return False
-        self.database_disconnect()
-        return True
-
-
+             try :
+                 # download already enabled, perform filtering or disable if needed
+                 self.cursor.execute("""insert into site_tiles (site_id, satellite_id, tiles) values (%(site_id)s :: smallint,
+                               %(satellite_id)s :: integer,
+                               %(tiles)s :: text[])""",
+                                {
+                                    "site_id" : siteId,
+                                    "id" : 0,
+                                    "satellite_id" : satId,                                        
+                                    "tiles" : '{' + ', '.join(['"' + t + '"' for t in tilesList]) + '}'
+                                })
+             except Exception, e:
+                 print("Database update query failed: {}".format(e))
+                 self.database_disconnect()
+                 return False
+	
 parser = argparse.ArgumentParser(
     description="Script for filtering the downloaded tiles for a site")
 parser.add_argument('-c', '--config', default="/etc/sen2agri/sen2agri.conf", help="configuration file")

@@ -479,9 +479,12 @@ ProcessorHandlerHelper::SatelliteIdType ProcessorHandler::GetSatIdForTile(const 
 }
 
 QString ProcessorHandler::BuildProcessorOutputFileName(const std::map<QString, QString> &configParameters,
-                                                       QString fileName, bool compress, bool bigTiff)
+                                                       const QString &fileName, bool compress, bool bigTiff)
 {
-    bool bIsCog = IsCloudOptimizedGeotiff(configParameters);
+    //bool bIsCog = IsCloudOptimizedGeotiff(configParameters);
+    // TODO: This flag could be removed as the mechanism was moved to product formatter
+    // We leave for now the compression and bigtiff
+    bool bIsCog = false;
     if (bIsCog || compress || bigTiff) {
         QString ret = "\"" + fileName+"?";
         bool appendAmp = false;
@@ -515,12 +518,12 @@ bool ProcessorHandler::IsCloudOptimizedGeotiff(const std::map<QString, QString> 
     return bIsCog;
 }
 
-QString ProcessorHandler::GetMapValue(const std::map<QString, QString> &configParameters, const QString &key) {
+QString ProcessorHandler::GetMapValue(const std::map<QString, QString> &configParameters, const QString &key, const QString &defVal) {
     std::map<QString, QString>::const_iterator it = configParameters.find(key);
     if(it != configParameters.end()) {
         return it->second;
     }
-    return "";
+    return defVal;
 }
 
 /*

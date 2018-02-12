@@ -470,7 +470,7 @@ QStringList LaiRetrievalHandlerL3BNew::GetLaiMonoProductFormatterArgs(TaskToSubm
                                                                 const QStringList &laiList, const QStringList &laiFlgsList,
                                                                 const QStringList &faparList,  const QStringList &fcoverList) {
 
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+    const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
     QStringList tileIdsList;
     for(const TileInfos &tileInfo: prdTilesInfosList) {
         ProcessorHandlerHelper::SatelliteIdType satId;
@@ -483,7 +483,7 @@ QStringList LaiRetrievalHandlerL3BNew::GetLaiMonoProductFormatterArgs(TaskToSubm
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    const auto &lutFile = configParameters["processor.l3b.lai.lut_path"];
+    const auto &lutFile = GetMapValue(configParameters, "processor.l3b.lai.lut_path");
 
     WriteExecutionInfosFile(executionInfosPath, prdTilesInfosList);
 
@@ -494,6 +494,7 @@ QStringList LaiRetrievalHandlerL3BNew::GetLaiMonoProductFormatterArgs(TaskToSubm
                             "-baseline", "01.00",
                             "-siteid", QString::number(event.siteId),
                             "-processor", "vegetation",
+                            "-compress", "1",
                             "-gipp", executionInfosPath,
                             "-outprops", outPropsPath};
     productFormatterArgs += "-il";
@@ -539,6 +540,11 @@ QStringList LaiRetrievalHandlerL3BNew::GetLaiMonoProductFormatterArgs(TaskToSubm
             productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
             productFormatterArgs += fcoverList[i];
         }
+    }
+
+    if (IsCloudOptimizedGeotiff(configParameters)) {
+        productFormatterArgs += "-cog";
+        productFormatterArgs += "1";
     }
 
     return productFormatterArgs;
@@ -679,7 +685,12 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3BNew::GetProcessingDefinitionI
         params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     } else {
         // processing of a season in progress, we get the products inserted in the last interval since the last scheduling
-        params.productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+        const ProductList &list  = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+        for (const Product &prd: list) {
+            if (prd.created >= seasonStartDate && prd.created < seasonEndDate.addDays(1)) {
+                params.productList.append(prd);
+            }
+        }
     }
     // TODO: Maybe we should perform also a filtering by the creation date, to be inside the season to avoid creation for the
     // products that are outside the season
