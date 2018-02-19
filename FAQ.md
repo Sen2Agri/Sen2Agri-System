@@ -362,7 +362,7 @@ After running the script you can enable the site in the web interface.
 
 ## Can I move or store the files on a network drive?
 
-The Sen2-Agri system doesn't use any advanced filesystem functionality, so the anything can be used for its temporary and output locations.
+The L2A processor uses symbolic links to reduce disk space usage when running `MACCS`. This means that the temporary location (`/mnt/archive/demmaccs_tmp`) needs to support that feature. Major file systems that don't support symlinks directly are VirtualBox Shared Folders and `SMB/CIFS`. See [this question](#how-can-i-use-a-shared-or-network-location-for-the-temporary-files-of-maccs) for suggestions for handling those.
 
 The paths can be changed in the database, but if you want to store the files somewhere else, like on a larger drive or network volume, it's probably simpler to either mount the drive to `/mnt/archive`, or replace those with symlinks:
 
@@ -374,6 +374,20 @@ sudo ln -s /mnt/large_disk/sen2agri /mnt/archive
 If you forgot to do this when installing the system, you should [stop the services](#how-do-i-stop-or-restart-the-sen2-agri-services), replace or re-mount the directories and start the system back up after copying the data.
 
 If you are using `SMB` (`CIFS` or Windows-like) shares and encounter permission issues while writing to them, you can use something like `file_mode=0777,dir_mode=0777,noperm` as mount options, which will make the files world-writable. To improve performance, you can add `vers=2.1,cache=loose`. See the `mount.cifs` `man` page for more details.
+
+## How can I use a shared or network location for the temporary files of `MACCS`?
+
+A file system supporting symbolic links is required at this time for MACCS, but some workarounds are available.
+
+If you are using VirtualBox you can enable symlink support by running
+
+```bash
+VBoxManage setextradata VM VBoxInternal2/SharedFoldersEnableSymlinksCreate/share 1
+```
+
+You need to stop and restart the virtual machine after changing this setting; see the VirtualBox manual for more information. On older versions of Windows, you might also need to run VirtualBox with administrator privileges. Please note that performance might be poor when running the system in a virtual machine.
+
+If you are using `SMB/CIFS` shares, symlinks can be emulated by storing the metadata in a special file. To enable that, you need to use the `mfsymlinks` mount option; see the `mount.cifs` `man` page for more information.
 
 ## Can I disable the Landsat 8 download?
 
