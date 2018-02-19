@@ -279,7 +279,7 @@ class L2AInfo(object):
         # delete the steps for this site
         for jobId in jobIds : 
             print("Cancelling job: {}".format(jobId))
-            self.executeSqlDeleteCmd("set transaction isolation level repeatable read; select from sp_mark_job_canceled({})".format(jobId))
+            self.executeSqlDeleteCmd("set transaction isolation level repeatable read; select from sp_mark_job_cancelled({})".format(jobId))
 
     def pause_jobs(self, jobIds):
         # delete the steps for this site

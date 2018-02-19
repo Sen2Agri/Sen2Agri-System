@@ -125,6 +125,36 @@ def validate_L1C_product_dir(l1cDir):
 
     return True
 
+def post_process_maccs_product(demmaccs_config, output_path) : 
+    print ("Postprocessing product {} ...".format(output_path))
+    for root, dirnames, filenames in os.walk(output_path):
+        for filename in fnmatch.filter(filenames, '*.TIF'):
+            tifFilePath = os.path.join(root, filename)
+            print("Processing {}".format(filename))
+            if (demmaccs_config.removeSreFiles == True) :
+                isSre = re.match(".*SRE[1-2]?\.DBL\.TIF", filename)
+                if isSre is not None:
+                    print("Deleting SRE file {}".format(tifFilePath))
+                    os.remove(tifFilePath)
+            elif (demmaccs_config.removeFreFiles == True) :
+                isFre = re.match(".*FRE[1-2]?\.DBL\.TIF", filename)
+                if isFre is not None:
+                    print("Deleting FRE file {}".format(tifFilePath))
+                    os.remove(tifFilePath)
+            if ((demmaccs_config.compressTiffs == True) or (demmaccs_config.cogTiffs == True)) :
+                optgtiffArgs = ""
+                if (demmaccs_config.compressTiffs == True) : 
+                    optgtiffArgs += " --compress"
+                else:
+                    optgtiffArgs += " --no-compress"
+                    
+                if (demmaccs_config.cogTiffs == True) : 
+                    optgtiffArgs += " --overviews --tiled"
+                else:
+                    optgtiffArgs += " --no-overviews --strippped"
+                    
+                os.system("optimize_gtiff.py" + optgtiffArgs)
+    
 
 def launch_demmaccs(l1c_context):
     global general_log_path
@@ -144,13 +174,18 @@ def launch_demmaccs(l1c_context):
     for l1c in l1c_context.l1c_list:
         file_path = l1c[3]
         site_id = l1c[1]
-        if not l1c_context.is_site_enabled(site_id):
+        satellite_id = l1c[2]
+        if not l1c_context.l1c_db.is_site_enabled(site_id):
             print("Aborting processing for site {} because it's disabled".format(site_id))
+            return
+
+        if not l1c_context.l1c_db.is_sensor_enabled(site_id, satellite_id):
+            print("Aborting processing for site {} because download for sensor {} it's disabled".format(site_id, satellite_id))
             return
 
         if not validate_L1C_product_dir(file_path):
             print("The product {} is not valid or temporary unavailable!!!".format(file_path))
-            sys.exit(-1)
+            return
 
         # l1c is a record from downloader_history table. the indexes are :
         # 0  | 1       | 2            | 3         | 4            | 5
@@ -242,6 +277,8 @@ def launch_demmaccs(l1c_context):
         else:
             log(output_path, "demmaccs.py script didn't work!", general_log_filename)
         if len(l2a_processed_tiles) > 0:
+            # post process the valid maccs products
+            post_process_maccs_product(demmaccs_config, output_path);
             log(output_path, "Insert info in product table and set state as processed in downloader_history table for product {}".format(output_path), general_log_filename)
         else:
             log(output_path, "Only set the state as processed in downloader_history (no l2a tiles found after maccs) for product {}".format(output_path), general_log_filename)

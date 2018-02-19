@@ -63,6 +63,10 @@ DATABASE_DEMMACCS_MACCS_IP_ADDRESS = "demmaccs.maccs-ip-address"
 DATABASE_DEMMACCS_MACCS_LAUNCHER = "demmaccs.maccs-launcher"
 DATABASE_DEMMACCS_WORKING_DIR = "demmaccs.working-dir"
 
+DATABASE_DEMMACCS_COMPRESS_TIFFS = "demmaccs.compress-tiffs"
+DATABASE_DEMMACCS_COG_TIFFS = "demmaccs.cog-tiffs"
+DATABASE_DEMMACCS_REMOVE_SRE = "demmaccs.remove-sre"
+DATABASE_DEMMACCS_REMOVE_FRE = "demmaccs.remove-fre"
 
 DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE = int(1)
 DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE = int(2)
@@ -1173,6 +1177,19 @@ class DEMMACCSConfig(object):
         self.maccs_launcher = maccs_launcher
         self.working_dir = working_dir
 
+        self.compressTiffs = False;
+        self.cogTiffs = False;
+        self.removeSreFiles = False;
+        self.removeFreFiles = False;
+        
+    def setPostprocessingParams(self, compressTiffs, cogTiffs, removeSreFiles, removeFreFiles) :
+        self.compressTiffs = (compressTiffs is "1");
+        self.cogTiffs = (cogTiffs is "1");
+        self.removeSreFiles = (removeSreFiles is "1");
+        self.removeFreFiles = (removeFreFiles is "1");
+        if ((self.removeFreFiles == True) and (self.removeSreFiles == True)) :
+            self.removeFreFiles = False
+        
 
 ###########################################################################
 class L1CInfo(object):
@@ -1222,6 +1239,10 @@ class L1CInfo(object):
         maccs_ip_address = ""
         maccs_launcher = ""
         working_dir = ""
+        compressTiffs = ""
+        cogTiffs = ""
+        removeSreFiles = ""
+        removeFreFiles = ""
 
         for row in rows:
             if len(row) != 3:
@@ -1241,12 +1262,41 @@ class L1CInfo(object):
                 maccs_launcher = row[2]
             elif row[0] == DATABASE_DEMMACCS_WORKING_DIR:
                 working_dir = row[2]
-
+            elif row[0] == DATABASE_DEMMACCS_COMPRESS_TIFFS:
+                compressTiffs = row[2]
+            elif row[0] == DATABASE_DEMMACCS_COG_TIFFS:
+                cogTiffs = row[2]
+            elif row[0] == DATABASE_DEMMACCS_REMOVE_SRE:
+                removeSreFiles = row[2]
+            elif row[0] == DATABASE_DEMMACCS_REMOVE_FRE:
+                removeFreFiles = row[2]
+                
         self.database_disconnect()
         if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_launcher) == 0 or len(working_dir) == 0:
             return None
 
-        return DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir)
+        demmaccsConfig = DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir)
+        demmaccsConfig.setPostprocessingParams(compressTiffs, cogTiffs, removeSreFiles, removeFreFiles)
+        
+        return demmaccsConfig
+
+    def to_bool(self, value):
+        valid = {'true': True, 't': True, '1': True,
+                 'false': False, 'f': False, '0': False,
+                }   
+
+        if isinstance(value, bool):
+            return value
+
+        if not isinstance(value, basestring):
+            raise ValueError('invalid literal for boolean. Not a string.')
+
+        lower_value = value.lower()
+        if lower_value in valid:
+            return valid[lower_value]
+        else:
+            return False
+
 
     def is_site_enabled(self, site_id):
         if self.database_connect():
@@ -1259,6 +1309,38 @@ class L1CInfo(object):
                 except:
                     pass
 
+    def is_sensor_enabled(self, site_id, sensor_id):
+        if self.database_connect():
+            try:
+                self.cursor.execute("select satellite_name from satellite where id = %s;", (sensor_id, ))
+                satName = self.cursor.fetchone()[0]
+                # TODO: We better add a column "short_name" in the satellite table
+                shortSatName = "S2"
+                if (satName == "landsat8") :
+                    shortSatName = "L8"
+                elif (satName == "sentinel1") :
+                    shortSatName = "S1"
+                
+                self.cursor.execute("select value from config where key = '{}.enabled' and site_id = {};".format(shortSatName, site_id))
+                rows = self.cursor.fetchall()
+                if len(rows) > 0:
+                    print("Found key {}.enabled for site {} with value {}".format(shortSatName, site_id, rows[0][0]))
+                    return self.to_bool("" + rows[0][0])
+                self.cursor.execute("select value from config where key = '{}.enabled' and site_id is NULL;".format(shortSatName))
+                if len(rows) > 0:
+                    print("Found key {}.enabled for all sites with value {}".format(shortSatName, rows[0][0]))
+                    return self.to_bool("" + rows[0][0])
+                
+                # if neither the site key nor the default value is not set, then return True
+                # TODO: Should we return False???
+                print("Couldn't find at all the key {}.enabled for site {}!".format(shortSatName, site_id))
+                return True
+            finally:
+                try:
+                    self.database_disconnect()
+                except:
+                    pass
+                    
     def get_short_name(self, table, use_id):
         if not self.database_connect():
             return ""
@@ -1396,3 +1478,5 @@ class L1CInfo(object):
             return False
         self.database_disconnect()
         return True
+
+

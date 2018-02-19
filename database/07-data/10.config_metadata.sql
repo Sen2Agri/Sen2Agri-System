@@ -204,12 +204,12 @@ INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_fapar', 'L3B LAI 
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_fcover', 'L3B LAI processor will produce FCOVER', 'int', false, 4);
 
 INSERT INTO config_metadata VALUES ('downloader.stopped', 'Downloader is stopped', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.S1.stopped', 'S1 downloader is stopped', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.S2.stopped', 'S2 downloader is stopped', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.L8.stopped', 'L8 downloader is stopped', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('S1.enabled', 'S1 is enabled', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('S2.enabled', 'S2 is enabled', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('L8.enabled', 'L8 is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s1.stopped', 'S1 downloader is stopped', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s2.stopped', 'S2 downloader is stopped', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.l8.stopped', 'L8 downloader is stopped', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('s1.enabled', 'S1 is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('s2.enabled', 'S2 is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('l8.enabled', 'L8 is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('scheduled.lookup.enabled', 'Scheduled lookup is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('scheduled.retry.enabled', 'Scheduled retry is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.enabled', 'Scheduled object storage move enabled', 'bool', false, 15);
@@ -225,3 +225,16 @@ INSERT INTO config_metadata VALUES ('downloader.l8.datasource.query.password', '
 INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download', 'L8 datasource download location', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download.user', 'L8 datasource download location user', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download.password', 'L8 datasource download location password', 'string', false, 15);
+
+INSERT INTO config_metadata VALUES ('processor.l3a.cloud_optimized_geotiff_output', 'Generate L3A Cloud Optimized Geotiff outputs', 'bool', false, 3);
+INSERT INTO config_metadata VALUES ('processor.l3b.cloud_optimized_geotiff_output', 'Generate L3B Cloud Optimized Geotiff outputs', 'bool', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3e.cloud_optimized_geotiff_output', 'Generate L3E Cloud Optimized Geotiff outputs', 'bool', false, 18);
+INSERT INTO config_metadata VALUES ('processor.l4a.cloud_optimized_geotiff_output', 'Generate L4A Cloud Optimized Geotiff outputs', 'bool', false, 5);
+INSERT INTO config_metadata VALUES ('processor.l4b.cloud_optimized_geotiff_output', 'Generate L4B Cloud Optimized Geotiff outputs', 'bool', false, 6);
+
+INSERT INTO config_metadata VALUES ('demmaccs.compress-tiffs', 'Compress the resulted L2A tiff files', 'bool', false, 16);
+INSERT INTO config_metadata VALUES ('demmaccs.cog-tiffs', 'Produce L2A tiff files as Cloud Optimized Geotiff', 'bool', false, 16);
+INSERT INTO config_metadata VALUES ('demmaccs.remove-sre', 'Remove SRE files from resulted L2A product', 'bool', false, 16);
+INSERT INTO config_metadata VALUES ('demmaccs.remove-fre', 'Remove FRE files from resulted L2A product', 'bool', false, 16);
+
+

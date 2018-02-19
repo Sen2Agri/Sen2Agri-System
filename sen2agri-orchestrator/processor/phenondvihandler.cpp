@@ -70,13 +70,11 @@ void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
         "-in", ndviImg, "-mask", allMasksImg, "-dates", dates, "-out", metricsEstimationImg
     };
 
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3e.");
     QStringList metricsSplitterArgs = { "PhenoMetricsSplitter",
                                         "-in", metricsEstimationImg,
                                         "-outparams", metricsParamsImg,
                                         "-outflags", metricsFlagsImg,
                                         "-compress", "1",
-                                        "-cog", IsCloudOptimizedGeotiff(configParameters) ? "1":"0"
                                       };
 
     globalExecInfos.allStepsList = {
@@ -185,6 +183,8 @@ void PhenoNdviHandler::WriteExecutionInfosFile(const QString &executionInfosPath
 
 QStringList PhenoNdviHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     const QStringList &listProducts, const QList<PhenoProductFormatterParams> &productParams) {
+    const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
@@ -212,6 +212,12 @@ QStringList PhenoNdviHandler::GetProductFormatterArgs(TaskToSubmit &productForma
         productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.metricsFlagsImg;
     }
+
+    if (IsCloudOptimizedGeotiff(configParameters)) {
+        productFormatterArgs += "-cog";
+        productFormatterArgs += "1";
+    }
+
     return productFormatterArgs;
 }
 

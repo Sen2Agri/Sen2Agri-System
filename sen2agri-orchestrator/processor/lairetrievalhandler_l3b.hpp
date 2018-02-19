@@ -44,9 +44,9 @@ private:
                                                const QStringList &laiList, const QStringList &laiErrList, const QStringList &laiFlgsList);
     NewStepList GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                        const QList<TileInfos> &prdTilesList, QList<TaskToSubmit> &allTasksList, bool bRemoveTempFiles, int tasksStartIdx);
-    NewStepList GetStepsToGenModel(std::map<QString, QString> &configParameters,
+    NewStepList GetStepsToGenModel(const std::map<QString, QString> &configParameters,
                                    const QList<TileInfos> &listPrdTiles, QList<TaskToSubmit> &allTasksList, int tasksStartIdx, bool bForceGenModels);
-    QStringList GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile);
+    QStringList GetBVInputVariableGenerationArgs(const std::map<QString, QString> &configParameters, const QString &strGenSampleFile);
     QStringList GetProSailSimulatorNewArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
                                        const QString &outSimuReflsFile, const QString &outAngles,
                                        const QString &laiBandsCfg);
@@ -58,12 +58,10 @@ private:
     QStringList GetTrainingDataGeneratorArgs(const QString &product, const QString &biovarsFile,
                                              const QString &simuReflsFile, const QString &outTrainingFile);
     QStringList GetInverseModelLearningArgs(const QString &trainingFile, const QString &product, const QString &anglesFile,
-                                            const QString &errEstFile, const QString &modelsFolder, std::map<QString, QString> &configParameters);
-    const QString& GetDefaultCfgVal(std::map<QString, QString> &configParameters, const QString &key, const QString &defVal);
-
+                                            const QString &errEstFile, const QString &modelsFolder, const std::map<QString, QString> &configParameters);
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
-    bool IsForceGenModels(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
+    bool IsForceGenModels(const QJsonObject &parameters, const std::map<QString, QString> &configParameters);
     bool IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsFittedReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);

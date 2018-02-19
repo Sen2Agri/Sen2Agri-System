@@ -190,7 +190,7 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(
                                                              allErrTimeSeriesFileName, allMskFlagsTimeSeriesFileName,
                                                              reprocTimeSeriesFileName, listDates);
     }
-    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(configParameters, reprocTimeSeriesFileName, reprocFileListFileName,
+    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName,
                                                                          reprocFlagsFileListFileName, listDates);
     steps.append(profileReprocTask.CreateStep("ProfileReprocessing", profileReprocessingArgs));
     steps.append(profileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", reprocProfileSplitterArgs));
@@ -315,7 +315,7 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing_New(std::ma
                                                              reprocTimeSeriesFileName, listDates);
     }
 
-    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(configParameters, reprocTimeSeriesFileName, reprocFileListFileName,
+    const QStringList &reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName,
                                                                          reprocFlagsFileListFileName, listDates);
     steps.append(profileReprocTask.CreateStep("ProfileReprocessing", profileReprocessingArgs));
     steps.append(profileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", reprocProfileSplitterArgs));
@@ -378,7 +378,7 @@ void LaiRetrievalHandlerL3C::HandleNewTilesList(EventProcessingContext &ctx, con
 }
 
 void LaiRetrievalHandlerL3C::WriteExecutionInfosFile(const QString &executionInfosPath,
-                                               std::map<QString, QString> &configParameters,
+                                               const std::map<QString, QString> &configParameters,
                                                const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles,
                                                const QStringList &listProducts, bool bIsReproc) {
     std::ofstream executionInfosFile;
@@ -392,8 +392,8 @@ void LaiRetrievalHandlerL3C::WriteExecutionInfosFile(const QString &executionInf
 
         if(bIsReproc) {
             // Get the parameters from the configuration
-            const auto &bwr = configParameters["processor.l3b.lai.localwnd.bwr"];
-            const auto &fwr = configParameters["processor.l3b.lai.localwnd.fwr"];
+            const auto &bwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
+            const auto &fwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
             executionInfosFile << "  <ProfileReprocessing_parameters>" << std::endl;
             executionInfosFile << "    <bwr_for_algo_local_online_retrieval>" << bwr.toStdString() << "</bwr_for_algo_local_online_retrieval>" << std::endl;
             executionInfosFile << "    <fwr_for_algo_local_online_retrieval>"<< fwr.toStdString() <<"</fwr_for_algo_local_online_retrieval>" << std::endl;
@@ -1057,8 +1057,8 @@ QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocArgs_New(const std::ma
     return profileReprocessingArgs;
 }
 
-QStringList LaiRetrievalHandlerL3C::GetReprocProfileSplitterArgs(const std::map<QString, QString> &configParameters,
-                                     const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
+QStringList LaiRetrievalHandlerL3C::GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName,
+                                     const QString &reprocFileListFileName,
                                      const QString &reprocFlagsFileListFileName,
                                      const QStringList &listDates) {
     QStringList args = { "ReprocessedProfileSplitter2",
@@ -1066,7 +1066,6 @@ QStringList LaiRetrievalHandlerL3C::GetReprocProfileSplitterArgs(const std::map<
             "-outrlist", reprocFileListFileName,
             "-outflist", reprocFlagsFileListFileName,
             "-compress", "1",
-            "-cog", IsCloudOptimizedGeotiff(configParameters) ? "1":"0",
             "-ildates"
     };
     args += listDates;
@@ -1088,36 +1087,20 @@ QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocArgs(const QString &al
     return fittedProfileReprocArgs;
 }
 
-QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocSplitterArgs(const std::map<QString, QString> &configParameters,
-                                           const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
-                                           const QString &fittedFlagsFileListFileName,
-                                           const QStringList &allXmlsFileName) {
-    QStringList args = { "ReprocessedProfileSplitter2",
-                "-in", fittedTimeSeriesFileName,
-                "-outrlist", fittedFileListFileName,
-                "-outflist", fittedFlagsFileListFileName,
-                "-compress", "1",
-                "-cog", IsCloudOptimizedGeotiff(configParameters) ? "1":"0",
-                "-ilxml"
-    };
-    args += allXmlsFileName;
-    return args;
-}
-
 QStringList LaiRetrievalHandlerL3C::GetReprocProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx,
                                     const JobSubmittedEvent &event, const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles,
                                     const QStringList &listProducts, const QList<LAIProductFormatterParams> &productParams, bool isFitted) {
 
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+    const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
 
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    const auto &lutFile = configParameters["processor.l3b.lai.lut_path"];
+    const auto &lutFile = GetMapValue(configParameters, "processor.l3b.lai.lut_path");
 
     WriteExecutionInfosFile(executionInfosPath, configParameters, l3bMapTiles, listProducts, !isFitted);
-    QString l3ProductType = isFitted ? "L3D" : "L3C";
-    QString productShortName = isFitted ? "l3d_fitted": "l3c_reproc";
+    const QString &l3ProductType = isFitted ? "L3D" : "L3C";
+    const QString &productShortName = isFitted ? "l3d_fitted": "l3c_reproc";
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId, productShortName);
 
     QStringList productFormatterArgs = { "ProductFormatter",
@@ -1146,6 +1129,11 @@ QStringList LaiRetrievalHandlerL3C::GetReprocProductFormatterArgs(TaskToSubmit &
     for(const LAIProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.laiReprocParams.fileLaiReprocFlgs;
+    }
+
+    if (IsCloudOptimizedGeotiff(configParameters)) {
+        productFormatterArgs += "-cog";
+        productFormatterArgs += "1";
     }
 
     return productFormatterArgs;

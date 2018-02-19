@@ -163,6 +163,9 @@ struct rasterInfo
     std::string strNewRasterFileName;
     std::string strTileID;
     bool bIsQiData;
+    // quality data can be discrete values or float values.
+    // if discrete values, we don't want to apply any linear resampling over them
+    bool bQiDataIsDiscrete;
     std::string rasterTimePeriod;
     int nRasterExpectedBandsNo;
     std::string strNewRasterFullPath;
@@ -238,6 +241,14 @@ private:
         AddParameter(ParameterType_String, "outprops", "File containing processing properties like the product main folder");
         MandatoryOff("outprops");
         AddParameter(ParameterType_String, "siteid", "The site ID");
+
+        AddParameter(ParameterType_Int, "compress", "Specifies if the rasters should be compressed or not upon product creation");
+        MandatoryOff("compress");
+        SetDefaultParameterInt("compress", 0);
+
+        AddParameter(ParameterType_Int, "cog", "Specifies if the rasters should be translated into Cloud Optimized Geotiff upon product creation");
+        MandatoryOff("cog");
+        SetDefaultParameterInt("cog", 0);
 
         AddParameter(ParameterType_Choice, "processor", "Processor");
         SetParameterDescription("processor", "Specifies the product type");
@@ -454,7 +465,7 @@ private:
 
           //get weights rasters list
           rastersList = this->GetParameterStringList("processor.composite.weights");
-          UnpackRastersList(rastersList, COMPOSITE_WEIGHTS_RASTER, true);
+          UnpackRastersList(rastersList, COMPOSITE_WEIGHTS_RASTER, true, false);
 
           rastersList = this->GetParameterStringList("processor.composite.flags");
           UnpackRastersList(rastersList, COMPOSITE_FLAGS_MASK, true);
@@ -496,7 +507,7 @@ private:
           UnpackRastersList(rastersList, FCOVER_MONO_DATE_RASTER, false);
 
           rastersList = this->GetParameterStringList("processor.vegetation.laimonodateerr");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, true);
+          UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, true, false);
           rastersList = this->GetParameterStringList("processor.vegetation.laimdateflgs");
           UnpackRastersList(rastersList, LAI_MONO_DATE_FLAGS, true);
       }
@@ -663,11 +674,12 @@ private:
       return false;
   }
 
-  void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType, bool bIsQiData)
+  void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType, bool bIsQiData, bool bQiDataIsDiscrete = true)
   {
       std::string strTileID;
       rasterInfo rasterInfoEl;
       rasterInfoEl.bIsQiData = bIsQiData;
+      rasterInfoEl.bQiDataIsDiscrete = bQiDataIsDiscrete;
       rasterInfoEl.bNeedsPreview = false;
 
       // get the number of tiles elements in the rasters list (including duplicates)
@@ -1575,6 +1587,10 @@ private:
                   strImgDataPath = tileInfoEl.strTilePath + "/" + IMG_DATA_FOLDER_NAME;
               }
               rasterFileEl.strNewRasterFullPath = strImgDataPath + "/" + rasterFileEl.strNewRasterFileName;
+
+              // call script for COG/COMPRESS, if needed
+              ExecuteGdalTranslateOps(rasterFileEl.strRasterFileName, (rasterFileEl.bIsQiData && rasterFileEl.bQiDataIsDiscrete));
+
               CopyFile(rasterFileEl.strNewRasterFullPath, rasterFileEl.strRasterFileName);
           }
         }
@@ -1926,6 +1942,39 @@ private:
       std::string rescaleStr = std::to_string(rescaleRes);
       args.emplace_back(rescaleStr.c_str());
       return ExecuteExternalProgram("aggregate_tiles.py", args);
+  }
+
+  bool ExecuteGdalTranslateOps(const std::string &rasterFileName, bool bHasDiscreteValues) {
+      bool compress = (GetParameterInt("compress") != 0);
+      bool cog = (GetParameterInt("cog") != 0);
+      if (!compress && !cog) {
+          return true;
+      }
+      std::cout << "Starting gdal operations for raster " << rasterFileName << std::endl;
+      std::vector<const char *> args;
+      if (compress) {
+          args.emplace_back("--compress");
+          args.emplace_back("DEFLATE");
+      } else {
+          args.emplace_back("--no-compress");
+      }
+
+      if (cog) {
+          if (bHasDiscreteValues) {
+              args.emplace_back("--resampler");
+              args.emplace_back("nearest");
+          } else {
+              args.emplace_back("--resampler");
+              args.emplace_back("average");
+          }
+          args.emplace_back("--overviews");
+          args.emplace_back("--tiled");
+      } else {
+          args.emplace_back("--no-overviews");
+          args.emplace_back("--stripped");
+      }
+      args.emplace_back(rasterFileName.c_str());
+      return ExecuteExternalProgram("optimize_gtiff.py", args);
   }
 
   bool ExecuteExternalProgram(const char *appExe, std::vector<const char *> appArgs) {

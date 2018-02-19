@@ -332,7 +332,7 @@ QStringList NdviHandler::GetNdviProductFormatterArgs(TaskToSubmit &productFormat
                                                                 const QList<TileInfos> &prdTilesInfosList, const QStringList &ndviList,
                                                                 const QStringList &laiFlgsList) {
 
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+    const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
     QStringList tileIdsList;
     for(const TileInfos &tileInfo: prdTilesInfosList) {
         ProcessorHandlerHelper::SatelliteIdType satId;
@@ -344,7 +344,7 @@ QStringList NdviHandler::GetNdviProductFormatterArgs(TaskToSubmit &productFormat
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    const auto &lutFile = configParameters["processor.l3b.lai.lut_path"];
+    const auto &lutFile = GetMapValue(configParameters, "processor.l3b.lai.lut_path");
 
     WriteExecutionInfosFile(executionInfosPath, prdTilesInfosList);
 
@@ -355,6 +355,7 @@ QStringList NdviHandler::GetNdviProductFormatterArgs(TaskToSubmit &productFormat
                             "-baseline", "01.00",
                             "-siteid", QString::number(event.siteId),
                             "-processor", "vegetation",
+                            "-compress", "1",
                             "-gipp", executionInfosPath,
                             "-outprops", outPropsPath};
     productFormatterArgs += "-il";
@@ -377,6 +378,11 @@ QStringList NdviHandler::GetNdviProductFormatterArgs(TaskToSubmit &productFormat
     for(int i = 0; i<tileIdsList.size(); i++) {
         productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
         productFormatterArgs += laiFlgsList[i];
+    }
+
+    if (IsCloudOptimizedGeotiff(configParameters)) {
+        productFormatterArgs += "-cog";
+        productFormatterArgs += "1";
     }
 
     return productFormatterArgs;
