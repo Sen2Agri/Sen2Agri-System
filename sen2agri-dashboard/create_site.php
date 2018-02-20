@@ -222,6 +222,28 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
     $l8_enabled = empty($_REQUEST ['chkL8Add']) ? "0" : "1";
     //print_r($_REQUEST);
     
+    # Check if the site already exists
+    # TODO: create an endpoint for checking if site with name exists
+    $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/sites/");
+     if ($restResult == "") {
+        die ("Cannot get site lists! Please check that the sen2agri-services are started!");
+        $message = "Cannot get site lists!";
+        $result =  "Please check that the sen2agri-services are started!";
+        $_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $result;
+        die(Header("Location: {$_SERVER['PHP_SELF']}"));
+    } else {
+        $jsonArr = json_decode($restResult, true);
+        foreach($jsonArr as $siteRetr) {
+            $retrSiteName      = $siteRetr['name'];
+            if ($retrSiteName == $site_name) {
+                $message = "Site with name " . $retrSiteName . " already exists!";
+                $result =  "Please choose another name!";
+                $_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $result;
+                die(Header("Location: {$_SERVER['PHP_SELF']}"));
+            }
+        }
+    }
+    
     function insertSite($site, $coord, $enbl) {
         $db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
         $sql = "SELECT sp_dashboard_add_site($1,$2,$3)";
@@ -943,7 +965,9 @@ function formatDateFromJSonObj(jsonObj) {
 }
 
 function onNewFileSelected(id) {
-    document.getElementById(id).innerHTML = document.getElementById(id).innerHTML + "<font color=\"red\"> (changed)</font>";
+    if (document.getElementById(id).innerHTML.indexOf("<font color=\"red\"> (changed)</font>") == -1) {
+        document.getElementById(id).innerHTML = document.getElementById(id).innerHTML + "<font color=\"red\"> (changed)</font>";
+    }
 }
 
 // Open add site form
