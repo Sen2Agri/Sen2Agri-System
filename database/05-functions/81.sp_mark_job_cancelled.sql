@@ -26,8 +26,7 @@ BEGIN
 	SET status_id = 7, --Cancelled
 	status_timestamp = now()
 	WHERE id = _job_id
-	AND status_id != 7; -- Prevent resetting the status on serialization error retries.
-
+    AND status_id NOT IN (6, 7, 8); -- Finished or failed jobs can't be cancelled
 END;
 $$ LANGUAGE plpgsql;
 
