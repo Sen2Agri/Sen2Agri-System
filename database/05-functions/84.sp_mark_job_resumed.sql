@@ -31,7 +31,7 @@ BEGIN
 	SET status_id = 3, --NeedsInput
 	status_timestamp = now()
 	WHERE id = ANY (unrunnable_task_ids)
-	AND step.status_id = 5; --Paused
+	AND status_id = 5; --Paused
 
 	-- Update the tasks that CAN be started right now
 	UPDATE task
@@ -40,7 +40,7 @@ BEGIN
 			END,
 	status_timestamp = now()
 	WHERE id = ANY (runnable_task_ids)
-	AND step.status_id = 5; --Paused
+	AND status_id = 5; --Paused
 
     processor_id := (SELECT job.processor_id FROM job WHERE id = _job_id);
 
@@ -60,12 +60,12 @@ BEGIN
     END IF;
 
 	UPDATE job
-	SET status_id = CASE WHEN EXISTS (SELECT * FROM task WHERE task.job_id = job.id AND step.status_id IN (4,6)) THEN 4 --Running
+	SET status_id = CASE WHEN EXISTS (SELECT * FROM task WHERE task.job_id = job.id AND status_id IN (4,6)) THEN 4 --Running
 			ELSE 1 --Submitted
 			END,
 	status_timestamp = now()
 	WHERE id = _job_id
-	AND step.status_id = 5; --Paused
+	AND status_id = 5; --Paused
 
 END;
 $$ LANGUAGE plpgsql;
