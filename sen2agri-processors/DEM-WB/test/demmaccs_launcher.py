@@ -25,6 +25,7 @@ import glob
 import sys
 import time, datetime
 import gdal
+import fnmatch
 from osgeo import ogr
 from multiprocessing import Pool
 from sen2agri_common_db import *
@@ -132,27 +133,39 @@ def post_process_maccs_product(demmaccs_config, output_path) :
             tifFilePath = os.path.join(root, filename)
             print("Processing {}".format(filename))
             if (demmaccs_config.removeSreFiles == True) :
-                isSre = re.match(".*SRE[1-2]?\.DBL\.TIF", filename)
+                isSre = re.match(".*SRE.*\.DBL\.TIF", filename)
                 if isSre is not None:
                     print("Deleting SRE file {}".format(tifFilePath))
                     os.remove(tifFilePath)
             elif (demmaccs_config.removeFreFiles == True) :
-                isFre = re.match(".*FRE[1-2]?\.DBL\.TIF", filename)
+                isFre = re.match(".*FRE.*\.DBL\.TIF", filename)
                 if isFre is not None:
                     print("Deleting FRE file {}".format(tifFilePath))
                     os.remove(tifFilePath)
             if ((demmaccs_config.compressTiffs == True) or (demmaccs_config.cogTiffs == True)) :
                 optgtiffArgs = ""
-                if (demmaccs_config.compressTiffs == True) : 
+                if (demmaccs_config.compressTiffs == True) :
                     optgtiffArgs += " --compress"
+                    optgtiffArgs += " DEFLATE"
                 else:
                     optgtiffArgs += " --no-compress"
                     
-                if (demmaccs_config.cogTiffs == True) : 
-                    optgtiffArgs += " --overviews --tiled"
+                if (demmaccs_config.cogTiffs == True) :
+                    isMask = re.match(".*[_MSK|_QLT]?\.DBL\.TIF", filename)
+                    if isMask is not None :
+                        optgtiffArgs += " --resampler"
+                        optgtiffArgs += " nearest"
+                    else :
+                        optgtiffArgs += " --resampler"
+                        optgtiffArgs += " average"
+                    optgtiffArgs += " --overviews"
+                    optgtiffArgs += " --tiled"
                 else:
-                    optgtiffArgs += " --no-overviews --strippped"
-                    
+                    optgtiffArgs += " --no-overviews"
+                    optgtiffArgs += " --strippped"
+                optgtiffArgs += " "
+                optgtiffArgs += tifFilePath
+                print("Running optimize_gtiff.py with params {}".format(optgtiffArgs))                 
                 os.system("optimize_gtiff.py" + optgtiffArgs)
     
 

@@ -1183,10 +1183,10 @@ class DEMMACCSConfig(object):
         self.removeFreFiles = False;
         
     def setPostprocessingParams(self, compressTiffs, cogTiffs, removeSreFiles, removeFreFiles) :
-        self.compressTiffs = (compressTiffs is "1");
-        self.cogTiffs = (cogTiffs is "1");
-        self.removeSreFiles = (removeSreFiles is "1");
-        self.removeFreFiles = (removeFreFiles is "1");
+        self.compressTiffs = (compressTiffs == "1" or compressTiffs.lower() == "true");
+        self.cogTiffs = (cogTiffs == "1" or cogTiffs.lower() == "true");
+        self.removeSreFiles = (removeSreFiles == "1" or removeSreFiles.lower() == "true");
+        self.removeFreFiles = (removeFreFiles == "1" or removeFreFiles.lower() == "true");
         if ((self.removeFreFiles == True) and (self.removeSreFiles == True)) :
             self.removeFreFiles = False
         
@@ -1276,7 +1276,10 @@ class L1CInfo(object):
             return None
 
         demmaccsConfig = DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir)
+        print("CompressTiffs = {}, CogTiffs = {}, RemoveSRE = {}, RemoveFre = {}".format(compressTiffs, cogTiffs, removeSreFiles, removeFreFiles))
         demmaccsConfig.setPostprocessingParams(compressTiffs, cogTiffs, removeSreFiles, removeFreFiles)
+        
+        print("CompressTiffs = {}, CogTiffs = {}, RemoveSRE = {}, RemoveFre = {}".format(demmaccsConfig.compressTiffs, demmaccsConfig.cogTiffs, demmaccsConfig.removeSreFiles, demmaccsConfig.removeFreFiles))
         
         return demmaccsConfig
 
@@ -1315,18 +1318,20 @@ class L1CInfo(object):
                 self.cursor.execute("select satellite_name from satellite where id = %s;", (sensor_id, ))
                 satName = self.cursor.fetchone()[0]
                 # TODO: We better add a column "short_name" in the satellite table
-                shortSatName = "S2"
+                shortSatName = "s2"
                 if (satName == "landsat8") :
-                    shortSatName = "L8"
+                    shortSatName = "l8"
                 elif (satName == "sentinel1") :
-                    shortSatName = "S1"
-                
+                    shortSatName = "s1"
+                # make it to lower case in case the short name is read from the satellite table
+                shortSatName = shortSatName.lower()
                 self.cursor.execute("select value from config where key = '{}.enabled' and site_id = {};".format(shortSatName, site_id))
                 rows = self.cursor.fetchall()
                 if len(rows) > 0:
                     print("Found key {}.enabled for site {} with value {}".format(shortSatName, site_id, rows[0][0]))
                     return self.to_bool("" + rows[0][0])
                 self.cursor.execute("select value from config where key = '{}.enabled' and site_id is NULL;".format(shortSatName))
+                rows = self.cursor.fetchall()
                 if len(rows) > 0:
                     print("Found key {}.enabled for all sites with value {}".format(shortSatName, rows[0][0]))
                     return self.to_bool("" + rows[0][0])
