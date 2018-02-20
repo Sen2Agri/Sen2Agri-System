@@ -629,7 +629,8 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                 $site_enabled  = $site['enabled'];
                                 $siteInsituFile = getInsituFileName($shortName, false);
                                 $siteStrataFile = getInsituFileName($shortName, true);
-                                $siteL8Enabled = getSatelliteEnableStatus($siteId, 2);  // only L8 for now
+                                $siteL8Enabled = (getSatelliteEnableStatus($siteId, 2) == "false" ? "" : "checked");  // only L8 for now
+                                    
                             //}
                             //
                             //
