@@ -22,6 +22,7 @@ def parse_args():
     parser.add_argument('-s', '--min-size', help='Smallest overview size', type=int, default=1024)
     parser.add_argument('-r', '--resampler', help='Overview resampling method', default='average')
     parser.add_argument('-i', '--interleave', help='Interleaving type', choices=['BAND', 'PIXEL'], default='BAND')
+    parser.add_argument('--no-data', help='No data value', default=-10000)
 
     overviews = parser.add_mutually_exclusive_group(required=False)
     overviews.add_argument('--overviews', help="Add overviews (default)", default=True, action='store_true')
@@ -60,7 +61,7 @@ def main():
     run_command(['gdaladdo', '-clean', args.input])
 
     env = {'GDAL_NUM_THREADS': 'ALL_CPUS'}
-    command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave]
+    command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave, '-a_nodata', args.no_data]
     if args.overviews:
         command += ['-co', 'COPY_SRC_OVERVIEWS=YES']
 
