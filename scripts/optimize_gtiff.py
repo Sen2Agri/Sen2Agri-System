@@ -36,6 +36,10 @@ def parse_args():
     tiling.add_argument('--tiled', help="Create a tiled image (default)", default=True, action='store_true')
     tiling.add_argument('--stripped', help="Create a stripped image", dest='tiled', action='store_false')
 
+    threaded = parser.add_mutually_exclusive_group(required=False)
+    threaded.add_argument('--threaded', help='Use multiple threads (default)', default=True, action='store_true')
+    threaded.add_argument('--no-threaded', help='Use a single thread', dest='threaded', action='store_false')
+
     return parser.parse_args()
 
 
@@ -60,7 +64,10 @@ def main():
 
     run_command(['gdaladdo', '-clean', args.input])
 
-    env = {'GDAL_NUM_THREADS': 'ALL_CPUS'}
+    env = {}
+    if args.threaded:
+        env['GDAL_NUM_THREADS'] = 'ALL_CPUS'
+
     command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave, '-a_nodata', args.no_data]
     if args.overviews:
         command += ['-co', 'COPY_SRC_OVERVIEWS=YES']
