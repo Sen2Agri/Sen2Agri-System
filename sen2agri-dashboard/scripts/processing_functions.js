@@ -410,7 +410,7 @@ function get_current_job_data() {
                 $("#page_move_first").removeClass("disabled");
             }            
 			// toggle move_next button availability
-			if ($("#pnl_current_jobs #ID").length <= 5) {
+			if ($("#pnl_current_jobs #ID").length < 5) {
 				$("#page_move_next").addClass("disabled");
 			} else {
 				$("#page_move_next").removeClass("disabled");
