@@ -20,8 +20,8 @@
 : ${INSTALL_DIR:="install"}
 : ${RPM_DIR:="rpm_binaries"}
 : ${BUILD_DIR:="build"}
-: ${PROC_VERSION:="1.7.1"}
-: ${DOWNL_DEM_VERSION:="1.7.1"}
+: ${PROC_VERSION:="1.8"}
+: ${DOWNL_DEM_VERSION:="1.8"}
 : ${WORKING_DIR_INSTALL:=${PLATFORM_NAME_DIR}/${INSTALL_DIR}}
 : ${WORKING_DIR_RPM:=${PLATFORM_NAME_DIR}/${RPM_DIR}}
 : ${WORKING_DIR_BUILD:=${PLATFORM_NAME_DIR}/${BUILD_DIR}}
@@ -86,7 +86,7 @@ function build_SEN2AGRI_downloaders_demmacs_RPM_Package()
    ###########################################
 
    ##downloaders/demmaccs scripts will be installed in folder : usr/share/sen2agri/sen2agri-downloaders or usr/share/sen2agri/sen2agri-demmaccs
-   #mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
+   mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
    mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-demmaccs
 
    ##downloaders/demmaccs services will be installed in folder : usr/lib/systemd/system
@@ -101,20 +101,21 @@ function build_SEN2AGRI_downloaders_demmacs_RPM_Package()
    #DOWNLOADERS
    ###########################################
    #NOTE: since 1.8 these downloaders are no longer used. The sen2agri-services are used instead
+   #      The downloaders will be installed but not started
    ###put downloaders lib dir into the install folder :usr/share/sen2agri/sen2agri-downloaders
-#   cp -rf ${SOURCES_DIR_PATH}/sen2agri-downloaders/lib ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
+   cp -rf ${SOURCES_DIR_PATH}/sen2agri-downloaders/lib ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
 
    ###put downloaders *.py files into the install folder :usr/share/sen2agri/sen2agri-downloaders
-#   cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/*.py ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
+   cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/*.py ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
 
    ###put downloaders *.jar files into the install folder :usr/share/sen2agri/sen2agri-downloaders
-#   cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/*.jar ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
+   cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/*.jar ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
 
    ###put downloaders *.txt files into the install folder :usr/share/sen2agri/sen2agri-downloaders
-#   cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/*.txt ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
+   cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/*.txt ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
 
    ###put downloaders services files into the install folder :/usr/lib/systemd/system
-#   cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/dist/* ${DOWNL_DEM_INSTALL_PATH}/usr/lib/systemd/system
+   cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/dist/* ${DOWNL_DEM_INSTALL_PATH}/usr/lib/systemd/system
 
    ###########################################
    #DEMMACCS
@@ -148,12 +149,11 @@ function build_SEN2AGRI_downloaders_demmacs_RPM_Package()
    fpm -s dir -t rpm -n sen2agri-downloaders-demmaccs -v ${DOWNL_DEM_VERSION} -C ${DOWNL_DEM_INSTALL_PATH}/ \
        -d python-beautifulsoup4 \
        --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_download_demmacs \
+       --config-files usr/share/sen2agri/sen2agri-downloaders/usgs.txt \
+       --config-files usr/share/sen2agri/sen2agri-downloaders/apihub.txt \
        -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/sen2agri-downloaders-demmaccs-VERSION.centos7.ARCH.rpm \
        usr
 
-#       --config-files usr/share/sen2agri/sen2agri-downloaders/usgs.txt \
-#       --config-files usr/share/sen2agri/sen2agri-downloaders/apihub.txt \
-       
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_download_demmacs
 }
