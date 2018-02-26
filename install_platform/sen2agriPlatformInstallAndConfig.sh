@@ -768,7 +768,7 @@ systemctl start sen2agri-http-listener
 systemctl enable sen2agri-monitor-agent
 systemctl start sen2agri-monitor-agent
 
-echo "Please edit the USGS and SciHub credentials in the database for the downloaders!"
+echo "Please edit the USGS and SciHub credentials in the sen2agri-services.properties for the downloaders!"
 #echo "Please edit the following files to set up your USGS and SciHub credentials:"
 #echo "/usr/share/sen2agri/sen2agri-downloaders/usgs.txt"
 #echo "/usr/share/sen2agri/sen2agri-downloaders/apihub.txt"
