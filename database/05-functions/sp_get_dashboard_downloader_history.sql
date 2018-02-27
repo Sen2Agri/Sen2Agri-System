@@ -10,7 +10,7 @@ BEGIN
    UNION
 	SELECT  2, count(status_id)
 		FROM downloader_history
-		WHERE status_id IN (2, 5) AND ( $1 IS NULL OR site_id = _siteid)
+		WHERE status_id IN (2, 5, 6, 7) AND ( $1 IS NULL OR site_id = _siteid)
    UNION
 	SELECT  3, count(status_id)
 		FROM downloader_history
