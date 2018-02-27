@@ -672,6 +672,81 @@ div.add-edit-site .submit-buttons input.add-edit-btn {
 	border-radius: 10px;
 }
 
+div.filter-product-site label{
+	font-weight:normal;
+}
+div.filter-product-site .row{
+	padding-top:3px;
+	padding-bottom:3px;
+}
+
+#div_filter .fieldRequired{
+	border:1px solid red;
+}
+#div_filter .errorClass{	
+	font-size: 12px;
+	color:red;
+}
+
+#div_filter select{
+	border: 1px solid #cdcdcd;
+	padding: 2px;
+}
+
+div.filter-product-site input[type="text"], select{
+	width:200px;
+}
+
+div.filter-product-site form {
+	font: 14px Arial, Helvetica, sans-serif;
+	margin: 15px;
+}
+div.filter-product-site  .col-md-1 {
+	width: 2%;
+}
+div.filter-product-site  .col-md-2 {
+	width: 14%;
+}
+div.filter-product-site  .col-md-3 {
+	width: 23%;
+}
+div.filter-product-site  .form-group {
+	margin-bottom: 15px;
+}
+div.filter-product-site  .submit-buttons {
+	text-align: right;
+}
+input.filter-product-site-btn:not(:disabled):hover {
+	background-color: #99BF52;
+	color: yellow;
+}
+input.filter-product-site-btn:active {
+	background-color: #7EAF50;
+	color:yellow;
+}
+input.filter-product-site-btn:disabled{
+	background-color: #cccccc;
+}
+
+div.filter-product-site  .submit-buttons input.filter-product-site-btn {
+	padding: 10px 20px;
+	margin-left: 15px;
+	border-radius: 10px;
+}
+
+input.filter-product-site-btn {
+	font-family:Arial,Helvetica,sans-serif;
+	border: 0px solid transparent;
+	outline: 0px solid transparent;
+	padding: 10px;
+	background-color: #7EAF50;
+	color: white;
+	text-align: left;
+	font-size: 1.1em;
+	font-weight: 400;
+}
+
+
 input.add-edit-btn,
 .config input[type="submit"] {
 	font-family:Arial,Helvetica,sans-serif;
