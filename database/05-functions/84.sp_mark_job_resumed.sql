@@ -1,6 +1,6 @@
-﻿CREATE OR REPLACE FUNCTION sp_mark_job_resumed(
-IN _job_id int
-) RETURNS void AS $$
+﻿CREATE OR REPLACE FUNCTION sp_mark_job_resumed(_job_id integer)
+  RETURNS void AS
+$$
 DECLARE unrunnable_task_ids int[];
 DECLARE runnable_task_ids int[];
 DECLARE runnable_task_id int;
@@ -20,18 +20,21 @@ BEGIN
 
 	-- Get the list of tasks that depended on tasks that have NOT been finished
 	SELECT array_agg(task.id) INTO unrunnable_task_ids FROM task
-	WHERE task.job_id = _job_id AND	EXISTS (SELECT * FROM task AS task2 WHERE task2.id = ANY (task.preceding_task_ids) AND task2.status_id != 6 /*Finished*/ );
+	WHERE task.job_id = _job_id
+	  AND task.status_id = 5 --Paused
+	  AND EXISTS (SELECT * FROM task AS task2 WHERE task2.id = ANY (task.preceding_task_ids) AND task2.status_id != 6 /*Finished*/ );
 
 	-- Get the list of tasks that depended on tasks that HAVE been finished
 	SELECT array_agg(task.id) INTO runnable_task_ids FROM task
-	WHERE task.job_id = _job_id AND NOT EXISTS (SELECT * FROM task AS task2 WHERE task2.id = ANY (task.preceding_task_ids) AND task2.status_id != 6 /*Finished*/ );
+    WHERE task.job_id = _job_id
+	  AND task.status_id = 5 --Paused
+	  AND NOT EXISTS (SELECT * FROM task AS task2 WHERE task2.id = ANY (task.preceding_task_ids) AND task2.status_id != 6 /*Finished*/ );
 
 	-- Update the tasks that CANNOT be started right now
 	UPDATE task
 	SET status_id = 3, --NeedsInput
 	status_timestamp = now()
-	WHERE id = ANY (unrunnable_task_ids)
-	AND step.status_id = 5; --Paused
+	WHERE id = ANY (unrunnable_task_ids);
 
 	-- Update the tasks that CAN be started right now
 	UPDATE task
@@ -39,8 +42,7 @@ BEGIN
 			ELSE 1 --Submitted
 			END,
 	status_timestamp = now()
-	WHERE id = ANY (runnable_task_ids)
-	AND step.status_id = 5; --Paused
+	WHERE id = ANY (runnable_task_ids);
 
     processor_id := (SELECT job.processor_id FROM job WHERE id = _job_id);
 
@@ -60,13 +62,13 @@ BEGIN
     END IF;
 
 	UPDATE job
-	SET status_id = CASE WHEN EXISTS (SELECT * FROM task WHERE task.job_id = job.id AND step.status_id IN (4,6)) THEN 4 --Running
+	SET status_id = CASE WHEN EXISTS (SELECT * FROM task WHERE task.job_id = job.id AND status_id IN (4,6)) THEN 4 --Running
 			ELSE 1 --Submitted
 			END,
 	status_timestamp = now()
 	WHERE id = _job_id
-	AND step.status_id = 5; --Paused
+	AND status_id = 5; --Paused
 
 END;
-$$ LANGUAGE plpgsql;
-
+$$
+LANGUAGE plpgsql VOLATILE;

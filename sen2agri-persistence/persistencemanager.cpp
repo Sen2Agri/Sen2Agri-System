@@ -469,13 +469,24 @@ void PersistenceManagerDBProvider::MarkJobCancelled(int jobId)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_cancelled(:jobId)"));
+        db.transaction();
+
+        auto query = db.createQuery();
+
+        query.setForwardOnly(true);
+        if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
+            throw_query_error(db, query);
+        }
+
+        query = db.prepareQuery(QStringLiteral("select sp_mark_job_cancelled(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
             throw_query_error(db, query);
         }
+        query.finish();
+        db.commit();
     });
 }
 
@@ -484,13 +495,24 @@ void PersistenceManagerDBProvider::MarkJobPaused(int jobId)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_paused(:jobId)"));
+        db.transaction();
+
+        auto query = db.createQuery();
+
+        query.setForwardOnly(true);
+        if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
+            throw_query_error(db, query);
+        }
+
+        query = db.prepareQuery(QStringLiteral("select sp_mark_job_paused(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
             throw_query_error(db, query);
         }
+        query.finish();
+        db.commit();
     });
 }
 
@@ -499,13 +521,24 @@ void PersistenceManagerDBProvider::MarkJobResumed(int jobId)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_resumed(:jobId)"));
+        db.transaction();
+
+        auto query = db.createQuery();
+
+        query.setForwardOnly(true);
+        if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
+            throw_query_error(db, query);
+        }
+
+        query = db.prepareQuery(QStringLiteral("select sp_mark_job_resumed(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
             throw_query_error(db, query);
         }
+        query.finish();
+        db.commit();
     });
 }
 

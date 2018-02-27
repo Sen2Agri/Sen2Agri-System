@@ -402,6 +402,13 @@ function get_current_job_data() {
 			
 			// display page number
 			$("#page_current").html(jsonJobsPage);
+            if (jsonJobsPage == 1) {
+                $("#page_move_prev").addClass("disabled");
+                $("#page_move_first").addClass("disabled");
+            } else {
+                $("#page_move_prev").removeClass("disabled");
+                $("#page_move_first").removeClass("disabled");
+            }            
 			// toggle move_next button availability
 			if ($("#pnl_current_jobs #ID").length < 5) {
 				$("#page_move_next").addClass("disabled");

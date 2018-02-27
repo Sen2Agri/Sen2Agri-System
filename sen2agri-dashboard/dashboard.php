@@ -466,6 +466,7 @@ if (isset ( $_REQUEST ['schedule_submit_delete'] ) && $_REQUEST ['schedule_submi
 				div_oneverydate.classList.add("hidden");
 				break;
 		}
+        activateButton(param);
 	}
 	function selectedScheduleAdd(event, param) {
 		var target = event.target;

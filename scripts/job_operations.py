@@ -23,6 +23,9 @@ import optparse
 from osgeo import ogr
 from subprocess import Popen, PIPE
 
+import dbus
+import json
+
 SENTINEL2_SATELLITE_ID = int(1)
 LANDSAT8_SATELLITE_ID = int(2)
 UNKNOWN_SATELLITE_ID = int(-1)
@@ -55,17 +58,20 @@ def get_bool_value(value):
 def delete_jobs(job_ids) :
     # cleanup the database
     l2a_db.delete_jobs(job_ids)
-    cancel_slurm_tasks_for_jobs(job_ids)
+    # no more needed to cancel the tasks from here. The orchestrator will do the job
+#    cancel_slurm_tasks_for_jobs(job_ids)
 
 def cancel_jobs(job_ids) :
     # cleanup the database
     l2a_db.cancel_jobs(job_ids)
-    cancel_slurm_tasks_for_jobs(job_ids)
+    # no more needed to cancel the tasks from here. The orchestrator will do the job
+#    cancel_slurm_tasks_for_jobs(job_ids)
 
 def pause_jobs(job_ids) :
     # cleanup the database
     l2a_db.pause_jobs(job_ids)
-    cancel_slurm_tasks_for_jobs(job_ids)
+    # no more needed to cancel the tasks from here. The orchestrator will do the job
+#    cancel_slurm_tasks_for_jobs(job_ids)
 
 def resume_jobs(job_ids) :
     # cleanup the database
@@ -279,25 +285,44 @@ class L2AInfo(object):
         # delete the steps for this site
         for jobId in jobIds : 
             print("Cancelling job: {}".format(jobId))
-            self.executeSqlDeleteCmd("set transaction isolation level repeatable read; select from sp_mark_job_cancelled({})".format(jobId))
+            #self.executeSqlDeleteCmd("set transaction isolation level repeatable read; select from sp_mark_job_cancelled({})".format(jobId))
+            jsonStr = json.dumps({'job_id': jobId})
+            jsonStr = "('{}') :: json".format(jsonStr)
+            # just insert the event and let the orchestrator to do the rest
+            self.executeSqlDeleteCmd("select from sp_insert_event(4, {})".format(jsonStr))
 
     def pause_jobs(self, jobIds):
         # delete the steps for this site
         for jobId in jobIds : 
             print("Pausing job: {}".format(jobId))
-            self.executeSqlDeleteCmd("set transaction isolation level repeatable read; select from sp_mark_job_paused({})".format(jobId))
+            #self.executeSqlDeleteCmd("set transaction isolation level repeatable read; select from sp_mark_job_paused({})".format(jobId))
+            jsonStr = json.dumps({'job_id': jobId})
+            jsonStr = "('{}') :: json".format(jsonStr)
+            # just insert the event and let the orchestrator to do the rest
+            self.executeSqlDeleteCmd("select from sp_insert_event(5, {})".format(jsonStr))
+
             
     def resume_jobs(self, jobIds):
         # delete the steps for this site
         for jobId in jobIds : 
             print("Resuming job: {}".format(jobId))
-            self.executeSqlDeleteCmd("set transaction isolation level repeatable read; select from sp_mark_job_resumed({})".format(jobId))
+            #self.executeSqlDeleteCmd("set transaction isolation level repeatable read; select from sp_mark_job_resumed({})".format(jobId))
+            jsonStr = json.dumps({'job_id': jobId})
+            jsonStr = "('{}') :: json".format(jsonStr)
+            # just insert the event and let the orchestrator to do the rest
+            self.executeSqlDeleteCmd("select from sp_insert_event(6, {})".format(jsonStr))
+
+#        bus = dbus.SystemBus()
+#        orchestrator_proxy = bus.get_object('org.esa.sen2agri.orchestrator',
+#                                            '/org/esa/sen2agri/orchestrator')
+#        orchestrator_proxy.NotifyEventsAvailable()
+
 
 parser = argparse.ArgumentParser(
     description="Script for stopping one or several jobs")
 parser.add_argument('-c', '--config', default="/etc/sen2agri/sen2agri.conf", help="configuration file")
 parser.add_argument('-j', '--job_ids', help="The Job id to be stopped")
-parser.add_argument('-o', '--operation', help="The operation to be performed on the jobs (delete/cancel/pause/resume")
+parser.add_argument('-o', '--operation', help="The operation to be performed on the jobs (delete/cancel/pause/resume)")
 
 args = parser.parse_args()
 
