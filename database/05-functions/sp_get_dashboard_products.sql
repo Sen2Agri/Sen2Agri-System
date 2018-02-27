@@ -1,74 +1,107 @@
--- Function: sp_get_dashboard_products(smallint, smallint)
+-- Function: sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[])
 
--- DROP FUNCTION sp_get_dashboard_products(smallint, smallint);
+-- DROP FUNCTION sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[]);
 
-CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
-    _site_id smallint DEFAULT NULL::smallint,
-    _processor_id smallint DEFAULT NULL::smallint)
-  RETURNS TABLE (
-    json json
-) AS
+CREATE OR REPLACE FUNCTION sp_get_dashboard_products(_site_id smallint DEFAULT NULL::smallint, _product_type_id integer[] DEFAULT NULL::integer[], _season_id smallint DEFAULT NULL::smallint, _satellit_id integer[] DEFAULT NULL::integer[], _since_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone, _until_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone, _tiles character varying[] DEFAULT NULL::character varying[])
+  RETURNS SETOF json AS
 $BODY$
-DECLARE q text;
-BEGIN
-    q := $sql$
-        WITH site_names(id, name, geog, row) AS (
-                select id, name, st_astext(geog), row_number() over (order by name)
-                from site
-            ),
-            product_type_names(id, name, description, row) AS (
-                select id, name, description, row_number() over (order by description)
-                from product_type
-            ),
-            data(id, satellite_id, product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp, site_coord) AS (
-            SELECT
-                P.id,
-                P.satellite_id,
-                P.name,
-                PT.name,
-                PT.description,
-                PR.name,
-                S.name,
-                P.full_path,
-                P.quicklook_image,
-                P.footprint,
-                P.created_timestamp,
-                S.geog
-            FROM product P
-                JOIN product_type_names PT ON P.product_type_id = PT.id
-                JOIN processor PR ON P.processor_id = PR.id
-                JOIN site_names S ON P.site_id = S.id
-            WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
-    $sql$;
-    IF $1 IS NOT NULL THEN
-        q := q || $sql$
-                AND P.site_id = $1
-                AND EXISTS (
-                    SELECT * FROM season WHERE season.site_id = $1 AND P.created_timestamp BETWEEN season.start_date AND season.end_date
-                )
-        $sql$;
-    END IF;
-    IF $2 IS NOT NULL THEN
-        q := q || $sql$
-                AND P.product_type_id = $2
-        $sql$;
-    END IF;
+		DECLARE q text;
+		BEGIN
+		    q := $sql$
+			WITH site_names(id, name, geog, row) AS (
+				select id, name, st_astext(geog), row_number() over (order by name)
+				from site
+			    ),
+			    product_type_names(id, name, description, row) AS (
+				select id, name, description, row_number() over (order by description)
+				from product_type
+			    ),
+			    data(id, satellite_id, product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp, site_coord) AS (
+			    SELECT
+				P.id,
+				P.satellite_id,
+				P.name,
+				PT.name,
+				PT.description,
+				PR.name,
+				S.name,
+				P.full_path,
+				P.quicklook_image,
+				P.footprint,
+				P.created_timestamp,
+				S.geog
+			    FROM product P
+				JOIN product_type_names PT ON P.product_type_id = PT.id
+				JOIN processor PR ON P.processor_id = PR.id
+				JOIN site_names S ON P.site_id = S.id
+			    WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
+		    $sql$;
+		    IF $1 IS NOT NULL THEN
+			q := q || $sql$
+				AND P.site_id = $1
+				AND EXISTS (
+				    SELECT * FROM season WHERE season.site_id =$1 AND P.created_timestamp BETWEEN season.start_date AND season.end_date 
+				    
+				$sql$;
+				
+				IF $3 IS NOT NULL THEN
+				q := q || $sql$
+					AND season.id=$3			       
+				$sql$;
+				END IF;
+				
+			q := q || $sql$
+				)
+		    $sql$;
+		    END IF;
+		    
+		    IF $2 IS NOT NULL THEN
+			q := q || $sql$
+			 	AND P.product_type_id= ANY($2)
 
-    q := q || $sql$
-            ORDER BY S.row, PT.row, P.name
-        )
---         select * from data;
-        SELECT array_to_json(array_agg(row_to_json(data)), true) FROM data;
-    $sql$;
+				$sql$;
+		    END IF;
 
---     raise notice '%', q;
+		IF $4 IS NOT NULL THEN
+		q := q || $sql$
+			AND  P.satellite_id = ANY($4)			  
+			$sql$;
+		END IF;
+		    
+		IF $5 IS NOT NULL THEN
+		q := q || $sql$
+			AND P.created_timestamp >= $5 
+			$sql$;
+		END IF;
 
-    RETURN QUERY
-    EXECUTE q
-    USING _site_id, _processor_id;
-END
-$BODY$
+		IF $6 IS NOT NULL THEN
+		q := q || $sql$
+			AND P.created_timestamp <= $6 
+			$sql$;
+		END IF;
+
+		IF $7 IS NOT NULL THEN
+		q := q || $sql$
+			AND P.tiles <@$7
+			$sql$;
+		END IF;
+	
+		
+		q := q || $sql$
+			ORDER BY S.row, PT.row, P.name
+			)
+		--         select * from data;
+			SELECT array_to_json(array_agg(row_to_json(data)), true) FROM data;
+		    $sql$;	
+
+		--     raise notice '%', q;
+
+		    RETURN QUERY
+		    EXECUTE q
+		    USING _site_id, _product_type_id, _season_id, _satellit_id, _since_timestamp, _until_timestamp, _tiles;
+		END
+		$BODY$
   LANGUAGE plpgsql STABLE
-  COST 100;
-ALTER FUNCTION sp_get_dashboard_products(smallint, smallint)
-  OWNER TO admin;
+  COST 100
+  ROWS 1000;
+ALTER FUNCTION sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[]) OWNER TO "admin";
