@@ -8,7 +8,7 @@ function get_tiles(){
 		$db = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
 		
 		$query ="";
-		if(sizeof($_POST['satellite_id']) == 0 || sizeof($_POST['satellite_id'])== 2){
+		if( sizeof($_POST['satellite_id'])== 2){
 			$query = "SELECT * FROM sp_get_site_tiles('".$_POST['site_id']."','1') WHERE tile_id ilike '%".$_POST['term']."%'";
 			$query .= " UNION ";
 			$query .= "SELECT * FROM sp_get_site_tiles('".$_POST['site_id']."','2') WHERE tile_id ilike '%".$_POST['term']."%'";
