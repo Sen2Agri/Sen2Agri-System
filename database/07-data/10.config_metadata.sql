@@ -212,19 +212,10 @@ INSERT INTO config_metadata VALUES ('s2.enabled', 'S2 is enabled', 'bool', false
 INSERT INTO config_metadata VALUES ('l8.enabled', 'L8 is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('scheduled.lookup.enabled', 'Scheduled lookup is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('scheduled.retry.enabled', 'Scheduled retry is enabled', 'bool', false, 15);
+
 INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.enabled', 'Scheduled object storage move enabled', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.s2.datasource.query', 'S2 datasource query location', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.s2.datasource.query.user', 'S2 datasource query location user', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.s2.datasource.query.password', 'S2 datasource query location password', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.s2.datasource.download', 'S2 datasource download location', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.s2.datasource.download.user', 'S2 datasource download location user', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.s2.datasource.download.password', 'S2 datasource download location password', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.l8.datasource.query', 'L8 datasource query location', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.l8.datasource.query.user', 'L8 datasource query location user', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.l8.datasource.query.password', 'L8 datasource query location password', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download', 'L8 datasource download location', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download.user', 'L8 datasource download location user', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.l8.datasource.download.password', 'L8 datasource download location password', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.product.types', 'Product types to move to object storage (separated by ;)', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.deleteAfter', 'Delete the products after they were uploaded to object storage', 'bool', false, 15);
 
 INSERT INTO config_metadata VALUES ('processor.l3a.cloud_optimized_geotiff_output', 'Generate L3A Cloud Optimized Geotiff outputs', 'bool', false, 3);
 INSERT INTO config_metadata VALUES ('processor.l3b.cloud_optimized_geotiff_output', 'Generate L3B Cloud Optimized Geotiff outputs', 'bool', false, 4);

@@ -213,19 +213,10 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('s2.enabled', NULL
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('l8.enabled', NULL, 'true', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.lookup.enabled', NULL, 'true', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.retry.enabled', NULL, 'true', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.object.storage.move.enabled', NULL, '0', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.datasource.query', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.datasource.query.user', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.datasource.query.password', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.datasource.download', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.datasource.download.user', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.datasource.download.password', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.datasource.query', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.datasource.query.user', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.datasource.query.password', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.datasource.download', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.datasource.download.user', NULL, '', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.datasource.download.password', NULL, '', '2017-10-24 14:56:57.501918+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.object.storage.move.enabled', NULL, 'false', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.object.storage.move.product.types', NULL, '', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.object.storage.move.deleteAfter', NULL, 'false', '2017-10-24 14:56:57.501918+02');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.cloud_optimized_geotiff_output', NULL, '0', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.cloud_optimized_geotiff_output', NULL, '0', '2017-10-24 14:56:57.501918+02');

@@ -40,6 +40,7 @@ function CallRestAPI($method, $url, $data = false)
 
     curl_setopt($curl, CURLOPT_URL, $url);
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+    //curl_setopt($curl, CURLOPT_TIMEOUT_MS, 600000);   // 10 minutes
 
     $result = curl_exec($curl);
 
@@ -98,7 +99,7 @@ function get_product_types_from_db() {
             $id = $productTypeInfo['id'];
             $short = substr(strtoupper($productTypeInfo['description']), 0, 3);
             ?>
-            <input class="form-control" id="delete_chk<?=$short?>" type="checkbox" name="delete_chk<?=$short?>" value="<?=$id?>" checked="checked">
+            <input class="form-control" id="delete_chk<?=$short?>" type="checkbox" name="delete_chk<?=$short?>" value="<?=$id?>">
             <label class="control-label" for="delete_chk<?=$short?>"><?=$short?></label>  
 <?php             
         }
@@ -219,7 +220,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
     // first character to uppercase.
     $site_name = ucfirst ( $_REQUEST ['sitename'] );
     $site_enabled = "0"; // empty($_REQUEST ['add_enabled']) ? "0" : "1";
-    $l8_enabled = empty($_REQUEST ['chkL8Add']) ? "0" : "1";
+    //$l8_enabled = empty($_REQUEST ['chkL8Add']) ? "0" : "1";
     //print_r($_REQUEST);
     
     # Check if the site already exists
@@ -277,10 +278,10 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
     $message = $upload ['message'];
     if ($polygons_file) {
         $site_id = insertSite($site_name, $coord_geog, $site_enabled);
+        // update also the L8 enable/disable status
+        // $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/products/" . ($l8_enabled ? "enable":"disable") . "/2/" . $site_id);        
         // ask services to refresh the configuration from DB
         $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/refresh/");
-        // update also the L8 enable/disable status
-        $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/products/" . ($l8_enabled ? "enable":"disable") . "/2/" . $site_id);        
         $_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
     } else {
         $_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $coord_geog;
@@ -449,6 +450,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                         <label class="control-label" for="sitename">Site name:</label>
                                         <input type="text" class="form-control" id="sitename" name="sitename">
                                     </div>
+<!--                                    
                                     <div class="form-group form-group-sm sensor">
                                                 <label  style="">Enabled sensor:</label>
                                                 <input class="form-control chkS2" id="chkS2Add" type="checkbox" name="chkS2Add" value="S2" checked="checked" disabled>
@@ -456,6 +458,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                                 <input class="form-control chkL8" id="chkL8Add" type="checkbox" name="chkL8Add" value="L8" checked="checked">
                                                 <label class="control-label" for="chkL8Add">L8</label>
                                     </div>
+-->                                    
                                 </div>
                             </div>
                             <div class="row">
@@ -1102,7 +1105,7 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
     $("#div_editsite").dialog("open");
     
     document.getElementById("chkL8Edit").checked = l8Enabled;
-    document.getElementById("chkL8Add").checked = l8Enabled;
+    // document.getElementById("chkL8Add").checked = l8Enabled;
     
     $.ajax({
         url: "getSiteSeasons.php",
