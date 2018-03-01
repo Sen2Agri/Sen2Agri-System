@@ -16,8 +16,10 @@ $sql ='SELECT * FROM sp_get_product_types() ';
 $result = pg_query ( $dbconn, $sql ) or die ( "Could not execute." );
 $option_product_type = "";
 while ( $row = pg_fetch_row ( $result ) ) {
+    if($row [0] != "7"){//if product type is not L1C 
 		$option = "<option value='" . $row [0] . "'>" . $row [1] . "</option>";
 		$option_product_type .= $option;
+    }
 }
 
 ?>
@@ -58,10 +60,10 @@ while ( $row = pg_fetch_row ( $result ) ) {
                             </div>
                          </div>
                          
-                         <!-- Senzor -->                      
+                         <!-- Sensor -->                      
                           <div class="row" id="div_senzor">
                          	<div class="col-md-3">
-                               	<label>Senzor:<span style="color:red">*</span></label>                                                        
+                               	<label>Sensor:<span style="color:red">*</span></label>                                                        
                             </div>
                             <div>
                             	<label class="checkbox-inline" style="margin-bottom: 5px" for="senzor"><input type="checkbox" id="S2" name="senzor" value="1" checked>S2</label>
@@ -231,7 +233,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 			}else{
 
 				$('#optseason').removeAttr("disabled");
-				$('#choose_season').removeAttr("disabled");
+				//$('#choose_season').removeAttr("disabled");
 				$('#tiles').removeAttr("disabled");
 
 				$('#choose_season').find('option').not(':first').remove();
@@ -342,7 +344,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 	   $("#div_filter").dialog("close");
 	   
 	   //reset form after dialog close
-	   $("#apply_filter")[0].reset();
+	   $/*("#apply_filter")[0].reset();
 	   
 	   // reset multiselect after dialog close
 	   $("#product_type").multiselect( 'destroy' );
@@ -354,7 +356,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		$('input[name="startdate"]').removeAttr("disabled");
     	$('input[name="enddate"]').removeAttr("disabled");
 
-		$('#tiles').attr('disabled',true);
+		$('#tiles').attr('disabled',true);*/
 	   
 	}	
 
@@ -379,6 +381,10 @@ while ( $row = pg_fetch_row ( $result ) ) {
 				$("#apply_filter")[0].reset();
 				$('#optseason').attr('disabled',true);
 				$('#choose_season').attr('disabled',true);
+
+				// reset multiselect after dialog close
+				$("#product_type").multiselect( 'destroy' );
+				initMultiSelect();
 			},
 			error: function (responseData, textStatus, errorThrown) {
 				console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);

@@ -1,4 +1,4 @@
--- Function: sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[])
+﻿-- Function: sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[])
 
 -- DROP FUNCTION sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[]);
 
@@ -16,11 +16,12 @@ $BODY$
 				select id, name, description, row_number() over (order by description)
 				from product_type
 			    ),
-			    data(id, satellite_id, product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp, site_coord) AS (
+			    data(id, satellite_id, product, product_type_id, product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp, site_coord) AS (
 			    SELECT
 				P.id,
 				P.satellite_id,
 				P.name,
+				PT.id,
 				PT.name,
 				PT.description,
 				PR.name,
@@ -35,23 +36,23 @@ $BODY$
 				JOIN processor PR ON P.processor_id = PR.id
 				JOIN site_names S ON P.site_id = S.id
 			    WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
+			    AND EXISTS (
+				    SELECT * FROM season WHERE season.site_id =P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date 
 		    $sql$;
+		    IF $3 IS NOT NULL THEN
+			q := q || $sql$
+				AND season.id=$3			       
+				$sql$;
+		    END IF;
+				
+		    q := q || $sql$
+			)
+		    $sql$;
+		    
 		    IF $1 IS NOT NULL THEN
 			q := q || $sql$
-				AND P.site_id = $1
-				AND EXISTS (
-				    SELECT * FROM season WHERE season.site_id =$1 AND P.created_timestamp BETWEEN season.start_date AND season.end_date 
-				    
-				$sql$;
+				AND P.site_id = $1		    
 				
-				IF $3 IS NOT NULL THEN
-				q := q || $sql$
-					AND season.id=$3			       
-				$sql$;
-				END IF;
-				
-			q := q || $sql$
-				)
 		    $sql$;
 		    END IF;
 		    
@@ -62,11 +63,11 @@ $BODY$
 				$sql$;
 		    END IF;
 
-		IF $4 IS NOT NULL THEN
-		q := q || $sql$
-			AND  P.satellite_id = ANY($4)			  
-			$sql$;
-		END IF;
+		--IF $4 IS NOT NULL THEN
+		--q := q || $sql$
+			--AND  P.satellite_id = ANY($4)			  
+			--$sql$;
+		--END IF;
 		    
 		IF $5 IS NOT NULL THEN
 		q := q || $sql$
@@ -82,7 +83,7 @@ $BODY$
 
 		IF $7 IS NOT NULL THEN
 		q := q || $sql$
-			AND P.tiles <@$7
+			AND P.tiles <@$7 AND P.tiles!='{}'
 			$sql$;
 		END IF;
 	

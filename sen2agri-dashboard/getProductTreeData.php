@@ -47,9 +47,6 @@ try {
 	if(strlen($site_id)==0) $site_id = null;
 	
 	$satellit_id = null;
-	if(isset($_POST['satellit_id'])){
-		$satellit_id = '{'.implode(', ',$_POST['satellit_id']).'}';
-	}
 	
 	$season_id = null;
 	if(isset($_POST['season_id']) && $_POST['season_id']!=""){
@@ -80,8 +77,20 @@ try {
 	$responseJson = pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "";
 	$productRows  = json_decode($responseJson);
 
+	if(isset($_POST['satellit_id'])){
+	   $satellit_id = $_POST['satellit_id'];
+	 }
+	
 	if($productRows!=null){
 	    foreach($productRows as $productRow) {
+	        
+	        //if satellite_id is set then apply it on product type "l2a"
+	        if(isset($_POST['satellit_id']) && $productRow->product_type_id == '1'){
+	            if(!in_array($productRow->satellite_id, $satellit_id)){
+	                continue;
+	            }
+	        }
+	        
 	        $siteObj = findSite($productRow->site, $products);
 			if ($siteObj == null) {
 				$siteObj = new stdClass();
