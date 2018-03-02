@@ -60,7 +60,11 @@ def get_overview_levels(size, min_size):
 
 def main():
     args = parse_args()
-    print(args)
+
+    if args.no_data != 'none':
+        run_command(['gdal_edit.py', '-a_nodata', args.no_data, args.input])
+    else:
+        run_command(['gdal_edit.py', '-unsetnodata', args.input])
 
     run_command(['gdaladdo', '-clean', args.input])
 
@@ -91,11 +95,6 @@ def main():
 
     command += [args.input, temp]
     run_command(command, env)
-
-    if args.no_data != 'none':
-        run_command(['gdal_edit.py', '-a_nodata', args.no_data, temp])
-    else:
-        run_command(['gdal_edit.py', '-unsetnodata', temp])
 
     os.rename(temp, args.input)
 
