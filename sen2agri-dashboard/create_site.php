@@ -23,9 +23,9 @@ function CallRestAPI($method, $url, $data = false)
                 curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
                 curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen($data)));
             }
-            
+
             echo "Delete " . $data . "      ";
-            break;            
+            break;
         case "PUT":
             curl_setopt($curl, CURLOPT_PUT, 1);
             break;
@@ -61,27 +61,27 @@ function getInsituFileName($siteId, $isStrata) {
     }
     $rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('processor.l4a.reference_data_dir') WHERE site_id IS NULL") or die(pg_last_error());
     $result = pg_fetch_array($rows, 0)[1];
-    
+
     $insituDataDir = str_replace("{site}", $siteId, $result);
     if ($isStrata) {
         $insituDataDir = $insituDataDir . DIRECTORY_SEPARATOR . "strata";
     }
     //$insituDataDir = rtrim($insituDataDir,"/");
-    
-    
+
+
     //////////////////////////////////////////////////////
-    // TODO: Remove this ... is only for testing on windows 
+    // TODO: Remove this ... is only for testing on windows
     //$insituDataDir = "c:" . $insituDataDir;
     //////////////////////////////////////////////////////
-    
+
     // echo "Insitu Directory is " . $insituDataDir . "\r\n";
     $newest_file = "";
     if (is_dir($insituDataDir)) {
         //echo "IsDir " . "\r\n";
         $files = scandir($insituDataDir, SCANDIR_SORT_DESCENDING);
-        $newest_file = $files[0];    
+        $newest_file = $files[0];
         //echo "Newest file " . $newest_file . "\r\n";
-    }   
+    }
     return $newest_file;
 }
 
@@ -100,8 +100,8 @@ function get_product_types_from_db() {
             $short = substr(strtoupper($productTypeInfo['description']), 0, 3);
             ?>
             <input class="form-control" id="delete_chk<?=$short?>" type="checkbox" name="delete_chk<?=$short?>" value="<?=$id?>">
-            <label class="control-label" for="delete_chk<?=$short?>"><?=$short?></label>  
-<?php             
+            <label class="control-label" for="delete_chk<?=$short?>"><?=$short?></label>
+<?php
         }
     }
 }
@@ -111,12 +111,12 @@ function createCustomUploadFolder($siteId, $timestamp, $subDir) {
     $dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
     $rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL") or die(pg_last_error());
     $result = pg_fetch_array($rows, 0)[1];
-    
+
     //////////////////////////////////////////////////////
-    // TODO: Remove this ... is only for testing on windows 
+    // TODO: Remove this ... is only for testing on windows
     //$result = "c:" . $result;
     //////////////////////////////////////////////////////
-    
+
     $upload_target_dir = str_replace("{user}", "", $result);
 
     $result = $siteId;
@@ -143,9 +143,9 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp, $subDir) {
     if ($_FILES[$zipFile]["name"]) {
         $filename = $_FILES[$zipFile]["name"];
         $source = $_FILES[$zipFile]["tmp_name"];
-        
+
         $upload_target_dir = createCustomUploadFolder($siteId, $timestamp, $subDir);
-        
+
         $target_path = $upload_target_dir . $filename;
         if(move_uploaded_file($source, $target_path)) {
             $zip = new ZipArchive();
@@ -175,13 +175,13 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp, $subDir) {
     } else {
         $zip_msg = 'Unable to access your selected file!';
     }
-    
+
     // verify if shape file has valid geometry
     $shp_msg = '';
     $shape_ok = false;
     if ($shp_file) {
         exec('scripts/check_shp.py -b '.$shp_file, $output, $ret);
-        
+
         if ($ret === FALSE) {
             $shp_msg = 'Invalid command line!';
         } else {
@@ -189,7 +189,8 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp, $subDir) {
                 case 0:     $shape_ok = true; break;
                 case 1:     $shp_file = false; $shp_msg = 'Unable to open the shape file!'; break;
                 case 2:     $shp_file = false; $shp_msg = 'Shape file has invalid geometry!'; break;
-                case 3:        $shp_file = false; $shp_msg = 'Shape file has overlapping polygons!'; break;
+                case 3:     $shp_file = false; $shp_msg = 'Shape file has overlapping polygons!'; break;
+                case 4:     $shp_file = false; $shp_msg = 'Shape file is too complex!'; break;
                 case 127:   $shp_file = false; $shp_msg = 'Invalid geometry detection script!'; break;
                 default:    $shp_file = false; $shp_msg = 'Unexpected error with the geometry detection script!'; break;
             }
@@ -207,7 +208,7 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp, $subDir) {
     } else {
         $shp_msg = 'Missing shape file due to a problem with your selected file!';
     }
-    
+
     return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg );
 }
 
@@ -222,7 +223,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
     $site_enabled = "0"; // empty($_REQUEST ['add_enabled']) ? "0" : "1";
     //$l8_enabled = empty($_REQUEST ['chkL8Add']) ? "0" : "1";
     //print_r($_REQUEST);
-    
+
     # Check if the site already exists
     # TODO: create an endpoint for checking if site with name exists
     $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/sites/");
@@ -244,7 +245,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
             }
         }
     }
-    
+
     function insertSite($site, $coord, $enbl) {
         $db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
         $sql = "SELECT sp_dashboard_add_site($1,$2,$3)";
@@ -257,12 +258,12 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
         $row = pg_fetch_row($res);
         return $row[0];
     }
-    
+
     $date = date_create();
     $time_stamp = date_timestamp_get($date);
-    
+
 //    TODO: In the end, should be used the service to create the site (from the services)
-//    For now,    
+//    For now,
 //    $sourceFile = $_FILES["zip_fileAdd"]["tmp_name"];
 //    $dataObj = new \stdClass();
 //    $dataObj->name = $site_name;
@@ -270,7 +271,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 //    $dataObj->enabled = false;
 //    $jsonObj = json_encode($dataObj);
 //    $restResult = CallRestAPI("POST",  ConfigParams::$REST_SERVICES_URL . "/sites/" , $jsonObj);
-    
+
     // upload polygons
     $upload = uploadReferencePolygons("zip_fileAdd", $site_name, $time_stamp, '');
     $polygons_file = $upload ['polygons_file'];
@@ -279,14 +280,14 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
     if ($polygons_file) {
         $site_id = insertSite($site_name, $coord_geog, $site_enabled);
         // update also the L8 enable/disable status
-        // $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/products/" . ($l8_enabled ? "enable":"disable") . "/2/" . $site_id);        
+        // $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/products/" . ($l8_enabled ? "enable":"disable") . "/2/" . $site_id);
         // ask services to refresh the configuration from DB
         $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/refresh/");
         $_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
     } else {
         $_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $coord_geog;
     }
-    
+
     // Prevent adding site when refreshing page
     die(Header("Location: {$_SERVER['PHP_SELF']}"));
 }
@@ -298,7 +299,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
     $site_enabled = empty($_REQUEST ['edit_enabled']) ? "0" : "1";
     //print_r($_REQUEST);
     $l8_enabled = empty($_REQUEST ['chkL8Edit']) ? "0" : "1";
-    
+
     function polygonFileSelected($name) {
         foreach($_FILES as $key => $val){
             if (($key == $name) && (strlen($_FILES[$key]['name'])) > 0) {
@@ -307,7 +308,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
         }
         return false;
     }
-    
+
     function updateSite($id, $enbl) {
         $db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
         $res = pg_query_params ( $db, "SELECT sp_dashboard_update_site($1,$2)", array (
@@ -315,10 +316,10 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
                 $enbl
         ) ) or die ( "An error occurred." );
     }
-    
+
     $date = date_create();
     $time_stamp = date_timestamp_get($date);
-    
+
     // upload polygons if zip file selected
     $status     = "OK";
     $message    = "";
@@ -335,7 +336,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
             $errMsg = $upload ['message'];
             if ($validationMsg != '') {
                 $errMsg = $validationMsg;
-            } 
+            }
             $insituMsg = "Error uploading insitu file. Error was: " . $errMsg . "\\n";
         }
     }
@@ -349,11 +350,11 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
             $errMsg = $upload ['message'];
             if ($validationMsg != '') {
                 $errMsg = $validationMsg;
-            } 
+            }
             $strataMsg = "Error uploading strata file. Error was: " . $errMsg . "\\n";
         }
     }
-    
+
     /*
     $shape_file = null;
     if (polygonFileSelected("zip_fileEdit")) {
@@ -378,17 +379,17 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
         $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/refresh/");
         // update also the L8 enable/disable status
         $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/products/" . ($l8_enabled ? "enable":"disable") . "/2/" . $site_id);
-        
+
         $message = "Your site has been successfully modified!";
     }
         if ($insituMsg != '' || $strataMsg != '') {
             $message = $message . "\\nAlso:\\n";
         }
-    
+
         $message = $message . $insituMsg . $strataMsg;
 
     $_SESSION['status'] =  $status; $_SESSION['message'] = $message;
-    
+
     // Prevent updating site when refreshing page
     die(Header("Location: {$_SERVER['PHP_SELF']}"));
 }
@@ -396,7 +397,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 // processing  delete_site
 if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confirm'] == 'Confirm Delete Site') {
     $shortname      = $_REQUEST ['delete_site_short_name'];
-    
+
     foreach($_POST as $key => $value) {
         if (strpos($key, 'delete_chk') === 0) {
             // value starts with delete_chk
@@ -450,7 +451,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                         <label class="control-label" for="sitename">Site name:</label>
                                         <input type="text" class="form-control" id="sitename" name="sitename">
                                     </div>
-<!--                                    
+<!--
                                     <div class="form-group form-group-sm sensor">
                                                 <label  style="">Enabled sensor:</label>
                                                 <input class="form-control chkS2" id="chkS2Add" type="checkbox" name="chkS2Add" value="S2" checked="checked" disabled>
@@ -458,7 +459,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                                 <input class="form-control chkL8" id="chkL8Add" type="checkbox" name="chkL8Add" value="L8" checked="checked">
                                                 <label class="control-label" for="chkL8Add">L8</label>
                                     </div>
--->                                    
+-->
                                 </div>
                             </div>
                             <div class="row">
@@ -509,7 +510,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                         </form>
                     </div>
                     <!---------------------------- end form Delete ---------------------------------->
-<!---------------------------  ############################################################################################### ------------------------>                    
+<!---------------------------  ############################################################################################### ------------------------>
                     <!---------------------------- form edit sites ------------------------------->
                     <div class="add-edit-site" id="div_editsite" style="display: none;">
                         <form enctype="multipart/form-data" id="siteform_edit" action="create_site.php" method="post">
@@ -555,7 +556,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                                 <a data-toggle="collapse" data-parent="#accordion" href="#siteInsituDataAcc" id="siteInsituDataAccHref">Insitu data</a>
                                             </h4>
                                         </div>
-                                    
+
                                         <div id="siteInsituDataAcc" class="panel-collapse collapse">
                                             <div class="panel-body">
                                                 <!-- <div class="subgroup lai">
@@ -568,7 +569,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                                         <label class="inputlabel" for="siteInsituDataUpload">Upload file:</label>
                                                         <input type="file" class="form-control labelinput" id="siteInsituDataUpload" name="siteInsituDataUpload" onchange="onNewFileSelected('siteInsituDataAccHref');">
                                                     </div>
-                                                <!-- </div>   --> 
+                                                <!-- </div>   -->
                                             </div>
                                         </div>
                                     </div>
@@ -578,10 +579,10 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                                 <a data-toggle="collapse" data-parent="#accordion" href="#siteStrataDataAcc" id="siteStrataDataAccHref">Strata data</a>
                                             </h4>
                                         </div>
-                                    
+
                                         <div id="siteStrataDataAcc" class="panel-collapse collapse">
                                             <div class="panel-body">
-                                                <!-- <div class="subgroup lai"> 
+                                                <!-- <div class="subgroup lai">
                                                     <label class="control-label">In situ:</label>-->
                                                     <div class="form-group form-group-sm">
                                                         <label class="inputlabel" for="siteStrataData">Existing file:</label>
@@ -597,9 +598,9 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                                         <input type="file" id="selectedFile" style="display: none;" />
                                                         <input type="button" class="labelinputbutton" value="Browse..." onclick="document.getElementById('selectedFile').click();" />
                                                         -->
-                                                        
+
                                                     </div>
-                                                    
+
                                                 <!-- </div>   -->
                                             </div>
                                         </div>
@@ -614,7 +615,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                         </form>
                     </div>
                     <!------------------------------ end form edit sites -------------------------------->
-                    
+
                     <!------------------------------ list of sites -------------------------------------->
                     <table class="table table-striped">
                         <thead>
@@ -633,7 +634,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                         </thead>
                         <tbody>
                         <?php
-                        
+
                         $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/sites/");
                          if ($restResult == "") {
                             print_r ("Cannot get site lists! Please check that the sen2agri-services are started!");
@@ -647,7 +648,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                 $siteInsituFile = getInsituFileName($shortName, false);
                                 $siteStrataFile = getInsituFileName($shortName, true);
                                 $siteL8Enabled = (getSatelliteEnableStatus($siteId, 2) == "false" ? "" : "checked");  // only L8 for now
-                                    
+
                             //}
                             //
                             //
@@ -705,7 +706,7 @@ $(document).ready( function() {
     $("table.table td.seasons").each(function() {
         getSiteSeasons($(this).parent().data("id"));
     });
-    
+
     // create dialog for add site form
     $("#div_addsite").dialog({
         title: "Add New Site",
@@ -715,7 +716,7 @@ $(document).ready( function() {
         resizable: false,
         beforeClose: function( event, ui ) { resetEditAdd("add"); }
     });
-    
+
     // create dialog for edit site form
     $("#div_editsite").dialog({
         title: "Edit Site",
@@ -725,7 +726,7 @@ $(document).ready( function() {
         resizable: false,
         beforeClose: function( event, ui ) { resetEditAdd("edit"); }
     });
-    
+
         // create dialog for delete site form
     $("#div_deletesite").dialog({
         title: "Delete Site",
@@ -735,12 +736,12 @@ $(document).ready( function() {
         resizable: false,
         beforeClose: function( event, ui ) { resetEditAdd("delete"); }
     });
-    
+
     // change row style when site editing
     $( ".create-site a" ).click(function() {
         $(this).parent().parent().addClass("editing")
     });
-    
+
     // create switches for all checkboxes in the sites list
     $("[name='enabled-checkbox']").bootstrapSwitch({
         size: "mini",
@@ -749,21 +750,21 @@ $(document).ready( function() {
         disabled: true,
         handleWidth: 25
     });
-    
+
     // create switch for enabled checkbox in the add site form
     $("[name='add_enabled']").bootstrapSwitch({
         size: "small",
         onColor: "success",
         offColor: "default"
     });
-    
+
     // create switch for enabled checkbox in the edit site form
     $("[name='edit_enabled']").bootstrapSwitch({
         size: "small",
         onColor: "success",
         offColor: "default"
     });
-    
+
     // validate add site form
     $("#siteform").validate({
         rules: {
@@ -797,7 +798,7 @@ $(document).ready( function() {
             label.remove();
         },
     });
-    
+
     // validate edit site form
     $("#siteform_edit").validate({
         rules: {
@@ -818,7 +819,7 @@ $(document).ready( function() {
         submitHandler: function(form) {
             // first send the enable status of the satellite for this site
             //sendSatelliteEnableStatus();
-            
+
             $.ajax({
                 url: $(form).attr('action'),
                 type: $(form).attr('method'),
@@ -862,12 +863,12 @@ $(document).ready( function() {
 //        crosDomain: true,
 //        dataType: "html",
 //        success: function(data) {
-//            
+//
 //        },
 //        error: function (responseData, textStatus, errorThrown) {
 //            alert("Satellite enable/disable was not performed! Error was " + errorThrown);
 //        }
-//    });    
+//    });
 //}
 
 function getSiteSeasons(site_id) {
@@ -898,7 +899,7 @@ function getSiteSeasons(site_id) {
             error: function (responseData, textStatus, errorThrown) {
                 console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
             }
-        });    
+        });
     });
 }
 
@@ -931,7 +932,7 @@ function getSiteSeasons(site_id) {
 //            error: function (responseData, textStatus, errorThrown) {
 //                console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 //            }
-//        });    
+//        });
 //    });
 //}
 
@@ -948,7 +949,7 @@ function getSiteSeasons(site_id) {
 //            var tdElem = document.createElement('td');
 //            tdElem.innerHTML = arr[i].name;
 //            trElem.appendChild(tdElem);
-//            
+//
 //            tdElem = document.createElement('td');
 //            tdElem.innerHTML = formatDateFromJSonObj(arr[i].startDate);
 //            trElem.appendChild(tdElem);
@@ -960,7 +961,7 @@ function getSiteSeasons(site_id) {
 //            tdElem = document.createElement('td');
 //            tdElem.innerHTML = formatDateFromJSonObj(arr[i].endDate);
 //            trElem.appendChild(tdElem);
-//            
+//
 //            tdElem = document.createElement('td');
 //            var input = document.createElement('input');
 //            input.setAttribute("class", "form-control");
@@ -969,9 +970,9 @@ function getSiteSeasons(site_id) {
 //            input.setAttribute("checked", arr[i].enabled ? "checked" : "");
 //            tdElem.appendChild(input);
 //            trElem.appendChild(tdElem);
-//            
+//
 //            tableElem.appendChild(trElem);
-//            
+//
 //        }
 //        return tableElem;
 //    }
@@ -1004,9 +1005,9 @@ function formDeleteSite(){
     // $("#div_editsite").dialog({style : "display:none;"});
     $("#div_addsite").dialog("close");
     $("#div_deletesite").dialog("open");
-    
+
      // TODO : Use this version when removing completely the PHP
-    //createDeleteCheckboxes();    
+    //createDeleteCheckboxes();
 };
 
  // TODO : Use this version when removing completely the PHP
@@ -1016,7 +1017,7 @@ function formDeleteSite(){
 //        type: "get",
 //        cache: false,
 //        contentType: 'application/json',
-//        mimeType: 'application/json',        
+//        mimeType: 'application/json',
 //        crosDomain: true,
 //        success: function(data) {
 //            // sort the array by description
@@ -1031,12 +1032,12 @@ function formDeleteSite(){
 //                input.setAttribute("name", "delete_chk" + shortName);
 //                input.setAttribute("value", data[i].id);
 //                input.setAttribute("checked", "checked");
-//                
+//
 //                var label = document.createElement('label');
 //                label.setAttribute("class", "control-label");
 //                label.setAttribute("for", "delete_chk" + shortName);
 //                label.innerHTML = shortName;
-//                
+//
 //                var body = $("#delete_checkboxes_div")[0];
 //                body.appendChild(input);
 //                body.appendChild(label);
@@ -1045,7 +1046,7 @@ function formDeleteSite(){
 //        error: function (responseData, textStatus, errorThrown) {
 //            alert ("Cannot extract product types! \r\n The Error was: " + errorThrown);
 //        }
-//    });    
+//    });
 //}
 
 // TODO : Use this version when removing completely the PHP
@@ -1065,21 +1066,21 @@ function formDeleteSite(){
 //        data: postData,
 //        cache: false,
 //        contentType: 'application/json',
-//        mimeType: 'application/json',        
+//        mimeType: 'application/json',
 //        crosDomain: true,
 //        success: function(data) {
 //            alert ("Site successfully deleted!");
 //            // close both the delete and edit site forms
 //            $("#div_deletesite").dialog("close");
 //            $("#div_editsite").dialog("close");
-//            location.reload(); 
+//            location.reload();
 //        },
 //        error: function (responseData, textStatus, errorThrown) {
 //            //console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 //            alert ("Site couldn't be deleted! \r\n The Error was: " + errorThrown);
 //            $("#div_deletesite").dialog("close");
 //        }
-//    });    
+//    });
 //}
 
 // Open edit site form
@@ -1087,7 +1088,7 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
     // set values for all edited fields
     removeAppendedColoredText("siteInsituDataAccHref");
     removeAppendedColoredText("siteStrataDataAccHref");
-    
+
     $("#edit_sitename").val(name);
     $("#edit_siteid").val(id);
     $("#shortname").val(short_name);
@@ -1098,15 +1099,15 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
 
     $("#delete_sitename").val(name);
     $("#delete_site_short_name").val(short_name);
-    
+
     // open edit site dialog and close all others
     $("#div_addsite").dialog("close");
     $("#div_editsite").data("id", id);
     $("#div_editsite").dialog("open");
-    
+
     document.getElementById("chkL8Edit").checked = l8Enabled;
     // document.getElementById("chkL8Add").checked = l8Enabled;
-    
+
     $.ajax({
         url: "getSiteSeasons.php",
         type: "get",
@@ -1120,7 +1121,7 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
         error: function (responseData, textStatus, errorThrown) {
             console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
         }
-    }); 
+    });
 
     // TODO : Use this version when removing completely the PHP
 //    $.ajax({
@@ -1135,7 +1136,7 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
 //        error: function (responseData, textStatus, errorThrown) {
 //            console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 //        }
-//    });        
+//    });
 };
 
 function removeAppendedColoredText(id) {
@@ -1154,7 +1155,7 @@ function resetEditAdd(formName) {
         var validator = $("#siteform_edit").validate();
         validator.resetForm();
         $("#siteform_edit")[0].reset();
-        
+
         // refresh seasons for edited/added site
         var site_id = $("#div_editsite").data("id");
         getSiteSeasons(site_id);
@@ -1164,7 +1165,7 @@ function resetEditAdd(formName) {
         var validator = $("#siteform_delete").validate();
         validator.resetForm();
         $("#siteform_delete")[0].reset();
-        
+
         // refresh seasons for edited/added site
 //        var site_id = $("#div_deletesite").data("id");
 //        getSiteSeasons(site_id);
