@@ -71,13 +71,13 @@ $BODY$
 		    
 		IF $5 IS NOT NULL THEN
 		q := q || $sql$
-			AND P.created_timestamp >= $5 
+			AND P.created_timestamp >= to_timestamp(cast($5 as TEXT),'YYYY-MM-DD HH24:MI:SS') 
 			$sql$;
 		END IF;
 
 		IF $6 IS NOT NULL THEN
 		q := q || $sql$
-			AND P.created_timestamp <= $6 
+			AND P.created_timestamp <= to_timestamp(cast($6 as TEXT),'YYYY-MM-DD HH24:MI:SS') + interval '1 day' 
 			$sql$;
 		END IF;
 
