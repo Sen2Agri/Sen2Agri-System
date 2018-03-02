@@ -7,6 +7,20 @@ from osgeo import ogr
 from osgeo import osr
 
 
+ERR_NONE = 0
+ERR_IO = 1
+ERR_BAD_GEOMETRY = 2
+ERR_OVERLAPPING_GEOMETRY = 3
+ERR_COMPLEX_GEOMETRY = 4
+
+
+def get_geometry_size(geom):
+    num = geom.GetPointCount()
+    for i in range(0, geom.GetGeometryCount()):
+        num += get_geometry_size(geom.GetGeometryRef(i))
+    return num
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Checks the validity of vector data.")
@@ -22,7 +36,7 @@ def main():
 
     if dataSource is None:
         print("Could not open {}".format(args.input))
-        return 1
+        return ERR_IO
 
     layer = dataSource.GetLayer()
     featureCount = layer.GetFeatureCount()
@@ -43,7 +57,7 @@ def main():
     if args.bounds and featureCount != 1:
         union = ogr.Geometry(ogr.wkbMultiPolygon)
 
-    status = 0
+    status = ERR_NONE
     features = []
     for feature in layer:
         geometry = feature.GetGeometryRef()
@@ -54,7 +68,7 @@ def main():
             else:
                 print("Feature with no geometry")
             if not args.fix:
-                status = 2
+                status = ERR_BAD_GEOMETRY
             continue
         elif not geometry.IsValid():
             if id_field_idx is not None:
@@ -78,7 +92,7 @@ def main():
                     bad = False
 
             if bad:
-                status = 2
+                status = ERR_BAD_GEOMETRY
 
         features.append(feature)
 
@@ -135,9 +149,14 @@ def main():
                             bad = False
 
                         if bad and status == 0:
-                            status = 3
+                            status = ERR_OVERLAPPING_GEOMETRY
 
     if args.bounds:
+        # arbitrary limit, probably too large
+        SIZE_LIMIT = 1580
+        if get_geometry_size(union) > SIZE_LIMIT:
+            return ERR_COMPLEX_GEOMETRY
+
         print("Union: {}".format(union.ExportToWkt()))
 
     if args.fix:
