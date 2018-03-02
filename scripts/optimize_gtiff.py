@@ -68,7 +68,9 @@ def main():
     if args.threaded:
         env['GDAL_NUM_THREADS'] = 'ALL_CPUS'
 
-    command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave, '-a_nodata', args.no_data]
+    # why?!
+    # command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave, '-a_nodata', args.no_data]
+    command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave]
     if args.overviews:
         command += ['-co', 'COPY_SRC_OVERVIEWS=YES']
 
@@ -89,6 +91,11 @@ def main():
 
     command += [args.input, temp]
     run_command(command, env)
+
+    if args.no_data != 'none':
+        run_command(['gdal_edit.py', '-a_nodata', args.no_data, temp])
+    else:
+        run_command(['gdal_edit.py', '-unsetnodata', temp])
 
     os.rename(temp, args.input)
 
