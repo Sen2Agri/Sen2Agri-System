@@ -282,7 +282,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
         // update also the L8 enable/disable status
         // $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/products/" . ($l8_enabled ? "enable":"disable") . "/2/" . $site_id);
         // ask services to refresh the configuration from DB
-        $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/refresh/");
+        //$restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/refresh/");
         $_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
     } else {
         $_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $coord_geog;
@@ -375,10 +375,24 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
     */
     if ($status == "OK") {
         updateSite($site_id, $site_enabled);
-        // Refresh the configuration
-        $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/refresh/");
+        
         // update also the L8 enable/disable status
-        $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/products/" . ($l8_enabled ? "enable":"disable") . "/2/" . $site_id);
+        $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/products/" . ($l8_enabled == "1" ? "enable":"disable") . "/2/" . $site_id);
+        // stop or enable the satellite for the L8 satellite or for both satellites if the site is disabled/enabled
+        if ($site_enabled == "1") {
+            $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/downloader/start/" . $site_id . "/1");
+            if ($l8_enabled == "1") {
+                $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/downloader/start/" . $site_id . "/2");
+            } else {
+                $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/downloader/stop/" . $site_id . "/2");
+            }
+        } else {
+            $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/downloader/stop/" . $site_id . "/1");
+            $restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/downloader/stop/" . $site_id . "/2");
+        }
+        
+        // Refresh the configuration
+        //$restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/refresh/");
 
         $message = "Your site has been successfully modified!";
     }
