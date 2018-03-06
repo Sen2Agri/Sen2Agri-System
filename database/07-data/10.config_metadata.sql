@@ -203,10 +203,10 @@ INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_lai', 'L3B LAI pr
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_fapar', 'L3B LAI processor will produce FAPAR', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_fcover', 'L3B LAI processor will produce FCOVER', 'int', false, 4);
 
-INSERT INTO config_metadata VALUES ('downloader.stopped', 'Downloader is stopped', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.s1.stopped', 'S1 downloader is stopped', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.s2.stopped', 'S2 downloader is stopped', 'bool', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.l8.stopped', 'L8 downloader is stopped', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.enabled', 'Downloader is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s1.enabled', 'S1 downloader is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s2.enabled', 'S2 downloader is enabled', 'bool', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.l8.enabled', 'L8 downloader is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('s1.enabled', 'S1 is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('s2.enabled', 'S2 is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('l8.enabled', 'L8 is enabled', 'bool', false, 15);
