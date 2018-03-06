@@ -532,6 +532,25 @@ void MACCSMetadataHelper::InitializeS2Angles() {
         m_sensorBandsMeanAngles[i].zenith = angles[i].Angles.ZenithValue;
     }
 
+    for (const auto &grid : m_metadata->ProductInformation.ViewingAngles) {
+        MetadataHelperViewingAnglesGrid mhGrid;
+        mhGrid.DetectorId = grid.DetectorId;
+        mhGrid.BandId = grid.BandId;
+
+        mhGrid.Angles.Azimuth.ColumnStep = grid.Angles.Azimuth.ColumnStep;
+        mhGrid.Angles.Azimuth.ColumnUnit = grid.Angles.Azimuth.ColumnUnit;
+        mhGrid.Angles.Azimuth.RowStep = grid.Angles.Azimuth.RowStep;
+        mhGrid.Angles.Azimuth.RowUnit = grid.Angles.Azimuth.RowUnit;
+        mhGrid.Angles.Azimuth.Values = grid.Angles.Azimuth.Values;
+
+        mhGrid.Angles.Zenith.ColumnStep = grid.Angles.Zenith.ColumnStep;
+        mhGrid.Angles.Zenith.ColumnUnit = grid.Angles.Zenith.ColumnUnit;
+        mhGrid.Angles.Zenith.RowStep = grid.Angles.Zenith.RowStep;
+        mhGrid.Angles.Zenith.RowUnit = grid.Angles.Zenith.RowUnit;
+        mhGrid.Angles.Zenith.Values = grid.Angles.Zenith.Values;
+
+        m_allDetectorsDetailedViewingAngles.push_back(mhGrid);
+    }
     // extract the detailed viewing and solar angles
     std::vector<MACCSBandViewingAnglesGrid> maccsAngles = ComputeViewingAngles(m_metadata->ProductInformation.ViewingAngles);
     for(unsigned int i = 0; i<maccsAngles.size(); i++) {

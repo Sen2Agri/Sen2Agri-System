@@ -116,6 +116,8 @@ public:
     virtual int GetDetailedAnglesGridSize() { return m_detailedAnglesGridSize; }
     virtual MetadataHelperAngles GetDetailedSolarAngles() { return m_detailedSolarAngles; }
     virtual std::vector<MetadataHelperViewingAnglesGrid> GetDetailedViewingAngles() { return m_detailedViewingAngles; }
+    virtual std::vector<MetadataHelperViewingAnglesGrid> GetAllDetectorsDetailedViewingAngles() { return m_allDetectorsDetailedViewingAngles; }
+
 
     // PRODUCT API
     virtual std::vector<int> GetProductResolutions() { return m_vectResolutions; }
@@ -176,6 +178,7 @@ protected:
     int m_detailedAnglesGridSize;
     MetadataHelperAngles m_detailedSolarAngles;
     std::vector<MetadataHelperViewingAnglesGrid> m_detailedViewingAngles;
+    std::vector<MetadataHelperViewingAnglesGrid> m_allDetectorsDetailedViewingAngles;
 
 protected:
     std::string m_inputMetadataFileName;
