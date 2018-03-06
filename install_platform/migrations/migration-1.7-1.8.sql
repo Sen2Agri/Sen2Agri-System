@@ -495,7 +495,7 @@ begin
                 execute _statement;
             end if;
             
-            _statement = 'DROP FUNCTION IF EXISTS sp_get_dashboard_downloader_history()';
+            _statement = 'DROP FUNCTION IF EXISTS sp_get_dashboard_downloader_history(smallint)';
             raise notice '%', _statement;
             execute _statement;
 
@@ -528,7 +528,7 @@ begin
             execute _statement;
             
 
-            _statement = 'DROP FUNCTION IF EXISTS sp_mark_job_resumed()';
+            _statement = 'DROP FUNCTION IF EXISTS sp_mark_job_resumed(integer)';
             raise notice '%', _statement;
             execute _statement;
 
@@ -607,11 +607,12 @@ begin
                 END;
                 $$
                 LANGUAGE plpgsql VOLATILE;
+
                 $str$;
             raise notice '%', _statement;
             execute _statement;
 
-            _statement = 'DROP FUNCTION IF EXISTS sp_mark_job_paused()';
+            _statement = 'DROP FUNCTION IF EXISTS sp_mark_job_paused(int)';
             raise notice '%', _statement;
             execute _statement;
 
@@ -653,7 +654,7 @@ begin
             execute _statement;
             
 
-            _statement = 'DROP FUNCTION IF EXISTS sp_mark_job_cancelled()';
+            _statement = 'DROP FUNCTION IF EXISTS sp_mark_job_cancelled(int)';
             raise notice '%', _statement;
             execute _statement;
 
@@ -693,7 +694,7 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
-            _statement = 'DROP FUNCTION IF EXISTS sp_dashboard_remove_scheduled_task()';
+            _statement = 'DROP FUNCTION IF EXISTS sp_dashboard_remove_scheduled_task(smallint)';
             raise notice '%', _statement;
             execute _statement;
 
@@ -714,7 +715,7 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
-            _statement = 'DROP FUNCTION IF EXISTS sp_changepassword()';
+            _statement = 'DROP FUNCTION IF EXISTS sp_changepassword(smallint, character varying, character varying)';
             raise notice '%', _statement;
             execute _statement;
 
@@ -784,7 +785,7 @@ begin
             end if;
 
 
-            _statement = 'DROP FUNCTION IF EXISTS sp_get_dashboard_products()';
+            _statement = 'DROP FUNCTION IF EXISTS sp_get_dashboard_products(smallint,smallint)';
             raise notice '%', _statement;
             execute _statement;
 
@@ -803,11 +804,12 @@ begin
                                 select id, name, description, row_number() over (order by description)
                                 from product_type
                                 ),
-                                data(id, satellite_id, product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp, site_coord) AS (
+                                data(id, satellite_id, product, product_type_id, product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp, site_coord) AS (
                                 SELECT
                                 P.id,
                                 P.satellite_id,
                                 P.name,
+                                PT.id,
                                 PT.name,
                                 PT.description,
                                 PR.name,
@@ -822,23 +824,23 @@ begin
                                 JOIN processor PR ON P.processor_id = PR.id
                                 JOIN site_names S ON P.site_id = S.id
                                 WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
+                                AND EXISTS (
+                                    SELECT * FROM season WHERE season.site_id =P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date 
                             $sql$;
+                            IF $3 IS NOT NULL THEN
+                            q := q || $sql$
+                                AND season.id=$3			       
+                                $sql$;
+                            END IF;
+                                
+                            q := q || $sql$
+                            )
+                            $sql$;
+                            
                             IF $1 IS NOT NULL THEN
                             q := q || $sql$
-                                AND P.site_id = $1
-                                AND EXISTS (
-                                    SELECT * FROM season WHERE season.site_id =$1 AND P.created_timestamp BETWEEN season.start_date AND season.end_date 
-                                    
-                                $sql$;
+                                AND P.site_id = $1		    
                                 
-                                IF $3 IS NOT NULL THEN
-                                q := q || $sql$
-                                    AND season.id=$3			       
-                                $sql$;
-                                END IF;
-                                
-                            q := q || $sql$
-                                )
                             $sql$;
                             END IF;
                             
@@ -849,27 +851,27 @@ begin
                                 $sql$;
                             END IF;
 
-                        IF $4 IS NOT NULL THEN
-                        q := q || $sql$
-                            AND  P.satellite_id = ANY($4)			  
-                            $sql$;
-                        END IF;
+                        --IF $4 IS NOT NULL THEN
+                        --q := q || $sql$
+                            --AND  P.satellite_id = ANY($4)			  
+                            --$sql$;
+                        --END IF;
                             
                         IF $5 IS NOT NULL THEN
                         q := q || $sql$
-                            AND P.created_timestamp >= $5 
+                            AND P.created_timestamp >= to_timestamp(cast($5 as TEXT),'YYYY-MM-DD HH24:MI:SS') 
                             $sql$;
                         END IF;
 
                         IF $6 IS NOT NULL THEN
                         q := q || $sql$
-                            AND P.created_timestamp <= $6 
+                            AND P.created_timestamp <= to_timestamp(cast($6 as TEXT),'YYYY-MM-DD HH24:MI:SS') + interval '1 day' 
                             $sql$;
                         END IF;
 
                         IF $7 IS NOT NULL THEN
                         q := q || $sql$
-                            AND P.tiles <@$7
+                            AND P.tiles <@$7 AND P.tiles!='{}'
                             $sql$;
                         END IF;
                     
@@ -897,7 +899,7 @@ begin
             execute _statement;
             
             
-            _statement = 'DROP FUNCTION IF EXISTS sp_get_products_sites()';
+            _statement = 'DROP FUNCTION IF EXISTS sp_get_products_sites(smallint)';
             raise notice '%', _statement;
             execute _statement;
 
