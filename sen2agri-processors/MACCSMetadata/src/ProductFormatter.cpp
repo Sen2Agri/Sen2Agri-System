@@ -1959,6 +1959,11 @@ private:
           args.emplace_back("--no-compress");
       }
 
+      if (!bHasDiscreteValues) {
+          args.emplace_back("--no-data");
+          args.emplace_back("-10000");
+      }
+
       if (cog) {
           if (bHasDiscreteValues) {
               args.emplace_back("--resampler");
