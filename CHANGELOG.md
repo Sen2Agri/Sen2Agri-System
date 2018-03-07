@@ -17,13 +17,35 @@
 
 # Change Log
 
-## [1.8.0] - TBD
+## [1.8.0]
 ### Added
  - The L4A/L4B processors use a platform-independent algorithm for the training/validation split. This is a step towards allowing the processor to work on other platforms and give the same results.
+ - Added the sen2agri-services application that is performing the following:
+    o Replaces the old downloaders. Now there are defined datasources that allow customization of sources for query and for download. For example, for S2, the query can be performed from SciHub but the download can be performed from AWS or from a local archive repository (if products are already downloaded locally)
+    o Offers RESTful services for interrogating system for :
+        * sites configurations, enable/disable/delete sites, retrieve the site seasons
+        * enable/disable downloading for a site, for a certain satellite
+        * start or stop the downloads for a site/satellite
+        * retrieve or update the configuration of a datasource
+        * receive notifications from the system
+ - Added the possibility to delete a site from the web interface
+ - Added the possibility to upload insitu and strata data from the web interface
+ - Added INRA implementation for the LAI. In this moment, it works only for the Sentinel2 products and is disabled by default.  
+ - GUI Products tab has now the possibility of filtering products by site, season, tiles, product type or by specifying an interval
+ - Option to disable L8 for a site from the IHM
+ - Added the possibility to delete a scheduled job from the Dashboard in IHM
+ - Added buttons for Pause/Resume/Cancel a job in the System Monitoring page of the IHM
+ - When the final product is creating, a lock file is marking that the product is not complete yet.
 
 ### Changed
  - Breaking change: the L4A and L4B processors now use a different algorithm for the trainig/validation split. Output files will be different from the ones in the previous versions. The accuracy scores will often be lower because poorly-represented classes will now be present in the validation set. They weren't taken into account previously.
  - The SampleSelection application places all the features in both the training and the validation sets if there are too few of them and one of them would end up empty according to the configured split (e.g. 75% training with only 2 features). This allows taking them into account for validation, although with lower accuracy.
+ - Removed L2A processor from the GUI Dashboard tab since it can not be launch from here
+ - Changed processor names in the GUI Dashboard.
+ - The downloads stops now when a site is disabled.
+ - Corrected the LAI to avoid saturation of values.
+ - Usage of CCI 2015 instead of CCI 2010.
+ 
 
 ### Fixed
  - Fixed crash in the SampleSelection application used by the L4 processors when a feature with no geometry is present
