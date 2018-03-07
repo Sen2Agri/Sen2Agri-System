@@ -51,7 +51,7 @@
  - Fixed crash in the SampleSelection application used by the L4 processors when a feature with no geometry is present
  - The SampleSelection application always puts features in one of the training or validation set. Previously, they were sometimes lost.
 
-## [1.7.0] - TBD
+## [1.7.0]
 ### Added
  - The unsupervised crop mask processor can now use (optionally, on by default) the red edge bands
  - Added support to `sen2agri-downloader` for ingesting data from a local archive
