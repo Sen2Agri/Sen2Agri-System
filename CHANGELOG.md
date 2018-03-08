@@ -37,7 +37,7 @@
  - Added buttons for Pause/Resume/Cancel a job in the System Monitoring page of the IHM
  - When the final product is creating, a lock file is marking that the product is not complete yet.
  - Added options in the configuration to delete SRE or FRE file or to compress the outputs when MACCS creates the final product.
- - Added 2 new states for the downloader_history in order to know when a product is currently processing by MACCS or when MACCS failed to process a product.
+ - Added a new state for the downloader_history in order to know when a product is currently processing by MACCS.
  - Display version of the system in IHM website footer 
  
 ### Changed
