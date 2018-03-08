@@ -32,11 +32,14 @@
  - Added the possibility to upload insitu and strata data from the web interface
  - Added INRA implementation for the LAI. In this moment, it works only for the Sentinel2 products and is disabled by default.  
  - GUI Products tab has now the possibility of filtering products by site, season, tiles, product type or by specifying an interval
- - Option to disable L8 for a site from the IHM
+ - Option to disable L8 (downloading and processing) for a site from the IHM
  - Added the possibility to delete a scheduled job from the Dashboard in IHM
  - Added buttons for Pause/Resume/Cancel a job in the System Monitoring page of the IHM
  - When the final product is creating, a lock file is marking that the product is not complete yet.
-
+ - Added options in the configuration to delete SRE or FRE file or to compress the outputs when MACCS creates the final product.
+ - Added 2 new states for the downloader_history in order to know when a product is currently processing by MACCS or when MACCS failed to process a product.
+ - Display version of the system in IHM website footer 
+ 
 ### Changed
  - Breaking change: the L4A and L4B processors now use a different algorithm for the trainig/validation split. Output files will be different from the ones in the previous versions. The accuracy scores will often be lower because poorly-represented classes will now be present in the validation set. They weren't taken into account previously.
  - The SampleSelection application places all the features in both the training and the validation sets if there are too few of them and one of them would end up empty according to the configured split (e.g. 75% training with only 2 features). This allows taking them into account for validation, although with lower accuracy.
@@ -50,6 +53,9 @@
 ### Fixed
  - Fixed crash in the SampleSelection application used by the L4 processors when a feature with no geometry is present
  - The SampleSelection application always puts features in one of the training or validation set. Previously, they were sometimes lost.
+ - Composite Python Processor was updated to generate both 10 and 20 m resolutions.
+ - Corrections in LAI and Pheno NDVI processors Python scripts.
+ 
 
 ## [1.7.0]
 ### Added
