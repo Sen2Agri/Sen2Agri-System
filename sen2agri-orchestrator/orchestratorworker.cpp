@@ -180,11 +180,11 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
 {
     Logger::info(QStringLiteral("Processing job resumed event with job id %1").arg(event.jobId));
 
-    const auto &steps = ctx.GetJobStepsForResume(event.jobId);
+//    const auto &steps = ctx.GetJobStepsForResume(event.jobId);
 
-    const auto &stepsToSubmit = getExecutorStepList(ctx, event.processorId, event.jobId, steps);
+//    const auto &stepsToSubmit = getExecutorStepList(ctx, event.processorId, event.jobId, steps);
 
-    WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
+//    WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
     ctx.MarkJobResumed(event.jobId);
 }
 
