@@ -9,6 +9,14 @@ begin
         if exists (select * from meta where version = '1.7') then
             raise notice 'upgrading from 1.7 to 1.8';
 
+            if not exists (SELECT column_name FROM information_schema.columns WHERE table_name='downloader_history' and column_name='status_reason') then
+                ALTER TABLE downloader_history ADD COLUMN status_reason character varying null;
+            end if;
+
+            if not exists (SELECT column_name FROM information_schema.columns WHERE table_name='downloader_history' and column_name='tiles') then
+                ALTER TABLE downloader_history ADD COLUMN tiles character varying null;
+            end if;
+            
             if not exists (select * from config_metadata where key = 'processor.l3b.lai.use_inra_version') then
                 _statement := $str$
                 INSERT INTO config_metadata VALUES ('processor.l3b.lai.use_inra_version', 'L3B LAI processor will use INRA algorithm implementation', 'int', false, 4);
@@ -950,7 +958,56 @@ begin
                 $str$;
             raise notice '%', _statement;
             execute _statement;
+            
+            
+            _statement := $str$
+                CREATE TABLE downloader_count
+                (
+                    site_id smallint NOT NULL,
+                    satellite_id smallint NOT NULL,
+                    product_count integer NOT NULL,
+                    start_date date NOT NULL,
+                    end_date date NOT NULL,
+                    last_updated timestamp with time zone DEFAULT now(),
+                    CONSTRAINT pk_donwloader_count PRIMARY KEY (site_id, satellite_id, start_date, end_date),
+                    CONSTRAINT fk_downloader_count_satellite FOREIGN KEY (satellite_id)
+                        REFERENCES satellite (id) MATCH SIMPLE
+                        ON UPDATE NO ACTION
+                        ON DELETE NO ACTION,
+                    CONSTRAINT fk_downloader_count_site FOREIGN KEY (site_id)
+                        REFERENCES site (id) MATCH SIMPLE
+                        ON UPDATE NO ACTION
+                        ON DELETE NO ACTION
+                )
+                WITH (
+                    OIDS = FALSE
+                )
+                TABLESPACE pg_default;
 
+                ALTER TABLE downloader_count
+                    OWNER to admin;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE INDEX fki_fk_downloader_count_satellite
+                    ON downloader_count USING btree
+                    (satellite_id)
+                    TABLESPACE pg_default;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE INDEX fki_fk_downloader_count_site
+                    ON downloader_count USING btree
+                    (site_id)
+                    TABLESPACE pg_default;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+           
             _statement := 'update meta set version = ''1.8'';';
             raise notice '%', _statement;
             execute _statement;
