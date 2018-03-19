@@ -53,8 +53,8 @@ function endsWith($str, $sub) {
     return (substr ( $str, strlen ( $str ) - strlen ( $sub ) ) === $sub);
 }
 
-function getInsituFileName($siteId, $isStrata) {
-      $dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+function getInsituFolder($siteId, $isStrata) {
+    $dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
     if (is_numeric($siteId)) {
         $rows = pg_query($dbconn, "SELECT short_name FROM sp_get_sites() WHERE id = ".$siteId) or die(pg_last_error());
         $siteId = pg_fetch_array($rows, 0)[0];
@@ -66,23 +66,72 @@ function getInsituFileName($siteId, $isStrata) {
     if ($isStrata) {
         $insituDataDir = $insituDataDir . DIRECTORY_SEPARATOR . "strata";
     }
-    //$insituDataDir = rtrim($insituDataDir,"/");
-
-
-    //////////////////////////////////////////////////////
-    // TODO: Remove this ... is only for testing on windows
-    //$insituDataDir = "c:" . $insituDataDir;
-    //////////////////////////////////////////////////////
-
+    return $insituDataDir;
+}
+    
+function getInsituFileName($siteId, $isStrata) {
+    $insituDataDir = getInsituFolder($siteId, $isStrata);
     // echo "Insitu Directory is " . $insituDataDir . "\r\n";
     $newest_file = "";
     if (is_dir($insituDataDir)) {
         //echo "IsDir " . "\r\n";
         $files = scandir($insituDataDir, SCANDIR_SORT_DESCENDING);
-        $newest_file = $files[0];
+        $existingFiles = array_diff($files, array('..', '.', 'strata'));
+        foreach($existingFiles as $existingFile) {
+            $fullFilePath = $insituDataDir . DIRECTORY_SEPARATOR . $existingFile;
+            if (!is_dir($fullFilePath)) {
+                $fileExt = pathinfo($fullFilePath, PATHINFO_EXTENSION);
+                if (strtolower($fileExt) == 'shp') {
+                    $newest_file = $existingFile;
+                    break;
+                }
+            }
+        }
         //echo "Newest file " . $newest_file . "\r\n";
     }
+    
     return $newest_file;
+}
+
+function moveInsituFiles($srcDir, $destDir) {
+    
+    if (!file_exists($destDir)) {
+        if (!mkdir($destDir, 0777, true)) {
+            return false;
+        }
+    }
+        
+    // ignore ., .., and strata folder
+    // create a backup folder for the existing files as we don't want to delete them directly
+    $Ignore = array(".","..","strata");
+    $existingFiles = array_diff(scandir($destDir), $Ignore);
+    if (count($existingFiles) > 0) {
+        $date = date_create();
+        $formattedDate = date_format($date, "Ymd_His");
+
+        $prevFilesDir = $destDir . DIRECTORY_SEPARATOR . $formattedDate . "_backup_prev_files";
+        if (!file_exists($prevFilesDir)) {
+            // if we cannot create the folder, we skip backing up
+            if (mkdir($prevFilesDir, 0777, true)) {
+                foreach($existingFiles as $existingFile) {
+                    if(!in_array($existingFile,$Ignore) && !is_dir($destDir . DIRECTORY_SEPARATOR . $existingFile)) {
+                        rename($destDir . DIRECTORY_SEPARATOR . $existingFile, $prevFilesDir . DIRECTORY_SEPARATOR . $existingFile); // rename the file 
+                    }
+                }
+            }
+        }
+    }
+    // now move actually the files from the src dir to dest dir
+    $existingFiles = array_diff(scandir($srcDir), array('..', '.'));
+    if (count($existingFiles) > 0) {
+        $Ignore = array(".","..");
+        foreach($existingFiles as $existingFile) {
+            if(!in_array($existingFile,$Ignore)) {
+                rename($srcDir . DIRECTORY_SEPARATOR . $existingFile, $destDir . DIRECTORY_SEPARATOR . $existingFile); // rename the file 
+            }
+        }
+    }
+    return true;
 }
 
 function get_product_types_from_db() {
@@ -137,7 +186,7 @@ function createCustomUploadFolder($siteId, $timestamp, $subDir) {
     return $upload_target_dir;
 }
 
-function uploadReferencePolygons($zipFile, $siteId, $timestamp, $subDir) {
+function uploadReferencePolygons($zipFile, $siteId, $timestamp, $subDir, $chkExtractedShape = true) {
     $zip_msg = "";
     $shp_file = false;
     if ($_FILES[$zipFile]["name"]) {
@@ -179,37 +228,39 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp, $subDir) {
     // verify if shape file has valid geometry
     $shp_msg = '';
     $shape_ok = false;
-    if ($shp_file) {
-        exec('scripts/check_shp.py -b '.$shp_file, $output, $ret);
+    if ($chkExtractedShape) {
+        if ($shp_file) {
+            exec('scripts/check_shp.py -b '.$shp_file, $output, $ret);
 
-        if ($ret === FALSE) {
-            $shp_msg = 'Invalid command line!';
-        } else {
-            switch ($ret) {
-                case 0:     $shape_ok = true; break;
-                case 1:     $shp_file = false; $shp_msg = 'Unable to open the shape file!'; break;
-                case 2:     $shp_file = false; $shp_msg = 'Shape file has invalid geometry!'; break;
-                case 3:     $shp_file = false; $shp_msg = 'Shape file has overlapping polygons!'; break;
-                case 4:     $shp_file = false; $shp_msg = 'Shape file is too complex!'; break;
-                case 127:   $shp_file = false; $shp_msg = 'Invalid geometry detection script!'; break;
-                default:    $shp_file = false; $shp_msg = 'Unexpected error with the geometry detection script!'; break;
-            }
-        }
-        if ($shape_ok) {
-            $last_line = $output[count($output) - 1];
-            $r = preg_match('/^Union: (.+)$/m', $last_line, $matches);
-            if (!$r) {
-                $shp_file = false;
-                $shp_msg = 'Unable to parse shape!';
+            if ($ret === FALSE) {
+                $shp_msg = 'Invalid command line!';
             } else {
-                $shp_msg = $matches[1];
+                switch ($ret) {
+                    case 0:     $shape_ok = true; break;
+                    case 1:     $shp_file = false; $shp_msg = 'Unable to open the shape file!'; break;
+                    case 2:     $shp_file = false; $shp_msg = 'Shape file has invalid geometry!'; break;
+                    case 3:     $shp_file = false; $shp_msg = 'Shape file has overlapping polygons!'; break;
+                    case 4:     $shp_file = false; $shp_msg = 'Shape file is too complex!'; break;
+                    case 127:   $shp_file = false; $shp_msg = 'Invalid geometry detection script!'; break;
+                    default:    $shp_file = false; $shp_msg = 'Unexpected error with the geometry detection script!'; break;
+                }
             }
+            if ($shape_ok) {
+                $last_line = $output[count($output) - 1];
+                $r = preg_match('/^Union: (.+)$/m', $last_line, $matches);
+                if (!$r) {
+                    $shp_file = false;
+                    $shp_msg = 'Unable to parse shape!';
+                } else {
+                    $shp_msg = $matches[1];
+                }
+            }
+        } else {
+            $shp_msg = 'Missing shape file due to a problem with your selected file!';
         }
-    } else {
-        $shp_msg = 'Missing shape file due to a problem with your selected file!';
     }
 
-    return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg );
+    return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg, "upload_target_dir" => $upload_target_dir );
 }
 
 function getSatelliteEnableStatus($siteId, $satId) {
@@ -326,12 +377,19 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
     $insituMsg  = "";
     $strataMsg  = "";
     if (polygonFileSelected("siteInsituDataUpload")) {
-        $upload        = uploadReferencePolygons("siteInsituDataUpload", $site_id, $time_stamp, "insitu");
+        $upload        = uploadReferencePolygons("siteInsituDataUpload", $site_id, $time_stamp, "insitu", false);
         $polygons_file = $upload ['polygons_file'];
         $validationMsg = $upload ['result'];
         $insituMsg     = $upload ['message'];
         if ($polygons_file) {
-            $insituMsg ="Insitu file successfuly uploaded!\\n";
+            $upload_target_dir = $upload ['upload_target_dir'];
+            $insituFolder = getInsituFolder($site_id, false);
+            $resultMoveInsituFiles = moveInsituFiles($upload_target_dir, $insituFolder);
+            if (!$resultMoveInsituFiles) {
+                $insituMsg ="Cannot move insitu files from " . $upload_target_dir . " to " . $insituFolder . "\\n";
+            } else {
+                $insituMsg ="Insitu file successfuly uploaded!\\n";
+            }
         } else {
             $errMsg = $upload ['message'];
             if ($validationMsg != '') {
@@ -341,11 +399,18 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
         }
     }
     if (polygonFileSelected("siteStrataNewData")) {
-        $upload        = uploadReferencePolygons("siteStrataNewData", $site_id, $time_stamp, "strata");
+        $upload        = uploadReferencePolygons("siteStrataNewData", $site_id, $time_stamp, "strata", false);
         $polygons_file = $upload ['polygons_file'];
         $validationMsg = $upload ['result'];
         if ($polygons_file) {
-            $strataMsg = "Strata file successfuly uploaded!\\n";
+            $upload_target_dir = $upload ['upload_target_dir'];
+            $strataFolder = getInsituFolder($site_id, true);
+            $resultMoveStrataFiles = moveInsituFiles($upload_target_dir, $strataFolder);
+            if (!$resultMoveStrataFiles) {
+                $strataMsg ="Cannot move strata files from " . $upload_target_dir . " to " . $strataFolder . "!\\n";
+            } else {
+                $strataMsg = "Strata file successfuly uploaded!\\n";
+            }
         } else {
             $errMsg = $upload ['message'];
             if ($validationMsg != '') {
@@ -355,24 +420,6 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
         }
     }
 
-    /*
-    $shape_file = null;
-    if (polygonFileSelected("zip_fileEdit")) {
-        $upload        = uploadReferencePolygons("zip_fileEdit", $site_id, $time_stamp);
-        $polygons_file = $upload ['polygons_file'];
-        $coord_geog    = $upload ['result'];
-        $message       = $upload ['message'];
-        if ($polygons_file) {
-            $message = "Your site has been successfully modified!";
-            $shape_file = $coord_geog;
-        } else {
-            $status = "NOK";
-            $_SESSION['result'] = $coord_geog;
-        }
-    } else {
-        $message = "Your site has been successfully modified!";
-    }
-    */
     if ($status == "OK") {
         updateSite($site_id, $site_enabled);
         
