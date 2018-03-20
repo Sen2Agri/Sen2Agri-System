@@ -9,12 +9,26 @@ begin
         if exists (select * from meta where version = '1.7') then
             raise notice 'upgrading from 1.7 to 1.8';
 
+            _statement := $str$
+            delete from downloader_history where status_id in (1, 3);
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+            
             if not exists (SELECT column_name FROM information_schema.columns WHERE table_name='downloader_history' and column_name='status_reason') then
+                _statement := $str$
                 ALTER TABLE downloader_history ADD COLUMN status_reason character varying null;
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
             end if;
 
             if not exists (SELECT column_name FROM information_schema.columns WHERE table_name='downloader_history' and column_name='tiles') then
+                _statement := $str$
                 ALTER TABLE downloader_history ADD COLUMN tiles character varying null;
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
             end if;
             
             if not exists (select * from config_metadata where key = 'processor.l3b.lai.use_inra_version') then
