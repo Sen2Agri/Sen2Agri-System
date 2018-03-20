@@ -30,6 +30,13 @@ INSERT INTO downloader_status(
 id,
 status_description)
 VALUES (
+41,
+'download_ignored');
+
+INSERT INTO downloader_status(
+id,
+status_description)
+VALUES (
 5,
 'processed');
 

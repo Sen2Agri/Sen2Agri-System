@@ -125,6 +125,11 @@ begin
                 INSERT INTO downloader_status VALUES (8, 'processing_cld_failed');
             end if;
 
+            if not exists (select * from downloader_status where status_description = 'download_ignored') then
+                raise notice 'INSERT INTO downloader_status VALUES (41, ''download_ignored'');';
+                INSERT INTO downloader_status VALUES (41, 'download_ignored');
+            end if;
+            
             _statement := $str$
             drop function if exists sp_insert_product(smallint, smallint, integer, smallint, integer, character varying, timestamp with time zone, character varying, character varying, geography, json);
             $str$;
