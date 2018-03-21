@@ -925,3 +925,12 @@ div.for-table table.table tr td a:hover{color:#5CB85C}
 .pagination div.gotobox input[type="text"]{display:block;float:left;margin:0;letter-spacing:-0.25px;border:1px solid #8c9b8c;border-right-width:0;padding:5px 4px;background:#f7f7f7;border-radius:3px 0 0 3px;width:22px;vertical-align:top}
 .pagination div.gotobox div.uparrow{background:url("/scripts/pager/images/gotobox-uparrow.png") no-repeat top center;height:7px;position:relative;display:block;float:left;top:-7px;width:100%;margin:0}
 /* ---------------- END PAGINATION ---------------- */
+
+/* --------------- custom jobs -------------------- */
+.fieldset_filter_files{
+	width: 100%;font-family: Verdana, Arial, sans-serif;font-size: small;font-weight: normal;border: 1px solid #999999;padding: 4px;margin: 5px;
+}
+.fieldset_legend_filter_files{
+	font-size: 90%;color: #888888;background-color: transparent;font-weight: bold;width: auto;border-bottom: 0px;
+}
+/* -------------- end custom jobs------------------ */

@@ -32,9 +32,9 @@ function getDashboardSites() {
 	$rows = pg_query($dbconn, "select * from sp_get_dashboard_sites()") or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
-function getDashboardProducts($siteId, $processorId) {
+function getDashboardProducts($siteId, $processorId, $tiles, $seasonId, $startDate, $endDate) {
 	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
-	$rows = pg_query_params($dbconn, "select * from sp_get_dashboard_products($1,$2)", array($siteId, '{'.$processorId.'}')) or die(pg_last_error());
+	$rows = pg_query_params($dbconn, "select * from sp_get_dashboard_products($1,$2,$3,$4,$5,$6,$7)",array($siteId,'{'.$processorId.'}',$seasonId,null,$startDate,$endDate,$tiles)) or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getDashboardProcessors() {
@@ -72,7 +72,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 		case "getDashboardProducts":
 			$siteId = $_GET["siteId"];
 			$processorId = $_GET["processorId"];
-			$result = getDashboardProducts($siteId, $processorId);
+			
+			$tiles = (isset($_GET["tiles"]) && $_GET["tiles"]!="")?'{'.implode(', ',$_GET['tiles']).'}':null;
+			$seasonId = (isset($_GET["season_id"]) && $_GET["season_id"]!="")?$_GET["season_id"]:null;
+			$startDate = (isset($_GET["start_data"]) && $_GET["start_data"]!="")?$_GET["start_data"]:null;
+			$endDate = (isset($_GET["end_data"]) && $_GET["end_data"]!="")?$_GET["end_data"]:null;
+			
+			$products = getDashboardProducts($siteId, $processorId, $tiles, $seasonId, $startDate, $endDate);
+			$result = ($products!=NULL)?$products:json_encode(array());
+		
 			break;
 		case "getDashboardProcessors":
 			$result = getDashboardProcessors();

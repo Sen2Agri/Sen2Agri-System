@@ -344,7 +344,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 	   $("#div_filter").dialog("close");
 	   
 	   //reset form after dialog close
-	   $/*("#apply_filter")[0].reset();
+	   /*$("#apply_filter")[0].reset();
 	   
 	   // reset multiselect after dialog close
 	   $("#product_type").multiselect( 'destroy' );

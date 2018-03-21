@@ -29,6 +29,42 @@
 												<input class="form-control chkL8" id="l3a_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
 												<label class="control-label" for="l3a_chkL8">L8</label>
 											</div>
+											
+											
+											<fieldset class="fieldset_filter_files">
+												<legend class="fieldset_legend_filter_files">
+											  		<a data-toggle="collapse" data-target="#l3a_filter" href="#">Filter Criteria For Input Files</a>
+											  	</legend>
+											  	<div class="form-group form-group-sm collapse" id="l3a_filter">
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="tiles">Tiles:</label>
+        												<div class=" ui-widget"><input type="text" id="tiles" name="tiles" class="form-control" disabled></div>
+        												<span class="help-block">The list of tiles for the selected site (enter at least 2 characters).</span>
+        											</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+                                    					<label class="control-label">Season:</label>                         
+                                       					<select id="choose_season" name="choose_season" class="form-control" disabled>
+        													<option value="" >Select season</option>									
+        												</select>                   			 
+                                    				</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="startdate" >From:</label>
+        												<input type="text" name="startdate"  class="schedule_format">                           			 
+                                  					
+        												<label class="control-label" for="enddate" >To:</label>
+        												<input type="text" name="enddate" class="schedule_format">                           			 
+                                  					</div>
+                                  				   	<button type="button" class="btn btn-success btn-xs" name="btnFilter" onclick="filter_input_files(this.form.id);">
+                                    		          <span class="glyphicon glyphicon-filter" ></span> Filter 
+                                    		        </button>
+		        
+                                    		        <button type="button" class="btn btn-success btn-xs" name="btnResetFilter" disabled>
+                                    		          <span class="glyphicon glyphicon-refresh" ></span> Reset Filter 
+                                    		        </button>
+                          						</div>
+                          					</fieldset>
+                          			
+                          					
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
 												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
@@ -117,6 +153,41 @@
 												<input class="form-control chkL8" id="l3b_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
 												<label class="control-label" for="l3b_chkL8">L8</label>
 											</div>
+											
+											<fieldset class="fieldset_filter_files">
+												<legend class="fieldset_legend_filter_files">
+											  		<a data-toggle="collapse" data-target="#l3b_filter" href="#">Filter Criteria For Input Files</a>
+											  	</legend>
+											  	<div class="form-group form-group-sm collapse" id="l3b_filter">
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="tiles">Tiles:</label>
+        												<div class=" ui-widget"><input type="text" id="tiles" name="tiles" class="form-control" disabled></div>
+        												<span class="help-block">The list of tiles for the selected site (enter at least 2 characters).</span>
+        											</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+                                    					<label class="control-label">Season:</label>                         
+                                       					<select id="choose_season" name="choose_season" class="form-control" disabled>
+        													<option value="" >Select season</option>									
+        												</select>                   			 
+                                    				</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="startdate" >From:</label>
+        												<input type="text" name="startdate"  class="schedule_format">                           			 
+                                  					
+        												<label class="control-label" for="enddate" >To:</label>
+        												<input type="text" name="enddate" class="schedule_format">                           			 
+                                  					</div>
+                                  					<button type="button" class="btn btn-success btn-xs" name="btnFilter" onclick="filter_input_files(this.form.id);">
+                                    		          <span class="glyphicon glyphicon-filter" ></span> Filter 
+                                    		        </button>
+		        
+                                    		        <button type="button" class="btn btn-success btn-xs" name="btnResetFilter" disabled>
+                                    		          <span class="glyphicon glyphicon-refresh" ></span> Reset Filter 
+                                    		        </button>
+                                  				  <!--  <input name="filterInputFiles" type="button" class="btn btn-success btn-xs" value="Apply" style="float:right" onclick="filter_input_files(this.form.id);">
+                          						--> </div>
+                          					</fieldset>
+                          					
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
 												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"> </select>
@@ -202,6 +273,40 @@
 												<input class="form-control chkL8" id="l3b_nvdi_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
 												<label class="control-label" for="l3b_nvdi_chkL8">L8</label>
 											</div>
+											
+											<fieldset class="fieldset_filter_files">
+												<legend class="fieldset_legend_filter_files">
+											  		<a data-toggle="collapse" data-target="#l3b_nvdi_filter" href="#">Filter Criteria For Input Files</a>
+											  	</legend>
+											  	<div class="form-group form-group-sm collapse" id="l3b_nvdi_filter">
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="tiles">Tiles:</label>
+        												<div class=" ui-widget"><input type="text" id="tiles" name="tiles" class="form-control" disabled></div>
+        												<span class="help-block">The list of tiles for the selected site (enter at least 2 characters).</span>
+        											</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+                                    					<label class="control-label">Season:</label>                         
+                                       					<select id="choose_season" name="choose_season" class="form-control" disabled>
+        													<option value="" >Select season</option>									
+        												</select>                   			 
+                                    				</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="startdate" >From:</label>
+        												<input type="text" name="startdate"  class="schedule_format">                           			 
+                                  					
+        												<label class="control-label" for="enddate" >To:</label>
+        												<input type="text" name="enddate" class="schedule_format">                           			 
+                                  					</div>
+                                  				  		<button type="button" class="btn btn-success btn-xs" name="btnFilter" onclick="filter_input_files(this.form.id);">
+                                    		          <span class="glyphicon glyphicon-filter" ></span> Filter 
+                                    		        </button>
+		        
+                                    		        <button type="button" class="btn btn-success btn-xs" name="btnResetFilter" disabled>
+                                    		          <span class="glyphicon glyphicon-refresh" ></span> Reset Filter 
+                                    		        </button>
+                          						</div>
+                          					</fieldset>
+                          					
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
 												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
@@ -252,6 +357,40 @@
 												<input class="form-control chkL8" id="l4a_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
 												<label class="control-label" for="l4a_chkL8">L8</label>
 											</div>
+											
+										    <fieldset class="fieldset_filter_files">
+												<legend class="fieldset_legend_filter_files">
+											  		<a data-toggle="collapse" data-target="#l4a_filter" href="#">Filter Criteria For Input Files</a>
+											  	</legend>
+											  	<div class="form-group form-group-sm collapse" id="l4a_filter">
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="tiles">Tiles:</label>
+        												<div class=" ui-widget"><input type="text" id="tiles" name="tiles" class="form-control" disabled></div>
+        												<span class="help-block">The list of tiles for the selected site (enter at least 2 characters).</span>
+        											</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+                                    					<label class="control-label">Season:</label>                         
+                                       					<select id="choose_season" name="choose_season" class="form-control" disabled>
+        													<option value="" >Select season</option>									
+        												</select>                   			 
+                                    				</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="startdate" >From:</label>
+        												<input type="text" name="startdate"  class="schedule_format">                           			 
+                                  					
+        												<label class="control-label" for="enddate" >To:</label>
+        												<input type="text" name="enddate" class="schedule_format">                           			 
+                                  					</div>
+                                  				  		<button type="button" class="btn btn-success btn-xs" name="btnFilter" onclick="filter_input_files(this.form.id);">
+                                    		          <span class="glyphicon glyphicon-filter" ></span> Filter 
+                                    		        </button>
+		        
+                                    		        <button type="button" class="btn btn-success btn-xs" name="btnResetFilter" disabled>
+                                    		          <span class="glyphicon glyphicon-refresh" ></span> Reset Filter 
+                                    		        </button>
+                          						</div>
+                          					</fieldset>
+                          					
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
 												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
@@ -418,6 +557,41 @@
 												<input class="form-control chkL8" id="l4a_wo_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
 												<label class="control-label" for="l4a_wo_chkL8">L8</label>
 											</div>
+										
+										
+											<fieldset class="fieldset_filter_files">
+												<legend class="fieldset_legend_filter_files">
+											  		<a data-toggle="collapse" data-target="#l4a_wo_filter" href="#">Filter Criteria For Input Files</a>
+											  	</legend>
+											  	<div class="form-group form-group-sm collapse" id="l4a_wo_filter">
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="tiles">Tiles:</label>
+        												<div class=" ui-widget"><input type="text" id="tiles" name="tiles" class="form-control" disabled></div>
+        												<span class="help-block">The list of tiles for the selected site (enter at least 2 characters).</span>
+        											</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+                                    					<label class="control-label">Season:</label>                         
+                                       					<select id="choose_season" name="choose_season" class="form-control" disabled>
+        													<option value="" >Select season</option>									
+        												</select>                   			 
+                                    				</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="startdate" >From:</label>
+        												<input type="text" name="startdate"  class="schedule_format">                           			 
+                                  					
+        												<label class="control-label" for="enddate" >To:</label>
+        												<input type="text" name="enddate" class="schedule_format">                           			 
+                                  					</div>
+                                  				    <button type="button" class="btn btn-success btn-xs" name="btnFilter" onclick="filter_input_files(this.form.id);">
+                                    		          <span class="glyphicon glyphicon-filter" ></span> Filter 
+                                    		        </button>
+		        
+                                    		        <button type="button" class="btn btn-success btn-xs" name="btnResetFilter" disabled>
+                                    		          <span class="glyphicon glyphicon-refresh" ></span> Reset Filter 
+                                    		        </button>
+                          						</div>
+                          					</fieldset>
+										
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
 												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
@@ -585,6 +759,40 @@
 												<input class="form-control chkL8" id="l4b_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
 												<label class="control-label" for="l4b_chkL8">L8</label>
 											</div>
+										
+											<fieldset class="fieldset_filter_files">
+												<legend class="fieldset_legend_filter_files">
+											  		<a data-toggle="collapse" data-target="#l4b_filter" href="#">Filter Criteria For Input Files</a>
+											  	</legend>
+											  	<div class="form-group form-group-sm collapse" id="l4b_filter">
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="tiles">Tiles:</label>
+        												<div class=" ui-widget"><input type="text" id="tiles" name="tiles" class="form-control" disabled></div>
+        												<span class="help-block">The list of tiles for the selected site (enter at least 2 characters).</span>
+        											</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+                                    					<label class="control-label">Season:</label>                         
+                                       					<select id="choose_season" name="choose_season" class="form-control" disabled>
+        													<option value="" >Select season</option>									
+        												</select>                   			 
+                                    				</div>
+        											<div class="form-group form-group-sm" style=" width: 97%;">
+        												<label class="control-label" for="startdate" >From:</label>
+        												<input type="text" name="startdate"  class="schedule_format">                           			 
+                                  					
+        												<label class="control-label" for="enddate" >To:</label>
+        												<input type="text" name="enddate" class="schedule_format">                           			 
+                                  					</div>
+                                  				    <button type="button" class="btn btn-success btn-xs" name="btnFilter" onclick="filter_input_files(this.form.id);">
+                                    		          <span class="glyphicon glyphicon-filter" ></span> Filter 
+                                    		        </button>
+		        
+                                    		        <button type="button" class="btn btn-success btn-xs" name="btnResetFilter" disabled>
+                                    		          <span class="glyphicon glyphicon-refresh" ></span> Reset Filter 
+                                    		        </button>
+                          						</div>
+                          					</fieldset>
+										
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
 												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
@@ -702,6 +910,8 @@
 <link rel="stylesheet" href="libraries/jquery-ui/jquery-ui.min.css">
 <script src="libraries/jquery-ui/jquery-ui.min.js"></script>
 
+<script src="libraries/jquery-ui/jquery.ui.autocomplete.scroll.min.js"></script>
+
 <script>
 	$('#l3a_advanced').click(function() {
 		if ($(this).is(':checked')) { $(this).parent().parent().find(".advanced").removeClass("hidden"); }
@@ -754,7 +964,11 @@
 	$(document).ready(function() {
 		// hide all advanced parameters
 		$('.advanced').addClass("hidden");
-
+		
+		initialise_datepickers();
+		// add events to elements used to filter input files
+		add_events();
+		
 		// load sites
 		get_all_sites();
 		get_processor_id('l2a', 'l2a_proc_id');

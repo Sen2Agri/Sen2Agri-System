@@ -757,6 +757,215 @@ function update_job_timeline(json_data) {
     var timeline = new vis.Timeline(container, json_data.items, json_data.groups);
 }
 
+String.prototype.rtrim = function (s) {
+	    if (s == undefined)
+	        s = '\\s';
+	    return this.replace(new RegExp("[" + s + "]*$"), '');
+	};
+
+function add_events(){
+	$("button[name='btnFilter']").attr('disabled',true);
+	
+	//add event on all elements select season
+	var selSeasons = $("select#choose_season");
+	$.each(selSeasons, function(index, selSeason) {
+		$(selSeason).on('change',function(event){	
+			var formId = event.target.form.id;
+			if($(this).val()!=""){
+				$("#"+formId+" input[name='enddate']").attr('disabled',true);
+				$("#"+formId+" input[name='startdate']").attr('disabled',true);			
+			}else{
+				$("#"+formId+" input[name='enddate']").removeAttr('disabled');
+				$("#"+formId+" input[name='startdate']").removeAttr('disabled');
+				}
+		});
+	});
+
+	//add event on interval elements
+	var endDates = $("input[name='enddate']");
+	$.each(endDates, function(index, endDate) {		
+		$(endDate).on('change',function(event){		
+			if($(this).val()=="" && $("#"+event.target.form.id+" input[name='startdate']").val()==""){
+				$("#"+event.target.form.id+" select[name='choose_season']").removeAttr('disabled');							
+			}else{
+				$("#"+event.target.form.id+" select[name='choose_season']").attr('disabled',true);			
+				}
+		});
+	});
+
+	var startDates = $("input[name='startdate']");
+	$.each(startDates, function(index, startDate) {		
+		$(startDate).on('change',function(event){		
+			if($(this).val()=="" && $("#"+event.target.form.id+" input[name='enddate']").val()==""){
+				$("#"+event.target.form.id+" select[name='choose_season']").removeAttr('disabled');									
+			}else{
+				$("#"+event.target.form.id+" select[name='choose_season']").attr('disabled',true);	
+				}
+		});
+	});
+	
+	var resetFilters = $("button[name='btnResetFilter']");
+	$.each(resetFilters, function(index, resetFilter) {		
+		$(resetFilter).on('click',function(event){
+			var fomId = event.target.form.id;
+			$(this).attr('disabled',true);
+			
+			get_products($("#"+formId+" select#siteId").val(), $("#"+formId+" select#inputFiles"));
+		});
+	});
+}
+
+function filter_input_files(formId){
+
+	var siteId = $("#"+formId+" select#siteId").val();
+	var productEl = $("#"+formId+" select#inputFiles");
+	
+	var data = {};
+	var season_id = $("#"+formId+" select#choose_season").find(":selected").val();
+	if(season_id!="") data.season_id= season_id ;
+
+    var start_data = $("#"+formId+" input[name='startdate']").val();
+	if(start_data!="") data.start_data= start_data ;
+
+	var end_data =  $("#"+formId+" input[name='enddate']").val();
+	if(end_data!="") data.end_data= end_data ;
+ 	  	  	    
+ 	var tiles = $("#"+formId+" input[name='tiles']").val();   	  	  
+ 	if(tiles!="")data.tiles = tiles.rtrim(', ').split(', ');
+ 	
+ 	//make available the button to reset the filter
+ 	$("#"+formId+" button[name='btnResetFilter']").prop('disabled',false);
+	
+	get_products(siteId,productEl,data);
+	
+}
+
+//functions needed by autocomplete
+function MySplit( val ) {
+   return val.split( /,\s*/ );
+}
+function extractLast( term ) {
+   return MySplit( term ).pop();
+}
+
+Array.prototype.diff = function(a) {
+    return this.filter(function(i) {return a.indexOf(i) < 0;});
+};
+
+function initialise_tiles_autocomplete(tilesEl,site_id,product){	
+
+	//var availableTiles = ['abc','lalaaa','hmmm'];
+	$(tilesEl)
+	  // don't navigate away from the field on tab when selecting an item
+	  .on( "keydown", function( event ) {
+	      if ( event.keyCode === $.ui.keyCode.TAB &&
+	        $( this ).autocomplete( "instance" ).menu.active ) {
+	        event.preventDefault();
+	      }
+	  })
+	  .autocomplete({
+		     minLength: 2,
+		     maxShowItems: 10,// Make list height fit to 7 items when items are over 7. 
+	    source: function( request, response ) {			
+	        	    $.ajax({
+		        	   	type: "POST",
+		                url: "getTiles.php",
+		                dataType: "json",		                    
+		                data: {action: 'get_tiles',site_id:site_id,satellite_id:product,term:extractLast( request.term )},
+		                success: function(data){
+		                	availableTiles = data.diff(MySplit(request.term));
+		                	if(availableTiles!=0){
+		                		var results = $.ui.autocomplete.filter(availableTiles, extractLast( request.term ));
+		                	}else{
+		                		var results = data;
+		                	}
+		                		                	
+		                	if(!results.length){
+		                		$('<div style="color:red">No tiles that contains "'+ extractLast( request.term ) + '" were found !</div>').insertBefore(tilesEl).delay(3000).fadeOut();
+		                		//$(tilesEl).autocomplete("close");
+		          
+		                		var terms = []; 
+		                		var value = MySplit(request.term).diff(extractLast(request.term));
+		                 		if(value.length != 0){
+			                		terms.push(value);
+			                		terms.push( "" );
+			                		terms.join( ", " )
+		                 		}
+		                		$(tilesEl).val(terms);
+		                	}
+		                	// delegate back to autocomplete, but extract the last term
+		                    response( results );
+			                 
+		                }
+		        	   });
+
+	  		 },
+	     focus: function() {
+	            // prevent value inserted on focus
+	            return false;
+	          },
+	     select: function( event, ui ) {		    	   
+		            var terms = MySplit( this.value );
+		            // remove the current input
+		            terms.pop();
+		            // add the selected item
+		            terms.push( ui.item.value );
+		            // add placeholder to get the comma-and-space at the end
+		            terms.push( "" );
+		            this.value = terms.join( ", " );
+
+	            return false;
+	          },
+	
+	  });
+}
+
+function seasons_for_site(seasonEl, site_id){
+	$(seasonEl).find('option').not(':first').remove();
+	
+	//get seasons for selected site
+	$.ajax({
+		type: "POST",
+        url: "getTiles.php",
+        dataType: "json",	                   
+        data: {action: 'get_site_seasons',site_id:site_id},
+        success: function(data){                   	
+            	
+        	for(var i=0;i<data.length;i++){	    
+            	var option = $("<option></option>");                		
+		           option.val(data[i][0]);
+		           option.text(data[i][1]);
+		            
+		           $(seasonEl).append(option);		
+            }
+           }
+		});
+}
+
+function initialise_datepickers(){
+	var startdateAll = $('input[name="startdate"]');
+	$.each(startdateAll, function(index, startdateEl) {
+	//$('input[name="startdate"]').each(function(){
+		$(startdateEl).datepicker({
+			dateFormat: "yy-mm-dd",
+			onSelect: function(selected) {
+			    $('#'+this.form.id+' input[name="enddate"]').datepicker("option","minDate", selected);
+			    $('#'+this.form.id+' select[name="choose_season"]').attr('disabled',true);	
+			        }
+		});
+
+	});
+	
+	$('input[name="enddate"]').each(function(){
+		$(this).datepicker({
+			dateFormat: "yy-mm-dd",
+			onSelect: function(selected) {
+				    $('#'+this.form.id+' input[name="startdate"]').datepicker("option","maxDate", selected);
+				    $('#'+this.form.id+' select[name="choose_season"]').attr('disabled',true);	
+				        }});
+	});
+}
+
 function get_all_sites() {
 	$.ajax({
 		//url: get_all_sites_url,
@@ -797,16 +1006,44 @@ function update_sites(json_data) {
 			//var landsatTilesEl = $("#"+siteEl.form.id+" select#landsatTiles");
 			var productsEl = $("#"+siteEl.form.id+" select#inputFiles");
 			var cropMaskEl = $("#"+siteEl.form.id+" select#cropMask");
+			var tilesEl = $("#"+siteEl.form.id+" input#tiles");
+			var seasonEl =  $("#"+siteEl.form.id+" select#choose_season");
+			var btnFilterEl =  $("#"+siteEl.form.id+" button[name='btnFilter']");
+		
 			if(siteEl.selectedIndex > 0) {
 				//get_sentinel2_tiles(siteEl.options[siteEl.selectedIndex].value, sentinel2TilesEl);
 				//get_landsat_tiles(siteEl.options[siteEl.selectedIndex].value, landsatTilesEl);
 				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
 				get_crop_mask(siteEl.options[siteEl.selectedIndex].value, cropMaskEl);
+				
+				$(tilesEl).removeAttr('disabled');
+				var product = new Array();		
+				$("#"+siteEl.form.id+" input[name='sensor']:checked").each(function(){
+					switch($(this).val()){
+						case 'S2': product.push('1');
+							break;
+						case 'L8': product.push('2');
+							break;
+					}
+					
+				});
+
+				initialise_tiles_autocomplete(tilesEl,siteEl.options[siteEl.selectedIndex].value,product);
+				
+				//get seasons for the selected site
+				$(seasonEl).removeAttr("disabled");
+				seasons_for_site(seasonEl,siteEl.options[siteEl.selectedIndex].value);
+				
+				$(btnFilterEl).removeAttr('disabled');
 			} else {
 				//update_sentinel2_tiles(new Array(), sentinel2TilesEl);
 				//update_landsat_tiles(new Array(), landsatTilesEl);
 				update_products(new Array(), productsEl);
 				update_crop_mask(new Array(), cropMaskEl);
+				
+				$(btnFilterEl).attr('disabled',true);				
+				$(tilesEl).attr('disabled',true);
+				$(seasonEl).attr('disabled',true);
 			}
 		});
 	});
@@ -881,7 +1118,11 @@ function update_crop_mask(json_data, cropMaskEl) {
 	});
 }
 
-function get_products(siteId, productsEl) {
+function get_products(siteId, productsEl, filter) {
+	var data = {action: "getDashboardProducts",	siteId: siteId,	processorId: l2a_proc_id};
+	if(filter !== undefined){
+		data = Object.assign({}, data, filter);
+	}
 	$.ajax({
 		//url: get_products_url,
 		url: "processing.php",
@@ -889,11 +1130,7 @@ function get_products(siteId, productsEl) {
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
-		data: {
-			action: "getDashboardProducts",
-			siteId: siteId,
-			processorId: l2a_proc_id
-		},
+		data: data,
 		success: function(json_data)
 		{
 			update_products(json_data, productsEl);
