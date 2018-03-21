@@ -807,10 +807,24 @@ function add_events(){
 	var resetFilters = $("button[name='btnResetFilter']");
 	$.each(resetFilters, function(index, resetFilter) {		
 		$(resetFilter).on('click',function(event){
-			var fomId = event.target.form.id;
+			var formId = event.target.form.id;
 			$(this).attr('disabled',true);
 			
 			get_products($("#"+formId+" select#siteId").val(), $("#"+formId+" select#inputFiles"));
+			
+			$("#"+formId+" select[name='choose_season']").prop('selectedIndex',0);
+			$("#"+formId+" select[name='choose_season']").removeAttr('disabled');	
+			
+			$("#"+formId+" input[name='startdate']").val('').datepicker({  clearBtn: true});
+			$("#"+formId+" input[name='enddate']").val('').datepicker({  clearBtn: true});
+			
+			$("#"+formId+" input[name='enddate']").removeAttr('disabled');	
+			$("#"+formId+" input[name='startdate']").removeAttr('disabled');	
+			
+			//reset autocomplete
+			$("#"+formId+" input[name='tiles']").val("");
+			$("#"+formId+" input[name='tiles']").autocomplete.term = null;
+
 		});
 	});
 }
