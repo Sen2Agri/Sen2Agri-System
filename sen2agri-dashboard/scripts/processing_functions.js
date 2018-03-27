@@ -810,7 +810,9 @@ function add_events(){
 			var formId = event.target.form.id;
 			$(this).attr('disabled',true);
 			
-			get_products($("#"+formId+" select#siteId").val(), $("#"+formId+" select#inputFiles"));
+			get_products($("#"+formId+" select#siteId").val(), $("#"+formId+" select#inputFiles"),formId);
+			
+			get_tiles($("#"+formId+" select#siteId").val(), formId);
 			
 			$("#"+formId+" select[name='choose_season']").prop('selectedIndex',0);
 			$("#"+formId+" select[name='choose_season']").removeAttr('disabled');	
@@ -824,12 +826,17 @@ function add_events(){
 			//reset autocomplete
 			$("#"+formId+" input[name='tiles']").val("");
 			$("#"+formId+" input[name='tiles']").autocomplete.term = null;
-
+			
+			//delete error messages for tiles
+			$("#"+formId+" .invalidTilesL8").text("");
+			$("#"+formId+" .invalidTilesS2").text("");
+			
 		});
 	});
 }
 
 function filter_input_files(formId){
+	var tilesL8NotValid = '';var tilesS2NotValid = '';
 
 	var siteId = $("#"+formId+" select#siteId").val();
 	var productEl = $("#"+formId+" select#inputFiles");
@@ -838,100 +845,97 @@ function filter_input_files(formId){
 	var season_id = $("#"+formId+" select#choose_season").find(":selected").val();
 	if(season_id!="") data.season_id= season_id ;
 
-    var start_data = $("#"+formId+" input[name='startdate']").val();
+	var start_data = $("#"+formId+" input[name='startdate']").val();
 	if(start_data!="") data.start_data= start_data ;
 
 	var end_data =  $("#"+formId+" input[name='enddate']").val();
 	if(end_data!="") data.end_data= end_data ;
- 	  	  	    
- 	var tiles = $("#"+formId+" input[name='tiles']").val();   	  	  
- 	if(tiles!="")data.tiles = tiles.rtrim(', ').split(', ');
- 	
- 	//make available the button to reset the filter
- 	$("#"+formId+" button[name='btnResetFilter']").prop('disabled',false);
 	
-	get_products(siteId,productEl,data);
+	var tilesL8Arr=new Array();
+	if($("#"+formId+" input#l3a_chkL8").is(':checked')){
+		//check if the tiles from textarea have the good format
+		var tilesL8 = $("#"+formId+" textarea[name='L8Tiles']").val();
+
+		if(tilesL8!=""){
+			tilesL8Arr = tilesL8.split(',');
+			for(i = 0; i < tilesL8Arr.length; i++){
+				var noMatch = tilesL8Arr[i].replace(/^(\d{6})(,\d{6})*/gm,'');
+				if(noMatch!=''){
+					tilesL8NotValid = tilesL8NotValid+" "+ tilesL8Arr[i];
+				}
+			}
+		}
+		
+	}
+	if(tilesL8NotValid!=''){
+		$("#"+formId+" .invalidTilesL8").text("Invalid tile: "+tilesL8NotValid);
+	}else{
+		$("#"+formId+" .invalidTilesL8").text("");
+		}
+	
+	var tilesS2Arr=new Array();
+	if($("#"+formId+" input#l3a_chkS2").is(':checked')){
+		//check if the tiles from textarea have the good format 
+		var tilesS2 = $("#"+formId+" textarea[name='S2Tiles']").val();
+		
+		if(tilesS2!=""){
+			tilesS2Arr = tilesS2.split(',');
+			for(i = 0; i < tilesS2Arr.length; i++){
+				var noMatch = tilesS2Arr[i].replace(/^(\d{2}[A-Z]{3})(,\d{2}[A-Z]{3})*/gm,'');
+				if(noMatch!=''){
+					tilesS2NotValid = tilesS2NotValid+" "+tilesS2Arr[i];
+				}
+			}
+		}
+		
+	}
+	if(tilesS2NotValid!=''){
+		$("#"+formId+" .invalidTilesS2").text("Invalid tile: "+tilesS2NotValid);
+	}else{
+		$("#"+formId+" .invalidTilesS2").text("");
+		}
+
+	data.tiles= tilesL8Arr.concat(tilesS2Arr);
+	
+	if(tilesS2NotValid=='' && tilesL8NotValid==''){
+		//make available the button to reset the filter
+		$("#"+formId+" button[name='btnResetFilter']").prop('disabled',false);
+		
+		get_products(siteId, productEl, formId, data);
+	}
 	
 }
 
-//functions needed by autocomplete
-function MySplit( val ) {
-   return val.split( /,\s*/ );
-}
-function extractLast( term ) {
-   return MySplit( term ).pop();
-}
-
-Array.prototype.diff = function(a) {
-    return this.filter(function(i) {return a.indexOf(i) < 0;});
-};
-
-function initialise_tiles_autocomplete(tilesEl,site_id,product){	
-
-	//var availableTiles = ['abc','lalaaa','hmmm'];
-	$(tilesEl)
-	  // don't navigate away from the field on tab when selecting an item
-	  .on( "keydown", function( event ) {
-	      if ( event.keyCode === $.ui.keyCode.TAB &&
-	        $( this ).autocomplete( "instance" ).menu.active ) {
-	        event.preventDefault();
-	      }
-	  })
-	  .autocomplete({
-		     minLength: 2,
-		     maxShowItems: 10,// Make list height fit to 7 items when items are over 7. 
-	    source: function( request, response ) {			
-	        	    $.ajax({
-		        	   	type: "POST",
-		                url: "getTiles.php",
-		                dataType: "json",		                    
-		                data: {action: 'get_tiles',site_id:site_id,satellite_id:product,term:extractLast( request.term )},
-		                success: function(data){
-		                	availableTiles = data.diff(MySplit(request.term));
-		                	if(availableTiles!=0){
-		                		var results = $.ui.autocomplete.filter(availableTiles, extractLast( request.term ));
-		                	}else{
-		                		var results = data;
-		                	}
-		                		                	
-		                	if(!results.length){
-		                		$('<div style="color:red">No tiles that contains "'+ extractLast( request.term ) + '" were found !</div>').insertBefore(tilesEl).delay(3000).fadeOut();
-		                		//$(tilesEl).autocomplete("close");
-		          
-		                		var terms = []; 
-		                		var value = MySplit(request.term).diff(extractLast(request.term));
-		                 		if(value.length != 0){
-			                		terms.push(value);
-			                		terms.push( "" );
-			                		terms.join( ", " )
-		                 		}
-		                		$(tilesEl).val(terms);
-		                	}
-		                	// delegate back to autocomplete, but extract the last term
-		                    response( results );
-			                 
-		                }
-		        	   });
-
-	  		 },
-	     focus: function() {
-	            // prevent value inserted on focus
-	            return false;
-	          },
-	     select: function( event, ui ) {		    	   
-		            var terms = MySplit( this.value );
-		            // remove the current input
-		            terms.pop();
-		            // add the selected item
-		            terms.push( ui.item.value );
-		            // add placeholder to get the comma-and-space at the end
-		            terms.push( "" );
-		            this.value = terms.join( ", " );
-
-	            return false;
-	          },
+function get_tiles(siteId, formId){
+	$.ajax({
+		url: "processing.php",
+		type: "GET",
+		crossDomain: true,
+		dataType: "json",
+		data: {action: 'getTiles', siteId:siteId, satelliteId:'2'},
+		success:function(jsonData){
+			$('#'+formId+' textarea[name="L8Tiles"]').val(jsonData);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			update_sites(new Array());
+		}
+	});
 	
-	  });
+	$.ajax({
+		url: "processing.php",
+		type: "GET",
+		crossDomain: true,
+		dataType: "json",
+		data: {action: 'getTiles', siteId:siteId, satelliteId:'1'},
+		success:function(jsonData){
+			$('#'+formId+' textarea[name="S2Tiles"]').val(jsonData);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			update_sites(new Array());
+		}
+	});
 }
 
 function seasons_for_site(seasonEl, site_id){
@@ -1020,33 +1024,23 @@ function update_sites(json_data) {
 			//var landsatTilesEl = $("#"+siteEl.form.id+" select#landsatTiles");
 			var productsEl = $("#"+siteEl.form.id+" select#inputFiles");
 			var cropMaskEl = $("#"+siteEl.form.id+" select#cropMask");
-			var tilesEl = $("#"+siteEl.form.id+" input#tiles");
 			var seasonEl =  $("#"+siteEl.form.id+" select#choose_season");
 			var btnFilterEl =  $("#"+siteEl.form.id+" button[name='btnFilter']");
 		
 			if(siteEl.selectedIndex > 0) {
 				//get_sentinel2_tiles(siteEl.options[siteEl.selectedIndex].value, sentinel2TilesEl);
 				//get_landsat_tiles(siteEl.options[siteEl.selectedIndex].value, landsatTilesEl);
-				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
+				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl, siteEl.form.id);
 				get_crop_mask(siteEl.options[siteEl.selectedIndex].value, cropMaskEl);
-				
-				$(tilesEl).removeAttr('disabled');
-				var product = new Array();		
-				$("#"+siteEl.form.id+" input[name='sensor']:checked").each(function(){
-					switch($(this).val()){
-						case 'S2': product.push('1');
-							break;
-						case 'L8': product.push('2');
-							break;
-					}
-					
-				});
-
-				initialise_tiles_autocomplete(tilesEl,siteEl.options[siteEl.selectedIndex].value,product);
 				
 				//get seasons for the selected site
 				$(seasonEl).removeAttr("disabled");
 				seasons_for_site(seasonEl,siteEl.options[siteEl.selectedIndex].value);
+				
+				//get tiles for the selected site
+				get_tiles(siteEl.options[siteEl.selectedIndex].value,siteEl.form.id);
+				$("#"+siteEl.form.id+" .invalidTilesL8").text('');
+				$("#"+siteEl.form.id+" .invalidTilesS2").text('');
 				
 				$(btnFilterEl).removeAttr('disabled');
 			} else {
@@ -1055,8 +1049,7 @@ function update_sites(json_data) {
 				update_products(new Array(), productsEl);
 				update_crop_mask(new Array(), cropMaskEl);
 				
-				$(btnFilterEl).attr('disabled',true);				
-				$(tilesEl).attr('disabled',true);
+				$(btnFilterEl).attr('disabled',true);
 				$(seasonEl).attr('disabled',true);
 			}
 		});
@@ -1071,12 +1064,21 @@ function update_sites(json_data) {
 			var productsEl = $("#"+chkEl.form.id+" select#inputFiles");
 			var cropMaskEl = $("#"+chkEl.form.id+" select#cropMask");
 			if(siteEl.selectedIndex > 0) {
-				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
-				get_crop_mask(siteEl.options[siteEl.selectedIndex].value, cropMaskEl);
+				var siteId = siteEl.options[siteEl.selectedIndex].value;
+				//get_products(siteId, productsEl, chkEl.form.id);
+				get_crop_mask(siteId, cropMaskEl);
 			} else {
-				update_products(new Array(), productsEl);
+				//update_products(new Array(), productsEl);
 				update_crop_mask(new Array(), cropMaskEl);
 			}
+			
+			var value = chkEl.value;
+			if(chkEl.checked){
+				$("#"+chkEl.form.id+" textarea[name='"+value+"Tiles']").prop('disabled', false);
+			}else{
+				$("#"+chkEl.form.id+" textarea[name='"+value+"Tiles']").prop('disabled', true);
+			}
+
 		});
 	});
 	var chkS2All = $(".chkS2");
@@ -1088,10 +1090,10 @@ function update_sites(json_data) {
 			var productsEl = $("#"+chkEl.form.id+" select#inputFiles");
 			var cropMaskEl = $("#"+chkEl.form.id+" select#cropMask");
 			if(siteEl.selectedIndex > 0) {
-				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
+				//get_products(siteEl.options[siteEl.selectedIndex].value, productsEl, chkEl.form.id);
 				get_crop_mask(siteEl.options[siteEl.selectedIndex].value, cropMaskEl);
 			} else {
-				update_products(new Array(), productsEl);
+				//update_products(new Array(), productsEl);
 				update_crop_mask(new Array(), cropMaskEl);
 			}
 		});
@@ -1132,11 +1134,21 @@ function update_crop_mask(json_data, cropMaskEl) {
 	});
 }
 
-function get_products(siteId, productsEl, filter) {
+function get_products(siteId, productsEl, formId, filter) {
 	var data = {action: "getDashboardProducts",	siteId: siteId,	processorId: l2a_proc_id};
 	if(filter !== undefined){
 		data = Object.assign({}, data, filter);
 	}
+	if($("#"+formId+" input#l3a_chkS2").is(':checked') && !$("#"+formId+" input#l3a_chkL8").is(':checked')){
+		if(data.tiles==null){
+			data.satellite_id = 1;
+		}		
+	}else if(!$("#"+formId+" input#l3a_chkL8").is(':checked') && $("#"+formId+" input#l3a_chkS2").is(':checked')){
+		if(data.tiles==null){
+			data.satellite_id = 2;
+		}
+	}
+	
 	$.ajax({
 		//url: get_products_url,
 		url: "processing.php",

@@ -927,10 +927,7 @@ div.for-table table.table tr td a:hover{color:#5CB85C}
 /* ---------------- END PAGINATION ---------------- */
 
 /* --------------- custom jobs -------------------- */
-.fieldset_filter_files{
-	width: 100%;font-family: Verdana, Arial, sans-serif;font-size: small;font-weight: normal;border: 1px solid #999999;padding: 4px;margin: 5px;
-}
-.fieldset_legend_filter_files{
-	font-size: 90%;color: #888888;background-color: transparent;font-weight: bold;width: auto;border-bottom: 0px;
+.invalidTilesL8,.invalidTilesS2{
+	color:red;
 }
 /* -------------- end custom jobs------------------ */
