@@ -1,6 +1,7 @@
-<?php include 'master.php'; ?>
 <?php
+require_once('ConfigParams.php');
 
+include 'master.php';
 
 function CallRestAPI($method, $url, $data = false)
 {
@@ -346,11 +347,41 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 // processing edit site
 if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site') {
     $site_id      = $_REQUEST ['edit_siteid'];
-    //$shortname    = $_REQUEST ['shortname'];
+    $shortname    = $_REQUEST ['shortname'];
     $site_enabled = empty($_REQUEST ['edit_enabled']) ? "0" : "1";
     //print_r($_REQUEST);
     $l8_enabled = empty($_REQUEST ['chkL8Edit']) ? "0" : "1";
+    $tilesS2 =  isset($_REQUEST ['S2Tiles']) ? $_REQUEST ['S2Tiles']:'';
+   
+    if($l8_enabled){
+        $tilesL8 = isset($_REQUEST ['L8Tiles']) ? $_REQUEST ['L8Tiles']:'';
 
+        $tilesL8 = explode(',', trim($tilesL8));
+        $match = array();
+        if(sizeof($tilesL8)>0){
+            foreach ($tilesL8 as $tileL8){
+                if(preg_match('/^(\d{6})(,\d{6})*/', $tileL8, $matches)){
+                    $match[]= $matches[0];
+                }
+            }
+        }
+     
+        exec('filter_site_download_tiles.py -t 2 -s '.$shortname.' -e '.$site_enabled.' -l "'.implode(", ", $match).'"',$output, $ret);
+    }
+   
+    //$availableTiles interesectia dintre site geog si shape_tiles_S2
+    //insert site tiles for satellite S2
+    $tilesS2 = explode(',', trim($tilesS2));
+    $matchS2 = array();
+    if(sizeof($tilesS2)>0){
+        foreach ($tilesS2 as $tileS2){
+            if(preg_match('/^(\d{2}[A-Z]{3})(,\d{2}[A-Z]{3})*/', $tileS2, $matches)/* &&(in_array($tileS2, $availableTiles))*/){
+                $matchS2[]= $matches[0];
+            }
+        }
+    }
+    exec('filter_site_download_tiles.py -t 1 -s '.$shortname.' -e '.$site_enabled.' -l "'.implode(", ", $matchS2).'"',$output, $ret);
+       
     function polygonFileSelected($name) {
         foreach($_FILES as $key => $val){
             if (($key == $name) && (strlen($_FILES[$key]['name'])) > 0) {
@@ -581,17 +612,50 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                         <label class="control-label" for="edit_sitename">Site name:</label>
                                         <input type="text" class="form-control" id="edit_sitename" name="edit_sitename" value="" readonly>
                                         <input type="hidden" class="form-control" id="edit_siteid" name="edit_siteid" value="">
+                                        <input type="hidden" class="form-control" id="shortname" name="shortname" value="">
                                     </div>
-                                    <div class="form-group form-group-sm sensor">
-                                        <label  style="">Enabled sensor:</label>
-                                        <input class="form-control chkS2" id="chkS2Edit" type="checkbox" name="chkS2Edit" value="S2" checked="checked" disabled>
-                                        <label class="control-label" for="chkS2Edit">S2</label>
-                                        <input class="form-control chkL8" id="chkL8Edit" type="checkbox" name="chkL8Edit" value="L8" checked="checked">
-                                        <label class="control-label" for="chkL8Edit">L8</label>
-                                    </div>
-
                                 </div>
                             </div>
+                            <div class="row">                             	                       
+                            	<div class="col-md-1" style="width: 115px;padding-right:0px" >
+                            		<label  style="">Enabled sensor:</label>   
+                            	</div>
+                            	
+                            	<div class="col-md-9">  
+                            	                          	
+                            		<div class="row">                    		                                  
+                                    	<div class="col-md-1" style="width: 10%;padding-right: 0px;">          
+                                        	<div class="form-group form-group-sm">                                       	           
+                                                <input class="chkS2" id="chkS2Edit" type="checkbox" name="chkS2Edit" value="S2" checked="checked" disabled onchange="enableDisable(this)">
+                                                <label class="control-label" for="chkS2Edit">S2</label>          
+                                            </div>                            
+                                        </div>
+                                        <div class="col-md-9" >       
+                                        	<div class="form-group form-group-sm">             
+                                            	<textarea class='form-control' style="resize: vertical;" rows="5" name="S2Tiles"></textarea>
+                                            	<span class="invalidTilesS2"></span>
+                                            </div>
+                                        </div>                                    	
+                                    </div>
+                                    
+                                    <div class="row">
+                                    	<div class="col-md-1" style="width: 10%;padding-right: 0px;">    
+                                    		<div class="form-group form-group-sm">                 
+                                                <input class="chkL8" id="chkL8Edit" type="checkbox" name="chkL8Edit" value="L8" checked="checked"  onchange="enableDisable(this)">
+                                                <label  for="chkL8Edit">L8</label>                                             
+                                        	</div>
+                                        </div>
+                                        <div class="col-md-9" >          
+                                       		<div class="form-group form-group-sm">                
+                                            	<textarea class='form-control' style="resize: vertical;" rows="5" name="L8Tiles""></textarea>
+                                            	<span class="invalidTilesL8"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                             
+                              	</div>                       
+                            </div>
+                            
                             <div class="row">
                                 <div class="col-md-1">
                                     <div class="form-group form-group-sm">
@@ -880,13 +944,56 @@ $(document).ready( function() {
         submitHandler: function(form) {
             // first send the enable status of the satellite for this site
             //sendSatelliteEnableStatus();
+           // event.preventDefault();
+            
+			//check the tiles
+			var tilesL8NotValid = '';var tilesS2NotValid = '';
+			if($("#chkS2Edit").is(':checked')){
+    			var s2Tiles = $('textarea[name="S2Tiles"]').val();
+    
+    			if(s2Tiles!=""){
+    				tilesS2Arr = s2Tiles.split(',');
+    				for(i = 0; i < tilesS2Arr.length; i++){
+    					var noMatch = tilesS2Arr[i].replace(/^(\d{2}[A-Z]{3})(,\d{2}[A-Z]{3})*/gm,'');
+    					if(noMatch.trim()!=''){
+    						tilesS2NotValid = tilesS2NotValid+" "+tilesS2Arr[i];
+    					}
+    				}
+    			}
+			}
 
-            $.ajax({
-                url: $(form).attr('action'),
-                type: $(form).attr('method'),
-                data: new FormData(form),
-                success: function(response) {}
-            });
+			if($("#chkL8Edit").is(':checked')){
+    			var l8Tiles = $('textarea[name="L8Tiles"]').val();
+    
+    			if(l8Tiles!=""){
+    				tilesL8Arr = l8Tiles.split(',');
+    				for(i = 0; i < tilesL8Arr.length; i++){
+    					var noMatch = tilesL8Arr[i].replace(/^(\d{6})(,\d{6})*/gm,'');
+    					if(noMatch.trim()!=''){
+    						tilesL8NotValid = tilesL8NotValid+" "+ tilesL8Arr[i];
+    					}
+    				}
+    			}
+			}
+    		if(tilesS2NotValid!=''){
+    			$(".invalidTilesS2").text("Invalid tile: "+tilesS2NotValid);
+    		}else{
+    			$(".invalidTilesS2").text("");
+    			}		
+    		if(tilesL8NotValid!=''){
+    			$(".invalidTilesL8").text("Invalid tile: "+tilesL8NotValid);
+    		}else{
+    			$(".invalidTilesL8").text("");
+    			}
+			if(tilesS2NotValid=='' && tilesL8NotValid==''){
+				
+                $.ajax({
+                    url: $(form).attr('action'),
+                    type: $(form).attr('method'),
+                    data: new FormData(form),
+                    success: function(response) {}
+                });
+			}
         },
         // set this class to error-labels to indicate valid fields
         success: function(label) {
@@ -1168,6 +1275,7 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
 
     document.getElementById("chkL8Edit").checked = l8Enabled;
     // document.getElementById("chkL8Add").checked = l8Enabled;
+    enableDisable( document.getElementById("chkL8Edit"));
 
     $.ajax({
         url: "getSiteSeasons.php",
@@ -1184,6 +1292,47 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
         }
     });
 
+    
+/*
+    $("chkL8Edit").on('change',function(){
+		if(	$("chkL8Edit").is(':checked')){
+			// make available texarea 
+			alert('bla');
+			}else{
+			//disable tiles textarea
+				alert('tra la la');
+				}
+		});*/
+
+	//get tiles for L8
+	$.ajax({
+		type: "GET",
+		url: "processing.php",
+		dataType: "json",		                    
+		//data: {ajax: '1',site_id:id,satellite_id:2},
+		data: {action: 'getTiles', siteId:id, satelliteId:2},
+		success: function(data){
+			$('textarea[name="L8Tiles"]').text(data);
+			 },
+		error: function (responseData, textStatus, errorThrown) {
+		            console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+		    }
+		});
+
+    //get tiles for S2
+    $.ajax({
+    	type: "GET",
+    	url: "processing.php",
+    	dataType: "json",
+    	data: {action: 'getTiles', siteId:id, satelliteId:1},
+    	success: function(data){
+    		$('textarea[name="S2Tiles"]').text(data);
+    		 },
+    	error: function (responseData, textStatus, errorThrown) {
+    	            console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+    	    }
+    	});
+    
     // TODO : Use this version when removing completely the PHP
 //    $.ajax({
 //        url: "http://localhost:8080/products/enable/status/2/" + id,
@@ -1241,9 +1390,26 @@ function abortEditAdd(abort){
         $("#div_addsite").dialog("close");
     } else if (abort == 'edit') {
         $("#div_editsite").dialog("close");
+        
+        //delete error messages for tiles
+        $(".invalidTilesS2").text("");
+        $(".invalidTilesL8").text("");
     } else if (abort == 'delete_site') {
         $("#div_deletesite").dialog("close");
     }
+}
+
+function enableDisable(elem){
+	var value = elem.value;
+	
+	if(	elem.checked){	
+		//disable textarea for editing tiles	
+		$('textarea[name="'+value+'Tiles"]').prop('disabled', false);
+	}else{
+		//enable textarea for editing tiles
+		$('textarea[name="'+value+'Tiles"]').prop('disabled', true);
+		}
+
 }
 </script>
 

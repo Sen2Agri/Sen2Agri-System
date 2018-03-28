@@ -43,15 +43,14 @@ function getDashboardProcessors() {
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getTiles($siteId,$satelliteId){
-    $dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
-    $rows = pg_query_params($dbconn, "select * from sp_get_site_tiles($1,$2)",array($siteId,$satelliteId)) or die(pg_last_error());
-    
-    return (pg_numrows($rows) > 0 ? json_encode(pg_fetch_all_columns($rows)): "");
+	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+	$rows = pg_query_params($dbconn, "select * from sp_get_site_tiles($1,$2)",array($siteId,$satelliteId)) or die(pg_last_error());
+	return (pg_numrows($rows) > 0 ? json_encode(pg_fetch_all_columns($rows)): "");
 }
 function getSiteTiles($siteId,$satelliteId){
-    $dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
-    $rows = pg_query($dbconn, "select * from site_tiles where site_id='".$siteId."' and satellite_id='".$satelliteId."'") or die(pg_last_error());
-    return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
+	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+	$rows = pg_query($dbconn, "select array_to_json(tiles) as tiles from site_tiles where site_id='".$siteId."' and satellite_id='".$satelliteId."'") or die(pg_last_error());
+	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -106,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 		    if(empty($result)){
 		        $result = getTiles($siteId,$satelliteId);
 		    }
+		    
 		    break;
 	}
 	echo $result;

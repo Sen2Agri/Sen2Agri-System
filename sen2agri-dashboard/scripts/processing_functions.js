@@ -860,7 +860,7 @@ function filter_input_files(formId){
 			tilesL8Arr = tilesL8.split(',');
 			for(i = 0; i < tilesL8Arr.length; i++){
 				var noMatch = tilesL8Arr[i].replace(/^(\d{6})(,\d{6})*/gm,'');
-				if(noMatch!=''){
+				if(noMatch.trim()!=''){
 					tilesL8NotValid = tilesL8NotValid+" "+ tilesL8Arr[i];
 				}
 			}
@@ -882,7 +882,7 @@ function filter_input_files(formId){
 			tilesS2Arr = tilesS2.split(',');
 			for(i = 0; i < tilesS2Arr.length; i++){
 				var noMatch = tilesS2Arr[i].replace(/^(\d{2}[A-Z]{3})(,\d{2}[A-Z]{3})*/gm,'');
-				if(noMatch!=''){
+				if(noMatch.trim()!=''){
 					tilesS2NotValid = tilesS2NotValid+" "+tilesS2Arr[i];
 				}
 			}
