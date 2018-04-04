@@ -3,6 +3,12 @@ require_once('ConfigParams.php');
 
 include 'master.php';
 
+function getTiles($siteId,$satelliteId){
+    $dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $rows = pg_query_params($dbconn, "select * from sp_get_site_tiles($1,$2)",array($siteId,$satelliteId)) or die(pg_last_error());
+    return (pg_numrows($rows) > 0 ? pg_fetch_all_columns($rows): array());
+}
+
 function CallRestAPI($method, $url, $data = false)
 {
     $curl = curl_init();
@@ -353,35 +359,48 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
     $l8_enabled = empty($_REQUEST ['chkL8Edit']) ? "0" : "1";
     $tilesS2 =  isset($_REQUEST ['S2Tiles']) ? $_REQUEST ['S2Tiles']:'';
    
-    if($l8_enabled){
-        $tilesL8 = isset($_REQUEST ['L8Tiles']) ? $_REQUEST ['L8Tiles']:'';
-
-        $tilesL8 = explode(',', trim($tilesL8));
-        $match = array();
-        if(sizeof($tilesL8)>0){
-            foreach ($tilesL8 as $tileL8){
-                if(preg_match('/^(\d{6})(,\d{6})*/', $tileL8, $matches)){
-                    $match[]= $matches[0];
+    if($site_enabled){
+        if($l8_enabled){
+            $tilesL8 = isset($_REQUEST ['L8Tiles']) ? $_REQUEST ['L8Tiles']:'';
+    
+            $tilesL8 = explode(',', trim($tilesL8));
+            $match = array();
+            if(sizeof($tilesL8)>0){
+                // get available tiles for L8
+                $availableTiles = getTiles($site_id,2);
+                foreach ($tilesL8 as $tileL8){
+                    if(preg_match('/^(\d{6})(,\d{6})*/', $tileL8, $matches)){
+                        if(in_array($matches[0], $availableTiles)){
+                            $match[]= $matches[0];
+                        }
+                    }
+                }
+                if(sizeof($match)>0){
+                    exec('filter_site_download_tiles.py -t 2 -s '.$shortname.' -e '.$site_enabled.' -l "'.implode(", ", $match).'"',$output, $ret);
                 }
             }
         }
-     
-        exec('filter_site_download_tiles.py -t 2 -s '.$shortname.' -e '.$site_enabled.' -l "'.implode(", ", $match).'"',$output, $ret);
-    }
-   
-    //$availableTiles interesectia dintre site geog si shape_tiles_S2
-    //insert site tiles for satellite S2
-    $tilesS2 = explode(',', trim($tilesS2));
-    $matchS2 = array();
-    if(sizeof($tilesS2)>0){
-        foreach ($tilesS2 as $tileS2){
-            if(preg_match('/^(\d{2}[A-Z]{3})(,\d{2}[A-Z]{3})*/', $tileS2, $matches)/* &&(in_array($tileS2, $availableTiles))*/){
-                $matchS2[]= $matches[0];
+       
+        //insert site tiles for satellite S2
+        $tilesS2 = explode(',', trim($tilesS2));
+        $matchS2 = array();
+        if(sizeof($tilesS2)>0){
+        // get available tiles for S2
+            $availableTiles = getTiles($site_id,1);
+            foreach ($tilesS2 as $tileS2){
+                if(preg_match('/^(\d{2}[A-Z]{3})(,\d{2}[A-Z]{3})*/', $tileS2, $matches) ){
+                    if(in_array($matches[0], $availableTiles)){
+                        $matchS2[]= $matches[0];
+                    }
+                }
+            }
+        
+            if(sizeof($matchS2)>0){
+                exec('filter_site_download_tiles.py -t 1 -s '.$shortname.' -e '.$site_enabled.' -l "'.implode(", ", $matchS2).'"',$output, $ret);
             }
         }
     }
-    exec('filter_site_download_tiles.py -t 1 -s '.$shortname.' -e '.$site_enabled.' -l "'.implode(", ", $matchS2).'"',$output, $ret);
-       
+    
     function polygonFileSelected($name) {
         foreach($_FILES as $key => $val){
             if (($key == $name) && (strlen($_FILES[$key]['name'])) > 0) {
@@ -626,7 +645,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                             		<div class="row">                    		                                  
                                     	<div class="col-md-1" style="width: 10%;padding-right: 0px;">          
                                         	<div class="form-group form-group-sm">                                       	           
-                                                <input class="chkS2" id="chkS2Edit" type="checkbox" name="chkS2Edit" value="S2" checked="checked" disabled onchange="enableDisable(this)">
+                                                <input class="chkS2" id="chkS2Edit" type="checkbox" name="chkS2Edit" value="S2" checked="checked" disabled ">
                                                 <label class="control-label" for="chkS2Edit">S2</label>          
                                             </div>                            
                                         </div>
@@ -641,7 +660,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                     <div class="row">
                                     	<div class="col-md-1" style="width: 10%;padding-right: 0px;">    
                                     		<div class="form-group form-group-sm">                 
-                                                <input class="chkL8" id="chkL8Edit" type="checkbox" name="chkL8Edit" value="L8" checked="checked"  onchange="enableDisable(this)">
+                                                <input class="chkL8" id="chkL8Edit" type="checkbox" name="chkL8Edit" value="L8" checked="checked" onchange="enableDisable($(this), $('[name=\'edit_enabled\']').bootstrapSwitch('state'))">
                                                 <label  for="chkL8Edit">L8</label>                                             
                                         	</div>
                                         </div>
@@ -827,7 +846,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 
 <script type="text/javascript">
 $(document).ready( function() {
-    // get all site seasons
+	// get all site seasons
     $("table.table td.seasons").each(function() {
         getSiteSeasons($(this).parent().data("id"));
     });
@@ -887,7 +906,11 @@ $(document).ready( function() {
     $("[name='edit_enabled']").bootstrapSwitch({
         size: "small",
         onColor: "success",
-        offColor: "default"
+        offColor: "default",
+        onSwitchChange: function(event,state){
+        	 enableDisable( $('#chkS2Edit'),state);
+        	 enableDisable( $('#chkL8Edit'),state);
+            }
     });
 
     // validate add site form
@@ -1275,8 +1298,10 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
 
     document.getElementById("chkL8Edit").checked = l8Enabled;
     // document.getElementById("chkL8Add").checked = l8Enabled;
-    enableDisable( document.getElementById("chkL8Edit"));
 
+    enableDisable( $('#chkS2Edit'),site_enabled);
+    enableDisable( $('#chkL8Edit'),site_enabled);
+  
     $.ajax({
         url: "getSiteSeasons.php",
         type: "get",
@@ -1292,17 +1317,6 @@ function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteSt
         }
     });
 
-    
-/*
-    $("chkL8Edit").on('change',function(){
-		if(	$("chkL8Edit").is(':checked')){
-			// make available texarea 
-			alert('bla');
-			}else{
-			//disable tiles textarea
-				alert('tra la la');
-				}
-		});*/
 
 	//get tiles for L8
 	$.ajax({
@@ -1399,14 +1413,17 @@ function abortEditAdd(abort){
     }
 }
 
-function enableDisable(elem){
-	var value = elem.value;
-	
-	if(	elem.checked){	
-		//disable textarea for editing tiles	
-		$('textarea[name="'+value+'Tiles"]').prop('disabled', false);
+function enableDisable(elem,site_enabled){
+	var value = elem.val();
+	if(site_enabled){
+		if(	elem.is(':checked')){	
+	    	//enable textarea for editing tiles	
+	    	$('textarea[name="'+value+'Tiles"]').prop('disabled', false);
+	    }else{
+	    	//disable textarea for editing tiles
+	    	$('textarea[name="'+value+'Tiles"]').prop('disabled', true);
+		}
 	}else{
-		//enable textarea for editing tiles
 		$('textarea[name="'+value+'Tiles"]').prop('disabled', true);
 		}
 
