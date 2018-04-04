@@ -819,13 +819,12 @@ function add_events(){
 			
 			$("#"+formId+" input[name='startdate']").val('').datepicker({  clearBtn: true});
 			$("#"+formId+" input[name='enddate']").val('').datepicker({  clearBtn: true});
+			$("#"+formId+" input[name='enddate']").datepicker("option",{"minDate":null});
+			$("#"+formId+" input[name='startdate']").datepicker("option",{"maxDate":null});
 			
 			$("#"+formId+" input[name='enddate']").removeAttr('disabled');	
 			$("#"+formId+" input[name='startdate']").removeAttr('disabled');	
 			
-			//reset autocomplete
-			$("#"+formId+" input[name='tiles']").val("");
-			$("#"+formId+" input[name='tiles']").autocomplete.term = null;
 			
 			//delete error messages for tiles
 			$("#"+formId+" .invalidTilesL8").text("");
