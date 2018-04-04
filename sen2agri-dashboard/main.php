@@ -503,7 +503,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		vector.setZIndex(10);
 
 		var view = new ol.View({ center: [0, 0], zoom: 3 });
-		var raster = new ol.layer.Tile({ source: new ol.source.Stamen({layer: 'watercolor'}) });
+		var raster = new ol.layer.Tile({ source: new ol.source.Stamen({layer: 'terrain'}) });
 
 		var map = new ol.Map({
 		  layers: [raster, vector],
