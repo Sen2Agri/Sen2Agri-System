@@ -147,7 +147,7 @@ p#subtitle {
 #menu ul li {
     cursor: default;
     display: inline-block;
-    font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
+    font: 20px/35px "Roboto Condensed", Arial, Helvetica, sans-serif;
     text-transform: lowercase;
 }
 
@@ -156,7 +156,7 @@ p#subtitle {
     text-shadow: 0px -1px 0px #607725;
     color: #FFFFFF;
     cursor: pointer;
-    padding: 11px 25px 12px 25px;
+	padding: 11px 25px 16px 25px;
     border-radius: 10px 10px 0px 0px;
 }
 

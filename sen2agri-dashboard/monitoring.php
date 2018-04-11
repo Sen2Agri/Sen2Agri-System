@@ -10,7 +10,7 @@ function select_option() {
 	} else {
 		// not admin
 		$sql         = "SELECT * FROM sp_get_sites($1)";
-		$result      = pg_query_params ( $db, $sql, array ($_SESSION ['siteId']) ) or die ( "Could not execute." );
+		$result      = pg_query_params ( $db, $sql, array ("{".implode(',',$_SESSION ['siteId'])."}") ) or die ( "Could not execute." );
 		$option_site = "";
 	}
 	while ( $row = pg_fetch_row ( $result ) ) {

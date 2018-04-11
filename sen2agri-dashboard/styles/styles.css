@@ -450,7 +450,7 @@ div.pop_up #close_button {
 }
 
 /* LOGIN STYLES -------------------------------------------------- */
-#signin {
+#signin, #firstLogin {
 	display: block;
 	background-color: #ffffff;
 	margin: 0px auto;
@@ -460,13 +460,14 @@ div.pop_up #close_button {
 	width: 300px;
 	padding: 20px;
 }
-#signin label {
+#signin label, #firstLogin label{
 	font-size: 12px;
 	font-weight: 400;
 	color: #54698d;
 	margin: 0px;
 }
-#signin input[type="text"], #signin input[type="password"] {
+#signin input[name="user"], #signin input[name="pass"]
+/*, #signin input[type="password"], #signin input[type="email"], #signin input[type="confirm_password"]*/{
 	display: block;
 	width: 100%;
 	padding: 10px;
@@ -474,6 +475,22 @@ div.pop_up #close_button {
 	margin-bottom: 16px;
 	height: 36px;
 	border: 1px solid #D8DDE6;
+	border-radius: 4px;
+	background-color: #ffffff;
+	font-family: SFS, Arial, sans-serif;
+	box-sizing: border-box;
+	-webkit-appearance: none;
+	font-size: 14px;
+}
+
+ #signin input[name="username"], #signin input[name="password"], #signin input[type="email"], #signin input[name="password_confirm"]{
+	display: block;
+	width: 100%;
+	padding: 10px;
+	margin-top: 8px;
+	/*margin-bottom: 16px;*/
+	height: 36px;
+	/*border: 1px solid #D8DDE6;*/
 	border-radius: 4px;
 	background-color: #ffffff;
 	font-family: SFS, Arial, sans-serif;
@@ -492,6 +509,13 @@ div.pop_up #close_button {
 	border-radius: 4px;
 }
 .vspace { height: 50px; }
+#signin label.error {
+	color: red;
+	text-align: center;
+	padding-top: 5px;
+	
+}
+
 .error {
 	color: red;
 	text-align: center;
@@ -650,23 +674,23 @@ div.add-edit-site table.edit tr:not(:last-child) div.proc:hover div input{displa
 div.add-edit-site table.edit tr:last-child td div.proc h2{display:none}
 div.add-edit-site table.edit tr:last-child td div.proc div{display:block;position:relative}
 
-div.add-edit-site form {
+div.add-edit-site form, div.add-edit-user form {
 	font: 14px Arial, Helvetica, sans-serif;
 	margin: 15px;
 }
-div.add-edit-site .col-md-1 {
+div.add-edit-site .col-md-1,div.add-edit-user .col-md-1 {
 	width: 90%;
 }
-div.add-edit-site .col-md-2 {
+div.add-edit-site .col-md-2,div.add-edit-user .col-md-2 {
 	width: 42%;
 }
-div.add-edit-site .form-group {
+div.add-edit-site .form-group,div.add-edit-user .form-group {
 	margin-bottom: 15px;
 }
-div.add-edit-site .submit-buttons {
+div.add-edit-site .submit-buttons,div.add-edit-user .submit-buttons{
 	text-align: right;
 }
-div.add-edit-site .submit-buttons input.add-edit-btn {
+div.add-edit-site .submit-buttons input.add-edit-btn,div.add-edit-user .submit-buttons input.add-edit-btn {
 	padding: 10px 20px;
 	margin-left: 15px;
 	border-radius: 10px;

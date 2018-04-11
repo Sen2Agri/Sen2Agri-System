@@ -40,9 +40,9 @@ $products = array();
 try {
 	$dbconn       = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
 	
-	$site_id = ConfigParams::$SITE_ID;
+	$site_id = empty(ConfigParams::$SITE_ID) ? "":"{".implode(',',ConfigParams::$SITE_ID)."}";
 	if(isset($_POST['site_id']) && $_POST['site_id']!=""){
-		$site_id = $_POST['site_id'];
+		$site_id = "{".$_POST['site_id']."}";
 	}
 	if(strlen($site_id)==0) $site_id = null;
 	

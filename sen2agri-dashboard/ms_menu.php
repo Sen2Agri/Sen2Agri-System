@@ -11,6 +11,9 @@ if (isset($_SESSION['siteId'])) {
 			else if (str.indexOf("dashboard.php")   > 0) cld = 4;
 			else if (str.indexOf("config.php")      > 0) cld = 5;
 			else if (str.indexOf("monitoring.php")  > 0) cld = 6;
+			<?php if( $_SESSION['roleID'] =='1'){?>
+				else if (str.indexOf("users.php")   > 0) cld = 7;
+			<?php }?>
 			else cld = 0;
 			$(".activemenu li:nth-child("+cld+")").addClass("selected");
 		});
@@ -24,6 +27,9 @@ if (isset($_SESSION['siteId'])) {
 				<li><a href="dashboard.php">Dashboard</a></li>
 				<li><a href="config.php">Custom Jobs</a></li>
 				<li><a href="monitoring.php">Monitoring</a></li>
+				<?php if( $_SESSION['roleID'] =='1'){?>
+				<li><a href="users.php">Users</a></li>
+				<?php }?>
 				<li class="logout"><a href="logout.php">Logout</a></li>
             </ul>
         </div>

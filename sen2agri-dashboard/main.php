@@ -2,8 +2,9 @@
 <?php 
 
 $dbconn       = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
-$rows         = pg_query($dbconn, "select * from sp_get_products_sites(".ConfigParams::$SITE_ID.")") or die(pg_last_error());
+$sites_id = !empty(ConfigParams::$SITE_ID)? '{'.implode(',',ConfigParams::$SITE_ID).'}':null;
 
+$rows = pg_query_params ( $dbconn, "select * from sp_get_products_sites($1)", array ($sites_id)) or die(pg_last_error());
 $sites = array();
 $option_site = "";
 while ( $row = pg_fetch_row ( $rows ) ) {
@@ -503,6 +504,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		vector.setZIndex(10);
 
 		var view = new ol.View({ center: [0, 0], zoom: 3 });
+		//var raster = new ol.layer.Tile({ source: new ol.source.Stamen({layer: 'watercolor'}) });
 		var raster = new ol.layer.Tile({ source: new ol.source.Stamen({layer: 'terrain'}) });
 
 		var map = new ol.Map({

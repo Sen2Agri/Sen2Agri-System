@@ -1012,7 +1012,7 @@ function update_sites(json_data) {
 		siteEl.empty();
 		siteEl.append('<option value="">Select a site</option>');
 		$.each(json_data, function(index, siteObj) {
-			if ((jsonSiteId) == 0 || (siteObj.id == jsonSiteId)) {
+			if ((jsonSiteId) == 0 || (jsonSiteId.indexOf(siteObj.id.toString())>-1)) {
 				siteEl.append('<option value="'+siteObj.id+'">'+siteObj.name+'</option>');
 			};
 		});

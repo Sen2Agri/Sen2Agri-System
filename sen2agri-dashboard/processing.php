@@ -34,7 +34,7 @@ function getDashboardSites() {
 }
 function getDashboardProducts($siteId, $processorId, $tiles, $satelliteId, $seasonId, $startDate, $endDate) {
 	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
-	$rows = pg_query_params($dbconn, "select * from sp_get_dashboard_products($1,$2,$3,$4,$5,$6,$7)",array($siteId,'{'.$processorId.'}',$seasonId,'{'.$satelliteId.'}',$startDate,$endDate,$tiles)) or die(pg_last_error());
+	$rows = pg_query_params($dbconn, "select * from sp_get_dashboard_products($1,$2,$3,$4,$5,$6,$7)",array('{'. $siteId.'}','{'.$processorId.'}',$seasonId,'{'.$satelliteId.'}',$startDate,$endDate,$tiles)) or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getDashboardProcessors() {
