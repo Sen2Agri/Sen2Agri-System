@@ -1,8 +1,4 @@
-﻿-- Function: sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[])
-
--- DROP FUNCTION sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[]);
-
-CREATE OR REPLACE FUNCTION sp_get_dashboard_products(_site_id smallint DEFAULT NULL::smallint, _product_type_id integer[] DEFAULT NULL::integer[], _season_id smallint DEFAULT NULL::smallint, _satellit_id integer[] DEFAULT NULL::integer[], _since_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone, _until_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone, _tiles character varying[] DEFAULT NULL::character varying[])
+﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_products(_site_id integer[] DEFAULT NULL::integer[], _product_type_id integer[] DEFAULT NULL::integer[], _season_id smallint DEFAULT NULL::smallint, _satellit_id integer[] DEFAULT NULL::integer[], _since_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone, _until_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone, _tiles character varying[] DEFAULT NULL::character varying[])
   RETURNS SETOF json AS
 $BODY$
 		DECLARE q text;
@@ -51,7 +47,7 @@ $BODY$
 		    
 		    IF $1 IS NOT NULL THEN
 			q := q || $sql$
-				AND P.site_id = $1		    
+				AND P.site_id = ANY($1)		    
 				
 		    $sql$;
 		    END IF;
@@ -62,12 +58,6 @@ $BODY$
 
 				$sql$;
 		    END IF;
-
-		--IF $4 IS NOT NULL THEN
-		--q := q || $sql$
-			--AND  P.satellite_id = ANY($4)			  
-			--$sql$;
-		--END IF;
 		    
 		IF $5 IS NOT NULL THEN
 		q := q || $sql$
@@ -91,7 +81,7 @@ $BODY$
 		q := q || $sql$
 			ORDER BY S.row, PT.row, P.name
 			)
-		--         select * from data;
+
 			SELECT array_to_json(array_agg(row_to_json(data)), true) FROM data;
 		    $sql$;	
 
@@ -103,6 +93,3 @@ $BODY$
 		END
 		$BODY$
   LANGUAGE plpgsql STABLE
-  COST 100
-  ROWS 1000;
-ALTER FUNCTION sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[]) OWNER TO "admin";

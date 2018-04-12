@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_get_sites(IN _site_id smallint DEFAULT NULL::smallint)
+﻿CREATE OR REPLACE FUNCTION sp_get_sites(IN _site_id integer[] DEFAULT NULL::integer[])
   RETURNS TABLE(id smallint, name character varying, short_name character varying, enabled boolean) AS
 $BODY$
 BEGIN
@@ -8,7 +8,7 @@ BEGIN
                site.short_name,
                site.enabled
         FROM site
-        WHERE _site_id IS NULL OR site.id = _site_id
+        WHERE _site_id IS NULL OR site.id = ANY(_site_id)
         ORDER BY site.name;
 END
 $BODY$
