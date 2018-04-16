@@ -546,7 +546,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
             <div class="panel panel-default create-site">
                 <div class="panel-body">
                     <?php
-                    if (!(empty($_SESSION ['siteId']))) {
+                    if (!$_SESSION['isAdmin']) {
                         // not admin ?>
                         <div class="panel-heading row">Seasons site details</div>
                     <?php } else {
@@ -651,7 +651,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                         </div>
                                         <div class="col-md-9" >       
                                         	<div class="form-group form-group-sm">             
-                                            	<textarea class='form-control' style="resize: vertical;" rows="5" name="S2Tiles"></textarea>
+                                            	<textarea class='form-control' style="resize: vertical;" rows="2" name="S2Tiles"></textarea>
                                             	<span class="invalidTilesS2"></span>
                                             </div>
                                         </div>                                    	
@@ -666,7 +666,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                         </div>
                                         <div class="col-md-9" >          
                                        		<div class="form-group form-group-sm">                
-                                            	<textarea class='form-control' style="resize: vertical;" rows="5" name="L8Tiles""></textarea>
+                                            	<textarea class='form-control' style="resize: vertical;" rows="2" name="L8Tiles""></textarea>
                                             	<span class="invalidTilesL8"></span>
                                             </div>
                                         </div>
@@ -784,14 +784,17 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                             print_r ("Cannot get site lists! Please check that the sen2agri-services are started!");
                         } else {
                             $jsonArr = json_decode($restResult, true);
-                            foreach($jsonArr as $site) {
-                                $siteId        = $site['id'];
-                                $siteName      = $site['name'];
-                                $shortName     = $site['shortName'];
-                                $site_enabled  = $site['enabled'];
-                                $siteInsituFile = getInsituFileName($shortName, false);
-                                $siteStrataFile = getInsituFileName($shortName, true);
-                                $siteL8Enabled = (getSatelliteEnableStatus($siteId, 2) == "false" ? "" : "checked");  // only L8 for now
+                            $userSites = (isset($_SESSION['siteId']) && sizeof($_SESSION['siteId'])>0)? $_SESSION['siteId']:array();
+                            foreach($jsonArr as $site) {                              
+                                if((sizeof($userSites)>0 && in_array($site['id'], $userSites)) || (sizeof($userSites) == 0 && $_SESSION['isAdmin'])){
+                                    $siteId        = $site['id'];
+                                    $siteName      = $site['name'];
+                                    $shortName     = $site['shortName'];
+                                    $site_enabled  = $site['enabled'];
+                                    $siteInsituFile = getInsituFileName($shortName, false);
+                                    $siteStrataFile = getInsituFileName($shortName, true);
+                                    $siteL8Enabled = (getSatelliteEnableStatus($siteId, 2) == "false" ? "" : "checked");  // only L8 for now
+                               
 
                             //}
                             //
@@ -821,7 +824,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                     "<?= $siteL8Enabled ?>")'>Edit</a></td>
                                     <td><input type="checkbox" name="enabled-checkbox"<?= $site_enabled ? "checked" : "" ?>></td>
                                 </tr>
-                        <?php } } ?>
+                        <?php  } } } ?>
                         </tbody>
                     </table>
                     <!------------------------------ end list sites ------------------------------>

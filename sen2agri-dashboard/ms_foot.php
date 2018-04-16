@@ -33,7 +33,7 @@ if (isset($_SESSION['siteId'])) {
 		</div>
     </div>
 	<script type="text/javascript">
-		var jsonSiteId = <?php echo empty($_SESSION['siteId']) ? "0" : "".json_encode( $_SESSION['siteId']) ?>;
+		var jsonSiteId = <?php echo  $_SESSION['isAdmin'] ? "0" : "".json_encode( $_SESSION['siteId']) ?>;
 		var jsonJobsPage = 1;
 	</script>
 </body>

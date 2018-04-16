@@ -13,10 +13,11 @@ include 'ms_menu.php';
 			<div class="panel panel-default">
 				<div class="panel-body">
 				
-				<?php if($_SESSION['roleID']!='1'){?>
+				<?php if((isset($_SESSION['isAdmin']) && !$_SESSION['isAdmin']) || !isset($_SESSION['userId'])){?>
 				
 					<div class="panel-heading row text-danger">Access denied!</div>
-				<?php }else{?>
+				<?php exit;
+                      }else{?>
 				
 					<div class="panel-heading row"><input name="adduser" type="button" class="add-edit-btn" value="Add new user" style="width: 200px"></div>
 					<div class="panel-heading row">
@@ -65,10 +66,11 @@ include 'ms_menu.php';
                             	<div class="form-group  form-group-sm">
                                 	<label class="control-label" for="site">Sites:</label>
                                 	<select class="form-control" multiple="multiple" name="site[]" id="site">
+                                	<option value=0></option>
                                 	</select>
                                 	<input type="checkbox" id="checkbox" >Select All
                              	</div>
-                          	</div>
+                        	</div>
                       	</div>
 
                       	<div class="submit-buttons">
@@ -137,17 +139,13 @@ $(document).ready(function() {
             {data:'role_name',name:'role_name',title: 'Role',width:'10%'},
             {data:'site_name',name:'site_name',title:'Sites',width:'30%'},
             {
-               /* data: function(data){
-                    return data.user_id+" "+ data.site_name
-                    },*/
                 data:null,
-            // [{data:'user_id'},{data:'site_name'}],
                 title: 'Actions',
                 className: "center",
                 width:'10%',
-              	render:function(e){                 
-                	return "<span class='glyphicon glyphicon-pencil editor_edit' style='color:#ed8a19;padding-right:15px;cursor: pointer;cursor: hand;' name='edituser' data-user-id='"+e.user_id+"' data-sites-id='"+e.site_id+"' data-role-id='"+e.role_id+"'></span>  "+
-    				"<span class='glyphicon glyphicon-trash editor_remove' style='color:red;cursor: pointer;cursor: hand;' data-user-id='"+e.user_id+"'></span>"
+              	render:function(e){
+                	return "<span class='glyphicon glyphicon-pencil editor_edit' style='color:#ed8a19;padding-right:15px;cursor: pointer;cursor:hand;' name='edituser' data-user-id='"+e.user_id+"' data-sites-id='"+e.site_id+"' data-role-id='"+e.role_id+"' data-toggle='tooltip' title=''></span>  "+
+    				"<span class='glyphicon glyphicon-trash editor_remove' style='color:red;cursor: pointer;cursor:hand;' data-user-id='"+e.user_id+"' data-toggle='tooltip' title=''></span>"
                 }              
             }
         ]
@@ -210,6 +208,22 @@ $(document).ready(function() {
         tags:true,
        	placeholder: 'Select sites',
        	width:'100%'
+           }).on("change", function (e) {
+        	    $(this).valid(); //jquery validation script validate on change
+           }).on("select2:open", function() { //correct validation classes (has=*)
+               if ($(this).parents("[class*='has-']").length) { //copies the classes
+                   var classNames = $(this).parents("[class*='has-']")[0].className.split(/\s+/);
+
+                   for (var i = 0; i < classNames.length; ++i) {
+                       if (classNames[i].match("has-")) {
+                           $("body > .select2-container").addClass(classNames[i]);
+                       }
+                   }
+               } else { //removes any existing classes
+                   $("body > .select2-container").removeClass (function (index, css) {
+                       return (css.match (/(^|\s)has-\S+/g) || []).join(' ');
+                   });
+               }
            });
     
 	//event on checkbox 'Select all sites'
@@ -257,6 +271,7 @@ $(document).ready(function() {
     // Open dialog 'New user'
     $('input[name="adduser"]').on('click', function (e) {
         e.preventDefault();
+        
         $("#user_id").val(''); 
 		$("#site").removeAttr('disabled');	        	
 	    $("input[type='checkbox']").removeAttr('disabled');
@@ -268,34 +283,44 @@ $(document).ready(function() {
     // Open dialog 'Edit user'
     $('#users').on('click', 'span.editor_edit', function (e) {
         e.preventDefault();
-        $.each($(this).closest('tr').find('td'),function(index,item){
-            switch(index){
-            	case 0:  $("#login").val(item.textContent);break;
-             	case 1:  $("#email").val(item.textContent);break;
-             	case 2:  $("#role option:contains("+item.textContent+")").prop('selected',true);break;
-             	}
-            });
-        $("#user_id").val($(this).attr('data-user-id'));
-
-        // if not admin
-        if($(this).attr('data-role-id') != '1'){
-        	$("#site").removeAttr('disabled');
-        	$("input[type='checkbox']").removeAttr('disabled');
-        	
-            var sites = $(this).attr('data-sites-id');
-            sites = sites.replace('{','');
-            sites = sites.replace('}','');
-            $("#site").val(sites.split(",")).trigger('change');
-        }else{//if admin disable sites multiselect
-        	$("#site").attr('disabled','true');
-        	$("input[type='checkbox']").attr('disabled','true');
-            }
-      
-        
-        $("#div_edituser").dialog({'title':'Edit User'});
-        $("#div_edituser").dialog("open");
-
+        //the current user can't edit his profile
+        if($(this).attr('data-user-id')!=<?php echo $_SESSION['userId']?>){
+            $.each($(this).closest('tr').find('td'),function(index,item){
+                switch(index){
+                	case 0:  $("#login").val(item.textContent);break;
+                 	case 1:  $("#email").val(item.textContent);break;
+                 	case 2:  $("#role option:contains("+item.textContent+")").prop('selected',true);break;
+                 	}
+                });
+            $("#user_id").val($(this).attr('data-user-id'));
+    
+            // if not admin
+            if($(this).attr('data-role-id') != '1'){
+            	$("#site").removeAttr('disabled');
+            	$("input[type='checkbox']").removeAttr('disabled');
+            	
+                var sites = $(this).attr('data-sites-id');
+                sites = sites.replace('{','');
+                sites = sites.replace('}','');
+                $("#site").val(sites.split(",")).trigger('change');
+            }else{//if admin disable sites multiselect
+            	$("#site").attr('disabled','true');
+            	$("input[type='checkbox']").attr('disabled','true');
+                }
+          
+            
+            $("#div_edituser").dialog({'title':'Edit User'});
+            $("#div_edituser").dialog("open");
+        }
     } );
+
+    $('#users ').on('mouseenter','span.editor_edit', function (e) {
+    	 e.preventDefault();
+         //the current user can't edit his profile
+         if($(this).attr('data-user-id')==<?php echo $_SESSION['userId']?>){      	
+ 		   $(this).tooltip({content:'You can\'t edit your account'});	
+         }
+        });
     //--------------------  Add/Edit user -----------------------//
 
     // ------------------- delete user ------------------------//
@@ -308,16 +333,27 @@ $(document).ready(function() {
 		});
 	
    //Open dialog 'Delete user'
-   $('#users').on('click', 'span.editor_remove', function (e) {
+   $('#users').on('click','span.editor_remove',function (e) {
         e.preventDefault();
-        var user = $(this).closest('tr').find('td');
-        $("#div_deleteuser").dialog({
-        	autoOpen:true,
-            title:'Delete User "'+$(user[0]).text() +'"',
-            
-            });
-        $('input[name="delete_user_yes"]').attr('data-user',$(this).attr('data-user-id'));
+        //the current user can't edit his profile
+         if($(this).attr('data-user-id')!=<?php echo $_SESSION['userId']?>){
+            var user = $(this).closest('tr').find('td');
+            $("#div_deleteuser").dialog({
+            	autoOpen:true,
+                title:'Delete User "'+$(user[0]).text() +'"',
+                
+                });
+            $('input[name="delete_user_yes"]').attr('data-user',$(this).attr('data-user-id'));
+        }
     } );
+
+   $('#users ').on('mouseenter','span.editor_remove', function (e) {
+   	 e.preventDefault();
+        //the current user can't edit his profile
+        if($(this).attr('data-user-id')==<?php echo $_SESSION['userId']?>){
+ 			$(this).tooltip({content:'You can\'t delete your account'});	
+       }
+   });
 
 	//action delete user
 	$("input[name='delete_user_yes']").on('click',function(){
@@ -357,7 +393,10 @@ $(document).ready(function() {
         	email:{ 
             	required: true,
             	pattern: /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/ 
-                	}
+                	},
+            "site[]":{
+                required: true,
+                }
         },
         messages: {
         	login: { 

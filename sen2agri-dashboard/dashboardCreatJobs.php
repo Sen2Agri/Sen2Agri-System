@@ -39,12 +39,17 @@ function add_new_scheduled_jobs_layout($processorId) {
 
 	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 	// get distinct sites with seasons
-	$sql = "SELECT DISTINCT st.id, st.name FROM sp_get_sites(null) st, sp_get_site_seasons(null) ss WHERE st.id = ss.site_id ORDER BY st.name";
-	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
-	$option_site = "";
-	while ( $row = pg_fetch_row ( $result ) ) {
-		$option = "<option value='" . $row [0] . "'>" . $row [1] . "</option>";
-		$option_site = $option_site . $option;
+	
+	if($_SESSION['isAdmin'] ||  sizeof($_SESSION['siteId'])>0){
+	    $sites =  sizeof($_SESSION['siteId'])==0? "":" AND st.id in (".implode(",",$_SESSION['siteId']).") ";
+	    
+    	$sql = "SELECT DISTINCT st.id, st.name FROM sp_get_sites(null) st, sp_get_site_seasons(null) ss WHERE st.id = ss.site_id ".$sites." ORDER BY st.name";
+    	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
+    	$option_site = "";
+    	while ( $row = pg_fetch_row ( $result ) ) {
+    		$option = "<option value='" . $row [0] . "'>" . $row [1] . "</option>";
+    		$option_site = $option_site . $option;
+    	}
 	}
 	// get all seasons with associated sites
 	$sql = "SELECT id, site_id, name FROM sp_get_site_seasons(null) ORDER BY site_id, name";

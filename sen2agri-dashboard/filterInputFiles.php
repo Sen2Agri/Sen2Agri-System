@@ -18,9 +18,9 @@
     							<input class="form-control chkS2" id="<?php echo $prefix?>_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
     							<label class="control-label" for="<?php echo $prefix?>_chkS2">S2</label>
     						</div> 
-    						<div class="col-md-9 form-group form-group-sm sensor">
+    						<div class="col-md-10 form-group form-group-sm sensor">
     							<label class=" control-label" for="<?php echo $prefix?>_S2Tiles" style="display: block">Tiles</label>                         
-    							<textarea class='form-control' style="resize: vertical;" rows="4" name="S2Tiles" id="<?php echo $prefix?>_S2Tiles"></textarea>
+    							<textarea class='form-control' style="resize: vertical;" rows="2" name="S2Tiles" id="<?php echo $prefix?>_S2Tiles"></textarea>
     							<span class="invalidTilesS2"></span>
     						</div>                            					
     					</div>
@@ -31,9 +31,9 @@
     							<label class="control-label" for="<?php echo $prefix?>_chkL8">L8</label>
     						</div>   
     						
-                     		<div class="col-md-9 form-group form-group-sm sensor">
+                     		<div class="col-md-10 form-group form-group-sm sensor">
     							<label class=" control-label" for="<?php echo $prefix?>_L8Tiles" >Tiles</label>                   							
-    							<textarea class='form-control' style="resize: vertical;" rows="4" name="L8Tiles" id="<?php echo $prefix?>_L8Tiles"></textarea>
+    							<textarea class='form-control' style="resize: vertical;" rows="2" name="L8Tiles" id="<?php echo $prefix?>_L8Tiles"></textarea>
     							<span class="invalidTilesL8"></span>
     						</div>          					
     					</div>

@@ -2,17 +2,18 @@
 <?php
 function select_option() {
 	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	if (empty ( $_SESSION ['siteId'] )) {
+	if ($_SESSION['isAdmin']) {
 		// admin
 		$sql         = "SELECT * FROM sp_get_sites()";
 		$result      = pg_query ( $db, $sql ) or die ( "Could not execute." );
-		$option_site = "<option value=\"0\" selected>Select a site...</option>";
+		
 	} else {
 		// not admin
 		$sql         = "SELECT * FROM sp_get_sites($1)";
 		$result      = pg_query_params ( $db, $sql, array ("{".implode(',',$_SESSION ['siteId'])."}") ) or die ( "Could not execute." );
 		$option_site = "";
 	}
+	$option_site = "<option value=\"0\" selected>Select a site...</option>";
 	while ( $row = pg_fetch_row ( $result ) ) {
 		$option = "<option value=\"$row[0]\">" . $row [1] . "</option>";
 		$option_site = $option_site . $option;

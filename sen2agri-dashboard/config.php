@@ -3,7 +3,7 @@
 	<div id="main2">
 		<div id="main3">
 			<div class="container-fluid">
-				<div class="panel-group config" id="accordion">
+				<div class="panel-group config cust_jobs" id="accordion">
 
 					<!-- start L3A -->
 					<div class="panel panel-default">

@@ -20,6 +20,7 @@ function SignIn()
                         $_SESSION['userName'] = $_POST['user'];
                         $_SESSION['loginMessage'] = "";
                         $_SESSION['roleID'] = $row[2];
+                        $_SESSION['isAdmin'] = $row[2]=='1'?true:false;
                         $_SESSION['roleName'] = $row[3];
                         header("Location: create_site.php");
                         exit;

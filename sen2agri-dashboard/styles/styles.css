@@ -414,7 +414,7 @@ div.pop_up #close_button {
 
 .subgroup {
 	border: 1px solid #cccccc;
-	width: 100%;
+	width: 97.5%;
 	padding: 10px;
 	margin-bottom: 15px;
 }
@@ -522,6 +522,20 @@ div.pop_up #close_button {
 	padding-top: 5px;
 	
 }
+
+.form-group.has-error >.select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #843534;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 6px #ce8483;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 6px #ce8483;
+}
+
+.form-group >.select2-container--default.select2-container--focus .select2-selection--multiple {
+	border-color: #66afe9;
+    outline: 0;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075),0 0 8px rgba(102,175,233,.6);
+}
+
 .message_footer {
     top: -48px;
 	padding-right: 100px;
@@ -678,11 +692,18 @@ div.add-edit-site form, div.add-edit-user form {
 	font: 14px Arial, Helvetica, sans-serif;
 	margin: 15px;
 }
-div.add-edit-site .col-md-1,div.add-edit-user .col-md-1 {
+div.add-edit-site .col-md-1{
 	width: 90%;
 }
 div.add-edit-site .col-md-2,div.add-edit-user .col-md-2 {
 	width: 42%;
+}
+
+div.add-edit-user .col-md-1 {
+	width: 94%;
+}
+div.add-edit-user .form-control{
+	width:95.5%;
 }
 div.add-edit-site .form-group,div.add-edit-user .form-group {
 	margin-bottom: 15px;
@@ -901,9 +922,16 @@ input.btn-success:hover, input.btn-danger:hover{
 .control_advanced:hover {
 	text-decoration: underline;
 }
+div.cust_jobs .col-md-11{
+	width:97%;
+}
+div.cust_jobs .form-control{
+	width:97.5%;
+}
+div.cust_jobs h4.panel-title a,.cust_jobs h4.panel-title span{display:inline-block;width:98.016%;text-decoration:none;padding:10px;background-color:#dbecb9}
 
 .config div.panel-heading{padding:0px}
-.config h4.panel-title a,.config h4.panel-title span{display:inline-block;width:98%;text-decoration:none;padding:10px;background-color:#dbecb9}
+.config h4.panel-title a,.config h4.panel-title span{display:inline-block;width:96.7%;text-decoration:none;padding:10px;background-color:#dbecb9}
 .config h4.panel-title a:hover{background-color:#bcd68c}
 
 div.for-table h4.panel-title span,

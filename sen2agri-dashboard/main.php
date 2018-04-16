@@ -2,15 +2,18 @@
 <?php 
 
 $dbconn       = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
-$sites_id = !empty(ConfigParams::$SITE_ID)? '{'.implode(',',ConfigParams::$SITE_ID).'}':null;
+$sites_id = sizeof(ConfigParams::$SITE_ID)>0? '{'.implode(',',ConfigParams::$SITE_ID).'}':null;
 
-$rows = pg_query_params ( $dbconn, "select * from sp_get_products_sites($1)", array ($sites_id)) or die(pg_last_error());
 $sites = array();
 $option_site = "";
-while ( $row = pg_fetch_row ( $rows ) ) {
-	$sites[] = $row [0];
-	$option = "<option value='" . $row [0] . "'>" . $row [1] . "</option>";
-	$option_site = $option_site . $option;
+if( sizeof(ConfigParams::$SITE_ID)>0 || $_SESSION['isAdmin']){
+    $rows = pg_query_params ( $dbconn, "select * from sp_get_products_sites($1)", array ($sites_id)) or die(pg_last_error());
+
+    while ( $row = pg_fetch_row ( $rows ) ) {
+    	$sites[] = $row [0];
+    	$option = "<option value='" . $row [0] . "'>" . $row [1] . "</option>";
+    	$option_site = $option_site . $option;
+    }
 }
 
 $sql ='SELECT * FROM sp_get_product_types() ';
