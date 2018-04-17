@@ -603,8 +603,14 @@ The easiest way to provide this is to make it world-writable:
 ls -ld /mnt/upload
 
 # mark the directory world-writable
-sudo chmod 777 /mnt/upload
+sudo chmod -R 777 /mnt/upload
 ```
+
+## Large uploads don't work
+
+If you encounter a blank page after uploading a file (e.g. the reference map for a custom `L4A` job), you can check the `PHP` error log in `/var/log/httpd/error_log`.
+
+Most likely, the reason is a configured limit. To increase those, take a look at the `post_max_size` and `upload_max_filesize` settings in `/etc/php.ini`. After changing the configuration file, you must reload it with `systemctl reload httpd`.
 
 ## Sentinel-2 downloads fail
 
