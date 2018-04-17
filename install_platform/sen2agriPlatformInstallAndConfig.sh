@@ -349,7 +349,7 @@ function install_and_config_postgresql()
    #------------DATABASE CREATION------------#
    # first, the database is created. the privileges will be set after all
    # the tables, data and other stuff is created (see down, privileges.sql
-   cat "$(find ./ -name "database")/00-database"/sen2agri.sql | sudo su - postgres -c 'psql'
+   cat "$(find ./ -name "database")/00-database"/sen2agri.sql | su - postgres -c 'psql'
 
    sed -i -re "s|'demmaccs.maccs-launcher',([^,]+),\s+'[^']+'|'demmaccs.maccs-launcher',\1, '${maccs_location}'|" $(find ./ -name "database")/07-data/09.config.sql
 
@@ -381,7 +381,7 @@ function populate_from_scripts()
       do
          ## perform execution of each sql script
          echo "Executing SQL script: $scriptName"
-         cat "$scriptName" | sudo su - postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
+         cat "$scriptName" | su - postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
       done
 }
 #-----------------------------------------------------------#
@@ -658,14 +658,14 @@ function install_maccs()
     done
 }
 
-function install_sen2agri_services() 
+function install_sen2agri_services()
 {
     if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
         zipArchive=$(ls -at ../sen2agri-services/sen2agri-services*.zip| head -n 1)
         filename="${zipArchive%.*}"
 
         echo "Extracting into /usr/share/sen2agri/sen2agri-services from archive $zipArchive ..."
-        
+
         mkdir -p /usr/share/sen2agri/sen2agri-services && unzip ${zipArchive} -d /usr/share/sen2agri/sen2agri-services
         if [ $? -ne 0 ]; then
             echo "Unable to unpack the sen2agri-services into/usr/share/sen2agri/sen2agri-services"
@@ -673,16 +673,16 @@ function install_sen2agri_services()
             exit 1
         fi
         # convert any possible CRLF into LF
-        tr -d '\r' < /usr/share/sen2agri/sen2agri-services/bin/start.sh > /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp && cp -f /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp /usr/share/sen2agri/sen2agri-services/bin/start.sh && rm /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp 
+        tr -d '\r' < /usr/share/sen2agri/sen2agri-services/bin/start.sh > /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp && cp -f /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp /usr/share/sen2agri/sen2agri-services/bin/start.sh && rm /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp
         # ensure the execution flag
         chmod a+x /usr/share/sen2agri/sen2agri-services/bin/start.sh
-        
+
     else
         echo "No sen2agri-services zip archive provided in ../sen2agri-services"
         echo "Exiting now"
         exit 1
     fi
-    
+
 }
 
 function disable_selinux()
