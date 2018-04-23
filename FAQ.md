@@ -696,8 +696,7 @@ If you want to e.g. reprocess some of the failed product, you can change their s
 sudo -u postgres psql sen2agri -c \
     "update downloader_history \
      set status_id = 2 -- downloaded
-     where status_id = 6 -- processing_failed
-       and product_name like 'S2B%';"
+     where status_id = 6; -- processing_failed"
 ```
 
 ## What are the statuses from the `downloader_history` table?
