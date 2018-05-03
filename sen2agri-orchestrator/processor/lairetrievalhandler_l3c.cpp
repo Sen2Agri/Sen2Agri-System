@@ -134,14 +134,18 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(
     QString mainMsksImg;
     QStringList listDates;
 
+    bool errFilesUsed = false;
     for(const ProcessorHandlerHelper::InfoTileFile &fileInfo: tileTemporalFilesInfo.temporalTilesFileInfos) {
         const QString &laiFileName = fileInfo.additionalFiles[LAI_RASTER_ADD_INFO_IDX];
         const QString &errFileName = fileInfo.additionalFiles[LAI_ERR_RASTER_ADD_INFO_IDX];
         const QString &mskFileName = fileInfo.additionalFiles[LAI_FLG_RASTER_ADD_INFO_IDX];
 
         // ensure that we have all files and we will have the same size for all lists
-        if (laiFileName.size() > 0 && errFileName.size() > 0 && mskFileName.size() > 0) {
+        if (laiFileName.size() > 0 && mskFileName.size() > 0) {
             quantifiedLaiFileNames2.append(laiFileName);
+            if (errFileName.size() > 0) {
+                errFilesUsed = true;
+            }
             quantifiedErrLaiFileNames2.append(errFileName);
             monoDateMskFlagsLaiFileNames2.append(mskFileName);
             listDates.append(fileInfo.acquisitionDate);
@@ -161,12 +165,20 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(
     TaskToSubmit &mskFlagsTimeSeriesBuilderTask = allTasksList[curTaskIdx++];
 
     const auto & allLaiTimeSeriesFileName = imgTimeSeriesBuilderTask.GetFilePath("LAI_time_series.tif");
-    const auto & allErrTimeSeriesFileName = errTimeSeriesBuilderTask.GetFilePath("Err_time_series.tif");
+    QString allErrTimeSeriesFileName = errTimeSeriesBuilderTask.GetFilePath("Err_time_series.tif");
     const auto & allMskFlagsTimeSeriesFileName = mskFlagsTimeSeriesBuilderTask.GetFilePath("Mask_Flags_time_series.tif");
 
-    QStringList timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, quantifiedLaiFileNames2, allLaiTimeSeriesFileName, mainLaiImg);
-    QStringList errTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, quantifiedErrLaiFileNames2, allErrTimeSeriesFileName, mainLaiErrImg);
-    QStringList mskFlagsTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, monoDateMskFlagsLaiFileNames2,
+    const QStringList &timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, quantifiedLaiFileNames2, allLaiTimeSeriesFileName, mainLaiImg);
+    QStringList errTimeSeriesBuilderArgs;
+    if (errFilesUsed) {
+        errTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, quantifiedErrLaiFileNames2, allErrTimeSeriesFileName, mainLaiErrImg);
+    } else {
+        // do nothing in this case by executing the "true" command on linux that does nothing and will return success after the execution
+        allErrTimeSeriesFileName = "";
+        errTimeSeriesBuilderArgs.append("true");
+    }
+
+    const QStringList &mskFlagsTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, monoDateMskFlagsLaiFileNames2,
                                                                                  allMskFlagsTimeSeriesFileName, mainMsksImg, true);
 
     steps.append(imgTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", timeSeriesBuilderArgs));
@@ -744,7 +756,7 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTile
         const QString &laiFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "SLAIMONO");
         const QString &errFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "MLAIERR", true);
         const QString &mskFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "MMONODFLG", true);
-        if (laiFileName.size() > 0 && errFileName.size() > 0 && mskFileName.size() > 0) {
+        if (laiFileName.size() > 0 && mskFileName.size() > 0) {
             l3bTileInfo.additionalFiles.append(laiFileName);
             l3bTileInfo.additionalFiles.append(errFileName);
             l3bTileInfo.additionalFiles.append(mskFileName);
@@ -1002,17 +1014,19 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(const std::map<QS
                                        const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
     const auto &localWindowBwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
     const auto &localWindowFwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
-
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
-          "-lai", allLaiTimeSeriesFileName,
-          "-err", allErrTimeSeriesFileName,
-          "-msks", allMsksTimeSeriesFileName,
-          "-opf", BuildProcessorOutputFileName(configParameters, reprocTimeSeriesFileName, true, true),
-          "-algo", "local",
-          "-algo.local.bwr", localWindowBwr,
-          "-algo.local.fwr", localWindowFwr,
-          "-ildates"
-    };
+                            "-lai", allLaiTimeSeriesFileName,
+                            "-msks", allMsksTimeSeriesFileName,
+                            "-opf", BuildProcessorOutputFileName(configParameters, reprocTimeSeriesFileName, true, true),
+                            "-algo", "local",
+                            "-algo.local.bwr", localWindowBwr,
+                            "-algo.local.fwr", localWindowFwr,
+                      };
+    if (allErrTimeSeriesFileName.size() > 0) {
+        profileReprocessingArgs.append("-err");
+        profileReprocessingArgs.append(allErrTimeSeriesFileName);
+    }
+    profileReprocessingArgs.append("-ildates");
     profileReprocessingArgs += listDates;
     return profileReprocessingArgs;
 }

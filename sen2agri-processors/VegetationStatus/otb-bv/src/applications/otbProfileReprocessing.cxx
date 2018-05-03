@@ -29,6 +29,7 @@
 
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
+#include "itkBinaryFunctorImageFilter.h"
 #include "itkTernaryFunctorImageFilter.h"
 
 #include "otbVectorImage.h"
@@ -69,6 +70,7 @@ namespace Wrapper
 {
 
 typedef enum {ALGO_LOCAL = 0, ALGO_FIT} ALGO_TYPE;
+
 template< class TInput1, class TInput2, class TInput3, class TOutput>
 class ProfileReprocessingFunctor
 {
@@ -165,6 +167,26 @@ private:
   bool m_bGenAll;
 };
 
+template< class TInput1, class TInput2, class TOutput>
+class ProfileReprocessingNoErrEstFunctor : public ProfileReprocessingFunctor<TInput1,TInput1,TInput2,TOutput>
+{
+public:
+  ProfileReprocessingNoErrEstFunctor() {}
+  ~ProfileReprocessingNoErrEstFunctor() {}
+
+  inline TOutput operator()(const TInput1 & A,
+                            const TInput2 & B) const
+  {
+    TInput1 C = A;
+    int nbBvElems = A.GetNumberOfElements();
+    int i;
+    for(i = 0; i<nbBvElems; i++) {
+        C[i] = 0;
+    }
+    return ProfileReprocessingFunctor<TInput1,TInput1,TInput2,TOutput>::operator ()(A, C, B);
+  }
+};
+
 class ProfileReprocessing : public Application
 {
 public:
@@ -185,11 +207,17 @@ public:
                                     InputImageType::PixelType,
                                     InputImageType::PixelType,
                                     OutImageType::PixelType>                FunctorType;
+    typedef ProfileReprocessingNoErrEstFunctor <InputImageType::PixelType,
+                                      InputImageType::PixelType,
+                                      OutImageType::PixelType>                BinaryFunctorType;
 
   typedef itk::TernaryFunctorImageFilter<InputImageType,
                                         InputImageType,
                                         InputImageType,
-                                        OutImageType, FunctorType> FilterType;
+                                        OutImageType, FunctorType> TernaryFilterType;
+    typedef itk::BinaryFunctorImageFilter<InputImageType,
+                                          InputImageType,
+                                          OutImageType, BinaryFunctorType> BinaryFilterType;
 
     typedef FloatVectorImageType                    ImageType;
     typedef otb::Image<float, 2>                    InternalImageType;
@@ -319,21 +347,28 @@ private:
       FloatVectorImageType::Pointer lai_image;
       FloatVectorImageType::Pointer err_image;
       FloatVectorImageType::Pointer msks_image;
+      bool hasErrImg = false;
 
-      if (HasValue("illai") && HasValue("ilerr") && HasValue("ilmsks")) {
+      if (HasValue("illai") && HasValue("ilmsks")) {
           // update the width, hight, origin and projection if we have a main image
           updateRequiredImageSize();
 
           const std::vector<std::string> &laiImgsList = this->GetParameterStringList("illai");
-          const std::vector<std::string> &errImgsList = this->GetParameterStringList("ilerr");
           const std::vector<std::string> &msksImgsList = this->GetParameterStringList("ilmsks");
           lai_image = this->GetTimeSeriesImage(laiImgsList, false);
-          err_image = this->GetTimeSeriesImage(errImgsList, false);
           msks_image = this->GetTimeSeriesImage(msksImgsList, true);
+          if (HasValue("ilerr")) {
+            const std::vector<std::string> &errImgsList = this->GetParameterStringList("ilerr");
+            err_image = this->GetTimeSeriesImage(errImgsList, false);
+            hasErrImg = true;
+          }
       } else {
           lai_image = this->GetParameterImage("lai");
-          err_image = this->GetParameterImage("err");
           msks_image = this->GetParameterImage("msks");
+          if (HasValue("err")) {
+            err_image = this->GetParameterImage("err");
+            hasErrImg = true;
+          }
       }
       unsigned int nb_dates = 0;
       std::vector<std::string> datesList;
@@ -358,8 +393,8 @@ private:
       std::sort (datesList.begin(), datesList.end());
 
       unsigned int nb_lai_bands = lai_image->GetNumberOfComponentsPerPixel();
-      unsigned int nb_err_bands = err_image->GetNumberOfComponentsPerPixel();
-      if((nb_lai_bands == 0) || (nb_lai_bands != nb_err_bands) || (nb_lai_bands != nb_dates)) {
+      unsigned int nb_err_bands = hasErrImg ? err_image->GetNumberOfComponentsPerPixel() : 0;
+      if((nb_lai_bands == 0) || (hasErrImg && (nb_lai_bands != nb_err_bands)) || (nb_lai_bands != nb_dates)) {
           itkExceptionMacro("Invalid number of bands or xmls: lai bands=" <<
                             nb_lai_bands << ", err bands =" <<
                             nb_err_bands << ", nb_dates=" << nb_dates);
@@ -410,29 +445,46 @@ private:
 
       //instantiate a functor with the regressor and pass it to the
       //unary functor image filter pass also the normalization values
-      m_profileReprocessingFilter = FilterType::New();
-      m_functor.SetDates(inDates);
-      m_functor.SetAlgoType(algoType);
-      m_functor.SetBwr(bwr);
-      m_functor.SetFwr(fwr);
-      m_functor.SetGenerateAll(bGenerateAll);
+      FunctorType *functor;
+      if (hasErrImg) {
+          functor = &m_ternaryFunctor;
+      } else {
+          functor = &m_binaryFunctor;
+      }
+      functor->SetDates(inDates);
+      functor->SetAlgoType(algoType);
+      functor->SetBwr(bwr);
+      functor->SetFwr(fwr);
+      functor->SetGenerateAll(bGenerateAll);
 
-      m_profileReprocessingFilter->SetFunctor(m_functor);
-      m_profileReprocessingFilter->SetInput1(lai_image);
-      m_profileReprocessingFilter->SetInput2(err_image);
-      m_profileReprocessingFilter->SetInput3(msks_image);
-      m_profileReprocessingFilter->UpdateOutputInformation();
       int nTotalBands = 2;
       if(bGenerateAll) {
           nTotalBands = nb_lai_bands*2;
-          m_profileReprocessingFilter->GetOutput()->SetNumberOfComponentsPerPixel(nTotalBands);
-      } else {
-          m_profileReprocessingFilter->GetOutput()->SetNumberOfComponentsPerPixel(nTotalBands);
       }
 
-      //DoProfileReprocessingOutput(datesList, nTotalBands);
-      SetParameterOutputImage("opf", m_profileReprocessingFilter->GetOutput());
-}
+      if (hasErrImg) {
+          m_profileReprocessingFilter = TernaryFilterType::New();
+          m_profileReprocessingFilter->SetFunctor(*functor);
+          m_profileReprocessingFilter->SetInput1(lai_image);
+          m_profileReprocessingFilter->SetInput2(err_image);
+          m_profileReprocessingFilter->SetInput3(msks_image);
+          m_profileReprocessingFilter->UpdateOutputInformation();
+          m_profileReprocessingFilter->GetOutput()->SetNumberOfComponentsPerPixel(nTotalBands);
+
+          //DoProfileReprocessingOutput(datesList, nTotalBands);
+          SetParameterOutputImage("opf", m_profileReprocessingFilter->GetOutput());
+      } else {
+          m_profileReprocessingNoErrFilter = BinaryFilterType::New();
+          m_profileReprocessingNoErrFilter->SetFunctor(*((BinaryFunctorType*)functor));
+          m_profileReprocessingNoErrFilter->SetInput1(lai_image);
+          m_profileReprocessingNoErrFilter->SetInput2(msks_image);
+          m_profileReprocessingNoErrFilter->UpdateOutputInformation();
+          m_profileReprocessingNoErrFilter->GetOutput()->SetNumberOfComponentsPerPixel(nTotalBands);
+
+          //DoProfileReprocessingOutput(datesList, nTotalBands);
+          SetParameterOutputImage("opf", m_profileReprocessingNoErrFilter->GetOutput());
+      }
+  }
 
   ImageType::Pointer GetTimeSeriesImage(const std::vector<std::string> &imgsList, bool bIsFlgTimeSeries) {
 
@@ -603,8 +655,10 @@ private:
   }
 
   // Profile reprocessing variables
-  FilterType::Pointer m_profileReprocessingFilter;
-  FunctorType m_functor;
+  TernaryFilterType::Pointer m_profileReprocessingFilter;
+  BinaryFilterType::Pointer m_profileReprocessingNoErrFilter;
+  FunctorType m_ternaryFunctor;
+  BinaryFunctorType m_binaryFunctor;
 
   // Time series builder variables
   ImageReaderListType::Pointer                m_ImageReaderList;

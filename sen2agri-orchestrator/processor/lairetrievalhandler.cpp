@@ -76,7 +76,7 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
             if (IsGenNdviMonoDateOnly(configParameters)) {
                 return this->m_ndviHandler.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
             } else if (IsNewLaiMonoDateVersion(configParameters)) {
-                m_l3bHandlerNew.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
+                return m_l3bHandlerNew.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
             } else {
                 return this->m_l3bHandler.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
             }
