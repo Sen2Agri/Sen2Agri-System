@@ -13,7 +13,7 @@ See the [MACCS update section](#how-do-i-install-or-update-maccs) for instructio
 
 ## How do I install or update `MACCS`?
 
-Starting from version 1.6, MACCS is no longer with the Sen2-Agri installation files. You will have to download it from the CNES website. Steps are detailed in the Software User Manual (p. 30). Basically, you should:
+Starting from version 1.6, MACCS is no longer provided with the Sen2-Agri installation files. You will therefore have to download it from the CNES website and install it prior the Sen2-Agri installation in itself. Steps are also detailed in the Software User Manual (p. 30). Basically, you should:
 
 1. Go to <https://logiciels.cnes.fr/content/maccs?language=en>.
 1. Click on the "Télécharger" or "Download" button in the tab with the same name
@@ -21,7 +21,7 @@ Starting from version 1.6, MACCS is no longer with the Sen2-Agri installation fi
 1. Fill the form with your information using "Sentinel-2 for Agriculture" as the project name
 1. Click on the "I accept the license" checkbox and then on the button that appears. The download should now start.
 
-Once you have downloaded the MACCS installation package, you can follow the installation process detailed in its manual. You can find the MACCS manual in the installation package that you just downloaded. The process is summarized here:
+Once you have downloaded the MACCS installation package, you can follow the installation process detailed in its manual. You can find the MACCS manual in the installation package that you just downloaded. The installation process is summarized here:
 
 ```bash
 # extract the package
@@ -37,11 +37,21 @@ sudo ./install-maccs-cots.sh
 cd ..
 sudo ./install-maccs-5.1.5-centos.7.2.1511.x86_64-release-gcc.TGZ.sh
 
-# if needed, update the MACCS location in the Sen2-Agri database
+# if you your system was previously working with a older MACCS version, you will also have to update the MACCS location in the Sen2-Agri database
 sudo -u postgres psql sen2agri -c \
     "update config set value = '/opt/maccs/core/5.1/bin/maccs' \
      where key = 'demmaccs.maccs-launcher';"
 ```
+
+## What is the new sen2agri-services service included in version 1.8?
+Starting from version 1.8 a new service was introduced in the Sen2Agri system. The role of the services is:
+    * Replace the downloaders implementation. This means that the sen2agri-{sentinel,landsat}-downloader.{service,timer} services are no longer available in the version 1.8.
+    * During download, a datasource can be used for querying the list of products and another datasource can be used for actually downloading the products. For example, for S2 the SciHub can be used for querying the list of products and Amazon or a local store like the IPT can be used for downloading or just creating symlinks to the products (for local stores).
+    * Provide an API for the GUI for various operations (stop/start downloads, delete site, monitoring etc.)
+
+The configuration of the sen2agri-services can be done via:
+* The /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties
+* Advanced configuration via the "datasource" table in the database.
 
 ## How do I stop or restart the Sen2-Agri services?
 
@@ -52,7 +62,7 @@ sudo systemctl stop \
     sen2agri-monitor-agent sen2agri-scheduler sen2agri-executor \
     sen2agri-orchestrator sen2agri-http-listener \
     sen2agri-{sentinel,landsat}-downloader.{service,timer} \
-    sen2agri-demmaccs.{service,timer}
+    sen2agri-demmaccs.{service,timer} sen2agri-services
 ```
 
 To restart them you can use a similar command:
@@ -62,7 +72,7 @@ sudo systemctl start \
     sen2agri-monitor-agent sen2agri-scheduler sen2agri-executor \
     sen2agri-orchestrator sen2agri-http-listener \
     sen2agri-{sentinel,landsat}-downloader.{service,timer} \
-    sen2agri-demmaccs.{service,timer}
+    sen2agri-demmaccs.{service,timer} sen2agri-services
 ```
 
 ## Should I add the server host name to /etc/hosts?
@@ -103,6 +113,11 @@ There is no need to.
 1. Uninstall the web server and `PHP`
     ```bash
     sudo yum remove httpd php
+    ```
+1. Uninstall the sen2agri-services
+    ```bash
+    sudo systemctl stop sen2agri-services
+    sudo rm -fR /usr/share/sen2agri/sen2agri-services
     ```
 1. Uninstall `OTB`
     ```bash
@@ -177,8 +192,11 @@ For more information about setting up `nginx` or another reverse proxy, consult 
 To check that the system is running, you can use the following commands:
 
 ```bash
-# check the downloader status
+# check the downloader status in versions prior to version 1.8
 systemctl status sen2agri-{sentinel,landsat}-downloader.{timer,service}
+
+# check the downloader status in versions starting with version 1.8
+systemctl status sen2agri-services
 
 # check the L2A processor status
 systemctl status sen2agri-demmaccs.{timer,service}
@@ -192,8 +210,10 @@ systemctl status \
 For each of the components above you can use `journalctl` to see the last log messages, e.g.:
 
 ```bash
-# check today's log messages for the Sentinel-2 downloader
+# check today's log messages for the Sentinel-2 downloader in versions prior to version 1.8
 journalctl -u sen2agri-sentinel-downloader --since today
+# check today's log messages for the Sentinel-2 downloader in versions starting with version 1.8
+journalctl -u sen2agri-services --since today
 
 # check the last log messages
 journalctl -e
@@ -214,6 +234,10 @@ systemctl status httpd
 
 # check that the web server is listening on the HTTP port
 sudo ss -pantl | grep 80
+
+# check that the sen2agri-services are listening on the 8081 port
+sudo ss -pantl | grep 8081
+
 
 # open the site, either by navigating to it in a browser
 # or from the command line, like below:
@@ -239,7 +263,7 @@ sudo -u postgres psql sen2agri -c \
 # first find out the user id
 sudo -u postgres psql sen2agri -c 'select id, login from "user";'
 sudo -u postgres psql sen2agri -c \
-    "select \"sp_changePassword\"(
+    "select \"sp_changepassword\"(
                 user_id :: smallint,
                 'old password',
                 'new password');"
@@ -276,9 +300,11 @@ python job_operations.py -j JOB_ID -o resume
 
 Note that the job cancellation, pause and resume functionality is experimental and might not work properly.
 
+Starting from version 1.8 these operations are also available from the Sen2Agri GUI, from the System Overview tab.
+
 ## How can I cancel a scheduled job/task?
 
-This operation is not available in the web interface. You will need to remove the scheduled task directly from the database, like below:
+Prior to version 1.8, this operation was not available in the web interface. You will need to remove the scheduled task directly from the database, like below:
 
 ```bash
 # first find out the scheduled task id
@@ -294,6 +320,7 @@ sudo -u postgres psql sen2agri -c \
      from scheduled_task \
      where id = [ID]"
 ```
+Starting with the version 1.8, this operation can be done from the Sen2Agri GUI, in the Dashboard tab.
 
 ## Is there a way to import existing products into the database?
 
@@ -323,7 +350,7 @@ done
 
 ## How can I delete a site?
 
-The web interface doesn't allow the user to delete a site. If you want to remove a site, you can use the `delete_site.py` script.
+Prior to versio 1.8, the web interface didn't allow the user to delete a site. If you want to remove a site, you can use the `delete_site.py` script.
 
 ```bash
 # display the usage information
@@ -338,6 +365,8 @@ delete_site.py -s test_site -d false -e false -a false -l false -m false -t fals
 ```
 
 You can find the short name of the site in the web interface or by looking at the path of its products. Generally, the short name is generated by converting the site name to lower case and replacing spaces with underscores.
+
+Starting with version 1.8, a site can be deleted from the Edit page of a site.
 
 ## Is there a way to exclude some tiles from the download?
 
@@ -391,7 +420,7 @@ If you are using `SMB/CIFS` shares, symlinks can be emulated by storing the meta
 
 ## Can I disable the Landsat 8 download?
 
-If, for some reason you want to disable the Landsat 8 download for all sites, you can run the following command:
+For versions prior to 1.8, if, for some reason you want to disable the Landsat 8 download for all sites, you can run the following command:
 
 ```bash
 sudo systemctl stop sen2agri-landsat-downloader.{service,timer}
@@ -407,9 +436,11 @@ sudo systemctl enable sen2agri-landsat-downloader.timer
 
 [You can also disable the Landsat 8 download for specific sites.](#is-there-a-way-to-exclude-some-tiles-from-the-download)
 
+In version 1.8 the L8 download can be disabled from the Edit page of a site.
+
 ## How can I use products from a local `L1C` store like the IPT Cloud platform?
 
-Currently, this can be done by modifying the downloader command line and only works for Sentinel-2 products. You can use the following commands to see and edit the `systemd` downloader unit:
+In versions prior to version 1.8, this can be done by modifying the downloader command line and only works for Sentinel-2 products. You can use the following commands to see and edit the `systemd` downloader unit:
 
 ```bash
 systemctl cat sen2agri-sentinel-downloader
@@ -441,6 +472,16 @@ sudo systemctl daemon-reload
 sudo systemctl restart sen2agri-sentinel-downloader
 ```
 
+Starting with version 1.8, the download is done by the sen2agri-services. In order to configure the services to use local store the following operations should be done:
+1. Edit the file /usr/share/sen2agri/sen2agri-services/ in order to add/change the following lines:
+    ```
+    AWSDataSource.Sentinel2.local_archive_path=/eodata/Sentinel-2/MSI/L1C
+    AWSDataSource.Sentinel2.fetch_mode=4
+    ```
+1. Restart the sen2agri-services service using:
+    ```
+    sudo systemctl restart sen2agri-services
+    ```
 # Other questions
 
 ## Why does the system download products outside the growing season?
@@ -455,7 +496,10 @@ The system will also try to download products for two months after the end of th
 
 `SLURM` is a utility that manages resource allocation and job scheduling on a computer cluster. When running an automated or custom (created from the Sen2-Agri web site) job, the system uses it to invoke the processors.  While the Sen2-Agri system can run on a single machine, `SLURM` allows the processing to span multiple computers.
 
-The Sen2-Agri installer configures `SLURM` for a single-machine cluster, but a system administrator can modify these settings as she finds appropriate. The settings include `QoS` (Quality of Service) options that can be used to prioritize certain job types.
+The Sen2-Agri installer configures `SLURM` for a single-machine cluster, but a system administrator can modify these settings as she finds appropriate. The settings include `QoS` (Quality of Service) options that can be used to prioritize certain job types. By default the group jobs is set at the installation to 1 but it can be changed to greater value in order to allow parallelization of steps in jobs during processors execution with the following command (for LAI, for example, to increase the number of parallel executed steps to 10):
+```
+    sudo sacctmgr modify qos qoslai set GrpJobs=10
+```
 
 Describing the SLURM configuration is out of the scope of this document, but more information is available on the [SLURM web site](https://slurm.schedmd.com/).
 
@@ -602,6 +646,18 @@ sudo -u postgres psql sen2agri -c \
        and product_name like 'S2B%';"
 ```
 
+## What are the statuses from the `downloader_history` table?
+
+The `status_id` values from the `downloader_history` define the status of processing of an L1C product. The possible statuses are defined in the table `downloader_status` and they are:
+- 1 - "downloading" - the L1C product is currently downloading. 
+- 2 - "downloaded" - the L1C product was succesfully downloaded but not yet processed by MACCS
+- 3 - "failed" - the download of the L1C product failed but it will be retried later 
+- 4 - "aborted" - the download of the L1C product failed for all retries performed (maximum 3 retries). No other retries will be performed on this product.
+- 41 - "download_ignored" - the L1C product contains none of the tiles configured for this site (in case tile filtering is used) and will not be processed by MACCS.
+- 5 - "processed" - the L1C product was succesfully processed by MACCS and a valid L2A product corresponding to this L1C is present on the disk and in the `product` table.
+- 6 - "processing_failed" - the L1C product was successfully downloaded but MACCS failed in processing it (either due to cloud percentage over 90% or due to another error)
+- 7 - "processing" - the L1C product was successfully downloaded and MACCS is currently processing it.
+
 ## Jobs are not running or `SLURM` does not start
 
 You can check the `SLURM` status with:
@@ -630,6 +686,14 @@ MariaDB [(mysql)]> repair table proc;
 MariaDB [(mysql)]> \q
 $ systemctl restart mariadb slurm{dbd,ctld,d}
 ```
+
+## How to use the new version of the L3B processor with version 1.8 ?
+Starting with version 1.8 a new version of the L3B processor is available. This version is based on the INRA algorithm (S2ToolBox Level 2 products: LAI, FAPAR, FCOVER. Weiss M. et al., 2016) and is creating, beside the LAI and NDVI also the FAPAR and fCover indicators.
+The old version is still the by-default on but this new version of the L3B processor can be activated from using the sen2agri-config application and modifying into `1` the key "L3B LAI processor will use INRA algorithm implementation" or alternatively, modify directly the key `processor.l3b.lai.use_inra_version` into the `config` table.
+Additionally, the processor can be configured to generate or not the FAPAR and FCover indicators by setting to 0 or 1 the values `L3B LAI processor will produce FAPAR` or `L3B LAI processor will produce fCover` (the keys `processor.l3b.lai.produce_fapar` respectively `processor.l3b.lai.produce_fcover` from the `config` table).
+If only certain tiles of a site need to be processed by the LAI, then the `processor.l3b.lai.tiles_filter` can be set accordingly.
+This new implementation is creating much faster the products and also consumes less processor.
+Nevertheless, pay attention that this version is working only for Sentinel2 products (L8 is not yet supported but it will be in the version 1.9).
 
 ## I have another issue
 

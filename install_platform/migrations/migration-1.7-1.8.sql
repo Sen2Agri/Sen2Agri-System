@@ -978,6 +978,35 @@ begin
             raise notice '%', _statement;
             execute _statement;
             
+            _statement = 'DROP FUNCTION IF EXISTS sp_delete_season()';
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_delete_season(
+                    _season_id season.id%type
+                )
+                returns void as
+                $$
+                BEGIN
+                    DELETE FROM scheduled_task_status WHERE task_id in 
+                            (SELECT id FROM scheduled_task WHERE season_id = _season_id);
+                            
+                    DELETE FROM scheduled_task
+                    WHERE season_id = _season_id;
+
+                    DELETE FROM season
+                    WHERE id = _season_id;
+
+                    IF NOT FOUND THEN
+                        raise exception 'Invalid season % for site %', _name, _site_id;
+                    END IF;
+                END;
+                $$
+                    LANGUAGE plpgsql volatile;
+                $str$;
+            raise notice '%', _statement;
+            execute _statement;
             
             _statement := $str$
                 CREATE TABLE downloader_count

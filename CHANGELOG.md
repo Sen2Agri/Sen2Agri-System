@@ -14,9 +14,14 @@
  - The dashboard previews don't match their bounds rectangle because of projection mismatch
  - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
  - The website has display issues on Safari
+ - When deleting a site, the folders for the L2A products that were not processed by MACCS are not deleted and should be deleted manually. Normally these folders contain no valid product and contain only log and EEF files.
 
 # Change Log
 
+## [1.8.1]
+### Fixed
+ - LAI Multi-Date processors are now functionning also for products obtained using the new L3B monodate implementing INRA algorithm.
+ 
 ## [1.8.0]
 ### Added
  - The L4A/L4B processors use a platform-independent algorithm for the training/validation split. This is a step towards allowing the processor to work on other platforms and give the same results.
