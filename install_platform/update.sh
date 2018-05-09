@@ -3,7 +3,8 @@
 HAS_S2AGRI_SERVICES=false
 function install_sen2agri_services() 
 {
-    if [ ! -d "/usr/share/sen2agri/sen2agri-services" ]; then
+    # Check if directory does not exists or is empty
+    if [ ! -d "/usr/share/sen2agri/sen2agri-services" ] || [ ! "$(ls -A /usr/share/sen2agri/sen2agri-services)" ] ; then
         if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
             zipArchive=$(ls -at ../sen2agri-services/sen2agri-services*.zip| head -n 1)
             filename="${zipArchive%.*}"
@@ -27,6 +28,19 @@ function install_sen2agri_services()
         fi
     else
         echo "sen2agri-services already exist in /usr/share/sen2agri/sen2agri-services"
+        if [ -d "/usr/share/sen2agri/sen2agri-services/bin" ] && [ -d "/usr/share/sen2agri/sen2agri-services/config" ] ; then 
+            if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
+                zipArchive=$(ls -at ../sen2agri-services/sen2agri-services*.zip| head -n 1)
+                echo "Updating /usr/share/sen2agri/sen2agri-services/lib folder ..."
+                mkdir -p /usr/share/sen2agri/sen2agri-services/lib && unzip -o ${zipArchive} 'lib/*' -d /usr/share/sen2agri/sen2agri-services
+                echo "Updating /usr/share/sen2agri/sen2agri-services/modules folder ..."
+                mkdir -p /usr/share/sen2agri/sen2agri-services/modules && unzip -o ${zipArchive} 'modules/*' -d /usr/share/sen2agri/sen2agri-services
+            else
+                echo "No archive sen2agri-services-YYY.zip was found in the installation package. sen2agri-services will not be updated!!!"
+            fi
+        else 
+            echo "ERROR: no bin or config folder were found in the folder /usr/share/sen2agri/sen2agri-services/. No update will be made!!!"
+        fi
         HAS_S2AGRI_SERVICES=true
     fi
 }
@@ -59,7 +73,7 @@ function updateDownloadCredentials()
     fi
 }
 
-systemctl stop sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent
+systemctl stop sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent sen2agri-services
 
 saveOldDownloadCredentials
 
