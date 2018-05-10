@@ -14,6 +14,7 @@
 #include "processor/phenondvihandler.hpp"
 #include "json_conversions.hpp"
 #include "schedulingcontext.h"
+#include "logger.hpp"
 
 std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceManagerDBProvider &persistenceManager) {
     ProcessorDescriptionList processorsDescriptions = persistenceManager.GetProcessorDescriptions();
@@ -132,6 +133,9 @@ JobDefinition Orchestrator::GetJobDefinition(const ProcessingRequest &request)
         }
     }
     catch (...) {
+        std::exception_ptr p = std::current_exception();
+        Logger::info(QStringLiteral("Exception during creation of job definition: %1")
+                     .arg((p ? p.__cxa_exception_type()->name() : "null")));
     }
 
     return jobDef;
