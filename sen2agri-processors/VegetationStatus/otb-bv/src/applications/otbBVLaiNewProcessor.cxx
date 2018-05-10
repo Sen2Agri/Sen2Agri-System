@@ -199,17 +199,17 @@ private:
         }
 
         if (HasValue("outlai")) {
-            ProduceOutput(pHelper, LAI);
+            ProduceOutput(pHelper, LAI, nOutRes);
         }
         if (HasValue("outfapar")) {
-            ProduceOutput(pHelper, FAPAR);
+            ProduceOutput(pHelper, FAPAR, nOutRes);
         }
         if (HasValue("outfcover")) {
-            ProduceOutput(pHelper, FCOVER);
+            ProduceOutput(pHelper, FCOVER, nOutRes);
         }
     }
 
-    void ProduceOutput(const std::unique_ptr<MetadataHelper> &pHelper, IndexType indexType) {
+    void ProduceOutput(const std::unique_ptr<MetadataHelper> &pHelper, IndexType indexType, int nOutRes) {
         std::string modelTextFile;
         std::string modelParamName;
         std::string outparamName;
@@ -259,7 +259,7 @@ private:
                                                          filter, modelTextFile);
 
         // Mask the output according to the flags
-        OutImageType::Pointer maskedImg = MaskModelOutput(modelOutput, maskingFunctor, pHelper);
+        OutImageType::Pointer maskedImg = MaskModelOutput(modelOutput, maskingFunctor, pHelper, nOutRes);
 
         const std::string &outImgFileName = GetParameterAsString(outparamName);
         // write the output
@@ -278,6 +278,16 @@ private:
                                                                          Interpolator_NNeighbor /* Interpolator_BCO */);
         return resampler->GetOutput();
     }
+
+    MetadataHelper::SingleBandShortImageType::Pointer getResampledImage2(int nCurRes, int nDesiredRes,
+                                                 MetadataHelper::SingleBandShortImageType::Pointer inImg) {
+        if(nCurRes == nDesiredRes)
+            return inImg;
+        float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
+        ResampleFilterType::Pointer resampler = m_Resampler2.getResampler(inImg, fMultiplicationFactor, Interpolator_NNeighbor);
+        return resampler->GetOutput();
+    }
+
 
     /**
      * Extracts the (sub)set of resolutions for the bands configured in the LAI configuration file
@@ -318,13 +328,16 @@ private:
             allList->PushBack(getResampledImage(curBandRes, nOutRes, imgInputSplit->GetOutput()->GetNthElement(relBandIdx)));
         }
 
-        AnglesImageType::Pointer anglesImg = createAnglesBands(pHelper);
+        AnglesImageType::Pointer anglesImg = pHelper->HasDetailedAngles() ?
+                    createAnglesBands(pHelper) : createMeanAnglesBands(pHelper);
+        anglesImg->UpdateOutputInformation();
         m_anglesSplit = VectorImageToImageListType::New();
         m_anglesSplit->SetInput(anglesImg);
         m_anglesSplit->UpdateOutputInformation();
         m_anglesSplit->GetOutput()->UpdateOutputInformation();
         for (int i = 0; i < 3; i++) {
-            allList->PushBack(m_anglesSplit->GetOutput()->GetNthElement(i));
+            allList->PushBack(getResampledImage(anglesImg->GetSpacing()[0],
+                                                nOutRes, m_anglesSplit->GetOutput()->GetNthElement(i)));
         }
 
         m_ftsConcat = ImageListToVectorImageFilterType::New();
@@ -507,11 +520,13 @@ private:
 
 
     OutImageType::Pointer MaskModelOutput(OutImageType::Pointer img, MaskedOutputFilterType::Pointer maskingFunctor,
-                                          const std::unique_ptr<MetadataHelper> &pHelper) {
+                                          const std::unique_ptr<MetadataHelper> &pHelper, int nOutRes) {
         MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
 
+        imgMsk->UpdateOutputInformation();
+
         maskingFunctor->SetInput1(img);
-        maskingFunctor->SetInput2(imgMsk);
+        maskingFunctor->SetInput2(getResampledImage2(imgMsk->GetSpacing()[0], nOutRes, imgMsk));
         return maskingFunctor->GetOutput();
     }
 
@@ -540,10 +555,6 @@ private:
         }
         std::cout << std::endl;
         std::cout << "=================================" << std::endl;
-    }
-
-    double getMeanSolarAngles(const MetadataHelperAngles &solarAngles) {
-        return 0.0;
     }
 
     std::vector<std::vector<double>> getMeanViewingAngles(const std::vector<MetadataHelperViewingAnglesGrid> &viewingAngles,
@@ -688,6 +699,7 @@ private:
 
     ReaderType::Pointer                       m_defImgReader;
     ImageResampler<InternalImageType, InternalImageType> m_Resampler;
+    ImageResampler<MetadataHelper::SingleBandShortImageType, MetadataHelper::SingleBandShortImageType> m_Resampler2;
 
     ImageType::Pointer m_msksImg;
 

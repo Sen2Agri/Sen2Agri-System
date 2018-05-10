@@ -3,6 +3,7 @@
 
 #include "simpletcpexecinfosprotsrv.h"
 #include "simpletcpexecinfoconnection.h"
+#include "logger.hpp"
 
 SimpleTcpExecInfosProtSrv::SimpleTcpExecInfosProtSrv() { m_pServer = NULL; }
 
@@ -13,12 +14,16 @@ int SimpleTcpExecInfosProtSrv::StartServer(QString &strSrvAddr, int nPort)
     Q_UNUSED(strSrvAddr);
 
     m_pServer = new QTcpServer(this);
-    m_pServer->listen(QHostAddress::Any, nPort);
+    if (!m_pServer->listen(QHostAddress::Any, nPort)) {
+        Logger::error(QString("Unable to listen on port %1.")
+                          .arg(nPort));
+        return 0;
+    }
 
     connect(m_pServer, &QTcpServer::newConnection, this,
             &SimpleTcpExecInfosProtSrv::handleConnection);
 
-    return -1;
+    return 1;
 }
 
 void SimpleTcpExecInfosProtSrv::StopServer()

@@ -65,13 +65,14 @@ void SchedulerApp::RunOnce()
             prequest.ttNextScheduledRunTime = (int)task.taskStatus.nextScheduledRunTime.toTime_t();
             prequest.parametersJson = GetTaskParametersJson(task);
             jd = m_orchestrator->GetJobDefinition(prequest);
-            // if the task can be launched according to Orchestrator
             if ( jd.isValid )
             {
                 // Optional aproach : only one processor run at a time : KO => done in SLURM
                 m_orchestrator->SubmitJob(jd);
                 task.taskStatus.lastSuccesfullTimestamp = QDateTime::currentDateTime();
                 task.taskStatus.lastSuccesfullScheduledRun = task.taskStatus.nextScheduledRunTime;
+                Logger::info(QStringLiteral("Submitted new job for processor:  %1, siteId: %2  and definition: %3")
+                             .arg(jd.processorId).arg(jd.siteId).arg(jd.jobDefinitionJson.toStdString().c_str()));
                 qDebug() << "Submitted new job for processor: " << jd.processorId <<
                             ", siteId: " << jd.siteId <<
                             " and definition: " << jd.jobDefinitionJson.toStdString().c_str();
@@ -80,6 +81,11 @@ void SchedulerApp::RunOnce()
             }
             else
             {
+                Logger::info(QStringLiteral("The job for processor: %1, siteId: %2 cannot be started now as is invalid")
+                             .arg(jd.processorId).arg(jd.siteId));
+                qDebug() << "The job for processor: " << jd.processorId <<
+                            ", siteId: " << jd.siteId <<
+                            " cannot be started now as is invalid";
                 task.taskStatus.lastRetryTime = QDateTime::currentDateTime();
             }            
         }

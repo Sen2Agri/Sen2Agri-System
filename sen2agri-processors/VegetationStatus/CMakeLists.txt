@@ -25,9 +25,16 @@ install(FILES ConfigFiles/rsr_cfg.txt
               ConfigFiles/Lai_Bands_L8.cfg
               ConfigFiles/Lai_Bands_Cfgs_Belcam.cfg
               ConfigFiles/Lai_Bands_S2_Belcam.cfg
+              ConfigFiles/Lai_Bands_L8_Belcam.cfg
               ConfigFiles/Algo_S2_V2.0_SL2T_rededge_LAI.txt
               ConfigFiles/Algo_S2_V2.0_SL2T_rededge_FAPAR.txt
               ConfigFiles/Algo_S2_V2.0_SL2T_rededge_FCOVER.txt
+              ConfigFiles/Algo_S2_V2.0_SL2T_allbands_LAI.txt
+              ConfigFiles/Algo_S2_V2.0_SL2T_allbands_FAPAR.txt
+              ConfigFiles/Algo_S2_V2.0_SL2T_allbands_FCOVER.txt
+              ConfigFiles/Algo_LANDSAT8OLI_LAI.txt
+              ConfigFiles/Algo_LANDSAT8OLI_FAPAR.txt
+              ConfigFiles/Algo_LANDSAT8OLI_FCOVER.txt
               otb-bv/data/landsat8_7b.rsr
               otb-bv/data/Sentinel2_10m.rsr
               otb-bv/data/Sentinel2_10m_real.rsr

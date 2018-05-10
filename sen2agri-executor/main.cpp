@@ -36,7 +36,11 @@ int main(int argc, char *argv[])
         str = QString("SRV_PORT_NO");
         ConfigurationMgr::GetInstance()->GetValue(str, strPortVal);
         pExecInfosSrv->SetProcMsgListener(RessourceManagerItf::GetInstance());
-        pExecInfosSrv->StartCommunication(strIpVal, strPortVal.toInt());
+        if (!pExecInfosSrv->StartCommunication(strIpVal, strPortVal.toInt())) {
+            QString str = QString("Unable start communication for IP %1 and port %2. The application cannot start!")
+                    .arg(strIpVal).arg(strPortVal);
+            throw std::runtime_error(str.toStdString());
+        }
 
         // start the ressource manager
         RessourceManagerItf::GetInstance()->Start();
