@@ -1,25 +1,33 @@
 <?php
 	require_once("ConfigParams.php");
 	
+	$curl = curl_init();
+	$url =  ConfigParams::$REST_SERVICES_URL . "/downloader/";
 	if (isset($_REQUEST['siteID_selected'])) {
-		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-		$result = "";
-		if ($_REQUEST['siteID_selected'] == 0) {
-			$result = pg_query_params ( $db, "SELECT * FROM sp_get_dashboard_current_downloads(null)", array () ) or die ( "Could not execute." );
-		} else {
-			$result = pg_query_params ( $db, "SELECT * FROM sp_get_dashboard_current_downloads($1)", array ($_REQUEST['siteID_selected'])) or die ( "Could not execute." );
-		}
-		
-		$tr_current ="";
-		while ( $row = pg_fetch_row ( $result ) ) {
+		$url.= $_REQUEST['siteID_selected'] ;
+	}
+	
+	curl_setopt($curl, CURLOPT_URL,  $url );
+	curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+	
+	$result = curl_exec($curl);
+	$result = json_decode($result);
+	$tr_current ="";
+	if(!empty($result)){
+		foreach ($result as $res){
 			$tr = "<tr>".
-					"<td>" . $row[0] . "</td>".
-					"<td>" . $row[1] . "</td>".
-					"<td>" . $row[2] . "</td>".
-					"<td>" . $row[3] . "</td>".
+				"<td>" . $res->siteName . "</td>".
+				"<td>" . $res->name. "</td>".
+				"<td>" . $res->satelliteName. "</td>".
+				"<td>" . $res->progress*100 . "%</td>".
 				"</tr>";
 			$tr_current = $tr_current . $tr;
 		}
-		echo $tr_current;
+	}else{
+		$tr_current = "<tr><td colspan='4'>No downloads in progress.</td></tr>";
 	}
+	
+	curl_close($curl);
+	echo $tr_current;
+	
 ?>

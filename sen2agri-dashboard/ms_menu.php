@@ -13,6 +13,7 @@ if (isset($_SESSION['siteId'])) {
 			else if (str.indexOf("monitoring.php")  > 0) cld = 6;
 			<?php if( $_SESSION['roleID'] =='1'){?>
 				else if (str.indexOf("users.php")   > 0) cld = 7;
+				else if (str.indexOf("datasource.php")   > 0) cld = 8;
 			<?php }?>
 			else cld = 0;
 			$(".activemenu li:nth-child("+cld+")").addClass("selected");
@@ -29,6 +30,7 @@ if (isset($_SESSION['siteId'])) {
 				<li><a href="monitoring.php">Monitoring</a></li>
 				<?php if( $_SESSION['roleID'] =='1'){?>
 				<li><a href="users.php">Users</a></li>
+				<li><a href="datasource.php">Data Source</a></li>
 				<?php }?>
 				<li class="logout"><a href="logout.php">Logout</a></li>
             </ul>

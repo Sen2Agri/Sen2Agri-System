@@ -3,6 +3,7 @@ CREATE OR REPLACE FUNCTION sp_get_dashboard_processor_scheduled_task(IN _process
   RETURNS TABLE(
     id smallint,
     name character varying,
+    site_id smallint,
     site_name character varying,
     season_name text,
     repeat_type smallint,
@@ -15,6 +16,7 @@ BEGIN
    RETURN QUERY
 	SELECT st.id,
               st.name,
+              site.id,
               site.name,
               season.name,
               st.repeat_type,

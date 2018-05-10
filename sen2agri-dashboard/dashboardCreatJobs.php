@@ -134,15 +134,29 @@ function update_scheduled_jobs_layout($processorId) {
 	$sql = "SELECT * from sp_get_dashboard_processor_scheduled_task('$processorId')";
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 
+	$scheduled_task = array();
 	while ( $row = pg_fetch_row ( $result ) ) {
-		$jobId           = $row[0];
-		$jobName         = $row[1];
-		$siteName        = $row[2];
-		$seasonName      = $row[3];
-		$repeatType      = $row[4];
-		$firstRunTime    = $row[5];
-		$repeatAfterDays = $row[6];
-		$repeatOnEvery   = $row[7];
+	    if($_SESSION['isAdmin'] == false){
+	        if(sizeof($_SESSION['siteId'])>0 && in_array($row[2],$_SESSION['siteId'])){
+	            $scheduled_task[] = $row;
+	        }
+	    }else{
+	        $scheduled_task[] = $row;
+	    }
+	}
+	
+	if(sizeof($scheduled_task)>0){
+	    foreach ($scheduled_task as $task){
+	        $jobId           = $task[0];
+	        $jobName         = $task[1];
+	        $siteName        = $task[3];
+	        $seasonName      = $task[4];
+	        $repeatType      = $task[5];
+	        $firstRunTime    = $task[6];
+	        $repeatAfterDays = $task[7];
+	        $repeatOnEvery   = $task[8];
+	    
+	    
 		?>
 		<form class="schedule-row" role="form" name="jobform_edit" method="post" action="<?= $action ?>">
 			<input type="hidden" value="<?= $jobId ?>" name="scheduledID">
@@ -189,6 +203,7 @@ function update_scheduled_jobs_layout($processorId) {
 			</span>
 		</form>
 		<?php
+		}
 	}
 }
 ?>

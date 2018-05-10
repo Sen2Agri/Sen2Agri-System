@@ -16,9 +16,9 @@ $version = getDatabaseVersion();
                 <div class="clearing" style="height:20px;">&nbsp;</div>
 				<div class='message_footer'>
 <?php
-if (isset($_SESSION['siteId'])) {
+if (isset($_SESSION['userName'])) {
 ?>
-					Logged in as <?php echo(ConfigParams::$USER_NAME); ?> |
+					Logged in as <?php echo $_SESSION['userName']; ?> |
 <?php
 }
 ?>

@@ -1,3 +1,16 @@
+<?php 
+require_once("ConfigParams.php");
+if(isset($_REQUEST['ajax']) && $_REQUEST['ajax'] =='ajaxCall'){
+	
+	$site_id = (isset($_REQUEST['site_id']))?$_REQUEST['site_id'].'::smallint':null;
+	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	$sql = 'select * from sp_get_estimated_number_of_products('. $site_id.')';
+	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
+	$result = pg_fetch_row($result);
+
+	echo $result[0];
+	exit;
+}?>
 <?php include 'master.php'; ?>
 <?php
 function select_option() {
@@ -29,7 +42,7 @@ function select_option() {
 			<div class="row">
 				<div class="col-md-2">
 					<div class="form-group form-group-sm">
-						<select class="form-control" name="site_select" onchange="siteInfo(); siteInfoCurrent(); siteJobs(1);">
+						<select class="form-control" name="site_select" onchange="siteInfo(); siteInfoCurrent(); siteJobs(1); estimatedDownloads()">
 							<?php select_option();?>
 						</select>
 					</div>
@@ -41,19 +54,16 @@ function select_option() {
 			<div class="panel panel-default config for-table">
 				<div class="panel-heading"><h4 class="panel-title"><span>Download statistics</span></h4></div>
 				<div class="panel-body">
-					<table class="table table-striped">
-						<thead>
-							<tr>
-								<th>Downloads in progress</th>
-								<th>Successful downloads</th>
-								<th>Failed downloads</th>
-							</tr>
-						</thead>
-						<tbody >
-							<tr id="refresh_statistics">
-							</tr>
-						</tbody>
-					</table>
+					<div class="progress">
+						<div class="progress-bar progress-bar-info progress-bar-striped active red-tooltip" role="progressbar" data-toggle="tooltip" title="" data-original-title="In progress" data-placement="bottom" onmouseover="$(this).tooltip({content:'In progress',show:true});" style="width:10%">                        
+						</div>
+						<div class="progress-bar progress-bar-success red-tooltip" role="progressbar" data-toggle="tooltip" title=""  data-original-title="Successful downloads" data-placement="bottom" onmouseover="$(this).tooltip();" style="width:10%">
+						</div>
+						<div class="progress-bar progress-bar-danger red-tooltip" role="progressbar" data-toggle="tooltip" title=""  data-original-title="Failed downloads" data-placement="bottom" onmouseover="$(this).tooltip();" style="width:10%">
+						</div>
+
+					</div>
+					<div><label>Estimated number to download: <span id="estimated_downloads"></span> </label></div>
 				</div>
 			</div>
 
@@ -67,7 +77,7 @@ function select_option() {
 								<th>Site</th>
 								<th>Product</th>
 								<th>Product Type</th>
-								<th>Status modified</th>
+								<th>Progress</th>
 							</tr>
 						</thead>
 						<tbody id="refresh_downloading">
@@ -121,6 +131,7 @@ function select_option() {
 <script type="text/javascript">
 	var timer1;
 	var timer2;
+	var timer3;
 
 	function siteInfo() {
 		var id = $('select[name=site_select] option:selected').val();
@@ -129,9 +140,24 @@ function select_option() {
 			url: "getHistoryDownloads.php",
 			data: {'siteID_selected' : id},
 			success: function(result) {
-				$("#refresh_statistics").html(result);
-				 clearTimeout(timer1);
-				 timer1 = setTimeout(siteInfo, 10000);
+				var res = JSON.parse(result);
+
+				if(res.percentage[0] == 0 && res.percentage[1] == 0 &&  res.percentage[2] == 0){
+					$(".progress-bar-success").css("min-width",'33.33%');
+					$(".progress-bar-danger").css("min-width",'33.33%');
+					$(".progress-bar-info").css("min-width",'33.33%');
+				}else{
+					$(".progress-bar-success").css("min-width",res.percentage[0]+'%');
+					$(".progress-bar-danger").css("min-width",res.percentage[1]+'%');
+					$(".progress-bar-info").css("min-width",res.percentage[2]+'%');
+					}
+
+				$(".progress-bar-success").html(res.percentage[0]+'% ('+res.numbers[0] +')');
+				$(".progress-bar-danger").html(res.percentage[1]+'%  ('+res.numbers[1] +')');
+				$(".progress-bar-info").html(res.percentage[2]+'% ('+res.numbers[2] +')');
+			
+				clearTimeout(timer1);
+				timer1 = setTimeout(siteInfo, 20000);
 			}
 		});
 	}
@@ -146,7 +172,7 @@ function select_option() {
 				$("#refresh_downloading").html(result);
 				// Schedule the next request
 				clearTimeout(timer2);
-				timer2 = setTimeout(siteInfoCurrent, 10000);
+				timer2 = setTimeout(siteInfoCurrent, 20000);
 			}
 		});
 	}
@@ -168,7 +194,27 @@ function select_option() {
 		});
 	}
 
+	function estimatedDownloads(){
+		var site_id = $('select[name=site_select] option:selected').val();
+		$.ajax({
+			type:'get',
+			data:{ajax:'ajaxCall',site_id:site_id},
+			success:function(response){
+				var text = response;
+				if(response < 0){
+					text = 'unknown';
+				}
+				$("#estimated_downloads").html(text);
+
+				clearTimeout(timer3);
+				timer3 = setTimeout(estimatedDownloads, 20000);
+				}
+
+			});
+		}
+
 	$( document ).ready(function() {
+		estimatedDownloads();
 		siteInfo();
 		siteInfoCurrent();
 		siteJobs(1);

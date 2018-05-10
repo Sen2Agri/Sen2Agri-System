@@ -738,7 +738,7 @@ div.filter-product-site .row{
 	padding: 2px;
 }
 
-div.filter-product-site input[type="text"], select{
+div.filter-product-site input[type="text"], div.filter-product-site select{
 	width:200px;
 }
 
@@ -983,3 +983,43 @@ div.for-table table.table tr td a:hover{color:#5CB85C}
 	color:red;
 }
 /* -------------- end custom jobs------------------ */
+
+/* -------------- datasource ----------------------*/
+div.panel.datasource.panel-success>div.panel-heading {
+    color: #333;
+    background-color: #bcd68c;
+    border-color: #ddd;
+    background-image: -o-linear-gradient(top,#dbecb9 0,#bcd68c 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#bcd68c', endColorstr='#dbecb9', GradientType=0);
+    background-repeat: repeat-x;
+    background-image: linear-gradient(to bottom,#bcd68c 0,#dbecb9 100%);
+}
+
+div.datasource h4.panel-title a, .datasource h4.panel-title span {
+    display: inline-block;
+    width: 100%;
+    text-decoration: none;
+}
+
+/*
+.form-control-inline {
+    min-width: 0;
+    width: auto;
+    display: inline;
+}*/
+.datasource .bootstrap-switch {
+	display:block
+}
+
+/*.datasource .col-md-4 .form-control {
+	width: 93.33%;
+}*/
+
+.datasource .col-md-6 {
+	width: 46.999%;
+}
+.datasource .col-md-6 .form-control {
+	width: 95.5%;
+}
+
+/*-------------- end datasource -------------------*/
