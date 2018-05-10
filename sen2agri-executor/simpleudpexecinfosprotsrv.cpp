@@ -1,5 +1,6 @@
 #include <QHostAddress>
 #include "simpleudpexecinfosprotsrv.h"
+#include "logger.hpp"
 
 SimpleUdpExecInfosProtSrv::SimpleUdpExecInfosProtSrv()
 {
@@ -14,12 +15,16 @@ SimpleUdpExecInfosProtSrv::~SimpleUdpExecInfosProtSrv()
 int SimpleUdpExecInfosProtSrv::StartServer(QString &strSrvAddr, int nPort)
 {
     m_pUdpSocket = new QUdpSocket(this);
-    m_pUdpSocket->bind(QHostAddress(strSrvAddr), nPort);
+    if (!m_pUdpSocket->bind(QHostAddress(strSrvAddr), nPort)) {
+        Logger::error(QString("Unable to listen on port %1.")
+                          .arg(nPort));
+        return 0;
+    }
 
     connect(m_pUdpSocket, SIGNAL(readyRead()),
         this, SLOT(readPendingDatagrams()));
 
-    return -1;
+    return 1;
 }
 
 void SimpleUdpExecInfosProtSrv::StopServer()
