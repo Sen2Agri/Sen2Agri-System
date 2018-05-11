@@ -12,13 +12,13 @@ $BODY$
 		DECLARE q text;
 		BEGIN
 		    q := $sql$
-			WITH 
+			WITH
 			    product_type_names(id, name, description, row) AS (
 				select id, name, description, row_number() over (order by description)
 				from product_type
 			    ),
 		$sql$;
-		
+
 		IF $8 IS TRUE THEN
 	            q := q || $sql$
 			site_names(id, name, geog, row) AS (
@@ -26,14 +26,14 @@ $BODY$
 				from site
 			    ),
 			data(id, product, footprint,site_coord) AS (
-			    
+
 			    SELECT
 				P.id,
 				P.name,
 				P.footprint,
 				S.geog
 	            $sql$;
-	        ELSE 
+	        ELSE
 		    q := q || $sql$
 		    site_names(id, name,  row) AS (
 				select id, name, row_number() over (order by name)
@@ -48,7 +48,7 @@ $BODY$
 				S.name,
 				S.id
 			 $sql$;
-		END IF;	
+		END IF;
 
 		 q := q || $sql$
 			    FROM product P
@@ -57,41 +57,40 @@ $BODY$
 				JOIN site_names S ON P.site_id = S.id
 			    WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
 			    AND EXISTS (
-				    SELECT * FROM season WHERE season.site_id =P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date 
+				    SELECT * FROM season WHERE season.site_id =P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date
 		    $sql$;
 		    IF $3 IS NOT NULL THEN
 			q := q || $sql$
-				AND season.id=$3			       
+				AND season.id=$3
 				$sql$;
 		    END IF;
-				
+
 		    q := q || $sql$
 			)
 		    $sql$;
-		    
+
 		    IF $1 IS NOT NULL THEN
 			q := q || $sql$
 				AND P.site_id = ANY($1)
-				
 		    $sql$;
 		    END IF;
-		    
+
 		    IF $2 IS NOT NULL THEN
 			q := q || $sql$
 			 	AND P.product_type_id= ANY($2)
 
 				$sql$;
 		    END IF;
-		    
+
 		IF $5 IS NOT NULL THEN
 		q := q || $sql$
-			AND P.created_timestamp >= to_timestamp(cast($5 as TEXT),'YYYY-MM-DD HH24:MI:SS') 
+			AND P.created_timestamp >= to_timestamp(cast($5 as TEXT),'YYYY-MM-DD HH24:MI:SS')
 			$sql$;
 		END IF;
 
 		IF $6 IS NOT NULL THEN
 		q := q || $sql$
-			AND P.created_timestamp <= to_timestamp(cast($6 as TEXT),'YYYY-MM-DD HH24:MI:SS') + interval '1 day' 
+			AND P.created_timestamp <= to_timestamp(cast($6 as TEXT),'YYYY-MM-DD HH24:MI:SS') + interval '1 day'
 			$sql$;
 		END IF;
 
@@ -100,14 +99,13 @@ $BODY$
 			AND P.tiles <@$7 AND P.tiles!='{}'
 			$sql$;
 		END IF;
-	
-		
+
+
 		q := q || $sql$
 			ORDER BY S.row, PT.row, P.name
 			)
-
 			SELECT array_to_json(array_agg(row_to_json(data)), true) FROM data;
-		    $sql$;	
+		    $sql$;
 
 		--     raise notice '%', q;
 
