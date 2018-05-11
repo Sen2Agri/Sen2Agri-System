@@ -592,6 +592,21 @@ Ready  (Y/n) ?
 
 A lower case `y` will cancel the installation. You should type the upper case letter `Y`.
 
+The `core` package will require some additional dependencies. You can install them with:
+
+```bash
+sudo yum install -y libxslt gd
+```
+
+## Dependency errors during installation or missing files
+
+On some systems you might encounter errors related to `geos` or `libgdal` during the installation.
+
+One possible cause is that another package (like `GRASS GIS` or `liblas`) is installed and requires different versions of the common dependencies. In that case, we recommend using a clean `CentOS 7` install and not using other GIS software on the same machine.
+
+The other possible reason is that the Sen2-Agri packages need to be re-generated. In that case, you should probably contact us.
+
+
 ## Shapefile uploads don't work
 
 You should check the permissions on the `/mnt/upload` directory. The web server user (commonly `apache`) and the Sen2-Agri system user (`sen2agri-service`) need respectively write, and read access.
