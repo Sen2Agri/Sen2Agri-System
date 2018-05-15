@@ -705,7 +705,7 @@ sudo -u postgres psql sen2agri -c \
         on downloader_status.id = status_id;"
 ```
 
-If you want to e.g. reprocess some of the failed product, you can change their status:
+If you want to e.g. reprocess the failed products, you can change their status:
 
 ```bash
 sudo -u postgres psql sen2agri -c \
