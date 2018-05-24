@@ -158,6 +158,11 @@ while ( $row = pg_fetch_row ( $result ) ) {
  			</div>
         </div>
     </div>
+
+    <div id="wait">
+     <span class="glyphicon glyphicon-refresh glyphicon-spin"></span>
+    <span >Loading...</span></div>
+    
     <link rel="stylesheet" href="libraries/jquery-ui/jquery-ui.min.css">
 	<script src="libraries/jquery-ui/jquery-ui.min.js"></script>
 	<script src="libraries/jquery-ui/jquery.ui.autocomplete.scroll.min.js"></script>
@@ -171,8 +176,6 @@ while ( $row = pg_fetch_row ( $result ) ) {
 	
 	
     <script src="libraries/openlayers/build/ol.js"></script>
-    <script src="scripts/helpers.js"></script>
-    <script src="./theme/OpenLayers.js"></script>
 	<script>
 	function initMultiSelect(){
 		 $("#product_type").multiselect({
@@ -193,6 +196,12 @@ while ( $row = pg_fetch_row ( $result ) ) {
 	  	};
 	
 	$( function() {
+		 $(document).ajaxStart(function(){
+		        $("#wait").css("display", "block");
+		    });
+		 $(document).ajaxComplete(function(){
+		        $("#wait").css("display", "none");
+		    });
 		
 		initMultiSelect();
 
@@ -366,6 +375,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 
 	//reset filters
 	$('#btnResetFilter').click(function(){
+		dataFiltered = {};
 		$.ajax({
 			url: "getProductTreeData.php",
 			type: "get",		
@@ -398,6 +408,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		});
 	});
 
+	var dataFiltered = {};
 	$("input[name='apply_filter_submit']").click(function() { 
 		var error = false;
 
@@ -410,10 +421,10 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		if(error == false){
 			$(".errorClass").css("display","none");
 			
-			var data = {};
+			dataFiltered = {};
 			
 			var site_id = $('#choose_site').find(":selected").val();
-			if(site_id!="") data.site_id= site_id ;
+			if(site_id!="") dataFiltered.site_id= site_id ;
 			
 			var satellit_id = new Array();
 			if($("#S2").is(':checked') ){
@@ -422,32 +433,32 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		   if($("#L8").is(':checked')){
 		  		satellit_id.push($("#L8").val());
 	  	   	  }
-  	   		if($("#S2").is(':checked') == true || $("#L8").is(':checked') ==true)data.satellit_id= satellit_id ;
+  	   		if($("#S2").is(':checked') == true || $("#L8").is(':checked') ==true)dataFiltered.satellit_id= satellit_id ;
 	  	  	
 	  	    var product_id = $('#product_type').val();
-	  	    if(product_id!=null) data.product_id= product_id ;
+	  	    if(product_id!=null) dataFiltered.product_id= product_id ;
 
 	  	    if($("#optseason").is(':checked')){
 		  	    var season_id = $('#choose_season').find(":selected").val();
-		  	    if(season_id!="") data.season_id= season_id ;
+		  	    if(season_id!="") dataFiltered.season_id= season_id ;
 	  	    }
 	  	    
 	  	 	if($("#optinterval").is(':checked')){
 		  	    var start_data = $('#startdate').val();
-		  	    if(start_data!="") data.start_data= start_data ;
+		  	    if(start_data!="") dataFiltered.start_data= start_data ;
 	
 		  	    var end_data = $('#enddate').val();
-		  	    if(end_data!="") data.end_data= end_data ;
+		  	    if(end_data!="") dataFiltered.end_data= end_data ;
 	  	 	}
 	  	  	  	    
 	  	    var tiles = $('#tiles').val();   	  	  
-	  	    if(tiles!="")data.tiles = tiles.rtrim(', ').split(', ');
+	  	    if(tiles!="")dataFiltered.tiles = tiles.rtrim(', ').split(', ');
 	  		
 			//recharge tree view
 			$.ajax({
 				url: "getProductTreeData.php",
 				type: "post",
-				data: data,
+				data: dataFiltered,
 				cache: false,
 				crosDomain: true,
 				dataType: "json",
@@ -522,7 +533,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 
 		// Create an image layer
 		var imageLayer;
-		var displayProductImage = function(imageUrl, imageWidth, imageHeight, extent) {
+		var displayProductImage = function(imageUrl,/* imageWidth, imageHeight,*/ extent) {
 			if(imageLayer) map.removeLayer(imageLayer);
 
 			if(!imageUrl) return;
@@ -621,50 +632,105 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		};
 
 		var renderTree = function() {
-			$('#tree').treeview({
-				data: treeData,
-				//multiSelect: true,
-				//showCheckbox: true,
-				collapseIcon: "glyphicon glyphicon-folder-open",
-				expandIcon: "glyphicon glyphicon-folder-close",
-				emptyIcon: "glyphicon glyphicon-file",
-				levels: 1,
-				enableLinks: false,
-				enableTooltips: true,
-				enableDownloadButtons: true
-			});
+			var options = {
+					data: treeData,
+					collapseIcon: "glyphicon glyphicon-folder-open",
+					expandIcon: "glyphicon glyphicon-folder-close",
+					emptyIcon: "glyphicon glyphicon-file",
+					levels: 1,
+					enableLinks: false,
+					enableTooltips: true,
+					enableDownloadButtons: true,
+					onNodeExpanded: function (event, data) {
+						event.preventDefault();
+    	    			if(!data.nodes.length>0){
+    					// populate node
+    					var	dataNodes = {};
+    									
+    					if(dataFiltered != {}){
+        					
+    						dataFiltered.action = 'getNodes';
+    						dataFiltered.product_id = [data.id];
+    						dataFiltered.site_id = $('#tree').treeview('getParent', data.nodeId).id;
+    						
+        					dataNodes = dataFiltered;
+    					}else{
+    						dataNodes.action = 'getNodes';
+        					dataNodes.product_id = [data.id];
+        					dataNodes.site_id = $('#tree').treeview('getParent', data.nodeId).id;
+        					}
+    					$.ajax({
+    						  url: "getProductTreeData.php",
+    						  type: "get",
+    				          dataType : 'json',
+    				          data :dataNodes,
+    				          success:function(res){
+        				                  				        
+        				          data.nodes = res.nodes;
+        				      	  var nodeId = data.nodeId;
+            					  var parentName = $('#tree').treeview('getParent', data.nodeId).text;
+            					  var parentIndex = treeData.findIndex(function(obj){return obj.text == parentName;});
+            					  treeData[parentIndex].nodes.forEach(function(node,index){
+                					  if(node.id == data.id) treeData[parentIndex].nodes[index] = data;
+                					});
+            					  treeData[parentIndex].state={expanded:true};
 
-			$('#tree').on('nodeSelected', function(event, data) {
-				var extent;
+            					  //refresh tree
+            					  options.data = treeData;
+            					  $('#tree').treeview(options);               				   
+              				  	
+              					  setTimeout(function(){
+                  					  $('#tree').treeview('revealNode', [  data.nodeId, { silent: true } ]);
+              					  });
+              					
+        				          }
+        					});
+    					
+    				
+    						}
 
-				var selectedFeatures = vector.getSource();//selectMethod.getFeatures();
-				selectedFeatures.clear();
+					},
+				onNodeCollapsed: function (event, data) {
+					event.preventDefault();
+					if(data.parentId == undefined){
+						var index = treeData.findIndex(function(obj){return obj.text == data.text;});
+						treeData[index].state={expanded:false};
+					}
+				},
+				onNodeSelected: function(event, data) {
+					var extent;
 
-				if(data['productCoord']) {
-					extent = ol.extent.applyTransform(data['productCoord'], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
-					//console.log(data.productCoord);
-					var feature = new ol.Feature({
-						geometry: ol.geom.Polygon.fromExtent(extent)
-					});
-					//selectedFeatures.push(feature);
-					selectedFeatures.addFeature(feature);
+					var selectedFeatures = vector.getSource();//selectMethod.getFeatures();
+					selectedFeatures.clear();
 
-				} else {
-					extent = ol.extent.applyTransform([-90,-50,90,50], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
-				}
+					if(data['productCoord']) {
+						extent = ol.extent.applyTransform(data['productCoord'], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
+						
+						var feature = new ol.Feature({
+							geometry: ol.geom.Polygon.fromExtent(extent)
+						});
+						//selectedFeatures.push(feature);
+						selectedFeatures.addFeature(feature);
 
-				displayProductImage(data['productImageUrl'], data['productImageWidth'], data['productImageHeight'], extent);
+					} else {
+						extent = ol.extent.applyTransform([-90,-50,90,50], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
+					}
 
-				panToLocation(extent);
+					displayProductImage('getProductImage.php?id='+data['productId'],/* data['productImageWidth'], data['productImageHeight'],*/ extent);
 
-				//Create polygone for the site
-				var format = new ol.format.WKT();
-				var feature2 = format.readFeature(data.siteCoord);
-				feature2.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+					panToLocation(extent);
 
-				selectedFeatures.addFeature(feature2);
-			});
+					//Create polygone for the site
+					var format = new ol.format.WKT();
+					var feature2 = format.readFeature(data.siteCoord);
+					feature2.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 
+					selectedFeatures.addFeature(feature2);
+					}
+				};
+			
+			$('#tree').treeview(options);
+			
 			$('#tree').on('click', function(event, data) {
 				var max = 350;
 				$(".floatingleaf").each(function(){

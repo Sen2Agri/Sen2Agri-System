@@ -1,32 +1,56 @@
-﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_products(_site_id integer[] DEFAULT NULL::integer[], _product_type_id integer[] DEFAULT NULL::integer[], _season_id smallint DEFAULT NULL::smallint, _satellit_id integer[] DEFAULT NULL::integer[], _since_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone, _until_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone, _tiles character varying[] DEFAULT NULL::character varying[])
+﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
+    _site_id integer[] DEFAULT NULL::integer[],
+    _product_type_id integer[] DEFAULT NULL::integer[],
+    _season_id smallint DEFAULT NULL::smallint,
+    _satellit_id integer[] DEFAULT NULL::integer[],
+    _since_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone,
+    _until_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone,
+    _tiles character varying[] DEFAULT NULL::character varying[],
+    _get_nodes boolean DEFAULT false)
   RETURNS SETOF json AS
 $BODY$
 		DECLARE q text;
 		BEGIN
 		    q := $sql$
-			WITH site_names(id, name, geog, row) AS (
-				select id, name, st_astext(geog), row_number() over (order by name)
-				from site
-			    ),
+			WITH 
 			    product_type_names(id, name, description, row) AS (
 				select id, name, description, row_number() over (order by description)
 				from product_type
 			    ),
-			    data(id, satellite_id, product, product_type_id, product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp, site_coord) AS (
+		$sql$;
+		
+		IF $8 IS TRUE THEN
+	            q := q || $sql$
+			site_names(id, name, geog, row) AS (
+				select id, name, st_astext(geog), row_number() over (order by name)
+				from site
+			    ),
+			data(id, product, footprint,site_coord) AS (
+			    
+			    SELECT
+				P.id,
+				P.name,
+				P.footprint,
+				S.geog
+	            $sql$;
+	        ELSE 
+		    q := q || $sql$
+		    site_names(id, name,  row) AS (
+				select id, name, row_number() over (order by name)
+				from site
+			    ),
+		      data(id, satellite_id, product_type_id, product_type_description,site, site_id) AS (
 			    SELECT
 				P.id,
 				P.satellite_id,
-				P.name,
 				PT.id,
-				PT.name,
 				PT.description,
-				PR.name,
 				S.name,
-				P.full_path,
-				P.quicklook_image,
-				P.footprint,
-				P.created_timestamp,
-				S.geog
+				S.id
+			 $sql$;
+		END IF;	
+
+		 q := q || $sql$
 			    FROM product P
 				JOIN product_type_names PT ON P.product_type_id = PT.id
 				JOIN processor PR ON P.processor_id = PR.id
@@ -47,7 +71,7 @@ $BODY$
 		    
 		    IF $1 IS NOT NULL THEN
 			q := q || $sql$
-				AND P.site_id = ANY($1)		    
+				AND P.site_id = ANY($1)
 				
 		    $sql$;
 		    END IF;
@@ -89,7 +113,7 @@ $BODY$
 
 		    RETURN QUERY
 		    EXECUTE q
-		    USING _site_id, _product_type_id, _season_id, _satellit_id, _since_timestamp, _until_timestamp, _tiles;
+		    USING _site_id, _product_type_id, _season_id, _satellit_id, _since_timestamp, _until_timestamp, _tiles, _get_nodes;
 		END
 		$BODY$
   LANGUAGE plpgsql STABLE
