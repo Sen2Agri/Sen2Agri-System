@@ -32,9 +32,13 @@ if (isset($_SESSION['userName'])) {
 			<div class="debug"></div>
 		</div>
     </div>
+    <?php
+if (isset($_SESSION['userName'])) {
+?>
 	<script type="text/javascript">
 		var jsonSiteId = <?php echo  $_SESSION['isAdmin'] ? "0" : "".json_encode( $_SESSION['siteId']) ?>;
 		var jsonJobsPage = 1;
 	</script>
+	<?php }?>
 </body>
 </html>

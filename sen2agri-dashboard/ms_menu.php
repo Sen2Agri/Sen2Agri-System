@@ -30,7 +30,7 @@ if (isset($_SESSION['siteId'])) {
 				<li><a href="monitoring.php">Monitoring</a></li>
 				<?php if( $_SESSION['roleID'] =='1'){?>
 				<li><a href="users.php">Users</a></li>
-				<li><a href="datasource.php">Data Source</a></li>
+				<li><a href="datasource.php">Data Sources</a></li>
 				<?php }?>
 				<li class="logout"><a href="logout.php">Logout</a></li>
             </ul>

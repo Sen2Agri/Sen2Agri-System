@@ -116,9 +116,6 @@ include 'ms_menu.php';
 <script src="libraries/jquery-validate/jquery.validate.min.js"></script>
 <script src="libraries/jquery-validate/additional-methods.min.js"></script>
 
-<link href="libraries/multi-select/css/jquery.multiselect.css" rel="stylesheet" type="text/css">
-<script src="libraries/multi-select/js/jquery.multiselect.js"></script>
-
 <link href="libraries/select2/select2.min.css" rel="stylesheet" type="text/css">
 <script src="libraries/select2/select2.min.js"></script>
 
@@ -251,11 +248,6 @@ $(document).ready(function() {
             $(this).css("maxHeight", 200);        
         },
         open: function(event, ui) {
-        	  // Revalidate form
-          /*  setTimeout(function() {
-             var validator = $( "#user_add_edit" ).validate();
-             validator.form();
-            }, 200);*/
         },
         close:function(event, ui) {
         	$("#user_add_edit")[0].reset();

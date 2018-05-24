@@ -1022,4 +1022,65 @@ div.datasource h4.panel-title a, .datasource h4.panel-title span {
 	width: 95.5%;
 }
 
+.datasource .form-control-feedback{
+  margin-right: 15px;
+}
+.datasource .has-feedback .form-control {
+  padding-right: 10px; 
+}
+
+input[name='pwd'] + .glyphicon {
+    cursor: pointer;
+    pointer-events: all;
+}
+
 /*-------------- end datasource -------------------*/
+
+/*-------------- monitoring progress bar ---*/
+td.td_progress>div.progress{
+	background-image: linear-gradient(to bottom,#989595 0,#c0bfbf 100%);
+}
+
+td.td_progress>div.progress > div.progress-bar-zero {
+  min-width: 100%;
+  background: transparent;
+  box-shadow: none;
+}
+/*------------- main ------------------*/
+.glyphicon-spin {
+    -webkit-animation: spin 1200ms infinite linear;
+    animation: spin 1200ms infinite linear;
+    color: #337AB7;
+}
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+@keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}
+div#wait {
+	width:89px;
+	height:20px;
+	border:1px solid #CCC; 
+	background-image: linear-gradient(to bottom,#fff 0,#e0e0e0 100%);
+	position:absolute;
+	top:50%;
+	left:50%;
+	padding:10px;
+	opacity: 0.89;
+}
+/*------------- end css main ------------------*/

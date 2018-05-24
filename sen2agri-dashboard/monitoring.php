@@ -2,7 +2,7 @@
 require_once("ConfigParams.php");
 if(isset($_REQUEST['ajax']) && $_REQUEST['ajax'] =='ajaxCall'){
 	
-	$site_id = (isset($_REQUEST['site_id']))?$_REQUEST['site_id'].'::smallint':null;
+    $site_id = (isset($_REQUEST['site_id']) && $_REQUEST['site_id']!='0')?$_REQUEST['site_id'].'::smallint':null;
 	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 	$sql = 'select * from sp_get_estimated_number_of_products('. $site_id.')';
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
@@ -51,19 +51,21 @@ function select_option() {
 			<!-- End Select Site -->
 
 			<!-------------- Download statistics ---------------->
-			<div class="panel panel-default config for-table">
+			<div class="panel panel-default config for-table statistics">
 				<div class="panel-heading"><h4 class="panel-title"><span>Download statistics</span></h4></div>
 				<div class="panel-body">
 					<div class="progress">
-						<div class="progress-bar progress-bar-info progress-bar-striped active red-tooltip" role="progressbar" data-toggle="tooltip" title="" data-original-title="In progress" data-placement="bottom" onmouseover="$(this).tooltip({content:'In progress',show:true});" style="width:10%">                        
+						<div class="progress-bar progress-bar-success " role="progressbar" data-toggle="tooltip" title="" data-placement="bottom" onmouseover="$(this).tooltip({content:'In progress',show:true});" >                        
+						</div>						
+						<div class="progress-bar progress-bar-warning " role="progressbar" data-toggle="tooltip" title=""  data-placement="bottom" onmouseover="$(this).tooltip();" >
 						</div>
-						<div class="progress-bar progress-bar-success red-tooltip" role="progressbar" data-toggle="tooltip" title=""  data-original-title="Successful downloads" data-placement="bottom" onmouseover="$(this).tooltip();" style="width:10%">
+						<div class="progress-bar progress-bar-info " role="progressbar" data-toggle="tooltip" title=""  data-placement="bottom" onmouseover="$(this).tooltip();">
 						</div>
-						<div class="progress-bar progress-bar-danger red-tooltip" role="progressbar" data-toggle="tooltip" title=""  data-original-title="Failed downloads" data-placement="bottom" onmouseover="$(this).tooltip();" style="width:10%">
+						<div class="progress-bar progress-bar-danger " role="progressbar" data-toggle="tooltip" title=""  data-original-title="Failed downloads" data-placement="bottom" onmouseover="$(this).tooltip();" >
 						</div>
 
 					</div>
-					<div><label>Estimated number to download: <span id="estimated_downloads"></span> </label></div>
+					<div><label>Estimated number of products to download: <span id="estimated_downloads"></span> </label></div>
 				</div>
 			</div>
 
@@ -142,19 +144,22 @@ function select_option() {
 			success: function(result) {
 				var res = JSON.parse(result);
 
-				if(res.percentage[0] == 0 && res.percentage[1] == 0 &&  res.percentage[2] == 0){
-					$(".progress-bar-success").css("min-width",'33.33%');
-					$(".progress-bar-danger").css("min-width",'33.33%');
-					$(".progress-bar-info").css("min-width",'33.33%');
+				if(res.percentage[0] == 0 && res.percentage[1] == 0 &&  res.percentage[2] == 0  &&  res.percentage[3] == 0){
+					$(".statistics .progress-bar-success").css("width",'25%').attr("data-original-title",res.percentage[0]+'% ('+res.numbers[0] +')'+" In progress");				
+					$(".statistics .progress-bar-warning").css("width",'25%').attr("data-original-title",res.percentage[2]+'% ('+res.numbers[2] +')'+" Failed downloads");
+					$(".statistics .progress-bar-info ").css("width",'25%').attr("data-original-title",res.percentage[1]+'% ('+res.numbers[1] +')'+" Successful downloads ");
+					$(".statistics .progress-bar-danger").css("width",'25%').attr("data-original-title",res.percentage[3]+'% ('+res.numbers[3] +')'+" Retriable");
 				}else{
-					$(".progress-bar-success").css("min-width",res.percentage[0]+'%');
-					$(".progress-bar-danger").css("min-width",res.percentage[1]+'%');
-					$(".progress-bar-info").css("min-width",res.percentage[2]+'%');
+					$(".statistics .progress-bar-success").css("width",res.percentage[0]+'%').attr("data-original-title",res.percentage[0]+'% ('+res.numbers[0] +')'+" In progress");
+					$(".statistics .progress-bar-warning").css("width",res.percentage[2]+'%').attr("data-original-title",res.percentage[2]+'% ('+res.numbers[2] +')'+" Failed downloads");
+					$(".statistics .progress-bar-info").css("width",res.percentage[1]+'%').attr("data-original-title",res.percentage[1]+'% ('+res.numbers[1] +')'+" Successful downloads ");
+					$(".statistics .progress-bar-danger").css("width",res.percentage[3]+'%').attr("data-original-title",res.percentage[3]+'% ('+res.numbers[3] +')'+" Retriable");
 					}
 
-				$(".progress-bar-success").html(res.percentage[0]+'% ('+res.numbers[0] +')');
-				$(".progress-bar-danger").html(res.percentage[1]+'%  ('+res.numbers[1] +')');
-				$(".progress-bar-info").html(res.percentage[2]+'% ('+res.numbers[2] +')');
+				$(".statistics .progress-bar-success").html(res.percentage[0]+'% ('+res.numbers[0] +')');
+				$(".statistics .progress-bar-warning").html(res.percentage[2]+'% ('+res.numbers[2] +')');
+				$(".statistics .progress-bar-info").html(res.percentage[1]+'%  ('+res.numbers[1] +')');
+				$(".statistics .progress-bar-danger").html(res.percentage[3]+'% ('+res.numbers[3] +')');
 			
 				clearTimeout(timer1);
 				timer1 = setTimeout(siteInfo, 20000);

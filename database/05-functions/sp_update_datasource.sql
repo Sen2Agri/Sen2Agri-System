@@ -1,6 +1,7 @@
 ﻿
 CREATE OR REPLACE FUNCTION sp_update_datasource(
 	_id smallint,
+	_scope smallint,
 	_enabled boolean,
 	_fetch_mode smallint,
 	_max_retries integer,
@@ -17,6 +18,7 @@ $BODY$
 	IF _id IS NOT NULL THEN
 		UPDATE datasource
 		SET enabled = _enabled,
+			scope = _scope,
 			fetch_mode = _fetch_mode,
 			max_retries = _max_retries,
 			retry_interval_minutes = _retry,
