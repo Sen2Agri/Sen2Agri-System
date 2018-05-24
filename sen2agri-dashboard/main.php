@@ -695,7 +695,15 @@ while ( $row = pg_fetch_row ( $result ) ) {
 					if(data.parentId == undefined){
 						var index = treeData.findIndex(function(obj){return obj.text == data.text;});
 						treeData[index].state={expanded:false};
-					}
+					}else{
+						 var nodeId = data.nodeId;
+   					     var parentName = $('#tree').treeview('getParent', data.nodeId).text;
+   					     var parentIndex = treeData.findIndex(function(obj){return obj.text == parentName;});
+   					     treeData[parentIndex].nodes.forEach(function(node,index){
+       					  if(node.id == data.id) treeData[parentIndex].nodes[index].state = {expanded:false};
+       					});
+						
+						}
 				},
 				onNodeSelected: function(event, data) {
 					var extent;
