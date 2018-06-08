@@ -2,7 +2,6 @@
 <?php include "dashboardCreatJobs.php"; ?>
 <?php
 
-$active_proc = 2;
 if (isset($_REQUEST['schedule_add']) && isset($_REQUEST['processorId'])) {
 	if ($_REQUEST['schedule_add'] == 'Add New Job') {
 		$active_proc = $_REQUEST ['processorId'] + 0;
@@ -126,6 +125,12 @@ if (isset ( $_REQUEST ['schedule_submit_delete'] ) && $_REQUEST ['schedule_submi
 	$active_proc = $processorId + 0;
 
 }
+
+$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+$sql = "SELECT id, short_name, label FROM processor WHERE short_name NOT LIKE 'l2a%'";
+$rows = pg_query($db, $sql) or die ("An error occurred.");
+$all_processors =  pg_fetch_all($rows);
+
 ?>
 
 <div id="main">
@@ -161,268 +166,87 @@ if (isset ( $_REQUEST ['schedule_submit_delete'] ) && $_REQUEST ['schedule_submi
 						</div>
 					</div> -->
 					<!-- L3A Processor ----------------------------------------------------------------------------------------------------------------------- -->
-					<div id="tab_l3a">
-						<a href=""<?= $active_proc ==  2 ? " class='active'" : "" ?>>L3A &mdash; Cloud-free Composite</a>
-						<div>
-							<div class="panel_resources_and_output_container dash_panel" id="pnl_l3a_resources_and_output_container">
-								<div class="panel_resources_container" id="pnl_l3a_resources_container">
-									<div class="panel panel-default panel_resources" id="pnl_l3a_resources">
+					<?php 
+					$processorList = array();
+					if(!empty($all_processors)){
+					   		    
+					    foreach ($all_processors as $processor){
+					        if(!isset($active_proc)){
+					            if(isset($_SESSION['active_proc'])){
+					                $active_proc = $_SESSION['active_proc'];
+    					            unset($_SESSION['active_proc']);
+					            }else{
+					                $active_proc = $processor['id'];
+					            }
+					        }
+					        $proc_id = $processor['id'];
+					        $proc_name = $processor['short_name'];
+					        $processorList[] = $proc_name;
+					        $nr_proc = sizeof($all_processors);
+					      //  $minWidth = 100/$nr_proc;
+					?>
+					<div id="tab_<?=$proc_name ?>"  class="proc_tab " style="width:<?=1018/$nr_proc ?>px;">
+						<a href=""<?=  $active_proc==  $processor['id'] ? " class='active'" : "" ?> style="width:85%;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?=  $processor['label']?>"><?=  $processor['label']?> </a>
+						<div >
+							<div class="panel_resources_and_output_container dash_panel" id="pnl_<?=$proc_name ?>_resources_and_output_container">
+								<div class="panel_resources_container" id="pnl_<?=$proc_name ?>_resources_container">
+									<div class="panel panel-default panel_resources" id="pnl_<?=$proc_name ?>_resources">
 										<div class="panel-heading">Resource Utilization</div>
 										<table class="table full_width default_panel_style"></table>
 									</div>
 								</div>
-								<div class="panel_output_container" id="pnl_l3a_output_container">
-									<div class="panel panel-default panel_output" id="pnl_l3a_output">
+								<div class="panel_output_container" id="pnl_<?=$proc_name ?>_output_container">
+									<div class="panel panel-default panel_output" id="pnl_<?=$proc_name ?>_output">
 										<div class="panel-heading">Output</div>
 										<table class="table full_width default_panel_style"></table>
 									</div>
 								</div>
 							</div>
-							<div class="panel_configuration_container dash_panel" id="pnl_l3a_configuration_container">
-								<div class="panel panel-default panel_configuration" id="pnl_l3a_configuration">
+							<div class="panel_configuration_container dash_panel" id="pnl_<?=$proc_name ?>_configuration_container">
+								<div class="panel panel-default panel_configuration" id="pnl_<?=$proc_name ?>_configuration">
 									<div class="panel-heading">Default Configuration</div>
 									<table class="table full_width default_panel_style"></table>
 								</div>
 							</div>
 							<!-- Scheduled ---------------------------->
-							<div class="panel_scheduled_container dash_panel" id="pnl_l3a_scheduled_container">
-								<div class="panel panel-default panel_scheduled" id="pnl_l3a_scheduled">
+							<div class="panel_scheduled_container dash_panel" id="pnl_<?=$proc_name ?>_scheduled_container">
+								<div class="panel panel-default panel_scheduled" id="pnl_<?=$proc_name ?>_scheduled">
 									<div class="schedule-table add-button">
-										<form id="form_add_sched_l3a" method="post" class="form">
-											<input type="hidden" name="processorId" value="2">
+										<form id="form_add_sched_<?=$proc_name ?>" method="post" class="form">
+											<input type="hidden" name="processorId" value="<?=$proc_id ?>">
 											<input class="button add-edit-btn" name="schedule_add" type="submit" value="Add New Job">
 										</form>
 									</div>
-									<!-- l3a processor_id = 2 -->
+									
 									<div class="schedule-table">
 										<?php
-										get_scheduled_jobs_header(2);
+										get_scheduled_jobs_header($proc_id);
 										if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-											if ($_REQUEST ['schedule_add'] == 'Add New Job' && $_REQUEST ['processorId'] == '2') {
-												add_new_scheduled_jobs_layout(2);
+										    if ($_REQUEST ['schedule_add'] == 'Add New Job' && $_REQUEST ['processorId'] == $proc_id) {
+										        add_new_scheduled_jobs_layout($proc_id);
 											}
 										}
-										update_scheduled_jobs_layout(2);
+										update_scheduled_jobs_layout($proc_id);
 										?>
 									</div>
 								</div>
 							</div>
 							<!-- Scheduled ---------------------------->
 						</div>
-					</div>
-					<!-- L3B Processor ----------------------------------------------------------------------------------------------------------------------- -->
-					<div id="tab_l3b">
-						<a href=""<?= $active_proc ==  3 ? " class='active'" : "" ?>>L3B &mdash; LAI/NDVI</a>
-						<div>
-							<div class="panel_resources_and_output_container dash_panel" id="pnl_l3b_resources_and_output_container">
-								<div class="panel_resources_container"
-									id="pnl_l3b_resources_container">
-									<div class="panel panel-default panel_resources" id="pnl_l3b_resources">
-										<div class="panel-heading">Resource Utilization</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-								<div class="panel_output_container" id="pnl_l3b_output_container">
-									<div class="panel panel-default panel_output" id="pnl_l3b_output">
-										<div class="panel-heading">Output</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-							</div>
-							<div class="panel_configuration_container dash_panel" id="pnl_l3b_configuration_container">
-								<div class="panel panel-default panel_configuration" id="pnl_l3b_configuration">
-									<div class="panel-heading">Default Configuration</div>
-									<table class="table full_width default_panel_style"></table>
-								</div>
-							</div>
-							<!-- Scheduled ---------------------------->
-							<div class="panel_scheduled_container dash_panel" id="pnl_l3b_scheduled_container">
-								<div class="panel panel-default panel_scheduled" id="pnl_l3b_scheduled">
-									<div class="schedule-table add-button">
-										<form id="form_add_sched_l3b" method="post">
-											<input type="hidden" name="processorId" value="3">
-											<input class="button add-edit-btn" name="schedule_add" type="submit" value="Add New Job">
-										</form>
-									</div>
-									<!-- l3b lai processor_id = 3 -->
-									<div class="schedule-table">
-										<?php
-										get_scheduled_jobs_header(3);
-										if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-											if ($_REQUEST ['schedule_add'] == 'Add New Job' && $_REQUEST ['processorId'] == '3') {
-												add_new_scheduled_jobs_layout(3);
-											}
-										}
-										update_scheduled_jobs_layout(3);
-										?>
-									</div>
-								</div>
-							</div>
-							<!-- Scheduled ---------------------------->
 						</div>
-					</div>
-					<!-- L3b pheno NDVI Processor ----------------------------------------------------------------------------------------------------------------------- -->
-					<div id="tab_l3e_pheno">
-						<a href=""<?= $active_proc ==  4 ? " class='active'" : "" ?>>L3E &mdash; Phenology Indices</a>
-						<div>
-							<div class="panel_resources_and_output_container dash_panel" id="pnl_l3e_pheno_resources_and_output_container">
-								<div class="panel_resources_container" id="pnl_l3e_pheno_resources_container">
-									<div class="panel panel-default panel_resources" id="pnl_l3e_pheno_resources">
-										<div class="panel-heading">Resource Utilization</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-								<div class="panel_output_container" id="pnl_l3e_pheno_output_container">
-									<div class="panel panel-default panel_output" id="pnl_l3e_pheno_output">
-										<div class="panel-heading">Output</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-							</div>
-							<div class="panel_configuration_container dash_panel" id="pnl_l3e_pheno_configuration_container">
-								<div class="panel panel-default panel_configuration" id="pnl_l3e_pheno_configuration">
-									<div class="panel-heading">Default Configuration</div>
-									<table class="table full_width default_panel_style"></table>
-								</div>
-							</div>
-							<!-- Scheduled ---------------------------->
-							<div class="panel_scheduled_container dash_panel" id="pnl_l3e_pheno_scheduled_container">
-								<div class="panel panel-default panel_scheduled" id="pnl_l3e_pheno_scheduled">
-									<div class="schedule-table add-button">
-										<form id="form_add_sched_l3e_pheno" method="post">
-											<input type="hidden" name="processorId" value="4">
-											<input class="button add-edit-btn" name="schedule_add" type="submit" value="Add New Job">
-										</form>
-									</div>
-									<!-- l3e pheno NDVI processor_id = 4 -->
-									<div class="schedule-table">
-										<?php
-										get_scheduled_jobs_header(4);
-										if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-											if ($_REQUEST ['schedule_add'] == 'Add New Job' && $_REQUEST ['processorId'] == '4') {
-												add_new_scheduled_jobs_layout(4);
-											}
-										}
-										update_scheduled_jobs_layout(4);
-										?>
-									</div>
-								</div>
-							</div>
-							<!-- Scheduled ---------------------------->
-						</div>
-					</div>
-					<!-- L4A Processor ----------------------------------------------------------------------------------------------------------------------- -->
-					<div id="tab_l4a">
-						<a href=""<?= $active_proc ==  5 ? " class='active'" : "" ?>>L4A &mdash; Cropland Mask</a>
-						<div>
-							<div class="panel_resources_and_output_container dash_panel" id="pnl_l4a_resources_and_output_container">
-								<div class="panel_resources_container" id="pnl_l4a_resources_container">
-									<div class="panel panel-default panel_resources" id="pnl_l4a_resources">
-										<div class="panel-heading">Resource Utilization</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-								<div class="panel_output_container" id="pnl_l4a_output_container">
-									<div class="panel panel-default panel_output" id="pnl_l4a_output">
-										<div class="panel-heading">Output</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-							</div>
-							<div class="panel_configuration_container dash_panel" id="pnl_l4a_configuration_container">
-								<div class="panel panel-default panel_configuration" id="pnl_l4a_configuration">
-									<div class="panel-heading">Default Configuration</div>
-									<table class="table full_width default_panel_style"></table>
-								</div>
-							</div>
-							<!-- Scheduled ---------------------------->
-							<div class="panel_scheduled_container dash_panel" id="pnl_l4a_scheduled_container">
-								<div class="panel panel-default panel_scheduled" id="pnl_l4a_scheduled">
-									<div class="schedule-table add-button">
-										<form id="form_add_sched_l4a" method="post">
-											<input type="hidden" name="processorId" value="5">
-											<input class="button add-edit-btn" name="schedule_add" type="submit" value="Add New Job">
-										</form>
-									</div>
-									<!-- l4a processor_id = 5 -->
-									<div class="schedule-table">
-										<?php
-										get_scheduled_jobs_header(5);
-										if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-											if ($_REQUEST ['schedule_add'] == 'Add New Job' && $_REQUEST ['processorId'] == '5') {
-												add_new_scheduled_jobs_layout(5);
-											}
-										}
-										update_scheduled_jobs_layout(5);
-										?>
-									</div>
-								</div>
-							</div>
-							<!-- Scheduled ---------------------------->
-						</div>
-					</div>
-					<!-- L4B Processor ----------------------------------------------------------------------------------------------------------------------- -->
-					<div id="tab_l4b">
-						<a href=""<?= $active_proc ==  6 ? " class='active'" : "" ?>>L4B &mdash; Crop Type Map</a>
-						<div>
-							<div class="panel_resources_and_output_container dash_panel" id="pnl_l4b_resources_and_output_container">
-								<div class="panel_resources_container" id="pnl_l4b_resources_container">
-									<div class="panel panel-default panel_resources" id="pnl_l4b_resources">
-										<div class="panel-heading">Resource Utilization</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-								<div class="panel_output_container" id="pnl_l4b_output_container">
-									<div class="panel panel-default panel_output" id="pnl_l4b_output">
-										<div class="panel-heading">Output</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-								<div class="panel_scheduled_container" id="pnl_l4b_scheduled_container">
-									<div class="panel panel-default panel_output" id="pnl_l4b_scheduled">
-										<div class="panel-heading">Scheduled Tasks</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-							</div>
-							<div class="panel_configuration_container dash_panel" id="pnl_l4b_configuration_container">
-								<div class="panel panel-default panel_configuration" id="pnl_l4b_configuration">
-									<div class="panel-heading">Default Configuration</div>
-									<table class="table full_width default_panel_style"></table>
-								</div>
-							</div>
-							<!-- Scheduled ---------------------------->
-							<div class="panel_scheduled_container dash_panel" id="pnl_l4b_scheduled_container">
-								<div class="panel panel-default panel_scheduled" id="pnl_l4b_scheduled">
-									<div class="schedule-table add-button">
-										<form id="form_add_sched_l4b" method="post">
-											<input type="hidden" name="processorId" value="6">
-											<input class="button add-edit-btn" name="schedule_add" type="submit" value="Add New Job">
-										</form>
-									</div>
-									<!-- l4b processor_id = 6 -->
-									<div class="schedule-table">
-										<?php
-										get_scheduled_jobs_header(6);
-										if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-											if ($_REQUEST ['schedule_add'] == 'Add New Job' && $_REQUEST ['processorId'] == '6') {
-												add_new_scheduled_jobs_layout(6);
-											}
-										}
-										update_scheduled_jobs_layout(6);
-										?>
-									</div>
-								</div>
-							</div>
-							<!-- Scheduled ---------------------------->
-						</div>
-					</div>
+										<?php 
+					    }
+					}?>
+							
 				</div>
 			</div>
 			<div class="clearing">&nbsp;</div>
 		</div>
 	</div>
 </div>
+<script>var processorList = [];
+processorList = <?php echo json_encode( $processorList)?>;
+</script>
 
 <script src="scripts/helpers.js"></script>
 <script src="scripts/processing_functions.js"></script>
@@ -445,22 +269,22 @@ if (isset ( $_REQUEST ['schedule_submit_delete'] ) && $_REQUEST ['schedule_submi
 		var div_startdatefoo = row.getElementsByClassName("div_startdatefoo")[0];
 
 		switch (target.value) {
-			case "0":
+			case "0": // Once
 				div_repeatnever.classList.remove("hidden");
 				div_repeatafter.classList.add("hidden");
 				div_oneverydate.classList.add("hidden");
 				break;
-			case "1":
+			case "1":// Cycle
 				div_repeatnever.classList.add("hidden");
 				div_repeatafter.classList.remove("hidden");
 				div_oneverydate.classList.add("hidden");
 				break;
-			case "2":
+			case "2"://Repeat
 				div_repeatnever.classList.add("hidden");
 				div_repeatafter.classList.add("hidden");
 				div_oneverydate.classList.remove("hidden");
 				break;
-			default:
+			default: //once by default
 				div_repeatnever.classList.remove("hidden");
 				div_repeatafter.classList.add("hidden");
 				div_oneverydate.classList.add("hidden");
@@ -612,7 +436,10 @@ if (isset ( $_REQUEST ['schedule_submit_delete'] ) && $_REQUEST ['schedule_submi
 					label.remove();
 				}
 			});
-		<?php unset($_SESSION['proc_id']); } ?>
+		<?php 
+		//keep the current tab in session variable active_proc
+		$_SESSION['active_proc'] = $_SESSION['proc_id'];
+		unset($_SESSION['proc_id']); } ?>
 	});
 </script>
 

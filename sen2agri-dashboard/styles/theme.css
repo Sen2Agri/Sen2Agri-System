@@ -366,8 +366,8 @@ p.readmore a {
 
 .tabControl { min-height: 1000px; position: relative; width: 100%; /*font-family: "Roboto Condensed", Arial, Helvetica, sans-serif; font-size: 1em;*/ }
 .tabControl > div { display: inline-block; }
-.tabControl > div > a { margin-left: -1px; position: relative; left: 1px; text-decoration: none; color: black; background: white; display: block; float: left; padding: 5px 10px; border: 1px solid #ccc; border-bottom: 1px solid white; }
-.tabControl > div:not(:target) > a { border-bottom: 0; background: -moz-linear-gradient(top, white, #eee); }
+.tabControl > div > a { margin-left: -1px; position: relative; left: 1px; text-decoration: none; color: black; background: white; /*display: block;*/ float: left; padding: 6px 10px; border: 1px solid #ccc; border-bottom: 1px solid white; }
+#tabControl > div:not(:target) > a { border-bottom: 0; background: -moz-linear-gradient(top, white, #eee); }
 .tabControl > div:target > a { background: #d3d3d3/*white*/; }
 .tabControl > div > div { font-family: "Roboto Condensed", Arial, Helvetica, sans-serif; font-size: 0.8em; background: white; z-index: -1; left: 0; top: 30px; bottom: 0; right: 0; padding: 20px; border: 1px solid #ccc; }
 .tabControl > div:not(:target) > div { position: absolute }

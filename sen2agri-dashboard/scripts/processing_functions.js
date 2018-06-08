@@ -536,67 +536,24 @@ function fill_key_value_table(parent, list) {
 	});
 }
 
-function update_l2a_statistics(json_data) {
-	//Remove the old rows
-	$("#pnl_l2a_resources table:first tr.to_be_refreshed").remove();
-	$("#pnl_l2a_output table:first tr.to_be_refreshed").remove();
-	$("#pnl_l2a_configuration table:first tr.to_be_refreshed").remove();
+function update_processor_statistics(json_data) {
+	if(processorList.length > 0){
+		var proc;
+		for(var i = 0; i < processorList.length;i++){
+			proc = processorList[i]+'_statistics';	
+			
+			//Remove the old rows
+			$("#pnl_"+processorList[i]+"_resources table:first tr.to_be_refreshed").remove();
+			$("#pnl_"+processorList[i]+"_output table:first tr.to_be_refreshed").remove();
+			$("#pnl_"+processorList[i]+"_configuration table:first tr.to_be_refreshed").remove();
 
-	fill_key_value_table("#pnl_l2a_resources", json_data.l2a_statistics.resources);
-	fill_key_value_table("#pnl_l2a_output", json_data.l2a_statistics.output);
-	fill_key_value_table("#pnl_l2a_configuration", json_data.l2a_statistics.configuration);
+			fill_key_value_table("#pnl_"+processorList[i]+"_resources", json_data[proc].resources);
+			fill_key_value_table("#pnl_"+processorList[i]+"_output", json_data[proc].output);
+			fill_key_value_table("#pnl_"+processorList[i]+"_configuration", json_data[proc].configuration);
+		}
+	}
+	
 }
-function update_l3a_statistics(json_data) {
-	//Remove the old rows
-	$("#pnl_l3a_resources table:first tr.to_be_refreshed").remove();
-	$("#pnl_l3a_output table:first tr.to_be_refreshed").remove();
-	$("#pnl_l3a_configuration table:first tr.to_be_refreshed").remove();
-
-	fill_key_value_table("#pnl_l3a_resources", json_data.l3a_statistics.resources);
-	fill_key_value_table("#pnl_l3a_output", json_data.l3a_statistics.output);
-	fill_key_value_table("#pnl_l3a_configuration", json_data.l3a_statistics.configuration);
-}
-function update_l3b_statistics(json_data) {
-	//Remove the old rows
-	$("#pnl_l3b_resources table:first tr.to_be_refreshed").remove();
-	$("#pnl_l3b_output table:first tr.to_be_refreshed").remove();
-	$("#pnl_l3b_configuration table:first tr.to_be_refreshed").remove();
-
-	fill_key_value_table("#pnl_l3b_resources", json_data.l3b_lai_statistics.resources);
-	fill_key_value_table("#pnl_l3b_output", json_data.l3b_lai_statistics.output);
-	fill_key_value_table("#pnl_l3b_configuration", json_data.l3b_lai_statistics.configuration);
-}
-function update_l3e_pheno_statistics(json_data)  {
- 	//Remove the old rows
- 	$("#pnl_l3e_pheno_resources table:first tr.to_be_refreshed").remove();
- 	$("#pnl_l3e_pheno_output table:first tr.to_be_refreshed").remove();
- 	$("#pnl_l3e_pheno_configuration table:first tr.to_be_refreshed").remove();
-
- 	fill_key_value_table("#pnl_l3e_pheno_resources", json_data.l3e_pheno_statistics.resources);
- 	fill_key_value_table("#pnl_l3e_pheno_output", json_data.l3e_pheno_statistics.output);
- 	fill_key_value_table("#pnl_l3e_pheno_configuration", json_data.l3e_pheno_statistics.configuration);
-}
-function update_l4a_statistics(json_data) {
-	//Remove the old rows
-	$("#pnl_l4a_resources table:first tr.to_be_refreshed").remove();
-	$("#pnl_l4a_output table:first tr.to_be_refreshed").remove();
-	$("#pnl_l4a_configuration table:first tr.to_be_refreshed").remove();
-
-	fill_key_value_table("#pnl_l4a_resources", json_data.l4a_statistics.resources);
-	fill_key_value_table("#pnl_l4a_output", json_data.l4a_statistics.output);
-	fill_key_value_table("#pnl_l4a_configuration", json_data.l4a_statistics.configuration);
-}
-function update_l4b_statistics(json_data) {
-	//Remove the old rows
-	$("#pnl_l4b_resources table:first tr.to_be_refreshed").remove();
-	$("#pnl_l4b_output table:first tr.to_be_refreshed").remove();
-	$("#pnl_l4b_configuration table:first tr.to_be_refreshed").remove();
-
-	fill_key_value_table("#pnl_l4b_resources", json_data.l4b_statistics.resources);
-	fill_key_value_table("#pnl_l4b_output", json_data.l4b_statistics.output);
-	fill_key_value_table("#pnl_l4b_configuration", json_data.l4b_statistics.configuration);
-}
-
 function get_processor_statistics() {
 	$.ajax({
 		//url: get_processor_statistics_url,
@@ -610,12 +567,7 @@ function get_processor_statistics() {
 		},
 		success: function(json_data)
 		{
-			update_l2a_statistics(json_data);
-			update_l3a_statistics(json_data);
-			update_l3b_statistics(json_data);
-			update_l3e_pheno_statistics(json_data);
-			update_l4a_statistics(json_data);
-			update_l4b_statistics(json_data);
+			update_processor_statistics(json_data)
 			
 			// Schedule the next request
 			setTimeout(get_processor_statistics, get_processor_statistics_interval);

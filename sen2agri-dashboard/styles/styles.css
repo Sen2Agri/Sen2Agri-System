@@ -259,7 +259,7 @@ div.panel_configuration_container {
 }
 
 div#tab_control>div>a.active,
-div#tab_control>div:target>a{background-color:#dbecb9;padding:6px}
+div#tab_control>div:target>a{background-color:#dbecb9;}
 div#tab_control>div:target>div{z-index:999}
 div#tab_control>div>div{padding:10px}
 div#tab_control div.dash_panel div.panel {border-radius:0}
