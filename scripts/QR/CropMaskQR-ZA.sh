@@ -1,6 +1,6 @@
 #!/bin/bash
 
-../CropMask.py -refp /mnt/Imagery_S2A/SouthAfrica/TDS/InSitu/ZA_FRST_LC_FO_2013.shp -ratio 0.75 -input \
+../CropMask.py -refp /mnt/Sen2Agri_DataSets/SouthAfrica/TDS/InSitu/ZA_FRST_LC_FO_2013.shp -ratio 0.75 -input \
 "/mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000.xml" \

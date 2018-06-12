@@ -42,9 +42,9 @@ function process_dir() {
     done
 }
 
-#process_dir /mnt/Imagery_S2A/L2A/Spot4-T5/South\ Africa 1500 2000 1000 1000
-#process_dir /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-E_LEVEL2A 3200 1400 1000 1000 # for composite
-#process_dir /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-E_LEVEL2A 1750 8000 1000 1000 # for crop mask/type
-#process_dir /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-O_LEVEL2A 4600 8000 1000 1000 # for composite
-process_dir /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-O_LEVEL2A 4600 8200 2000 2000 # for crop mask/type
-#process_dir /mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine 1500 1600 1000 1000
+#process_dir /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South\ Africa 1500 2000 1000 1000
+#process_dir /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/CSudmipy-E_LEVEL2A 3200 1400 1000 1000 # for composite
+#process_dir /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/CSudmipy-E_LEVEL2A 1750 8000 1000 1000 # for crop mask/type
+#process_dir /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/CSudmipy-O_LEVEL2A 4600 8000 1000 1000 # for composite
+process_dir /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/CSudmipy-O_LEVEL2A 4600 8200 2000 2000 # for crop mask/type
+#process_dir /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine 1500 1600 1000 1000

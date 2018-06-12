@@ -2,7 +2,7 @@
 
 source set_build_folder.sh
 
-./CropMask.py -refp /mnt/Imagery_S2A/In-Situ_TDS/France/LC/SudmipyS2A_LandCoverDecoupe_dissolvedGeometry.shp -ratio 0.75 -input \
+./CropMask.py -refp /mnt/Sen2Agri_DataSets/In-Situ_TDS/France/LC/SudmipyS2A_LandCoverDecoupe_dissolvedGeometry.shp -ratio 0.75 -input \
 /mnt/Satellite_Imagery/S2-QR/CSudmipy-O-for-crop_LEVEL2A/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000.xml \
 /mnt/Satellite_Imagery/S2-QR/CSudmipy-O-for-crop_LEVEL2A/SPOT4_HRVIR_XS_20130303_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130303_N2A_CSudmipy-OD0000B0000.xml \
 /mnt/Satellite_Imagery/S2-QR/CSudmipy-O-for-crop_LEVEL2A/SPOT4_HRVIR_XS_20130318_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130318_N2A_CSudmipy-OD0000B0000.xml \

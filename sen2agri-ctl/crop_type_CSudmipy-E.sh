@@ -19,5 +19,5 @@
 /mnt/Satellite_Imagery/S2-QR/CSudmipy-E-for-crop_LEVEL2A/SPOT4_HRVIR1_XS_20130607_N2A_CSudmipy-ED0000B0000/ \
 /mnt/Satellite_Imagery/S2-QR/CSudmipy-E-for-crop_LEVEL2A/SPOT4_HRVIR1_XS_20130612_N2A_CSudmipy-ED0000B0000/ \
 /mnt/Satellite_Imagery/S2-QR/CSudmipy-E-for-crop_LEVEL2A/SPOT4_HRVIR1_XS_20130617_N2A_CSudmipy-ED0000B0000/ \
--r /mnt/Imagery_S2A/In-Situ_TDS/France/LC/SudmipyS2A_LandCoverDecoupe_dissolvedGeometry.shp \
+-r /mnt/Sen2Agri_DataSets/In-Situ_TDS/France/LC/SudmipyS2A_LandCoverDecoupe_dissolvedGeometry.shp \
 --resolution 20 --date-start 20130217 --date-end 20130617 -p crop-type.sampling-rate 5

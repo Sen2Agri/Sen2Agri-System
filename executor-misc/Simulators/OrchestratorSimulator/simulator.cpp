@@ -33,7 +33,7 @@ void Simulator::HandleSendExecuteProcessor()
         step.arguments.append(stepArg);
         stepArg.value = QString("-xml");
         step.arguments.append(stepArg);
-        stepArg.value = QString("/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.xml");
+        stepArg.value = QString("/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.xml");
         step.arguments.append(stepArg);
         stepArg.value = QString("-out");
         step.arguments.append(stepArg);

@@ -1,4 +1,4 @@
-INPUT_DIR="/mnt/Imagery_S2A/L2A/MACCS/L1/S2"
+INPUT_DIR="/mnt/Sen2Agri_DataSets/L2A/MACCS/L1/S2"
 TILE="15SVD"
 OUTPUT_DIR="/var/maccs/S2"
 MODE="L2INIT"

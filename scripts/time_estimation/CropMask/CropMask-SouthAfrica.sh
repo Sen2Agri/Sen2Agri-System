@@ -4,7 +4,7 @@ OUT_FOLDER=$1
 
 source set_build_folder.sh
 
-./CropMask.py -refp /mnt/Imagery_S2A/In-Situ_TDS/SouthAfrica/ZA_FST_LC_FO_2013.shp -ratio 0.75 -input \
+./CropMask.py -refp /mnt/Sen2Agri_DataSets/In-Situ_TDS/SouthAfrica/ZA_FST_LC_FO_2013.shp -ratio 0.75 -input \
 /mnt/SouthAfrica/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.xml \
 /mnt/SouthAfrica/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.xml \
 /mnt/SouthAfrica/SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000.xml \

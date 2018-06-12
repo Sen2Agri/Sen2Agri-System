@@ -3,7 +3,7 @@
 source set_build_folder.sh
 
 ./CropType.py \
-    -ref /mnt/Imagery_S2A/Belgium/TDS/InSitu/LC/BE_HESB_LC_II_2013.shp \
+    -ref /mnt/Sen2Agri_DataSets/Belgium/TDS/InSitu/LC/BE_HESB_LC_II_2013.shp \
     -input \
     /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Belgium/SPOT5_HRG2_XS_20150410_N2A_BelgiumD0000B0000/SPOT5_HRG2_XS_20150410_N2A_BelgiumD0000B0000.xml \
     /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Belgium/SPOT5_HRG2_XS_20150415_N2A_BelgiumD0000B0000/SPOT5_HRG2_XS_20150415_N2A_BelgiumD0000B0000.xml \

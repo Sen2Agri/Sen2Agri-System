@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ./CropType.py \
-    -ref /mnt/Imagery_S2A/In-Situ_TDS/SouthAfrica/ZA_FST_LC_FO_2013.shp \
+    -ref /mnt/Sen2Agri_DataSets/In-Situ_TDS/SouthAfrica/ZA_FST_LC_FO_2013.shp \
     -input \
     /mnt/SouthAfrica/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.xml \
     /mnt/SouthAfrica/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.xml \

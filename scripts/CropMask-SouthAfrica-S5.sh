@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ./CropMask.py \
-    -refp /mnt/Imagery_S2A/In-Situ_TDS/SouthAfrica/ZA_FST_LC_FO_2013.shp \
+    -refp /mnt/Sen2Agri_DataSets/In-Situ_TDS/SouthAfrica/ZA_FST_LC_FO_2013.shp \
     -input \
     /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/SouthAfrica/SPOT5_HRG2_XS_20150414_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150414_N2A_SouthAfricaD0000B0000.xml \
     /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/SouthAfrica/SPOT5_HRG2_XS_20150429_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150429_N2A_SouthAfricaD0000B0000.xml \
