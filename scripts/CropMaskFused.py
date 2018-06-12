@@ -86,7 +86,8 @@ class CropMaskProcessor(ProcessorBase):
                             required=False, nargs='+', default=None)
         parser.add_argument('-skip-segmentation', help="Skip the segmentation step, creating the product with just the raw mask (default false)", default=False, action='store_true')
         parser.add_argument('-reuse-segmentation', help="Reuse the segmentation output if present on disk (default false)", default=False, action='store_true')
-        parser.add_argument('-skip-quality-flags', help="Skip quality flags extraction, (default false)", default=False, action='store_true')
+        parser.add_argument('-skip-quality-flags', help="Skip quality flags extraction (default false)", default=False, action='store_true')
+        parser.add_argument('-force-validation', help="Force validation (default false)", default=False, action='store_true')
         parser.add_argument('-max-parallelism', help="Number of tiles to process in parallel", required=False, type=int)
         parser.add_argument('-tile-threads-hint', help="Number of threads to use for a single tile (default 4)", required=False, type=int, default=4)
         self.args = parser.parse_args()
@@ -541,98 +542,101 @@ class CropMaskProcessor(ProcessorBase):
             return self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
 
     def validate(self, context):
-        for stratum in self.strata:
-            area_statistics = self.get_output_path("confusion-matrix-validation-{}.csv", stratum.id)
-            area_quality_metrics = self.get_output_path("quality-metrics-{}.txt", stratum.id)
-            area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
+        want_validation = self.args.refp is not None or self.args.force_validation
 
-            step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
-                         "-out", area_statistics,
-                         "-nodatalabel", -10000,
-                         "-il"]
-            for tile in stratum.tiles:
-                step_args.append(self.get_tile_crop_mask(tile))
-
-            if self.args.refp is not None:
-                area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
-
-                step_args += ["-ref", "vector",
-                              "-ref.vector.in", area_validation_polygons,
-                              "-ref.vector.field", "CROP"]
-            else:
-                step_args += ["-ref", "raster",
-                              "-ref.raster.in"]
-                for tile in stratum.tiles:
-                    tile_stratum_reference_trimmed = self.get_output_path("reference-trimmed-{}-{}.tif", stratum.id, tile.id)
-
-                    step_args.append(tile_stratum_reference_trimmed)
-
-            run_step(Step("ComputeConfusionMatrix_" + str(stratum.id),
-                          step_args, out_file=area_quality_metrics))
-
-            step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
-                         "-root", "CropMask",
-                         "-confmat", area_statistics,
-                         "-quality", area_quality_metrics,
-                         "-out", area_validation_metrics_xml]
-            run_step(Step("XMLStatistics_" + str(stratum.id), step_args))
-
-        if not self.single_stratum:
-            global_validation_metrics_xml = self.get_output_path("validation-metrics-global.xml")
-
-            if len(self.strata) > 1:
-                global_statistics = self.get_output_path("confusion-matrix-validation-global.csv")
-                global_quality_metrics = self.get_output_path("quality-metrics-global.txt")
+        if want_validation:
+            for stratum in self.strata:
+                area_statistics = self.get_output_path("confusion-matrix-validation-{}.csv", stratum.id)
+                area_quality_metrics = self.get_output_path("quality-metrics-{}.txt", stratum.id)
+                area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
 
                 step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
-                             "-out", global_statistics,
-                             "-nodatalabel", -10000,
-                             "-il"]
-                for tile in self.tiles:
+                            "-out", area_statistics,
+                            "-nodatalabel", -10000,
+                            "-il"]
+                for tile in stratum.tiles:
                     step_args.append(self.get_tile_crop_mask(tile))
 
                 if self.args.refp is not None:
-                    global_validation_polygons = self.get_output_path("validation_polygons_global.shp")
-                    global_prj_file = self.get_output_path("validation_polygons_global.prj")
-
-                    files = []
-                    for stratum in self.strata:
-                        area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
-
-                        files.append(area_validation_polygons)
-
-                    run_step(Step("ConcatenateVectorData",
-                                  ["otbcli_ConcatenateVectorData",
-                                   "-out", global_validation_polygons,
-                                   "-vd"] + files))
-
-                    first_prj_file = self.get_output_path("validation_polygons-{}.prj", self.strata[0].id)
-                    shutil.copyfile(first_prj_file, global_prj_file)
+                    area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
 
                     step_args += ["-ref", "vector",
-                                  "-ref.vector.in", global_validation_polygons,
-                                  "-ref.vector.field", "CROP"]
+                                "-ref.vector.in", area_validation_polygons,
+                                "-ref.vector.field", "CROP"]
                 else:
                     step_args += ["-ref", "raster",
-                                  "-ref.raster.in"]
-                    for tile in self.tiles:
-                        tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
+                                "-ref.raster.in"]
+                    for tile in stratum.tiles:
+                        tile_stratum_reference_trimmed = self.get_output_path("reference-trimmed-{}-{}.tif", stratum.id, tile.id)
 
-                        step_args.append(tile_reference_trimmed)
+                        step_args.append(tile_stratum_reference_trimmed)
 
-                run_step(Step("ComputeConfusionMatrix_Global",
-                              step_args, out_file=global_quality_metrics))
+                run_step(Step("ComputeConfusionMatrix_" + str(stratum.id),
+                            step_args, out_file=area_quality_metrics))
 
                 step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
-                             "-root", "CropMask",
-                             "-confmat", global_statistics,
-                             "-quality", global_quality_metrics,
-                             "-out", global_validation_metrics_xml]
-                run_step(Step("XMLStatistics_Global", step_args))
-            else:
-                area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", self.strata[0].id)
+                            "-root", "CropMask",
+                            "-confmat", area_statistics,
+                            "-quality", area_quality_metrics,
+                            "-out", area_validation_metrics_xml]
+                run_step(Step("XMLStatistics_" + str(stratum.id), step_args))
 
-                shutil.copyfile(area_validation_metrics_xml, global_validation_metrics_xml)
+            if not self.single_stratum:
+                global_validation_metrics_xml = self.get_output_path("validation-metrics-global.xml")
+
+                if len(self.strata) > 1:
+                    global_statistics = self.get_output_path("confusion-matrix-validation-global.csv")
+                    global_quality_metrics = self.get_output_path("quality-metrics-global.txt")
+
+                    step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
+                                "-out", global_statistics,
+                                "-nodatalabel", -10000,
+                                "-il"]
+                    for tile in self.tiles:
+                        step_args.append(self.get_tile_crop_mask(tile))
+
+                    if self.args.refp is not None:
+                        global_validation_polygons = self.get_output_path("validation_polygons_global.shp")
+                        global_prj_file = self.get_output_path("validation_polygons_global.prj")
+
+                        files = []
+                        for stratum in self.strata:
+                            area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
+
+                            files.append(area_validation_polygons)
+
+                        run_step(Step("ConcatenateVectorData",
+                                    ["otbcli_ConcatenateVectorData",
+                                    "-out", global_validation_polygons,
+                                    "-vd"] + files))
+
+                        first_prj_file = self.get_output_path("validation_polygons-{}.prj", self.strata[0].id)
+                        shutil.copyfile(first_prj_file, global_prj_file)
+
+                        step_args += ["-ref", "vector",
+                                    "-ref.vector.in", global_validation_polygons,
+                                    "-ref.vector.field", "CROP"]
+                    else:
+                        step_args += ["-ref", "raster",
+                                    "-ref.raster.in"]
+                        for tile in self.tiles:
+                            tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
+
+                            step_args.append(tile_reference_trimmed)
+
+                    run_step(Step("ComputeConfusionMatrix_Global",
+                                step_args, out_file=global_quality_metrics))
+
+                    step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
+                                "-root", "CropMask",
+                                "-confmat", global_statistics,
+                                "-quality", global_quality_metrics,
+                                "-out", global_validation_metrics_xml]
+                    run_step(Step("XMLStatistics_Global", step_args))
+                else:
+                    area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", self.strata[0].id)
+
+                    shutil.copyfile(area_validation_metrics_xml, global_validation_metrics_xml)
 
         step_args = ["otbcli", "ProductFormatter", self.args.buildfolder,
                      "-destroot", self.args.targetfolder,
@@ -677,19 +681,20 @@ class CropMaskProcessor(ProcessorBase):
             step_args.append("TILE_" + tile.id)
             step_args.append(tile_quality_flags)
 
-        step_args.append("-processor.cropmask.quality")
-        if not self.single_stratum:
-            global_validation_metrics_xml = self.get_output_path("validation-metrics-global.xml")
-
-            step_args.append(global_validation_metrics_xml)
-
-        for stratum in self.strata:
-            area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
-
+        if want_validation:
+            step_args.append("-processor.cropmask.quality")
             if not self.single_stratum:
-                step_args.append("REGION_" + str(stratum.id))
+                global_validation_metrics_xml = self.get_output_path("validation-metrics-global.xml")
 
-            step_args.append(area_validation_metrics_xml)
+                step_args.append(global_validation_metrics_xml)
+
+            for stratum in self.strata:
+                area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
+
+                if not self.single_stratum:
+                    step_args.append("REGION_" + str(stratum.id))
+
+                step_args.append(area_validation_metrics_xml)
 
         step_args.append("-il")
         step_args += self.args.input
