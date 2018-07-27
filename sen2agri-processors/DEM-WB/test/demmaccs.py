@@ -332,15 +332,16 @@ def maccs_launcher(demmaccs_context):
             log(demmaccs_context.output, "No valid products (VALD status) found in: {}.".format(maccs_working_dir), tile_log_filename)
         log(demmaccs_context.output, "Deleting MACCS working directory: rmtree: {}".format(maccs_working_dir), tile_log_filename)
         shutil.rmtree(maccs_working_dir)
-    except:
+    except Exception, e:
         return_tile_id = ""
-        log(demmaccs_context.output, "Exception caught when moving maccs files for tile {} to the output directory :( ".format(tile_id), tile_log_filename)
+        log(demmaccs_context.output, "Exception caught when moving maccs files for tile {} to the output directory :( {}".format(tile_id, e), tile_log_filename)
     return return_tile_id
 
 
 parser = argparse.ArgumentParser(
     description="Launches DEM and MACCS for L2A product creation")
 parser.add_argument('input', help="input L1C directory")
+parser.add_argument('-t', '--tiles-to-process', required=False, nargs='+', help="only this tiles shall be processed from the whole product", default=None)
 parser.add_argument('-w', '--working-dir', required=True,
                     help="working directory")
 parser.add_argument('--srtm', required=True, help="SRTM dataset path")
@@ -422,9 +423,20 @@ if not create_recursive_dirs(dem_output_dir):
         log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
     sys.exit(-1)
 
+tiles_to_process = []
 if args.skip_dem is None:
     print("Creating DEMs for {}".format(args.input))
-    if run_command([base_abs_path + "dem.py", "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir], general_log_path, log_filename) != 0:
+    if args.tiles_to_process is not None :
+        tiles_to_process = args.tiles_to_process
+        args.processes_number_dem = str(len(tiles_to_process))
+        args.processes_number_maccs = str(len(tiles_to_process))
+    print("tiles_to_process = {}".format(tiles_to_process))
+    dem_command = [base_abs_path + "dem.py", "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir]
+    if len(tiles_to_process) > 0:
+        dem_command.append("-l")
+        dem_command += tiles_to_process
+    print("dem_command = {}".format(dem_command))
+    if run_command(dem_command , general_log_path, log_filename) != 0:
         log(general_log_path, "DEM failed", log_filename)
         if not remove_dir(working_dir):
             log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
@@ -444,20 +456,21 @@ if len(dem_hdrs) == 0:
         log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
     sys.exit(-1)
 
-
+if len(tiles_to_process) > 0 and len(tiles_to_process) != len(dem_hdrs):
+    log(general_log_path, "The number of hdr DEM files in {} is not equal with the number of the received tiles to process !!".format(dem_output_dir), log_filename)
 demmaccs_contexts = []
 print("Creating demmaccs contexts with: input: {} | output {}".format(args.input, args.output))
 for dem_hdr in dem_hdrs:
     print("DEM_HDR: {}".format(dem_hdr))
     demmaccs_contexts.append(DEMMACCSContext(working_dir, dem_hdr, args.gipp_dir, args.prev_l2a_tiles, args.prev_l2a_products_paths, args.maccs_address, args.maccs_launcher, args.input, args.output))
 
-#RELEASE mode, it launches in parallel
+#RELEASE mode, parallel launching
 pool = Pool(int(args.processes_number_maccs))
 pool_outputs = pool.map(maccs_launcher, demmaccs_contexts)
 pool.close()
 pool.join()
 
-#DEBUG mode only, it launches sequentially
+#DEBUG mode only, sequentially launching
 #pool_outputs = map(maccs_launcher, demmaccs_contexts)
 
 processed_tiles = []
@@ -472,8 +485,8 @@ if len(processed_tiles) == 0:
 else:
     log(general_log_path, "MACCS processed the following tiles for L1C product {} :".format(args.input), log_filename)
     log(general_log_path, "{}".format(processed_tiles), log_filename)
-    if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", args.output, "-w", working_dir], args.output, log_filename) != 0:
-        log(general_log_path, "Mosaic didn't work", log_filename)
+#    if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", args.output, "-w", working_dir], args.output, log_filename) != 0:
+#        log(general_log_path, "Mosaic didn't work", log_filename)
 
 if args.delete_temp == "True":
     log(general_log_path, "Remove all the temporary files and directory", log_filename)
