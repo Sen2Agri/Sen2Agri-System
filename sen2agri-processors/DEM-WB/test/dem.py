@@ -164,7 +164,7 @@ def create_context(args):
 
     images = []
     tiles_to_process = []
-    if args.tiles_list is not None:
+    if args.tiles_list is not None and len(args.tiles_list) > 0:
         tiles_to_process = args.tiles_list
     if mode == 'L8':
         images.append("{}/{}_B1.TIF".format(dir_base, os.path.basename(dir_base)))
