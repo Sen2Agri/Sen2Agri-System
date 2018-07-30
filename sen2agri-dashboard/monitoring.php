@@ -2,9 +2,13 @@
 require_once("ConfigParams.php");
 if(isset($_REQUEST['ajax']) && $_REQUEST['ajax'] =='ajaxCall'){
 	
-    $site_id = (isset($_REQUEST['site_id']) && $_REQUEST['site_id']!='0')?$_REQUEST['site_id'].'::smallint':null;
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	$sql = 'select * from sp_get_estimated_number_of_products('. $site_id.')';
+    $site_id = (isset($_REQUEST['site_id']) && $_REQUEST['site_id']!='0')?$_REQUEST['site_id'].'::smallint':'null::smallint';
+    $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
+    $sql = 'select * from sp_get_estimated_number_of_products('. $site_id;
+    if(!ConfigParams::isSen2Agri()){
+        $sql .= ',true';
+    }
+	$sql .= ')';
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 	$result = pg_fetch_row($result);
 
@@ -14,7 +18,7 @@ if(isset($_REQUEST['ajax']) && $_REQUEST['ajax'] =='ajaxCall'){
 <?php include 'master.php'; ?>
 <?php
 function select_option() {
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 	if ($_SESSION['isAdmin']) {
 		// admin
 		$sql         = "SELECT * FROM sp_get_sites()";
@@ -125,7 +129,29 @@ function select_option() {
 					</table>
 				</div>
 			</div>
-			<!-------------- Job history ---------------->
+			<!-------------- END Job history ---------------->
+			
+			<!-------------- LPIS/GSAA processing details ---------------->
+			<?php if(!ConfigParams::isSen2Agri()){?>
+			<div class="panel panel-default config for-table">
+				<div class="panel-heading"><h4 class="panel-title"><span>LPIS/GSAA processing</span></h4></div>
+				<div class="panel-body">
+					<table class="table table-striped" style="text-align: left">
+						<thead>
+							<tr>
+								<th>Site</th>
+								<th>File</th>
+								<th>File Type</th>
+								<th>Progress</th>
+							</tr>
+						</thead>
+						<tbody id="refresh_downloading_file">
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<?php }?>
+			<!----------------- END LPIS/GSAA processing details --------->
 		</div>
 	</div>
 </div>
@@ -134,15 +160,17 @@ function select_option() {
 	var timer1;
 	var timer2;
 	var timer3;
+	var timer4;
 
 	function siteInfo() {
 		var id = $('select[name=site_select] option:selected').val();
 		$.ajax({
 			type: "get",
 			url: "getHistoryDownloads.php",
-			data: {'siteID_selected' : id},
+			data: {action:'historyDownloads',siteID_selected : id},
 			success: function(result) {
 				var res = JSON.parse(result);
+				$(".statistics .progress-bar").removeAttr("width");
 
 				if(res.percentage[0] == 0 && res.percentage[1] == 0 &&  res.percentage[2] == 0  &&  res.percentage[3] == 0){
 					$(".statistics .progress-bar-success").css("width",'25%').attr("data-original-title",res.percentage[0]+'% ('+res.numbers[0] +')'+" In progress");				
@@ -163,6 +191,9 @@ function select_option() {
 			
 				clearTimeout(timer1);
 				timer1 = setTimeout(siteInfo, 20000);
+			},
+			error: function (responseData, textStatus, errorThrown) {
+				console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 			}
 		});
 	}
@@ -178,6 +209,9 @@ function select_option() {
 				// Schedule the next request
 				clearTimeout(timer2);
 				timer2 = setTimeout(siteInfoCurrent, 20000);
+			},
+			error: function (responseData, textStatus, errorThrown) {
+				console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 			}
 		});
 	}
@@ -195,6 +229,9 @@ function select_option() {
 				pagingRefresh(count_rows, page_no);
 				// refresh jobs history table
 				$("#refresh_jobs").html(result);
+			},
+			error: function (responseData, textStatus, errorThrown) {
+				console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 			}
 		});
 	}
@@ -213,9 +250,33 @@ function select_option() {
 
 				clearTimeout(timer3);
 				timer3 = setTimeout(estimatedDownloads, 20000);
-				}
+				},
+			error: function (responseData, textStatus, errorThrown) {
+				console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			}
 
 			});
+		}
+
+	function currentLpisGsaaFiles(){
+		var site_id = $('select[name=site_select] option:selected').val();
+		$.ajax({
+			type:'get',
+			url:'getHistoryDownloads.php',
+			data:{action:'lpisGsaaDownloads',site_id:site_id},
+			success:function(response){
+				$("#refresh_downloading_file").html(response);
+				// Schedule the next request
+				clearTimeout(timer4);
+				timer4 = setTimeout(siteInfoCurrent, 20000);
+
+				},
+			error: function (responseData, textStatus, errorThrown) {
+				console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			}
+
+			});
+
 		}
 
 	$( document ).ready(function() {
@@ -223,6 +284,9 @@ function select_option() {
 		siteInfo();
 		siteInfoCurrent();
 		siteJobs(1);
+		<?php if(!ConfigParams::isSen2Agri()){?>
+		currentLpisGsaaFiles();
+		<?php }?>
 	});
 
 	// Actions to be performed when page changes

@@ -445,14 +445,16 @@ function get_server_resource_data() {
 		},
 		success: function(json_data)
 		{
-			if($("#pnl_server_resources table.to_be_refreshed_when_needed").length != json_data.server_resources.length)
-			{
-				update_server_resources_layout(json_data);
+			if(json_data.server_resources != null){
+				if($("#pnl_server_resources table.to_be_refreshed_when_needed").length != json_data.server_resources.length)
+				{
+					update_server_resources_layout(json_data);
+				}
+	
+				update_server_resources(json_data);
+				// Schedule the next request
+				setTimeout(get_server_resource_data, get_server_resource_data_interval);
 			}
-
-			update_server_resources(json_data);
-			// Schedule the next request
-			setTimeout(get_server_resource_data, get_server_resource_data_interval);
 		},
 		error: function (responseData, textStatus, errorThrown) {
 			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
@@ -787,8 +789,8 @@ function add_events(){
 }
 
 function filter_input_files(formId){
-	var tilesL8NotValid = '';var tilesS2NotValid = '';
-
+	var tilesL8NotValid = '';var tilesS2NotValid = '';var tilesS1NotValid = new Array();
+	
 	var siteId = $("#"+formId+" select#siteId").val();
 	var productEl = $("#"+formId+" select#inputFiles");
 	
@@ -803,7 +805,7 @@ function filter_input_files(formId){
 	if(end_data!="") data.end_data= end_data ;
 	
 	var tilesL8Arr=new Array();
-	if($("#"+formId+" input#l3a_chkL8").is(':checked')){
+	if($("#"+formId+" input#"+formId+"_chkL8").is(':checked')){
 		//check if the tiles from textarea have the good format
 		var tilesL8 = $("#"+formId+" textarea[name='L8Tiles']").val();
 
@@ -825,13 +827,14 @@ function filter_input_files(formId){
 		}
 	
 	var tilesS2Arr=new Array();
-	if($("#"+formId+" input#l3a_chkS2").is(':checked')){
+	if($("#"+formId+" input#"+formId+"_chkS2").is(':checked')){
 		//check if the tiles from textarea have the good format 
 		var tilesS2 = $("#"+formId+" textarea[name='S2Tiles']").val();
 		
 		if(tilesS2!=""){
 			tilesS2Arr = tilesS2.split(',');
 			for(i = 0; i < tilesS2Arr.length; i++){
+				//Check S2 tiles.The first 2 characters must be numbers followed by 3 letters
 				var noMatch = tilesS2Arr[i].replace(/^(\d{2}[A-Z]{3})(,\d{2}[A-Z]{3})*/gm,'');
 				if(noMatch.trim()!=''){
 					tilesS2NotValid = tilesS2NotValid+" "+tilesS2Arr[i];
@@ -845,10 +848,34 @@ function filter_input_files(formId){
 	}else{
 		$("#"+formId+" .invalidTilesS2").text("");
 		}
-
-	data.tiles= tilesL8Arr.concat(tilesS2Arr);
 	
-	if(tilesS2NotValid=='' && tilesL8NotValid==''){
+	var tilesS1Arr=new Array();
+	if($("#"+formId+" input#"+formId+"_chkS1").is(':checked')){
+		//check if the tiles from textarea have the good format
+		var tilesS1 = $("#"+formId+" textarea[name='S1Tiles']").val();
+
+		if(tilesS1!=""){
+			tilesS1Arr = tilesS1.split(',');
+			for(i = 0; i < tilesS1Arr.length; i++){
+				//Check S1 tiles.Values must be in the range [1, 175]
+				var noMatch = tilesS1Arr[i].replace(/^([1-9]|[1-9][0-9]|1[0-6][0-9]|17[0-5])$/gm,'');
+				if(noMatch.trim()!=''){
+					tilesS1NotValid.push(tilesS1Arr[i]);
+				}
+			}
+		}
+		
+	}
+	
+	if(tilesS1NotValid.length!=0){
+		$("#"+formId+" .invalidTilesS1").text("Invalid tile: "+tilesS1NotValid.toString());
+	}else{
+		$("#"+formId+" .invalidTilesS1").text("");
+		}
+
+	data.tiles= tilesL8Arr.concat(tilesS2Arr).concat(tilesS1Arr);
+	
+	if(tilesS2NotValid=='' && tilesL8NotValid=='' && tilesS1NotValid.length==0){
 		//make available the button to reset the filter
 		$("#"+formId+" button[name='btnResetFilter']").prop('disabled',false);
 		
@@ -907,7 +934,10 @@ function seasons_for_site(seasonEl, site_id){
 		            
 		           $(seasonEl).append(option);		
             }
-           }
+        },           
+   		error: function (responseData, textStatus, errorThrown) {
+   			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);   			
+   		}
 		});
 }
 
@@ -974,7 +1004,7 @@ function update_sites(json_data) {
 			//var sentinel2TilesEl = $("#"+siteEl.form.id+" select#sentinel2Tiles");
 			//var landsatTilesEl = $("#"+siteEl.form.id+" select#landsatTiles");
 			var productsEl = $("#"+siteEl.form.id+" select#inputFiles");
-			var cropMaskEl = $("#"+siteEl.form.id+" select#cropMask");
+			var cropMaskEl = $("#"+siteEl.form.id+" select[name='cropMask']");
 			var seasonEl =  $("#"+siteEl.form.id+" select#choose_season");
 			var btnFilterEl =  $("#"+siteEl.form.id+" button[name='btnFilter']");
 		
@@ -1013,7 +1043,7 @@ function update_sites(json_data) {
 			var chkEl = event.target;
 			var siteEl     = $("#"+chkEl.form.id+" select#siteId")[0];
 			var productsEl = $("#"+chkEl.form.id+" select#inputFiles");
-			var cropMaskEl = $("#"+chkEl.form.id+" select#cropMask");
+			var cropMaskEl = $("#"+chkEl.form.id+" select[name='cropMask']");
 			if(siteEl.selectedIndex > 0) {
 				var siteId = siteEl.options[siteEl.selectedIndex].value;
 				//get_products(siteId, productsEl, chkEl.form.id);
@@ -1039,7 +1069,7 @@ function update_sites(json_data) {
 			var chkEl = event.target;
 			var siteEl     = $("#"+chkEl.form.id+" select#siteId")[0];
 			var productsEl = $("#"+chkEl.form.id+" select#inputFiles");
-			var cropMaskEl = $("#"+chkEl.form.id+" select#cropMask");
+			var cropMaskEl = $("#"+chkEl.form.id+" select[name='cropMask']");
 			if(siteEl.selectedIndex > 0) {
 				//get_products(siteEl.options[siteEl.selectedIndex].value, productsEl, chkEl.form.id);
 				get_crop_mask(siteEl.options[siteEl.selectedIndex].value, cropMaskEl);
@@ -1090,15 +1120,30 @@ function get_products(siteId, productsEl, formId, filter) {
 	if(filter !== undefined){
 		data = Object.assign({}, data, filter);
 	}
-	if($("#"+formId+" input#l3a_chkS2").is(':checked') && !$("#"+formId+" input#l3a_chkL8").is(':checked')){
-		if(data.tiles==null){
-			data.satellite_id = 1;
-		}		
-	}else if(!$("#"+formId+" input#l3a_chkL8").is(':checked') && $("#"+formId+" input#l3a_chkS2").is(':checked')){
-		if(data.tiles==null){
-			data.satellite_id = 2;
+	var satS1Checked =  $("#"+formId+" input#"+formId+"_chkS1").is(':checked');
+	var satS2Checked =  $("#"+formId+" input#"+formId+"_chkS2").is(':checked');
+	var satL8Checked =  $("#"+formId+" input#"+formId+"_chkL8").is(':checked');
+	
+	if(data.tiles!=undefined && data.tiles.length==0 && (satS2Checked || satL8Checked || satS1Checked)){		
+		if(satS2Checked && satL8Checked && satS1Checked){ }
+		else{
+			data.satellite_id = new Array();
+			if(satS1Checked){
+				data.satellite_id.push(3);
+			}
+			
+			if(satS2Checked){
+				data.satellite_id.push(1);
+			}
+			
+			if(satL8Checked){
+				data.satellite_id.push(2);
+			}
 		}
+			
+		
 	}
+
 	
 	$.ajax({
 		//url: get_products_url,

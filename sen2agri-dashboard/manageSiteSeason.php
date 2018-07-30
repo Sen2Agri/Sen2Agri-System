@@ -4,7 +4,7 @@
 	
 	function saveSiteSeason($id, $site_id, $name, $start, $middle, $end, $enabled, $processors) {
 		$ret = "";
-		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+		$db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 		if ($id == 0) {
 			// save new season
 			$result = pg_query_params ($db, "SELECT sp_insert_season($1,$2,$3,$4,$5,$6)",
@@ -42,7 +42,7 @@
 		return $ret;
 	}
 	function removeSiteSeason($id) {
-		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	    $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 		$result = pg_query_params ($db, "SELECT sp_delete_season($1)", array($id)) or die ("An error occurred.");
 		return "SUCCESS: removed " . $result;
 	}

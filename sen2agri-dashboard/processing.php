@@ -3,52 +3,52 @@ session_start();
 require_once ("ConfigParams.php");
 
 function getDashboardCurrentJobData($page) {
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query_params($dbconn, "select * from sp_get_dashboard_current_job_data($1)", array($page)) or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getDashboardServerResourceData() {
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query($dbconn, "select * from sp_get_dashboard_server_resource_data()") or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getDashboardProcessorStatistics() {
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query($dbconn, "select * from sp_get_dashboard_processor_statistics()") or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getDashboardProductAvailability($since) {
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query_params($dbconn, "select * from sp_get_dashboard_product_availability($1)", array($since)) or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getDashboardJobTimeline($jobId) {
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query_params($dbconn, "select * from sp_get_dashboard_job_timeline($1)", array($jobId)) or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getDashboardSites() {
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query($dbconn, "select * from sp_get_dashboard_sites()") or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getDashboardProducts($siteId, $processorId, $tiles, $satelliteId, $seasonId, $startDate, $endDate) {
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query_params($dbconn, "select * from sp_get_dashboard_products($1,$2,$3,$4,$5,$6,$7)",array('{'. $siteId.'}','{'.$processorId.'}',$seasonId,'{'.$satelliteId.'}',$startDate,$endDate,$tiles)) or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getDashboardProcessors() {
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query($dbconn, "select * from sp_get_dashboard_processors()") or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
 function getTiles($siteId,$satelliteId){
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query_params($dbconn, "select * from sp_get_site_tiles($1,$2)",array($siteId,$satelliteId)) or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? json_encode(pg_fetch_all_columns($rows)): "");
 }
 function getSiteTiles($siteId,$satelliteId){
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query($dbconn, "select array_to_json(tiles) as tiles from site_tiles where site_id='".$siteId."' and satellite_id='".$satelliteId."'") or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 			$processorId = $_GET["processorId"];
 
 			$tiles = (isset($_GET["tiles"]) && $_GET["tiles"]!="")?'{'.implode(',',array_filter($_GET['tiles'])).'}':null;
-			$satelliteId = (isset($_GET["satellite_id"]) && $_GET["satellite_id"]!="")?$_GET["satellite_id"]:null;
+			$satelliteId = (isset($_GET["satellite_id"])) ? (is_array($_GET["satellite_id"]) ? implode(',',$_GET["satellite_id"]) : $_GET["satellite_id"]) :null;
 			$seasonId = (isset($_GET["season_id"]) && $_GET["season_id"]!="")?$_GET["season_id"]:null;
 			$startDate = (isset($_GET["start_data"]) && $_GET["start_data"]!="")?$_GET["start_data"]:null;
 			$endDate = (isset($_GET["end_data"]) && $_GET["end_data"]!="")?$_GET["end_data"]:null;

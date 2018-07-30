@@ -18,7 +18,7 @@
     }
 </style>
 <?php
-    $db = pg_connect(ConfigParams::$CONN_STRING)
+$db = pg_connect(ConfigParams::getConnection())
             or die ("Could not connect");
 
     $jobId = $_REQUEST['jobId'];

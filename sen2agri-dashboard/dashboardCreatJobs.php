@@ -37,7 +37,7 @@ function get_scheduled_jobs_header($processorId) {
 function add_new_scheduled_jobs_layout($processorId) {
 	$action = getAction($processorId);
 
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	$db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 	// get distinct sites with seasons
 	
 	if($_SESSION['isAdmin'] ||  sizeof($_SESSION['siteId'])>0){
@@ -130,7 +130,7 @@ function add_new_scheduled_jobs_layout($processorId) {
 function update_scheduled_jobs_layout($processorId) {
 	$action = getAction($processorId);
 
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	$db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 	$sql = "SELECT * from sp_get_dashboard_processor_scheduled_task('$processorId')";
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 

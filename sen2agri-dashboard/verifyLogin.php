@@ -4,7 +4,7 @@ require_once('ConfigParams.php');
 
 function SignIn()
 {
-        $dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $dbconn = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
 
         //starting the session for user
         if(!empty($_POST['user'])) {
@@ -35,7 +35,7 @@ function SignIn()
 }
 
 function setUserPassword(){
-    $dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $dbconn = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
     
     if(!empty($_POST['username']) && !empty($_POST['email'])  && !empty($_POST['password'])  && !empty($_POST['password_confirm'])) {
         $result = pg_query_params($dbconn, "SELECT * FROM sp_set_user_password($1, $2, $3)", array($_POST['username'], $_POST['email'], $_POST['password'] )) or die(pg_last_error());

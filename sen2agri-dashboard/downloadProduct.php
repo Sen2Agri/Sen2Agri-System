@@ -3,7 +3,7 @@
 	session_start();
 	require_once ("ConfigParams.php");
 	
-	$dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	$dbconn = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
 	$rows = pg_query($dbconn, "select full_path from product where id=".$_GET['id']) or die(pg_last_error());
 	if (pg_numrows($rows) > 0) {
 		$result = pg_fetch_array($rows, 0)[0];

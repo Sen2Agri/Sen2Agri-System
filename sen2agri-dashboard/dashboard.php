@@ -10,7 +10,7 @@ if (isset($_REQUEST['schedule_add']) && isset($_REQUEST['processorId'])) {
 
 // Submited add new job; insert job in database with id $schedule_id
 if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] == 'Save') {
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 
 	$job_name      = $_REQUEST ['jobname'];
 	$processorId   = $_REQUEST ['processorId'];
@@ -67,7 +67,7 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 
 // Submited edit job; update job with id $schedule_id in database
 if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 'Save') {
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 
 	$schedule_id = $_REQUEST ['scheduledID'];
 	$schedule_type = $_REQUEST ['schedule'];
@@ -113,7 +113,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 // Submited remove job; remove job with id $schedule_id in database
 if (isset ( $_REQUEST ['schedule_submit_delete'] ) && $_REQUEST ['schedule_submit_delete'] == 'Delete') {	
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 
 	$schedule_id = $_REQUEST ['scheduledID'];
 	
@@ -126,8 +126,11 @@ if (isset ( $_REQUEST ['schedule_submit_delete'] ) && $_REQUEST ['schedule_submi
 
 }
 
-$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-$sql = "SELECT id, short_name, label FROM processor WHERE short_name NOT LIKE 'l2a%'";
+
+$all_processors = array();
+
+$db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
+$sql = "SELECT id, short_name, name as label FROM processor WHERE short_name NOT LIKE 'l2%'";
 $rows = pg_query($db, $sql) or die ("An error occurred.");
 $all_processors =  pg_fetch_all($rows);
 
@@ -168,8 +171,8 @@ $all_processors =  pg_fetch_all($rows);
 					<!-- L3A Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<?php 
 					$processorList = array();
-					if(!empty($all_processors)){
-					   		    
+					if(sizeof($all_processors)>0){
+					    
 					    foreach ($all_processors as $processor){
 					        if(!isset($active_proc)){
 					            if(isset($_SESSION['active_proc'])){

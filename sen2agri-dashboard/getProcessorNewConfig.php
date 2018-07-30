@@ -20,7 +20,7 @@ function endsWith( $str, $sub ) {
 
 function createCustomUploadFolder($site_id, $timestamp) {
 	// create custom upload path like: /mnt/upload/siteName/userName_timeStamp/
-	$dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $dbconn = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
 	$rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL") or die(pg_last_error());
 	$result = pg_fetch_array($rows, 0)[1];
 	$upload_target_dir = str_replace("{user}", "", $result);
@@ -131,7 +131,7 @@ function upload_reference_raster($site_id, $timestamp) {
 }
 
 function insertjob($name, $description, $processor_short_name, $site_id, $start_type_id, $parameters, $configuration) {
-	$db = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $db = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
 
 	$rows = pg_query($db, "SELECT id FROM processor WHERE short_name='$processor_short_name'") or die(pg_last_error());
 	if (pg_numrows($rows) > 0) {

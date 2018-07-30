@@ -5,7 +5,7 @@ require_once('ConfigParams.php');
 function get_tiles(){
 	$tiles = array();
 	if(isset($_POST['term'])){
-		$db = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+	    $db = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 		
 		$query ="";
 		if( sizeof($_POST['satellite_id'])== 2){
@@ -29,7 +29,7 @@ function get_tiles(){
 }
 
 function get_site_seasons(){
-	$db = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $db = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	
 	$season = array();
 	

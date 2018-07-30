@@ -2,7 +2,7 @@
 require_once("ConfigParams.php");
 
 function getDatabaseVersion() {
-	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	$rows = pg_query($dbconn, "select version from meta;") or die(pg_last_error());
 	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
 }
@@ -36,7 +36,7 @@ if (isset($_SESSION['userName'])) {
 if (isset($_SESSION['userName'])) {
 ?>
 	<script type="text/javascript">
-		var jsonSiteId = <?php echo  $_SESSION['isAdmin'] ? "0" : "".json_encode( $_SESSION['siteId']) ?>;
+		var jsonSiteId = <?php echo  $_SESSION['isAdmin'] ? "0" : json_encode( $_SESSION['siteId']) ?>;
 		var jsonJobsPage = 1;
 	</script>
 	<?php }?>
