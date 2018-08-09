@@ -17,6 +17,7 @@ begin
         status_timestamp = now(),
         failed_reason = null
     where (satellite_id, orbit_id, tile_id) = (_satellite_id, _orbit_id, _tile_id)
+      and status_id = 1 -- processing
     returning downloader_history_id
     into _downloader_history_id;
 

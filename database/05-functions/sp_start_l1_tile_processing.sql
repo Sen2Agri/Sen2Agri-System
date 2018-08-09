@@ -72,11 +72,17 @@ begin
                 select unnest(tiles) as tile_id
             ) tile_ids
         inner join site on site.id = downloader_history.site_id
-        where (downloader_history.satellite_id, downloader_history.orbit_id, tile_ids.tile_id) not in (
-            select l1_tile_history.satellite_id,
-                l1_tile_history.orbit_id,
-                l1_tile_history.tile_id
+        where not exists (
+            select *
             from l1_tile_history
+            where (l1_tile_history.satellite_id,
+                   l1_tile_history.orbit_id,
+                   l1_tile_history.tile_id) =
+                  (downloader_history.satellite_id,
+                   downloader_history.orbit_id,
+                   tile_ids.tile_id)
+              and status_id = 1 -- processing
+              or (l1_tile_history.downloader_history_id, l1_tile_history.tile_id) = (downloader_history.id, tile_ids.tile_id)
         ) and downloader_history.status_id in (2, 7) -- downloaded, processing
         and site.enabled
         order by satellite_id,
