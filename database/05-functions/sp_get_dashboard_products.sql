@@ -73,7 +73,7 @@ $BODY$
 
 		IF $6 IS NOT NULL THEN
 		q := q || $sql$
-			AND P.created_timestamp <= to_timestamp(cast($6 as TEXT),'YYYY-MM-DD HH24:MI:SS') + interval '1 day' 
+			AND P.created_timestamp <= to_timestamp(cast($6 as TEXT),'YYYY-MM-DD HH24:MI:SS') + interval '1 day'
 			$sql$;
 		END IF;
 
@@ -89,7 +89,7 @@ $BODY$
 			)
 		--         select * from data;
 			SELECT array_to_json(array_agg(row_to_json(data)), true) FROM data;
-		    $sql$;	
+		    $sql$;
 
 		--     raise notice '%', q;
 
@@ -98,4 +98,4 @@ $BODY$
 		    USING _site_id, _product_type_id, _season_id, _satellit_id, _since_timestamp, _until_timestamp, _tiles;
 		END
 		$BODY$
-  LANGUAGE plpgsql STABLE
+  LANGUAGE plpgsql STABLE;
