@@ -1,7 +1,7 @@
 create or replace function sp_update_l1_tile_status(
     _downloader_history_id int
 )
-returns int
+returns boolean
 as
 $$
 begin
@@ -30,9 +30,9 @@ begin
             set status_id = 6 -- processing_failed
             where id = _downloader_history_id;
         end if;
-        return _downloader_history_id;
+        return true;
     else
-        return null;
+        return false;
     end if;
 end;
 $$ language plpgsql volatile;
