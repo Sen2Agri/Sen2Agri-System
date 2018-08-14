@@ -75,7 +75,8 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 	$processorId = $_REQUEST ['processorId'];
 
 	$processor_params = null;
-	if($processorId == '3'){
+	//if L3B and sen2agri DB
+	if(ConfigParams::isSen2Agri() && $processorId == '3'){
 		$processor_params = json_encode ( array (
 				"general_params" => array (
 						"product_type" => $_REQUEST['product']))
