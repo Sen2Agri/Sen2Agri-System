@@ -1,0 +1,1 @@
+create index ix_l1_tile_history_downloader_history_id on l1_tile_history(downloader_history_id);
