@@ -12,5 +12,6 @@ CREATE TABLE downloader_history
   orbit_id INTEGER NOT NULL DEFAULT -1,
   status_reason character varying NULL,
   tiles text[] NULL,
+  footprint geography NULL,
   CONSTRAINT downloader_history_pkey PRIMARY KEY (id)
 )
