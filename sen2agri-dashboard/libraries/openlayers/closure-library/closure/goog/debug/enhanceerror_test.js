@@ -23,6 +23,7 @@ var THROW_NPE = 2;
 var THROW_ERROR = 3;
 var THROW_ENHANCED_ERROR = 4;
 var THROW_ENHANCED_STRING = 5;
+var THROW_OBJECT = 6;
 
 if (typeof debug == 'undefined') {
   function debug(str) {
@@ -34,9 +35,7 @@ function testEnhanceError() {
   // Tests are like this:
   // [test num, expect something in the stack, expect an extra message]
   var tests = [
-    [THROW_STRING],
-    [THROW_NPE],
-    [THROW_ERROR],
+    [THROW_STRING], [THROW_OBJECT], [THROW_NPE], [THROW_ERROR],
     [THROW_ENHANCED_ERROR, 'throwEnhancedError', 'an enhanced error'],
     [THROW_ENHANCED_STRING, 'throwEnhancedString']
   ];
@@ -54,23 +53,26 @@ function testEnhanceError() {
         debug(s[j]);
       }
       // 'baz' is always in the stack
-      assertTrue('stack should contain "baz"',
-                 e.stack.indexOf('baz') != -1);
+      assertTrue('stack should contain "baz"', e.stack.indexOf('baz') != -1);
 
       if (testInStack) {
-        assertTrue('stack should contain "' + testInStack + '"',
-                   e.stack.indexOf(testInStack) != -1);
+        assertTrue(
+            'stack should contain "' + testInStack + '"',
+            e.stack.indexOf(testInStack) != -1);
       }
       if (testExtraMessage) {
         // 2 messages
-        assertTrue('message0 should contain "' + testExtraMessage + '"',
-                   e.message0.indexOf(testExtraMessage) != -1);
-        assertTrue('message1 should contain "message from baz"',
-                   e.message1.indexOf('message from baz') != -1);
+        assertTrue(
+            'message0 should contain "' + testExtraMessage + '"',
+            e.message0.indexOf(testExtraMessage) != -1);
+        assertTrue(
+            'message1 should contain "message from baz"',
+            e.message1.indexOf('message from baz') != -1);
       } else {
         // 1 message
-        assertTrue('message0 should contain "message from baz"',
-                   e.message0.indexOf('message from baz') != -1);
+        assertTrue(
+            'message0 should contain "message from baz"',
+            e.message0.indexOf('message from baz') != -1);
       }
       continue;
     }
@@ -105,6 +107,9 @@ function baz(testNum) {
       case THROW_ENHANCED_STRING:
         throwEnhancedString();
         break;
+      case THROW_OBJECT:
+        throwObject();
+        break;
     }
   } catch (e) {
     throw goog.debug.enhanceError(e, 'message from baz');
@@ -121,7 +126,7 @@ function throwNpe() {
 }
 
 function throwError() {
-  throw Error('an error');
+  throw new Error('an error');
 }
 
 function throwEnhancedError() {
@@ -130,4 +135,11 @@ function throwEnhancedError() {
 
 function throwEnhancedString() {
   throw goog.debug.enhanceError('oh nos!');
+}
+
+/**
+ * @throws {*}
+ */
+function throwObject() {
+  throw {property: 'value'};
 }

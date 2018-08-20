@@ -1,9 +1,9 @@
 goog.provide('ol.Observable');
 
-goog.require('goog.events');
-goog.require('goog.events.EventTarget');
-goog.require('goog.events.EventType');
-
+goog.require('ol');
+goog.require('ol.events');
+goog.require('ol.events.EventTarget');
+goog.require('ol.events.EventType');
 
 
 /**
@@ -15,14 +15,14 @@ goog.require('goog.events.EventType');
  * {@link ol.Observable#changed}.
  *
  * @constructor
- * @extends {goog.events.EventTarget}
- * @fires change
+ * @extends {ol.events.EventTarget}
+ * @fires ol.events.Event
  * @struct
- * @api stable
+ * @api
  */
 ol.Observable = function() {
 
-  goog.base(this);
+  ol.events.EventTarget.call(this);
 
   /**
    * @private
@@ -31,16 +31,23 @@ ol.Observable = function() {
   this.revision_ = 0;
 
 };
-goog.inherits(ol.Observable, goog.events.EventTarget);
+ol.inherits(ol.Observable, ol.events.EventTarget);
 
 
 /**
  * Removes an event listener using the key returned by `on()` or `once()`.
- * @param {goog.events.Key} key The key returned by `on()` or `once()`.
- * @api stable
+ * @param {ol.EventsKey|Array.<ol.EventsKey>} key The key returned by `on()`
+ *     or `once()` (or an array of keys).
+ * @api
  */
 ol.Observable.unByKey = function(key) {
-  goog.events.unlistenByKey(key);
+  if (Array.isArray(key)) {
+    for (var i = 0, ii = key.length; i < ii; ++i) {
+      ol.events.unlistenByKey(key[i]);
+    }
+  } else {
+    ol.events.unlistenByKey(/** @type {ol.EventsKey} */ (key));
+  }
 };
 
 
@@ -50,15 +57,22 @@ ol.Observable.unByKey = function(key) {
  */
 ol.Observable.prototype.changed = function() {
   ++this.revision_;
-  this.dispatchEvent(goog.events.EventType.CHANGE);
+  this.dispatchEvent(ol.events.EventType.CHANGE);
 };
 
 
 /**
- * Triggered when the revision counter is increased.
- * @event change
+ * Dispatches an event and calls all listeners listening for events
+ * of this type. The event parameter can either be a string or an
+ * Object with a `type` property.
+ *
+ * @param {{type: string,
+ *     target: (EventTarget|ol.events.EventTarget|undefined)}|ol.events.Event|
+ *     string} event Event object.
+ * @function
  * @api
  */
+ol.Observable.prototype.dispatchEvent;
 
 
 /**
@@ -77,11 +91,23 @@ ol.Observable.prototype.getRevision = function() {
  * @param {string|Array.<string>} type The event type or array of event types.
  * @param {function(?): ?} listener The listener function.
  * @param {Object=} opt_this The object to use as `this` in `listener`.
- * @return {goog.events.Key} Unique key for the listener.
- * @api stable
+ * @return {ol.EventsKey|Array.<ol.EventsKey>} Unique key for the listener. If
+ *     called with an array of event types as the first argument, the return
+ *     will be an array of keys.
+ * @api
  */
 ol.Observable.prototype.on = function(type, listener, opt_this) {
-  return goog.events.listen(this, type, listener, false, opt_this);
+  if (Array.isArray(type)) {
+    var len = type.length;
+    var keys = new Array(len);
+    for (var i = 0; i < len; ++i) {
+      keys[i] = ol.events.listen(this, type[i], listener, opt_this);
+    }
+    return keys;
+  } else {
+    return ol.events.listen(
+        this, /** @type {string} */ (type), listener, opt_this);
+  }
 };
 
 
@@ -90,11 +116,23 @@ ol.Observable.prototype.on = function(type, listener, opt_this) {
  * @param {string|Array.<string>} type The event type or array of event types.
  * @param {function(?): ?} listener The listener function.
  * @param {Object=} opt_this The object to use as `this` in `listener`.
- * @return {goog.events.Key} Unique key for the listener.
- * @api stable
+ * @return {ol.EventsKey|Array.<ol.EventsKey>} Unique key for the listener. If
+ *     called with an array of event types as the first argument, the return
+ *     will be an array of keys.
+ * @api
  */
 ol.Observable.prototype.once = function(type, listener, opt_this) {
-  return goog.events.listenOnce(this, type, listener, false, opt_this);
+  if (Array.isArray(type)) {
+    var len = type.length;
+    var keys = new Array(len);
+    for (var i = 0; i < len; ++i) {
+      keys[i] = ol.events.listenOnce(this, type[i], listener, opt_this);
+    }
+    return keys;
+  } else {
+    return ol.events.listenOnce(
+        this, /** @type {string} */ (type), listener, opt_this);
+  }
 };
 
 
@@ -104,19 +142,15 @@ ol.Observable.prototype.once = function(type, listener, opt_this) {
  * @param {function(?): ?} listener The listener function.
  * @param {Object=} opt_this The object which was used as `this` by the
  * `listener`.
- * @api stable
+ * @api
  */
 ol.Observable.prototype.un = function(type, listener, opt_this) {
-  goog.events.unlisten(this, type, listener, false, opt_this);
+  if (Array.isArray(type)) {
+    for (var i = 0, ii = type.length; i < ii; ++i) {
+      ol.events.unlisten(this, type[i], listener, opt_this);
+    }
+    return;
+  } else {
+    ol.events.unlisten(this, /** @type {string} */ (type), listener, opt_this);
+  }
 };
-
-
-/**
- * Removes an event listener using the key returned by `on()` or `once()`.
- * Note that using the {@link ol.Observable.unByKey} static function is to
- * be preferred.
- * @param {goog.events.Key} key The key returned by `on()` or `once()`.
- * @function
- * @api stable
- */
-ol.Observable.prototype.unByKey = ol.Observable.unByKey;

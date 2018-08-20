@@ -103,7 +103,7 @@ goog.crypt.baseN.BASE_64_URL_SAFE =
  */
 goog.crypt.baseN.recodeString = function(number, inputBase, outputBase) {
   if (outputBase == '') {
-    throw Error('Empty output base');
+    throw new Error('Empty output base');
   }
 
   // Check if number is 0 (special case when we don't want to return '').
@@ -128,7 +128,6 @@ goog.crypt.baseN.recodeString = function(number, inputBase, outputBase) {
 
   // For all digits of number, starting with the most significant ...
   for (var i = numberDigits.length - 1; i >= 0; i--) {
-
     // result *= number.base.
     var carry = 0;
     for (var j = 0, n = result.length; j < n; j++) {
@@ -201,9 +200,9 @@ goog.crypt.baseN.stringToArray_ = function(number, base) {
     var character = number.charAt(i);
     var digit = index[character];
     if (typeof digit == 'undefined') {
-      throw Error('Number ' + number +
-                  ' contains a character not found in base ' +
-                  base + ', which is ' + character);
+      throw new Error(
+          'Number ' + number + ' contains a character not found in base ' +
+          base + ', which is ' + character);
     }
     result.push(digit);
   }
@@ -234,7 +233,8 @@ goog.crypt.baseN.arrayToString_ = function(number, base) {
   for (var i = n - 1; i >= 0; i--) {
     var digit = number[i];
     if (digit >= baseSize || digit < 0) {
-      throw Error('Number ' + number + ' contains an invalid digit: ' + digit);
+      throw new Error(
+          'Number ' + number + ' contains an invalid digit: ' + digit);
     }
     chars.push(base.charAt(digit));
   }

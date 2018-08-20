@@ -1,4 +1,4 @@
-@import url(http://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700);
+@import url(https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700);
 .navbar-inverse {
   border: 0;
 }
@@ -45,9 +45,14 @@
 body {
   padding-top: 50px;
 }
-.nameContainer .name, .prettyprint.source .pln {
+.nameContainer .anchor {
   padding-top: 50px;
   margin-top: -50px;
+  width: 0px;
+  height: 0px;
+}
+.nameContainer .anchor.highlighted + h4 {
+  background-color: #faebcc;
 }
 a {
   position: relative;
@@ -294,6 +299,7 @@ span.type-signature.static {
   color: gray;
 }
 .main .nameContainer h4 {
+  margin-top: 0px;
   margin-right: 150px;
   line-height: 1.3;
 }
@@ -415,4 +421,8 @@ footer {
   top: 1em;
   left: 250px;
   font-weight: normal;
+}
+#latest-check {
+  margin-top: -10px;
+  margin-bottom: 10px;
 }

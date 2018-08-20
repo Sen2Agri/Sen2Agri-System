@@ -1,50 +1,63 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en-US">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" type="text/css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="./resources/prism/prism.css" type="text/css">
     <link rel="stylesheet" href="../css/ol.css" type="text/css">
     <link rel="stylesheet" href="./resources/layout.css" type="text/css">
     
     
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=fetch,requestAnimationFrame,Element.prototype.classList,URL"></script>
     <script src="./resources/zeroclipboard/ZeroClipboard.min.js"></script>
     <title>Limited Layer Extent</title>
   </head>
   <body>
 
     <header class="navbar" role="navigation">
-      <div class="container" id="navbar-inner-container">
-        <a class="navbar-brand" href="./"><img src="./resources/logo-70x70.png">&nbsp;OpenLayers 3 Examples</a>
+      <div class="container">
+        <div class="display-table pull-left" id="navbar-logo-container">
+          <a class="navbar-brand" href="./"><img src="./resources/logo-70x70.png">&nbsp;OpenLayers Examples</a>
+        </div>
+        <!-- menu items that get hidden below 768px width -->
+        <nav class='collapse navbar-collapse navbar-responsive-collapse'>
+          <ul class="nav navbar-nav pull-right">
+            <li><a href="../doc">Docs</a></li>
+            <li><a class="active" href="index.html">Examples</a></li>
+            <li><a href="../apidoc">API</a></li>
+            <li><a href="https://github.com/openlayers/openlayers">Code</a></li>
+          </ul>
+        </nav>
       </div>
     </header>
 
     <div class="container-fluid">
 
-      <div class="row-fluid">
-  <div class="span12">
-    <div id="map" class="map"></div>
-  </div>
-</div>
-<div class="btn-group">
-  <button type="button" class="btn btn-default" id="northwest">northwest</button>
-  <button type="button" class="btn btn-default" id="northeast">northeast</button>
-  <button type="button" class="btn btn-default" id="southeast">southeast</button>
-  <button type="button" class="btn btn-default" id="southwest">southwest</button>
-  <button type="button" class="btn btn-default" id="world">world</button>
-</div>
-
+      <div id="latest-check" class="alert alert-warning alert-dismissible" role="alert" style="display:none">
+        <button id="latest-dismiss" type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        This example uses OpenLayers v<span>4.6.5</span>. The <a id="latest-link" href="#" class="alert-link">latest</a> is v<span id="latest-version"></span>.
+      </div>
 
       <div class="row-fluid">
         <div class="span12">
           <h4 id="title">Limited Layer Extent</h4>
+          <div id="map" class="map"></div>
+<button type="button" class="btn btn-default" id="India">India</button>
+<button type="button" class="btn btn-default" id="Argentina">Argentina</button>
+<button type="button" class="btn btn-default" id="Nigeria">Nigeria</button>
+<button type="button" class="btn btn-default" id="Sweden">Sweden</button>
+
+        </div>
+      </div>
+
+      <div class="row-fluid">
+        <div class="span12">
           <p id="shortdesc">Restricting layer rendering to a limited extent.</p>
-          <div id="docs"><p>This example uses the <code>layer.setExtent()</code> method to modify the extent of the overlay layer.  Use the controls below to limit rendering based on an extent.</p>
+          <div id="docs"><p>This example uses the <code>layer.setExtent()</code> method to modify the extent of the overlay layer.  Use the controls above to limit rendering based on an extent (approximate country bounds).</p>
 </div>
-          <div id="tags">extent, tilejson</div>
           <div id="api-links">Related API documentation: <ul class="inline"><li><a href="../apidoc/ol.Map.html" title="API documentation for ol.Map">ol.Map</a></li>,<li><a href="../apidoc/ol.View.html" title="API documentation for ol.View">ol.View</a></li>,<li><a href="../apidoc/ol.layer.Tile.html" title="API documentation for ol.layer.Tile">ol.layer.Tile</a></li>,<li><a href="../apidoc/ol.proj.html" title="API documentation for ol.proj">ol.proj</a></li>,<li><a href="../apidoc/ol.source.TileJSON.html" title="API documentation for ol.source.TileJSON">ol.source.TileJSON</a></li></ul></div>
         </div>
       </div>
@@ -52,39 +65,38 @@
       <div class="row-fluid">
         <div id="source-controls">
           <a id="copy-button"><i class="fa fa-clipboard"></i> Copy</a>
-          <a id="jsfiddle-button"><i class="fa fa-jsfiddle"></i> Edit</a>
+          <a id="codepen-button"><i class="fa fa-codepen"></i> Edit</a>
         </div>
-        <form method="POST" id="jsfiddle-form" target="_blank" action="http://jsfiddle.net/api/post/jquery/1.11.0/">
+        <form method="POST" id="codepen-form" target="_blank" action="https://codepen.io/pen/define/">
+          <textarea class="hidden" name="title">Limited Layer Extent</textarea>
+          <textarea class="hidden" name="description">Restricting layer rendering to a limited extent.</textarea>
           <textarea class="hidden" name="js">function transform(extent) {
   return ol.proj.transformExtent(extent, &#x27;EPSG:4326&#x27;, &#x27;EPSG:3857&#x27;);
 }
 
-var extents = {
-  northwest: transform([-180, 0, 0, 85]),
-  northeast: transform([0, 0, 180, 85]),
-  southeast: transform([0, -85, 180, 0]),
-  southwest: transform([-180, -85, 0, 0]),
-  world: transform([-180, -85, 180, 85])
+var extents &#x3D; {
+  India: transform([68.17665, 7.96553, 97.40256, 35.49401]),
+  Argentina: transform([-73.41544, -55.25, -53.62835, -21.83231]),
+  Nigeria: transform([2.6917, 4.24059, 14.57718, 13.86592]),
+  Sweden: transform([11.02737, 55.36174, 23.90338, 69.10625])
 };
 
-var base = new ol.layer.Tile({
+var base &#x3D; new ol.layer.Tile({
   source: new ol.source.TileJSON({
-    url: &#x27;http://api.tiles.mapbox.com/v3/&#x27; +
-        &#x27;mapbox.world-black.jsonp&#x27;,
+    url: &#x27;https://api.tiles.mapbox.com/v3/mapbox.world-light.json?secure&#x27;,
     crossOrigin: &#x27;anonymous&#x27;
   })
 });
 
-var overlay = new ol.layer.Tile({
-  extent: extents.northwest,
+var overlay &#x3D; new ol.layer.Tile({
+  extent: extents.India,
   source: new ol.source.TileJSON({
-    url: &#x27;http://api.tiles.mapbox.com/v3/&#x27; +
-        &#x27;mapbox.world-glass.jsonp&#x27;,
+    url: &#x27;https://api.tiles.mapbox.com/v3/mapbox.world-black.json?secure&#x27;,
     crossOrigin: &#x27;anonymous&#x27;
   })
 });
 
-var map = new ol.Map({
+var map &#x3D; new ol.Map({
   layers: [base, overlay],
   target: &#x27;map&#x27;,
   view: new ol.View({
@@ -94,112 +106,111 @@ var map = new ol.Map({
 });
 
 for (var key in extents) {
-  document.getElementById(key).onclick = function(event) {
+  document.getElementById(key).onclick &#x3D; function(event) {
     overlay.setExtent(extents[event.target.id]);
   };
 }
 </textarea>
           <textarea class="hidden" name="css"></textarea>
-          <textarea class="hidden" name="html">&lt;div class=&quot;row-fluid&quot;&gt;
-  &lt;div class=&quot;span12&quot;&gt;
-    &lt;div id=&quot;map&quot; class=&quot;map&quot;&gt;&lt;/div&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;btn-group&quot;&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;northwest&quot;&gt;northwest&lt;/button&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;northeast&quot;&gt;northeast&lt;/button&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;southeast&quot;&gt;southeast&lt;/button&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;southwest&quot;&gt;southwest&lt;/button&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;world&quot;&gt;world&lt;/button&gt;
-&lt;/div&gt;
+          <textarea class="hidden" name="html">&lt;div id&#x3D;&quot;map&quot; class&#x3D;&quot;map&quot;&gt;&lt;/div&gt;
+&lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-default&quot; id&#x3D;&quot;India&quot;&gt;India&lt;/button&gt;
+&lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-default&quot; id&#x3D;&quot;Argentina&quot;&gt;Argentina&lt;/button&gt;
+&lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-default&quot; id&#x3D;&quot;Nigeria&quot;&gt;Nigeria&lt;/button&gt;
+&lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-default&quot; id&#x3D;&quot;Sweden&quot;&gt;Sweden&lt;/button&gt;
 </textarea>
-          <input type="hidden" name="wrap" value="l">
-          <input type="hidden" name="resources" value="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css,https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js,http://openlayers.org/en/v3.10.1/css/ol.css,http://openlayers.org/en/v3.10.1/build/ol.js">
+          <input type="hidden" name="resources" value="https://openlayers.org/en/v4.6.5/css/ol.css,https://openlayers.org/en/v4.6.5/build/ol.js">
+          <input type="hidden" name="data">
         </form>
         <pre><code id="example-source" class="language-markup">&lt;!DOCTYPE html&gt;
 &lt;html&gt;
-&lt;head&gt;
-&lt;title&gt;Limited Layer Extent&lt;/title&gt;
-&lt;script src="https://code.jquery.com/jquery-1.11.2.min.js"&gt;&lt;/script&gt;
-&lt;link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"&gt;
-&lt;script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"&gt;&lt;/script&gt;
-&lt;link rel="stylesheet" href="http://openlayers.org/en/v3.10.1/css/ol.css" type="text/css"&gt;
-&lt;script src="http://openlayers.org/en/v3.10.1/build/ol.js"&gt;&lt;/script&gt;
+  &lt;head&gt;
+    &lt;title&gt;Limited Layer Extent&lt;/title&gt;
+    &lt;link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css"&gt;
+    &lt;!-- The line below is only needed for old environments like Internet Explorer and Android 4.x --&gt;
+    &lt;script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"&gt;&lt;/script&gt;
+    &lt;script src="https://openlayers.org/en/v4.6.5/build/ol.js"&gt;&lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id&#x3D;&quot;map&quot; class&#x3D;&quot;map&quot;&gt;&lt;/div&gt;
+    &lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-default&quot; id&#x3D;&quot;India&quot;&gt;India&lt;/button&gt;
+    &lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-default&quot; id&#x3D;&quot;Argentina&quot;&gt;Argentina&lt;/button&gt;
+    &lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-default&quot; id&#x3D;&quot;Nigeria&quot;&gt;Nigeria&lt;/button&gt;
+    &lt;button type&#x3D;&quot;button&quot; class&#x3D;&quot;btn btn-default&quot; id&#x3D;&quot;Sweden&quot;&gt;Sweden&lt;/button&gt;
+    &lt;script&gt;
+      function transform(extent) {
+        return ol.proj.transformExtent(extent, &#x27;EPSG:4326&#x27;, &#x27;EPSG:3857&#x27;);
+      }
 
-&lt;/head&gt;
-&lt;body&gt;
-&lt;div class="container-fluid"&gt;
+      var extents &#x3D; {
+        India: transform([68.17665, 7.96553, 97.40256, 35.49401]),
+        Argentina: transform([-73.41544, -55.25, -53.62835, -21.83231]),
+        Nigeria: transform([2.6917, 4.24059, 14.57718, 13.86592]),
+        Sweden: transform([11.02737, 55.36174, 23.90338, 69.10625])
+      };
 
-&lt;div class=&quot;row-fluid&quot;&gt;
-  &lt;div class=&quot;span12&quot;&gt;
-    &lt;div id=&quot;map&quot; class=&quot;map&quot;&gt;&lt;/div&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
-&lt;div class=&quot;btn-group&quot;&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;northwest&quot;&gt;northwest&lt;/button&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;northeast&quot;&gt;northeast&lt;/button&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;southeast&quot;&gt;southeast&lt;/button&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;southwest&quot;&gt;southwest&lt;/button&gt;
-  &lt;button type=&quot;button&quot; class=&quot;btn btn-default&quot; id=&quot;world&quot;&gt;world&lt;/button&gt;
-&lt;/div&gt;
+      var base &#x3D; new ol.layer.Tile({
+        source: new ol.source.TileJSON({
+          url: &#x27;https://api.tiles.mapbox.com/v3/mapbox.world-light.json?secure&#x27;,
+          crossOrigin: &#x27;anonymous&#x27;
+        })
+      });
 
-&lt;/div&gt;
-&lt;script&gt;
-function transform(extent) {
-  return ol.proj.transformExtent(extent, &#x27;EPSG:4326&#x27;, &#x27;EPSG:3857&#x27;);
-}
+      var overlay &#x3D; new ol.layer.Tile({
+        extent: extents.India,
+        source: new ol.source.TileJSON({
+          url: &#x27;https://api.tiles.mapbox.com/v3/mapbox.world-black.json?secure&#x27;,
+          crossOrigin: &#x27;anonymous&#x27;
+        })
+      });
 
-var extents = {
-  northwest: transform([-180, 0, 0, 85]),
-  northeast: transform([0, 0, 180, 85]),
-  southeast: transform([0, -85, 180, 0]),
-  southwest: transform([-180, -85, 0, 0]),
-  world: transform([-180, -85, 180, 85])
-};
+      var map &#x3D; new ol.Map({
+        layers: [base, overlay],
+        target: &#x27;map&#x27;,
+        view: new ol.View({
+          center: [0, 0],
+          zoom: 1
+        })
+      });
 
-var base = new ol.layer.Tile({
-  source: new ol.source.TileJSON({
-    url: &#x27;http://api.tiles.mapbox.com/v3/&#x27; +
-        &#x27;mapbox.world-black.jsonp&#x27;,
-    crossOrigin: &#x27;anonymous&#x27;
-  })
-});
-
-var overlay = new ol.layer.Tile({
-  extent: extents.northwest,
-  source: new ol.source.TileJSON({
-    url: &#x27;http://api.tiles.mapbox.com/v3/&#x27; +
-        &#x27;mapbox.world-glass.jsonp&#x27;,
-    crossOrigin: &#x27;anonymous&#x27;
-  })
-});
-
-var map = new ol.Map({
-  layers: [base, overlay],
-  target: &#x27;map&#x27;,
-  view: new ol.View({
-    center: [0, 0],
-    zoom: 1
-  })
-});
-
-for (var key in extents) {
-  document.getElementById(key).onclick = function(event) {
-    overlay.setExtent(extents[event.target.id]);
-  };
-}
-
-&lt;/script&gt;
-&lt;/body&gt;
+      for (var key in extents) {
+        document.getElementById(key).onclick &#x3D; function(event) {
+          overlay.setExtent(extents[event.target.id]);
+        };
+      }
+    &lt;/script&gt;
+  &lt;/body&gt;
 &lt;/html&gt;</code></pre>
       </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="./resources/common.js"></script>
     <script src="./resources/prism/prism.min.js"></script>
     <script src="loader.js?id=layer-extent"></script>
-
   </body>
+  <script>
+  var packageUrl = 'https://raw.githubusercontent.com/openlayers/openlayers.github.io/build/package.json';
+  fetch(packageUrl).then(function(response) {
+    return response.json();
+  }).then(function(json) {
+    var latestVersion = json.version;
+    document.getElementById('latest-version').innerHTML = latestVersion;
+    var url = window.location.href;
+    var branchSearch = url.match(/\/([^\/]*)\/examples\//);
+    var cookieText = 'dismissed=-' + latestVersion + '-';
+    var dismissed = document.cookie.indexOf(cookieText) != -1;
+    if (!dismissed && /^v[0-9\.]*$/.test(branchSearch[1]) && '4.6.5' != latestVersion) {
+      var link = url.replace(branchSearch[0], '/latest/examples/');
+      fetch(link, {method: 'head'}).then(function(response) {
+        var a = document.getElementById('latest-link');
+        a.href = response.status == 200 ? link : '../../latest/examples/';
+      });
+      var latestCheck = document.getElementById('latest-check');
+      latestCheck.style.display = '';
+      document.getElementById('latest-dismiss').onclick = function() {
+        latestCheck.style.display = 'none';
+        document.cookie = cookieText;
+      }
+    }
+  });
+  </script>
 </html>

@@ -112,7 +112,7 @@ goog.storage.EncryptedStorage.prototype.hashKeyWithSecret_ = function(key) {
 goog.storage.EncryptedStorage.prototype.encryptValue_ = function(
     salt, key, value) {
   if (!(salt.length > 0)) {
-    throw Error('Non-empty salt must be provided');
+    throw new Error('Non-empty salt must be provided');
   }
   var sha1 = new goog.crypt.Sha1();
   sha1.update(goog.crypt.stringToByteArray(key));
@@ -157,19 +157,19 @@ goog.storage.EncryptedStorage.prototype.set = function(
     salt[i] = Math.floor(Math.random() * 0x100);
   }
   var wrapper = new goog.storage.RichStorage.Wrapper(
-      this.encryptValue_(salt, key,
-                         this.cleartextSerializer_.serialize(value)));
+      this.encryptValue_(
+          salt, key, this.cleartextSerializer_.serialize(value)));
   wrapper[goog.storage.EncryptedStorage.SALT_KEY] = salt;
-  goog.storage.EncryptedStorage.base(this, 'set',
-      this.hashKeyWithSecret_(key), wrapper, opt_expiration);
+  goog.storage.EncryptedStorage.base(
+      this, 'set', this.hashKeyWithSecret_(key), wrapper, opt_expiration);
 };
 
 
 /** @override */
 goog.storage.EncryptedStorage.prototype.getWrapper = function(
     key, opt_expired) {
-  var wrapper = goog.storage.EncryptedStorage.base(this, 'getWrapper',
-      this.hashKeyWithSecret_(key), opt_expired);
+  var wrapper = goog.storage.EncryptedStorage.base(
+      this, 'getWrapper', this.hashKeyWithSecret_(key), opt_expired);
   if (!wrapper) {
     return undefined;
   }
@@ -179,9 +179,9 @@ goog.storage.EncryptedStorage.prototype.getWrapper = function(
     throw goog.storage.ErrorCode.INVALID_VALUE;
   }
   var json = this.decryptValue_(salt, key, value);
-  /** @preserveTry */
+
   try {
-    wrapper[goog.storage.RichStorage.DATA_KEY] = goog.json.parse(json);
+    wrapper[goog.storage.RichStorage.DATA_KEY] = JSON.parse(json);
   } catch (e) {
     throw goog.storage.ErrorCode.DECRYPTION_ERROR;
   }

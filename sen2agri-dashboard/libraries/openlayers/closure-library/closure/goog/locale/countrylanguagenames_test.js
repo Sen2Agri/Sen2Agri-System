@@ -27,15 +27,12 @@ function setUpPage() {
       'cad': 'Caddo',
       'fr': 'Franz\u00f6sisch',
       'fr_CA': 'Canadian French',
-      'fr_CH': 'Swiss French', 'zh': 'Chinesisch',
+      'fr_CH': 'Swiss French',
+      'zh': 'Chinesisch',
       'zh_Hans': 'Chinesisch (vereinfacht)',
       'zh_Hant': 'Chinesisch (traditionell)'
     },
-    COUNTRY: {
-      'CN': 'China',
-      'ES': 'Spanien',
-      'FR': 'Frankreich'
-    }
+    COUNTRY: {'CN': 'China', 'ES': 'Spanien', 'FR': 'Frankreich'}
   };
   registerLocalNameConstants(LocaleNameConstants_de, 'de');
 
@@ -50,11 +47,7 @@ function setUpPage() {
       'zh_Hans': 'Simplified Chinese',
       'zh_Hant': 'Traditional Chinese'
     },
-    COUNTRY: {
-      'CN': 'China',
-      'ES': 'Spain',
-      'FR': 'France'
-    }
+    COUNTRY: {'CN': 'China', 'ES': 'Spain', 'FR': 'France'}
   };
   registerLocalNameConstants(LocaleNameConstants_en, 'en');
 
@@ -105,6 +98,24 @@ function testGetLocalizedCountryName() {
   assertEquals('und', result);
 }
 
+
+function testGetLocalizedRegionNameFromRegionCode() {
+  var result = goog.locale.getLocalizedRegionNameFromRegionCode('ES');
+  assertEquals('Spanien', result);
+
+  result = goog.locale.getLocalizedRegionNameFromRegionCode(
+      'ES', LocaleNameConstants_en);
+  assertEquals('Spain', result);
+
+  result = goog.locale.getLocalizedRegionNameFromRegionCode('CN');
+  assertEquals('China', result);
+
+  // 'XX' is a non-existing country code, default behavior is to
+  // return the code itself if no mapping is found.
+  result = goog.locale.getLocalizedRegionNameFromRegionCode('XX');
+  assertEquals('XX', result);
+}
+
 function testGetNativeLanguageName() {
   var result = goog.locale.getNativeLanguageName('fr');
   assertEquals('fran\u00E7ais', result);
@@ -123,8 +134,7 @@ function testGetLocalizedLanguageName() {
   var result = goog.locale.getLocalizedLanguageName('fr');
   assertEquals('Franz\u00F6sisch', result);
 
-  result = goog.locale.getLocalizedLanguageName('fr',
-      LocaleNameConstants_en);
+  result = goog.locale.getLocalizedLanguageName('fr', LocaleNameConstants_en);
   assertEquals('French', result);
 
   result = goog.locale.getLocalizedLanguageName('fr-latn-FR');
@@ -139,8 +149,8 @@ function testGetLocalizedLanguageName() {
   result = goog.locale.getLocalizedLanguageName('error');
   assertEquals('error', result);
 
-  result = goog.locale.getLocalizedLanguageName('zh_Hans',
-      LocaleNameConstants_en);
+  result =
+      goog.locale.getLocalizedLanguageName('zh_Hans', LocaleNameConstants_en);
   assertEquals('Simplified Chinese', result);
 }
 
@@ -149,9 +159,7 @@ function testGetLocalizedLanguageNameForGivenSymbolset() {
   var result = goog.locale.getLocalizedCountryName('fr-FR');
   assertEquals('Frankreich', result);
 
-  result = goog.locale.getLocalizedCountryName(
-      'fr-FR',
-      LocaleNameConstants_en);
+  result = goog.locale.getLocalizedCountryName('fr-FR', LocaleNameConstants_en);
   assertEquals('France', result);
 
   result = goog.locale.getLocalizedCountryName('fr-FR');
@@ -167,7 +175,6 @@ function testGetLocalizedLanguageNameForGivenSymbolset() {
  */
 
 function testGetRegionSubTag() {
-
   var result = goog.locale.getRegionSubTag('de-CH');
   assertEquals('CH', result);
 
@@ -195,7 +202,6 @@ function testGetRegionSubTag() {
 }
 
 function testGetLanguageSubTag() {
-
   var result = goog.locale.getLanguageSubTag('de');
   assertEquals('de', result);
 
@@ -213,7 +219,6 @@ function testGetLanguageSubTag() {
 }
 
 function testGetScriptSubTag() {
-
   var result = goog.locale.getScriptSubTag('fr');
   assertEquals('', result);
 

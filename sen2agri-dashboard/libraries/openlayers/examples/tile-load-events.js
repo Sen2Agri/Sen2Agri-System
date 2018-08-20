@@ -72,18 +72,18 @@ Progress.prototype.hide = function() {
 var progress = new Progress(document.getElementById('progress'));
 
 var source = new ol.source.TileJSON({
-  url: 'http://api.tiles.mapbox.com/v3/mapbox.world-bright.jsonp',
+  url: 'https://api.tiles.mapbox.com/v3/mapbox.world-bright.json?secure',
   crossOrigin: 'anonymous'
 });
 
-source.on('tileloadstart', function(event) {
+source.on('tileloadstart', function() {
   progress.addLoading();
 });
 
-source.on('tileloadend', function(event) {
+source.on('tileloadend', function() {
   progress.addLoaded();
 });
-source.on('tileloaderror', function(event) {
+source.on('tileloaderror', function() {
   progress.addLoaded();
 });
 
@@ -92,7 +92,6 @@ var map = new ol.Map({
   layers: [
     new ol.layer.Tile({source: source})
   ],
-  renderer: common.getRendererFromQueryString(),
   target: 'map',
   view: new ol.View({
     center: [0, 0],

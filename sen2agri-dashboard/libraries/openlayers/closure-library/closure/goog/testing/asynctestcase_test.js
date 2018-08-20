@@ -55,7 +55,7 @@ function testMaybeFailTestEarly() {
   var message = 'Error in setUpPage().';
   var asyncTestCase = new goog.testing.AsyncTestCase();
   asyncTestCase.setUpPage = function() {
-    throw Error(message);
+    throw new Error(message);
   };
   asyncTestCase.addNewTest('test', function() { assertTrue(true); });
   asyncTestCase.runTests();

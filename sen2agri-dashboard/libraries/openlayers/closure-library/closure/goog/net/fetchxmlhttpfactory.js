@@ -45,8 +45,7 @@ goog.net.FetchXmlHttpFactory = function(worker) {
   /** @private {!RequestCache|undefined} */
   this.cacheMode_ = undefined;
 };
-goog.inherits(
-    goog.net.FetchXmlHttpFactory, goog.net.XmlHttpFactory);
+goog.inherits(goog.net.FetchXmlHttpFactory, goog.net.XmlHttpFactory);
 
 
 /** @override */
@@ -71,8 +70,8 @@ goog.net.FetchXmlHttpFactory.prototype.internalGetOptions =
  * @param {!RequestCredentials} credentialsMode The credentials mode of the
  *     Service Worker fetch.
  */
-goog.net.FetchXmlHttpFactory.prototype.setCredentialsMode =
-    function(credentialsMode) {
+goog.net.FetchXmlHttpFactory.prototype.setCredentialsMode = function(
+    credentialsMode) {
   this.credentialsMode_ = credentialsMode;
 };
 
@@ -188,12 +187,11 @@ goog.net.FetchXmlHttp.RequestState = {
 
 
 /** @override */
-goog.net.FetchXmlHttp.prototype.open = function(
-    method, url, opt_async) {
+goog.net.FetchXmlHttp.prototype.open = function(method, url, opt_async) {
   goog.asserts.assert(!!opt_async, 'Only async requests are supported.');
   if (this.readyState != goog.net.FetchXmlHttp.RequestState.UNSENT) {
     this.abort();
-    throw Error('Error reopening a connection');
+    throw new Error('Error reopening a connection');
   }
 
   this.method_ = method;
@@ -208,7 +206,7 @@ goog.net.FetchXmlHttp.prototype.open = function(
 goog.net.FetchXmlHttp.prototype.send = function(opt_data) {
   if (this.readyState != goog.net.FetchXmlHttp.RequestState.OPENED) {
     this.abort();
-    throw Error('need to call open() first. ');
+    throw new Error('need to call open() first. ');
   }
 
   this.inProgress_ = true;
@@ -221,9 +219,10 @@ goog.net.FetchXmlHttp.prototype.send = function(opt_data) {
   if (opt_data) {
     requestInit['body'] = opt_data;
   }
-  this.worker_.fetch(
-      new Request(this.url_, /** @type {!RequestInit} */ (requestInit))).then(
-      this.handleResponse_.bind(this), this.handleSendFailure_.bind(this));
+  this.worker_
+      .fetch(new Request(this.url_, /** @type {!RequestInit} */ (requestInit)))
+      .then(
+          this.handleResponse_.bind(this), this.handleSendFailure_.bind(this));
 };
 
 
@@ -233,7 +232,7 @@ goog.net.FetchXmlHttp.prototype.abort = function() {
   this.requestHeaders_ = new Headers();
   this.status = 0;
   if (((this.readyState >= goog.net.FetchXmlHttp.RequestState.OPENED) &&
-      this.inProgress_) &&
+       this.inProgress_) &&
       (this.readyState != goog.net.FetchXmlHttp.RequestState.DONE)) {
     this.readyState = goog.net.FetchXmlHttp.RequestState.DONE;
     this.inProgress_ = false;
@@ -273,7 +272,8 @@ goog.net.FetchXmlHttp.prototype.handleResponse_ = function(response) {
     // The request was aborted, ignore.
     return;
   }
-  response.text().then(this.handleResponseText_.bind(this, response),
+  response.text().then(
+      this.handleResponseText_.bind(this, response),
       this.handleSendFailure_.bind(this));
 };
 

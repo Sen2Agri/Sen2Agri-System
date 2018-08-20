@@ -33,9 +33,10 @@ function setUpPage() {
 function setUp() {
   goog.dom.getElement('content').innerHTML = oldHtml;
   table = goog.dom.getElement('sortable');
-  alphaHeader = table.getElementsByTagName(goog.dom.TagName.TH)[0];
-  numberHeader = table.getElementsByTagName(goog.dom.TagName.TH)[1];
-  notSortableHeader = table.getElementsByTagName(goog.dom.TagName.TH)[2];
+  alphaHeader = goog.dom.getElementsByTagName(goog.dom.TagName.TH, table)[0];
+  numberHeader = goog.dom.getElementsByTagName(goog.dom.TagName.TH, table)[1];
+  notSortableHeader =
+      goog.dom.getElementsByTagName(goog.dom.TagName.TH, table)[2];
 
   tableSorter = new goog.ui.TableSorter();
   tableSorter.setSortFunction(0, goog.ui.TableSorter.alphaSort);
@@ -56,8 +57,8 @@ function testConstructor() {
 function testForwardAlpha() {
   goog.testing.events.fireClickEvent(alphaHeader);
   assertOrder(['A', '10', 'B', '0', 'C', '10', 'C', '17', 'C', '3']);
-  assertTrue(goog.dom.classlist.contains(alphaHeader,
-      'goog-tablesorter-sorted'));
+  assertTrue(
+      goog.dom.classlist.contains(alphaHeader, 'goog-tablesorter-sorted'));
   assertEquals(0, tableSorter.getSortColumn());
   assertFalse(tableSorter.isSortReversed());
 }
@@ -66,10 +67,11 @@ function testBackwardAlpha() {
   goog.testing.events.fireClickEvent(alphaHeader);
   goog.testing.events.fireClickEvent(alphaHeader);
   assertOrder(['C', '10', 'C', '17', 'C', '3', 'B', '0', 'A', '10']);
-  assertFalse(goog.dom.classlist.contains(alphaHeader,
-      'goog-tablesorter-sorted'));
-  assertTrue(goog.dom.classlist.contains(alphaHeader,
-      'goog-tablesorter-sorted-reverse'));
+  assertFalse(
+      goog.dom.classlist.contains(alphaHeader, 'goog-tablesorter-sorted'));
+  assertTrue(
+      goog.dom.classlist.contains(
+          alphaHeader, 'goog-tablesorter-sorted-reverse'));
   assertEquals(0, tableSorter.getSortColumn());
   assertTrue(tableSorter.isSortReversed());
 }
@@ -77,8 +79,8 @@ function testBackwardAlpha() {
 function testForwardNumeric() {
   goog.testing.events.fireClickEvent(numberHeader);
   assertOrder(['B', '0', 'C', '3', 'C', '10', 'A', '10', 'C', '17']);
-  assertTrue(goog.dom.classlist.contains(numberHeader,
-      'goog-tablesorter-sorted'));
+  assertTrue(
+      goog.dom.classlist.contains(numberHeader, 'goog-tablesorter-sorted'));
   assertEquals(1, tableSorter.getSortColumn());
   assertFalse(tableSorter.isSortReversed());
 }
@@ -87,8 +89,9 @@ function testBackwardNumeric() {
   goog.testing.events.fireClickEvent(numberHeader);
   goog.testing.events.fireClickEvent(numberHeader);
   assertOrder(['C', '17', 'C', '10', 'A', '10', 'C', '3', 'B', '0']);
-  assertTrue(goog.dom.classlist.contains(numberHeader,
-      'goog-tablesorter-sorted-reverse'));
+  assertTrue(
+      goog.dom.classlist.contains(
+          numberHeader, 'goog-tablesorter-sorted-reverse'));
   assertEquals(1, tableSorter.getSortColumn());
   assertTrue(tableSorter.isSortReversed());
 }
@@ -97,8 +100,8 @@ function testAlphaThenNumeric() {
   testForwardAlpha();
   goog.testing.events.fireClickEvent(numberHeader);
   assertOrder(['B', '0', 'C', '3', 'A', '10', 'C', '10', 'C', '17']);
-  assertFalse(goog.dom.classlist.contains(alphaHeader,
-      'goog-tablesorter-sorted'));
+  assertFalse(
+      goog.dom.classlist.contains(alphaHeader, 'goog-tablesorter-sorted'));
   assertEquals(1, tableSorter.getSortColumn());
   assertFalse(tableSorter.isSortReversed());
 }
@@ -131,32 +134,33 @@ function testSortOnSecondHeaderRow() {
   tableSorter2.decorate(goog.dom.getElement('sortable-2'));
 
   // Initial order.
-  assertOrder(['4', '5', '6', '1', '2', '3', '3', '1', '9'],
-              goog.dom.getElement('sortable-2'));
+  assertOrder(
+      ['4', '5', '6', '1', '2', '3', '3', '1', '9'],
+      goog.dom.getElement('sortable-2'));
 
   // Sort on first column.
-  goog.testing.events.fireClickEvent(
-      goog.dom.getElement('sorttable-2-col-1'));
-  assertOrder(['1', '2', '3', '3', '1', '9', '4', '5', '6'],
-              goog.dom.getElement('sortable-2'));
+  goog.testing.events.fireClickEvent(goog.dom.getElement('sorttable-2-col-1'));
+  assertOrder(
+      ['1', '2', '3', '3', '1', '9', '4', '5', '6'],
+      goog.dom.getElement('sortable-2'));
 
   // Sort on second column.
-  goog.testing.events.fireClickEvent(
-      goog.dom.getElement('sorttable-2-col-2'));
-  assertOrder(['3', '1', '9', '1', '2', '3', '4', '5', '6'],
-              goog.dom.getElement('sortable-2'));
+  goog.testing.events.fireClickEvent(goog.dom.getElement('sorttable-2-col-2'));
+  assertOrder(
+      ['3', '1', '9', '1', '2', '3', '4', '5', '6'],
+      goog.dom.getElement('sortable-2'));
 
   // Sort on third column.
-  goog.testing.events.fireClickEvent(
-      goog.dom.getElement('sorttable-2-col-3'));
-  assertOrder(['1', '2', '3', '4', '5', '6', '3', '1', '9'],
-              goog.dom.getElement('sortable-2'));
+  goog.testing.events.fireClickEvent(goog.dom.getElement('sorttable-2-col-3'));
+  assertOrder(
+      ['1', '2', '3', '4', '5', '6', '3', '1', '9'],
+      goog.dom.getElement('sortable-2'));
 
   // Reverse sort on third column.
-  goog.testing.events.fireClickEvent(
-      goog.dom.getElement('sorttable-2-col-3'));
-  assertOrder(['3', '1', '9', '4', '5', '6', '1', '2', '3'],
-              goog.dom.getElement('sortable-2'));
+  goog.testing.events.fireClickEvent(goog.dom.getElement('sorttable-2-col-3'));
+  assertOrder(
+      ['3', '1', '9', '4', '5', '6', '1', '2', '3'],
+      goog.dom.getElement('sortable-2'));
 
   tableSorter2.dispose();
 }
@@ -220,12 +224,13 @@ function testNaNs() {
 function assertOrder(arr, opt_table) {
   var tbl = opt_table || table;
   var actual = [];
-  goog.array.forEach(tbl.getElementsByTagName(goog.dom.TagName.TD),
-                     function(td, idx) {
-                       var txt = goog.dom.getTextContent(td);
-                       if (txt) {
-                         actual.push(txt);
-                       }
-                     });
+  goog.array.forEach(
+      goog.dom.getElementsByTagName(goog.dom.TagName.TD, tbl),
+      function(td, idx) {
+        var txt = goog.dom.getTextContent(td);
+        if (txt) {
+          actual.push(txt);
+        }
+      });
   assertArrayEquals(arr, actual);
 }

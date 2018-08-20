@@ -1,43 +1,4 @@
-goog.provide('ol.TileCoord');
 goog.provide('ol.tilecoord');
-
-goog.require('goog.asserts');
-goog.require('ol.extent');
-
-
-/**
- * An array of three numbers representing the location of a tile in a tile
- * grid. The order is `z`, `x`, and `y`. `z` is the zoom level.
- * @typedef {Array.<number>} ol.TileCoord
- * @api
- */
-ol.TileCoord;
-
-
-/**
- * @enum {number}
- */
-ol.QuadKeyCharCode = {
-  ZERO: '0'.charCodeAt(0),
-  ONE: '1'.charCodeAt(0),
-  TWO: '2'.charCodeAt(0),
-  THREE: '3'.charCodeAt(0)
-};
-
-
-/**
- * @param {string} str String that follows pattern “z/x/y” where x, y and z are
- *   numbers.
- * @return {ol.TileCoord} Tile coord.
- */
-ol.tilecoord.createFromString = function(str) {
-  var v = str.split('/');
-  goog.asserts.assert(v.length === 3,
-      'must provide a string in "z/x/y" format, got "%s"', str);
-  return v.map(function(e) {
-    return parseInt(e, 10);
-  });
-};
 
 
 /**
@@ -71,6 +32,26 @@ ol.tilecoord.getKeyZXY = function(z, x, y) {
 
 
 /**
+ * Get the key for a tile coord.
+ * @param {ol.TileCoord} tileCoord The tile coord.
+ * @return {string} Key.
+ */
+ol.tilecoord.getKey = function(tileCoord) {
+  return ol.tilecoord.getKeyZXY(tileCoord[0], tileCoord[1], tileCoord[2]);
+};
+
+
+/**
+ * Get a tile coord given a key.
+ * @param {string} key The tile coord key.
+ * @return {ol.TileCoord} The tile coord.
+ */
+ol.tilecoord.fromKey = function(key) {
+  return key.split('/').map(Number);
+};
+
+
+/**
  * @param {ol.TileCoord} tileCoord Tile coord.
  * @return {number} Hash.
  */
@@ -89,7 +70,8 @@ ol.tilecoord.quadKey = function(tileCoord) {
   var mask = 1 << (z - 1);
   var i, charCode;
   for (i = 0; i < z; ++i) {
-    charCode = ol.QuadKeyCharCode.ZERO;
+    // 48 is charCode for 0 - '0'.charCodeAt(0)
+    charCode = 48;
     if (tileCoord[1] & mask) {
       charCode += 1;
     }
@@ -100,36 +82,6 @@ ol.tilecoord.quadKey = function(tileCoord) {
     mask >>= 1;
   }
   return digits.join('');
-};
-
-
-/**
- * @param {ol.TileCoord} tileCoord Tile coord.
- * @return {string} String.
- */
-ol.tilecoord.toString = function(tileCoord) {
-  return ol.tilecoord.getKeyZXY(tileCoord[0], tileCoord[1], tileCoord[2]);
-};
-
-
-/**
- * @param {ol.TileCoord} tileCoord Tile coordinate.
- * @param {ol.tilegrid.TileGrid} tileGrid Tile grid.
- * @param {ol.proj.Projection} projection Projection.
- * @return {ol.TileCoord} Tile coordinate.
- */
-ol.tilecoord.wrapX = function(tileCoord, tileGrid, projection) {
-  var z = tileCoord[0];
-  var center = tileGrid.getTileCoordCenter(tileCoord);
-  var projectionExtent = ol.tilegrid.extentFromProjection(projection);
-  if (!ol.extent.containsCoordinate(projectionExtent, center)) {
-    var worldWidth = ol.extent.getWidth(projectionExtent);
-    var worldsAway = Math.ceil((projectionExtent[0] - center[0]) / worldWidth);
-    center[0] += worldWidth * worldsAway;
-    return tileGrid.getTileCoordForCoordAndZ(center, z);
-  } else {
-    return tileCoord;
-  }
 };
 
 

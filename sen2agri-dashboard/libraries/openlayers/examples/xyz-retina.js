@@ -1,8 +1,3 @@
-var attribution = new ol.Attribution({
-  html: 'Tiles &copy; USGS, rendered with ' +
-      '<a href="http://www.maptiler.com/">MapTiler</a>'
-});
-
 var mapMinZoom = 1;
 var mapMaxZoom = 15;
 var mapExtent = [-112.261791, 35.983744, -112.113981, 36.132062];
@@ -16,8 +11,9 @@ var map = new ol.Map({
     new ol.layer.Tile({
       extent: ol.proj.transformExtent(mapExtent, 'EPSG:4326', 'EPSG:3857'),
       source: new ol.source.XYZ({
-        attributions: [attribution],
-        url: 'http://tileserver.maptiler.com/grandcanyon@2x/{z}/{x}/{y}.png',
+        attributions: 'Tiles © USGS, rendered with ' +
+            '<a href="http://www.maptiler.com/">MapTiler</a>',
+        url: 'https://tileserver.maptiler.com/grandcanyon@2x/{z}/{x}/{y}.png',
         tilePixelRatio: 2, // THIS IS IMPORTANT
         minZoom: mapMinZoom,
         maxZoom: mapMaxZoom

@@ -3,7 +3,7 @@ var osm = new ol.layer.Tile({
 });
 var bing = new ol.layer.Tile({
   source: new ol.source.BingMaps({
-    key: 'Ak-dzM4wZjSqTlzveKz5u0d4IQ4bRzVI309GxmkgSVr1ewS6iPSrOvOKhA-CJlm3',
+    key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5',
     imagerySet: 'Aerial'
   })
 });
@@ -12,9 +12,9 @@ var map = new ol.Map({
   layers: [osm, bing],
   target: 'map',
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: new ol.View({
     center: [0, 0],

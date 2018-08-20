@@ -11,12 +11,11 @@ var map = new ol.Map({
       })
     })
   ],
-  renderer: common.getRendererFromQueryString(),
   target: 'map',
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: new ol.View({
     center: ol.proj.transform(

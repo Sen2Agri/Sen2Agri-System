@@ -1,4 +1,4 @@
-var capabilitiesUrl = 'http://www.basemap.at/wmts/1.0.0/WMTSCapabilities.xml';
+var capabilitiesUrl = 'https://www.basemap.at/wmts/1.0.0/WMTSCapabilities.xml';
 
 // HiDPI support:
 // * Use 'bmaphidpi' layer (pixel ratio 2) for device pixel ratio > 1
@@ -15,16 +15,17 @@ var map = new ol.Map({
   })
 });
 
-$.ajax(capabilitiesUrl).then(function(response) {
-  var result = new ol.format.WMTSCapabilities().read(response);
+fetch(capabilitiesUrl).then(function(response) {
+  return response.text();
+}).then(function(text) {
+  var result = new ol.format.WMTSCapabilities().read(text);
   var options = ol.source.WMTS.optionsFromCapabilities(result, {
     layer: layer,
     matrixSet: 'google3857',
-    requestEncoding: 'REST',
     style: 'normal'
   });
   options.tilePixelRatio = tilePixelRatio;
   map.addLayer(new ol.layer.Tile({
-    source: new ol.source.WMTS(options)
+    source: new ol.source.WMTS(/** @type {!olx.source.WMTSOptions} */ (options))
   }));
 });

@@ -19,11 +19,18 @@ goog.require('goog.array');
 goog.require('goog.fs.DirectoryEntry');
 goog.require('goog.fs.Error');
 goog.require('goog.testing.MockClock');
+goog.require('goog.testing.TestCase');
 goog.require('goog.testing.fs.FileSystem');
 goog.require('goog.testing.jsunit');
 
 var Behavior = goog.fs.DirectoryEntry.Behavior;
 var fs, dir, mockClock;
+
+function setUpPage() {
+  // This test has a tendency to timeout on external Travis testing
+  // infrastructure. Up to 5s from 1s.
+  goog.testing.TestCase.getActiveTestCase().promiseTimeout = 5000;
+}
 
 function setUp() {
   // Install the MockClock to create predictable timestamps for new files.
@@ -67,21 +74,26 @@ function testRemoveRootRecursively() {
 }
 
 function testGetFile() {
-  return dir.getFile('file').then(function(file) {
-    assertEquals(dir.getFileSync('file'), file);
-    assertEquals('file', file.getName());
-    assertEquals('/foo/file', file.getFullPath());
-    assertTrue(file.isFile());
+  return dir.getFile('file')
+      .then(function(file) {
+        assertEquals(dir.getFileSync('file'), file);
+        assertEquals('file', file.getName());
+        assertEquals('/foo/file', file.getFullPath());
+        assertTrue(file.isFile());
 
-    return dir.getLastModified();
-  }).then(function(date) {
-    assertEquals('Reading a file should not update the modification date.',
-        0, date.getTime());
-    return dir.getMetadata();
-  }).then(function(metadata) {
-    assertEquals('Reading a file should not update the metadata.',
-        0, metadata.modificationTime.getTime());
-  });
+        return dir.getLastModified();
+      })
+      .then(function(date) {
+        assertEquals(
+            'Reading a file should not update the modification date.', 0,
+            date.getTime());
+        return dir.getMetadata();
+      })
+      .then(function(metadata) {
+        assertEquals(
+            'Reading a file should not update the metadata.', 0,
+            metadata.modificationTime.getTime());
+      });
 }
 
 function testGetFileFromSubdir() {
@@ -94,44 +106,48 @@ function testGetFileFromSubdir() {
 }
 
 function testGetAbsolutePaths() {
-  return fs.getRoot().getFile('/foo/subdir/subfile').then(function(subfile) {
-    assertEquals('/foo/subdir/subfile', subfile.getFullPath());
-    return fs.getRoot().getDirectory('//foo////');
-  }).then(function(foo) {
-    assertEquals('/foo', foo.getFullPath());
-    return foo.getDirectory('/');
-  }).then(function(root) {
-    assertEquals('/', root.getFullPath());
-    return root.getDirectory('/////');
-  }).then(function(root) {
-    assertEquals('/', root.getFullPath());
-  });
+  return fs.getRoot()
+      .getFile('/foo/subdir/subfile')
+      .then(function(subfile) {
+        assertEquals('/foo/subdir/subfile', subfile.getFullPath());
+        return fs.getRoot().getDirectory('//foo////');
+      })
+      .then(function(foo) {
+        assertEquals('/foo', foo.getFullPath());
+        return foo.getDirectory('/');
+      })
+      .then(function(root) {
+        assertEquals('/', root.getFullPath());
+        return root.getDirectory('/////');
+      })
+      .then(function(root) { assertEquals('/', root.getFullPath()); });
 }
 
 function testCreateFile() {
   // Advance the clock to an arbitrary, known time.
   mockClock.install();
   mockClock.tick(43);
-  var promise = dir.getLastModified().then(function(date) {
-    assertEquals(0, date.getTime());
-  }).then(function() {
-    return dir.getFile('bar', Behavior.CREATE);
-  }).then(function(file) {
-    mockClock.tick();
-    assertEquals('bar', file.getName());
-    assertEquals('/foo/bar', file.getFullPath());
-    assertEquals(dir, file.parent);
-    assertTrue(file.isFile());
+  var promise =
+      dir.getLastModified()
+          .then(function(date) { assertEquals(0, date.getTime()); })
+          .then(function() { return dir.getFile('bar', Behavior.CREATE); })
+          .then(function(file) {
+            mockClock.tick();
+            assertEquals('bar', file.getName());
+            assertEquals('/foo/bar', file.getFullPath());
+            assertEquals(dir, file.parent);
+            assertTrue(file.isFile());
 
-    return dir.getLastModified();
-  }).then(function(date) {
-    assertEquals(43, date.getTime());
-    return dir.getMetadata();
-  }).then(function(metadata) {
-    assertEquals(43, metadata.modificationTime.getTime());
-  }).thenAlways(function() {
-    mockClock.uninstall();
-  });
+            return dir.getLastModified();
+          })
+          .then(function(date) {
+            assertEquals(43, date.getTime());
+            return dir.getMetadata();
+          })
+          .then(function(metadata) {
+            assertEquals(43, metadata.modificationTime.getTime());
+          })
+          .thenAlways(function() { mockClock.uninstall(); });
   mockClock.tick();
   return promise;
 }
@@ -140,22 +156,24 @@ function testCreateFileThatAlreadyExists() {
   mockClock.install();
   mockClock.tick(47);
   var existingFile = dir.getFileSync('file');
-  var promise = dir.getFile('file', Behavior.CREATE).then(function(file) {
-    assertEquals('file', file.getName());
-    assertEquals('/foo/file', file.getFullPath());
-    assertEquals(dir, file.parent);
-    assertEquals(existingFile, file);
-    assertTrue(file.isFile());
+  var promise = dir.getFile('file', Behavior.CREATE)
+                    .then(function(file) {
+                      assertEquals('file', file.getName());
+                      assertEquals('/foo/file', file.getFullPath());
+                      assertEquals(dir, file.parent);
+                      assertEquals(existingFile, file);
+                      assertTrue(file.isFile());
 
-    return dir.getLastModified();
-  }).then(function(date) {
-    assertEquals(47, date.getTime());
-    return dir.getMetadata();
-  }).then(function(metadata) {
-    assertEquals(47, metadata.modificationTime.getTime());
-  }).thenAlways(function() {
-    mockClock.uninstall();
-  });
+                      return dir.getLastModified();
+                    })
+                    .then(function(date) {
+                      assertEquals(47, date.getTime());
+                      return dir.getMetadata();
+                    })
+                    .then(function(metadata) {
+                      assertEquals(47, metadata.modificationTime.getTime());
+                    })
+                    .thenAlways(function() { mockClock.uninstall(); });
   mockClock.tick();
   return promise;
 }
@@ -236,27 +254,23 @@ function testListDirectory() {
   root.getFileSync('file2', Behavior.CREATE);
 
   return fs.getRoot().listDirectory().then(function(entryList) {
-    assertSameElements([
-      'dir1',
-      'dir2',
-      'file1',
-      'file2',
-      'foo'
-    ],
-    goog.array.map(entryList, function(entry) {
-      return entry.getName();
-    }));
+    assertSameElements(
+        ['dir1', 'dir2', 'file1', 'file2', 'foo'],
+        goog.array.map(entryList, function(entry) { return entry.getName(); }));
   });
 }
 
 function testCreatePath() {
-  return dir.createPath('baz/bat').then(function(batDir) {
-    assertEquals('/foo/baz/bat', batDir.getFullPath());
-    return batDir.createPath('../zazzle');
-  }).then(function(zazzleDir) {
-    assertEquals('/foo/baz/zazzle', zazzleDir.getFullPath());
-    return zazzleDir.createPath('/elements/actinides/neptunium/');
-  }).then(function(elDir) {
-    assertEquals('/elements/actinides/neptunium', elDir.getFullPath());
-  });
+  return dir.createPath('baz/bat')
+      .then(function(batDir) {
+        assertEquals('/foo/baz/bat', batDir.getFullPath());
+        return batDir.createPath('../zazzle');
+      })
+      .then(function(zazzleDir) {
+        assertEquals('/foo/baz/zazzle', zazzleDir.getFullPath());
+        return zazzleDir.createPath('/elements/actinides/neptunium/');
+      })
+      .then(function(elDir) {
+        assertEquals('/elements/actinides/neptunium', elDir.getFullPath());
+      });
 }

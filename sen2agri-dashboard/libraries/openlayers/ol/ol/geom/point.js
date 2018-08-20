@@ -1,12 +1,12 @@
 goog.provide('ol.geom.Point');
 
+goog.require('ol');
 goog.require('ol.extent');
 goog.require('ol.geom.GeometryLayout');
 goog.require('ol.geom.GeometryType');
 goog.require('ol.geom.SimpleGeometry');
 goog.require('ol.geom.flat.deflate');
 goog.require('ol.math');
-
 
 
 /**
@@ -17,19 +17,20 @@ goog.require('ol.math');
  * @extends {ol.geom.SimpleGeometry}
  * @param {ol.Coordinate} coordinates Coordinates.
  * @param {ol.geom.GeometryLayout=} opt_layout Layout.
- * @api stable
+ * @api
  */
 ol.geom.Point = function(coordinates, opt_layout) {
-  goog.base(this);
+  ol.geom.SimpleGeometry.call(this);
   this.setCoordinates(coordinates, opt_layout);
 };
-goog.inherits(ol.geom.Point, ol.geom.SimpleGeometry);
+ol.inherits(ol.geom.Point, ol.geom.SimpleGeometry);
 
 
 /**
  * Make a complete copy of the geometry.
  * @return {!ol.geom.Point} Clone.
- * @api stable
+ * @override
+ * @api
  */
 ol.geom.Point.prototype.clone = function() {
   var point = new ol.geom.Point(null);
@@ -41,8 +42,7 @@ ol.geom.Point.prototype.clone = function() {
 /**
  * @inheritDoc
  */
-ol.geom.Point.prototype.closestPointXY =
-    function(x, y, closestPoint, minSquaredDistance) {
+ol.geom.Point.prototype.closestPointXY = function(x, y, closestPoint, minSquaredDistance) {
   var flatCoordinates = this.flatCoordinates;
   var squaredDistance = ol.math.squaredDistance(
       x, y, flatCoordinates[0], flatCoordinates[1]);
@@ -63,7 +63,8 @@ ol.geom.Point.prototype.closestPointXY =
 /**
  * Return the coordinate of the point.
  * @return {ol.Coordinate} Coordinates.
- * @api stable
+ * @override
+ * @api
  */
 ol.geom.Point.prototype.getCoordinates = function() {
   return !this.flatCoordinates ? [] : this.flatCoordinates.slice();
@@ -80,7 +81,7 @@ ol.geom.Point.prototype.computeExtent = function(extent) {
 
 /**
  * @inheritDoc
- * @api stable
+ * @api
  */
 ol.geom.Point.prototype.getType = function() {
   return ol.geom.GeometryType.POINT;
@@ -89,7 +90,7 @@ ol.geom.Point.prototype.getType = function() {
 
 /**
  * @inheritDoc
- * @api stable
+ * @api
  */
 ol.geom.Point.prototype.intersectsExtent = function(extent) {
   return ol.extent.containsXY(extent,
@@ -98,10 +99,8 @@ ol.geom.Point.prototype.intersectsExtent = function(extent) {
 
 
 /**
- * Set the coordinate of the point.
- * @param {ol.Coordinate} coordinates Coordinates.
- * @param {ol.geom.GeometryLayout=} opt_layout Layout.
- * @api stable
+ * @inheritDoc
+ * @api
  */
 ol.geom.Point.prototype.setCoordinates = function(coordinates, opt_layout) {
   if (!coordinates) {

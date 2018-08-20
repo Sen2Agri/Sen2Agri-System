@@ -1,10 +1,8 @@
 goog.provide('ol.TileCache');
 
 goog.require('ol');
-goog.require('ol.TileRange');
 goog.require('ol.structs.LRUCache');
 goog.require('ol.tilecoord');
-
 
 
 /**
@@ -15,25 +13,10 @@ goog.require('ol.tilecoord');
  */
 ol.TileCache = function(opt_highWaterMark) {
 
-  goog.base(this);
-
-  /**
-   * @private
-   * @type {number}
-   */
-  this.highWaterMark_ = opt_highWaterMark !== undefined ?
-      opt_highWaterMark : ol.DEFAULT_TILE_CACHE_HIGH_WATER_MARK;
+  ol.structs.LRUCache.call(this, opt_highWaterMark);
 
 };
-goog.inherits(ol.TileCache, ol.structs.LRUCache);
-
-
-/**
- * @return {boolean} Can expire cache.
- */
-ol.TileCache.prototype.canExpireCache = function() {
-  return this.getCount() > this.highWaterMark_;
-};
+ol.inherits(ol.TileCache, ol.structs.LRUCache);
 
 
 /**
@@ -54,18 +37,19 @@ ol.TileCache.prototype.expireCache = function(usedTiles) {
 
 
 /**
- * Remove a tile range from the cache, e.g. to invalidate tiles.
- * @param {ol.TileRange} tileRange The tile range to prune.
+ * Prune all tiles from the cache that don't have the same z as the newest tile.
  */
-ol.TileCache.prototype.pruneTileRange = function(tileRange) {
-  var i = this.getCount(),
-      key;
-  while (i--) {
-    key = this.peekLastKey();
-    if (tileRange.contains(ol.tilecoord.createFromString(key))) {
-      this.pop().dispose();
-    } else {
-      this.get(key);
-    }
+ol.TileCache.prototype.pruneExceptNewestZ = function() {
+  if (this.getCount() === 0) {
+    return;
   }
+  var key = this.peekFirstKey();
+  var tileCoord = ol.tilecoord.fromKey(key);
+  var z = tileCoord[0];
+  this.forEach(function(tile) {
+    if (tile.tileCoord[0] !== z) {
+      this.remove(ol.tilecoord.getKey(tile.tileCoord));
+      tile.dispose();
+    }
+  }, this);
 };

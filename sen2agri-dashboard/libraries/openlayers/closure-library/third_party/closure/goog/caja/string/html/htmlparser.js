@@ -39,7 +39,8 @@
  * http://www.whatwg.org/specs/web-apps/current-work/multipage/tokenization.html
  * http://www.whatwg.org/specs/web-apps/current-work/multipage/tree-construction.html
  *
- * @supported IE6, IE7, IE8, FF1.5, FF2, FF3, Chrome 3.0, Safari and Opera 10.
+ * @author msamuel@google.com (Mike Samuel)
+ * @supported IE6+, FF1.5+, Chrome 3.0+, Safari and Opera 10.
  */
 
 goog.provide('goog.string.html');
@@ -488,8 +489,7 @@ goog.string.html.HtmlParser.prototype.lookupEntity_ = function(name) {
   var m = name.match(goog.string.html.HtmlParser.DECIMAL_ESCAPE_RE_);
   if (m) {
     return String.fromCharCode(parseInt(m[1], 10));
-  } else if (
-      !!(m = name.match(goog.string.html.HtmlParser.HEX_ESCAPE_RE_))) {
+  } else if (m = name.match(goog.string.html.HtmlParser.HEX_ESCAPE_RE_)) {
     return String.fromCharCode(parseInt(m[1], 16));
   }
   return '';

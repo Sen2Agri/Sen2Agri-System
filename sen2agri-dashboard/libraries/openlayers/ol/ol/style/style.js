@@ -1,16 +1,10 @@
-goog.provide('ol.style.GeometryFunction');
 goog.provide('ol.style.Style');
-goog.provide('ol.style.StyleFunction');
-goog.provide('ol.style.defaultGeometryFunction');
 
-goog.require('goog.asserts');
-goog.require('ol.geom.Geometry');
+goog.require('ol.asserts');
 goog.require('ol.geom.GeometryType');
 goog.require('ol.style.Circle');
 goog.require('ol.style.Fill');
-goog.require('ol.style.Image');
 goog.require('ol.style.Stroke');
-
 
 
 /**
@@ -20,6 +14,7 @@ goog.require('ol.style.Stroke');
  * feature or layer that uses the style is re-rendered.
  *
  * @constructor
+ * @struct
  * @param {olx.style.StyleOptions=} opt_options Style options.
  * @api
  */
@@ -29,15 +24,15 @@ ol.style.Style = function(opt_options) {
 
   /**
    * @private
-   * @type {string|ol.geom.Geometry|ol.style.GeometryFunction}
+   * @type {string|ol.geom.Geometry|ol.StyleGeometryFunction}
    */
   this.geometry_ = null;
 
   /**
    * @private
-   * @type {!ol.style.GeometryFunction}
+   * @type {!ol.StyleGeometryFunction}
    */
-  this.geometryFunction_ = ol.style.defaultGeometryFunction;
+  this.geometryFunction_ = ol.style.Style.defaultGeometryFunction;
 
   if (options.geometry !== undefined) {
     this.setGeometry(options.geometry);
@@ -54,6 +49,12 @@ ol.style.Style = function(opt_options) {
    * @type {ol.style.Image}
    */
   this.image_ = options.image !== undefined ? options.image : null;
+
+  /**
+   * @private
+   * @type {ol.StyleRenderFunction|null}
+   */
+  this.renderer_ = options.renderer !== undefined ? options.renderer : null;
 
   /**
    * @private
@@ -77,8 +78,51 @@ ol.style.Style = function(opt_options) {
 
 
 /**
+ * Clones the style.
+ * @return {ol.style.Style} The cloned style.
+ * @api
+ */
+ol.style.Style.prototype.clone = function() {
+  var geometry = this.getGeometry();
+  if (geometry && geometry.clone) {
+    geometry = geometry.clone();
+  }
+  return new ol.style.Style({
+    geometry: geometry,
+    fill: this.getFill() ? this.getFill().clone() : undefined,
+    image: this.getImage() ? this.getImage().clone() : undefined,
+    stroke: this.getStroke() ? this.getStroke().clone() : undefined,
+    text: this.getText() ? this.getText().clone() : undefined,
+    zIndex: this.getZIndex()
+  });
+};
+
+
+/**
+ * Get the custom renderer function that was configured with
+ * {@link #setRenderer} or the `renderer` constructor option.
+ * @return {ol.StyleRenderFunction|null} Custom renderer function.
+ * @api
+ */
+ol.style.Style.prototype.getRenderer = function() {
+  return this.renderer_;
+};
+
+
+/**
+ * Sets a custom renderer function for this style. When set, `fill`, `stroke`
+ * and `image` options of the style will be ignored.
+ * @param {ol.StyleRenderFunction|null} renderer Custom renderer function.
+ * @api
+ */
+ol.style.Style.prototype.setRenderer = function(renderer) {
+  this.renderer_ = renderer;
+};
+
+
+/**
  * Get the geometry to be rendered.
- * @return {string|ol.geom.Geometry|ol.style.GeometryFunction}
+ * @return {string|ol.geom.Geometry|ol.StyleGeometryFunction}
  * Feature property or geometry or function that returns the geometry that will
  * be rendered with this style.
  * @api
@@ -90,7 +134,7 @@ ol.style.Style.prototype.getGeometry = function() {
 
 /**
  * Get the function used to generate a geometry for rendering.
- * @return {!ol.style.GeometryFunction} Function that is called with a feature
+ * @return {!ol.StyleGeometryFunction} Function that is called with a feature
  * and returns the geometry to render instead of the feature's geometry.
  * @api
  */
@@ -110,12 +154,32 @@ ol.style.Style.prototype.getFill = function() {
 
 
 /**
+ * Set the fill style.
+ * @param {ol.style.Fill} fill Fill style.
+ * @api
+ */
+ol.style.Style.prototype.setFill = function(fill) {
+  this.fill_ = fill;
+};
+
+
+/**
  * Get the image style.
  * @return {ol.style.Image} Image style.
  * @api
  */
 ol.style.Style.prototype.getImage = function() {
   return this.image_;
+};
+
+
+/**
+ * Set the image style.
+ * @param {ol.style.Image} image Image style.
+ * @api
+ */
+ol.style.Style.prototype.setImage = function(image) {
+  this.image_ = image;
 };
 
 
@@ -130,12 +194,32 @@ ol.style.Style.prototype.getStroke = function() {
 
 
 /**
+ * Set the stroke style.
+ * @param {ol.style.Stroke} stroke Stroke style.
+ * @api
+ */
+ol.style.Style.prototype.setStroke = function(stroke) {
+  this.stroke_ = stroke;
+};
+
+
+/**
  * Get the text style.
  * @return {ol.style.Text} Text style.
  * @api
  */
 ol.style.Style.prototype.getText = function() {
   return this.text_;
+};
+
+
+/**
+ * Set the text style.
+ * @param {ol.style.Text} text Text style.
+ * @api
+ */
+ol.style.Style.prototype.setText = function(text) {
+  this.text_ = text;
 };
 
 
@@ -152,30 +236,23 @@ ol.style.Style.prototype.getZIndex = function() {
 /**
  * Set a geometry that is rendered instead of the feature's geometry.
  *
- * @param {string|ol.geom.Geometry|ol.style.GeometryFunction} geometry
+ * @param {string|ol.geom.Geometry|ol.StyleGeometryFunction} geometry
  *     Feature property or geometry or function returning a geometry to render
  *     for this style.
  * @api
  */
 ol.style.Style.prototype.setGeometry = function(geometry) {
-  if (goog.isFunction(geometry)) {
+  if (typeof geometry === 'function') {
     this.geometryFunction_ = geometry;
-  } else if (goog.isString(geometry)) {
+  } else if (typeof geometry === 'string') {
     this.geometryFunction_ = function(feature) {
-      var result = feature.get(geometry);
-      if (result) {
-        goog.asserts.assertInstanceof(result, ol.geom.Geometry,
-            'feature geometry must be an ol.geom.Geometry instance');
-      }
-      return result;
+      return /** @type {ol.geom.Geometry} */ (feature.get(geometry));
     };
   } else if (!geometry) {
-    this.geometryFunction_ = ol.style.defaultGeometryFunction;
+    this.geometryFunction_ = ol.style.Style.defaultGeometryFunction;
   } else if (geometry !== undefined) {
-    goog.asserts.assertInstanceof(geometry, ol.geom.Geometry,
-        'geometry must be an ol.geom.Geometry instance');
     this.geometryFunction_ = function() {
-      return geometry;
+      return /** @type {ol.geom.Geometry} */ (geometry);
     };
   }
   this.geometry_ = geometry;
@@ -194,39 +271,28 @@ ol.style.Style.prototype.setZIndex = function(zIndex) {
 
 
 /**
- * A function that takes an {@link ol.Feature} and a `{number}` representing
- * the view's resolution. The function should return an array of
- * {@link ol.style.Style}. This way e.g. a vector layer can be styled.
- *
- * @typedef {function(ol.Feature, number): Array.<ol.style.Style>}
- * @api
- */
-ol.style.StyleFunction;
-
-
-/**
  * Convert the provided object into a style function.  Functions passed through
  * unchanged.  Arrays of ol.style.Style or single style objects wrapped in a
  * new style function.
- * @param {ol.style.StyleFunction|Array.<ol.style.Style>|ol.style.Style} obj
+ * @param {ol.StyleFunction|Array.<ol.style.Style>|ol.style.Style} obj
  *     A style function, a single style, or an array of styles.
- * @return {ol.style.StyleFunction} A style function.
+ * @return {ol.StyleFunction} A style function.
  */
-ol.style.createStyleFunction = function(obj) {
+ol.style.Style.createFunction = function(obj) {
   var styleFunction;
 
-  if (goog.isFunction(obj)) {
+  if (typeof obj === 'function') {
     styleFunction = obj;
   } else {
     /**
      * @type {Array.<ol.style.Style>}
      */
     var styles;
-    if (goog.isArray(obj)) {
+    if (Array.isArray(obj)) {
       styles = obj;
     } else {
-      goog.asserts.assertInstanceof(obj, ol.style.Style,
-          'obj geometry must be an ol.style.Style instance');
+      ol.asserts.assert(obj instanceof ol.style.Style,
+          41); // Expected an `ol.style.Style` or an array of `ol.style.Style`
       styles = [obj];
     }
     styleFunction = function() {
@@ -241,21 +307,21 @@ ol.style.createStyleFunction = function(obj) {
  * @type {Array.<ol.style.Style>}
  * @private
  */
-ol.style.defaultStyle_ = null;
+ol.style.Style.default_ = null;
 
 
 /**
- * @param {ol.Feature} feature Feature.
+ * @param {ol.Feature|ol.render.Feature} feature Feature.
  * @param {number} resolution Resolution.
  * @return {Array.<ol.style.Style>} Style.
  */
-ol.style.defaultStyleFunction = function(feature, resolution) {
+ol.style.Style.defaultFunction = function(feature, resolution) {
   // We don't use an immediately-invoked function
   // and a closure so we don't get an error at script evaluation time in
   // browsers that do not support Canvas. (ol.style.Circle does
   // canvas.getContext('2d') at construction time, which will cause an.error
   // in such browsers.)
-  if (!ol.style.defaultStyle_) {
+  if (!ol.style.Style.default_) {
     var fill = new ol.style.Fill({
       color: 'rgba(255,255,255,0.4)'
     });
@@ -263,7 +329,7 @@ ol.style.defaultStyleFunction = function(feature, resolution) {
       color: '#3399CC',
       width: 1.25
     });
-    ol.style.defaultStyle_ = [
+    ol.style.Style.default_ = [
       new ol.style.Style({
         image: new ol.style.Circle({
           fill: fill,
@@ -275,7 +341,7 @@ ol.style.defaultStyleFunction = function(feature, resolution) {
       })
     ];
   }
-  return ol.style.defaultStyle_;
+  return ol.style.Style.default_;
 };
 
 
@@ -283,7 +349,7 @@ ol.style.defaultStyleFunction = function(feature, resolution) {
  * Default styles for editing features.
  * @return {Object.<ol.geom.GeometryType, Array.<ol.style.Style>>} Styles
  */
-ol.style.createDefaultEditingStyles = function() {
+ol.style.Style.createDefaultEditing = function() {
   /** @type {Object.<ol.geom.GeometryType, Array.<ol.style.Style>>} */
   var styles = {};
   var white = [255, 255, 255, 1];
@@ -351,21 +417,11 @@ ol.style.createDefaultEditingStyles = function() {
 
 
 /**
- * A function that takes an {@link ol.Feature} as argument and returns an
- * {@link ol.geom.Geometry} that will be rendered and styled for the feature.
- *
- * @typedef {function(ol.Feature): (ol.geom.Geometry|undefined)}
- * @api
- */
-ol.style.GeometryFunction;
-
-
-/**
  * Function that is called with a feature and returns its default geometry.
- * @param {ol.Feature} feature Feature to get the geometry for.
- * @return {ol.geom.Geometry|undefined} Geometry to render.
+ * @param {ol.Feature|ol.render.Feature} feature Feature to get the geometry
+ *     for.
+ * @return {ol.geom.Geometry|ol.render.Feature|undefined} Geometry to render.
  */
-ol.style.defaultGeometryFunction = function(feature) {
-  goog.asserts.assert(feature, 'feature must not be null');
+ol.style.Style.defaultGeometryFunction = function(feature) {
   return feature.getGeometry();
 };

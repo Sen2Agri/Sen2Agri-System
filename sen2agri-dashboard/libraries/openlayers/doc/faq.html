@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>OpenLayers 3 - Frequently Asked Questions (FAQ)</title>
+    <title>OpenLayers - Frequently Asked Questions (FAQ)</title>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <link href='http://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700' rel='stylesheet' type='text/css'>
     <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
@@ -22,15 +22,15 @@
           <span class='icon-bar'></span>
         </button>
 
-        <a href='/' class='navbar-brand'><img src='../../../assets/theme/img/logo70.png'>&nbsp;OpenLayers 3</a>
+        <a href='/' class='navbar-brand'><img src='../../../assets/theme/img/logo70.png'>&nbsp;OpenLayers</a>
 
         <!-- menu items that get hidden below 768px width -->
         <nav class='collapse navbar-collapse navbar-responsive-collapse'>
           <ul class='nav navbar-nav pull-right'>
-            <li><a href='/en/v3.10.1/doc'class="active">Docs</a></li>
-            <li><a href='/en/v3.10.1/examples'>Examples</a></li>
-            <li><a href='/en/v3.10.1/apidoc'>API</a></li>
-            <li><a href='https://github.com/openlayers/ol3'>Code</a></li>
+            <li><a href='/en/latest/doc/'class="active">Docs</a></li>
+            <li><a href='/en/latest/examples/'>Examples</a></li>
+            <li><a href='/en/latest/apidoc/'>API</a></li>
+            <li><a href='https://github.com/openlayers/openlayers'>Code</a></li>
           </ul>
         </nav>
       </div>
@@ -41,7 +41,7 @@
 <h1 id="frequently-asked-questions-faq-">Frequently Asked Questions (FAQ)</h1>
 <p>Certain questions arise more often than others when users ask for help. This 
 document tries to list some of the common questions that frequently get asked,
-e.g. on <a href="http://stackoverflow.com/questions/tagged/openlayers-3">Stack Overflow</a>.</p>
+e.g. on <a href="http://stackoverflow.com/questions/tagged/openlayers">Stack Overflow</a>.</p>
 <p>If you think a question (and naturally its answer) should be added here, feel
 free to ping us or to send a pull request enhancing this document.</p>
 <p>Table of contents:</p>
@@ -52,6 +52,7 @@ free to ping us or to send a pull request enhancing this document.</p>
 <li><a href="#why-is-the-order-of-a-coordinate-lon-lat-and-not-lat-lon-">Why is the order of a coordinate [lon,lat], and not [lat,lon]?</a></li>
 <li><a href="#why-aren-t-there-any-features-in-my-source-">Why aren&#39;t there any features in my source?</a></li>
 <li><a href="#how-do-i-force-a-re-render-of-the-map-">How do I force a re-render of the map?</a></li>
+<li><a href="#why-are-my-features-not-found-">Why are my features not found?</a></li>
 <li><a href="#how-do-i-create-a-custom-build-of-openlayers-">How do I create a custom build of OpenLayers?</a></li>
 <li><a href="#do-i-need-to-write-my-own-code-using-closure-library-">Do I need to write my own code using Closure library?</a></li>
 <li><a href="#do-i-need-to-compress-my-code-with-closure-compiler-">Do I need to compress my code with Closure compiler?</a></li>
@@ -94,7 +95,7 @@ examples:</p>
 <span class="keyword">var</span> swissProjection = <span class="keyword">new</span> ol.proj.Projection({
   code: <span class="string">'EPSG:21781'</span>,
   <span class="comment">// The extent is used to determine zoom level 0. Recommended values for a</span>
-  <span class="comment">// projection's validity extent can be found at http://epsg.io/.</span>
+  <span class="comment">// projection's validity extent can be found at https://epsg.io/.</span>
   extent: [<span class="number">485869.5728</span>, <span class="number">76443.1884</span>, <span class="number">837076.5648</span>, <span class="number">299941.7864</span>],
   units: <span class="string">'m'</span>
 });
@@ -109,7 +110,7 @@ ol.proj.addProjection(swissProjection);
   <span class="comment">// other properties for your map like layers etc.</span>
 });</code></pre>
 <p>We recommend to lookup parameters of your projection (like the validity extent)
-over at <a href="http://epsg.io/">epsg.io</a>.</p>
+over at <a href="https://epsg.io/">epsg.io</a>.</p>
 <h2 id="why-is-my-map-centered-on-the-gulf-of-guinea-or-africa-the-ocean-null-island-">Why is my map centered on the gulf of guinea (or africa, the ocean, null-island)?</h2>
 <p>If you have set a center in your map view, but don&#39;t see a real change in visual
 output, chances are that you have provided the coordinates of the map center in
@@ -157,6 +158,20 @@ following method to transform a coordinate from WGS84 to your projection:</p>
 <pre><code class="language-javascript"><span class="comment">// assuming that OpenLayers knows about EPSG:21781, see above</span>
 <span class="keyword">var</span> swissCoord = ol.proj.transform([<span class="number">8.23</span>, <span class="number">46.86</span>], <span class="string">'EPSG:4326'</span>, <span class="string">'EPSG:21781'</span>);</code></pre>
 <h2 id="why-is-the-order-of-a-coordinate-lon-lat-and-not-lat-lon-">Why is the order of a coordinate [lon,lat], and not [lat,lon]?</h2>
+<p>Because of two different and incompatible conventions. Latitude and longitude
+are normally given in that order. Maps are 2D representations/projections
+of the earth&#39;s surface, with coordinates expressed in the <code>x,y</code> grid of the
+<a href="https://en.wikipedia.org/wiki/Cartesian_coordinate_system">Cartesian system</a>.
+As they are by convention drawn with west on the left and north at the top,
+this means that <code>x</code> represents longitude, and <code>y</code> latitude. As stated above,
+OpenLayers is designed to handle all projections, but the default view is in
+projected Cartesian coordinates. It would make no sense to have duplicate
+functions to handle coordinates in both the Cartesian <code>x,y</code> and <code>lat,lon</code>
+systems, so the degrees of latitude and longitude should be entered as though
+they were Cartesian, in other words, they are <code>lon,lat</code>.</p>
+<p>If you have difficulty remembering which way round it is, use the language code
+for English, <code>en</code>, as a mnemonic: East before North.</p>
+<h4 id="a-practical-example">A practical example</h4>
 <p>So you want to center your map on a certain place on the earth and obviously you
 need to have its coordinates for this. Let&#39;s assume you want your map centered
 on Schladming, a beautiful place in Austria. Head over to the wikipedia
@@ -255,6 +270,18 @@ when a remote source has loaded).</p>
 <pre><code class="language-javascript">map.render();</code></pre>
 <p>...or its companion method</p>
 <pre><code class="language-javascript">map.renderSync();</code></pre>
+<h2 id="why-are-my-features-not-found-">Why are my features not found?</h2>
+<p>You are using <code>ol.Map#forEachFeatureAtPixel</code> or <code>ol.Map#hasFeatureAtPixel</code>, but
+it sometimes does not work for large icons or labels? The <em>hit detection</em> only
+checks features that are within a certain distance of the given position. For large
+icons, the actual geometry of a feature might be too far away and is not considered.</p>
+<p>In this case, set the <code>renderBuffer</code> property of <code>ol.layer.Vector</code> (the default
+value is 100px):</p>
+<pre><code class="language-javascript"><span class="keyword">var</span> vectorLayer = <span class="keyword">new</span> ol.layer.Vector({
+  ...
+  renderBuffer: <span class="number">200</span>
+});</code></pre>
+<p>The recommended value is the size of the largest symbol, line width or label.</p>
 <h2 id="how-do-i-create-a-custom-build-of-openlayers-">How do I create a custom build of OpenLayers?</h2>
 <p>Please refer to the <a href="tutorials/custom-builds.html">official create custom builds tutorial</a>
 which explains how to create a custom build of OpenLayers with just those parts

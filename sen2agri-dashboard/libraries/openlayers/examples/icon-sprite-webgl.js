@@ -41,6 +41,7 @@ for (i = 0; i < iconCount; ++i) {
     rotation: info.rotation,
     scale: info.scale,
     size: info.size,
+    crossOrigin: 'anonymous',
     src: 'data/Butterfly.png'
   });
 }
@@ -68,14 +69,8 @@ var vector = new ol.layer.Vector({
   source: vectorSource
 });
 
-// Use the "webgl" renderer by default.
-var renderer = common.getRendererFromQueryString();
-if (!renderer) {
-  renderer = 'webgl';
-}
-
 var map = new ol.Map({
-  renderer: renderer,
+  renderer: /** @type {Array<ol.renderer.Type>} */ (['webgl', 'canvas']),
   layers: [vector],
   target: document.getElementById('map'),
   view: new ol.View({
@@ -91,7 +86,7 @@ for (i = 0; i < featureCount; i += 30) {
   overlayFeatures.push(clone);
 }
 
-var featureOverlay = new ol.layer.Vector({
+new ol.layer.Vector({
   map: map,
   source: new ol.source.Vector({
     features: overlayFeatures
@@ -108,8 +103,8 @@ map.on('click', function(evt) {
 
   window.setTimeout(function() {
     var features = [];
-    map.forEachFeatureAtPixel(evt.pixel, function(feature, layer) {
-      features.push(features);
+    map.forEachFeatureAtPixel(evt.pixel, function(feature) {
+      features.push(feature);
       return false;
     });
 

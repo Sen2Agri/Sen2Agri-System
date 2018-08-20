@@ -1,5 +1,5 @@
 var raster = new ol.layer.Tile({
-  source: new ol.source.MapQuest({layer: 'sat'})
+  source: new ol.source.OSM()
 });
 
 var vector = new ol.layer.Vector({
@@ -56,6 +56,7 @@ var Modify = {
 };
 Modify.init();
 
+var optionsForm = document.getElementById('options-form');
 
 var Draw = {
   init: function() {
@@ -65,18 +66,24 @@ var Draw = {
     this.LineString.setActive(false);
     map.addInteraction(this.Polygon);
     this.Polygon.setActive(false);
+    map.addInteraction(this.Circle);
+    this.Circle.setActive(false);
   },
   Point: new ol.interaction.Draw({
     source: vector.getSource(),
-    type: /** @type {ol.geom.GeometryType} */ ('Point')
+    type: 'Point'
   }),
   LineString: new ol.interaction.Draw({
     source: vector.getSource(),
-    type: /** @type {ol.geom.GeometryType} */ ('LineString')
+    type: 'LineString'
   }),
   Polygon: new ol.interaction.Draw({
     source: vector.getSource(),
-    type: /** @type {ol.geom.GeometryType} */ ('Polygon')
+    type: 'Polygon'
+  }),
+  Circle: new ol.interaction.Draw({
+    source: vector.getSource(),
+    type: 'Circle'
   }),
   getActive: function() {
     return this.activeType ? this[this.activeType].getActive() : false;
@@ -94,8 +101,6 @@ var Draw = {
   }
 };
 Draw.init();
-
-var optionsForm = document.getElementById('options-form');
 
 
 /**

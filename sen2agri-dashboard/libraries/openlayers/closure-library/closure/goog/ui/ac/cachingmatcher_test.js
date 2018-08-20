@@ -116,8 +116,8 @@ function testCacheSize() {
   // Now we overflow the cache. Check that the remote results show the first
   // time we get them back, even though they overflow the cache.
   mockHandler('foo11', ['foo111']);
-  mockHandler('foo11', ['foo111', 'foo112', 'foo113', 'foo114'],
-              ignoreArgument);
+  mockHandler(
+      'foo11', ['foo111', 'foo112', 'foo113', 'foo114'], ignoreArgument);
   mockMatcher.requestMatchingRows('foo11', 100, ignoreArgument)
       .$does(function(token, maxResults, matchHandler) {
         matchHandler('foo11', ['foo111', 'foo112', 'foo113', 'foo114']);
@@ -127,6 +127,38 @@ function testCacheSize() {
   matcher.throttledTriggerBaseMatch_.permitOne();
   mockControl.$verifyAll();
   mockControl.$resetAll();
+
+  // Now check that the cache is empty.
+  mockHandler('foo11', []);
+  mockControl.$replayAll();
+  matcher.requestMatchingRows('foo11', 12, mockHandler);
+  mockControl.$verifyAll();
+  mockControl.$resetAll();
+}
+
+function testClearCache() {
+  // First we populate the cache.
+  mockHandler('foo', []);
+  mockHandler('foo', ['foo111', 'foo222'], ignoreArgument);
+  mockMatcher.requestMatchingRows('foo', 100, ignoreArgument)
+      .$does(function(token, maxResults, matchHandler) {
+        matchHandler('foo', ['foo111', 'foo222', 'bar333']);
+      });
+  mockControl.$replayAll();
+  matcher.requestMatchingRows('foo', 12, mockHandler);
+  matcher.throttledTriggerBaseMatch_.permitOne();
+  mockControl.$verifyAll();
+  mockControl.$resetAll();
+
+  // Now we verify the cache is populated.
+  mockHandler('foo1', ['foo111']);
+  mockControl.$replayAll();
+  matcher.requestMatchingRows('foo1', 12, mockHandler);
+  mockControl.$verifyAll();
+  mockControl.$resetAll();
+
+  // Now we clear the cache.
+  matcher.clearCache();
 
   // Now check that the cache is empty.
   mockHandler('foo11', []);
@@ -156,8 +188,8 @@ function testSimilarMatchingDoesntReorderResults() {
   // below the similar matches because the user hasn't typed any more
   // characters.
   mockHandler('bad', ['bar', 'baz', 'bam']);
-  mockHandler('bad', ['bar', 'baz', 'bam', 'bad', 'badder', 'baddest'],
-              ignoreArgument);
+  mockHandler(
+      'bad', ['bar', 'baz', 'bam', 'bad', 'badder', 'baddest'], ignoreArgument);
   mockMatcher.requestMatchingRows('bad', 100, ignoreArgument)
       .$does(function(token, maxResults, matchHandler) {
         matchHandler('bad', ['bad', 'badder', 'baddest']);
@@ -184,7 +216,7 @@ function testSetThrottleTime() {
 }
 
 function testSetBaseMatcherMaxMatches() {
-  mockHandler('foo', []); // Local match
+  mockHandler('foo', []);  // Local match
   mockMatcher.requestMatchingRows('foo', 789, ignoreArgument);
   mockControl.$replayAll();
   matcher.setBaseMatcherMaxMatches();

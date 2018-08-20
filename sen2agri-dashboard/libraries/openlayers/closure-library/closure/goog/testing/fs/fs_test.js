@@ -15,12 +15,9 @@
 goog.provide('goog.testing.fsTest');
 goog.setTestOnly('goog.testing.fsTest');
 
-goog.require('goog.testing.AsyncTestCase');
 goog.require('goog.testing.fs');
 goog.require('goog.testing.fs.Blob');
 goog.require('goog.testing.jsunit');
-
-var asyncTestCase = goog.testing.AsyncTestCase.createAndInstall();
 
 function testObjectUrls() {
   var blob = goog.testing.fs.getBlob('foo');
@@ -36,22 +33,22 @@ function testGetBlob() {
       goog.testing.fs.getBlob('foo', 'bar', 'baz').toString());
   assertEquals(
       new goog.testing.fs.Blob('foobarbaz').toString(),
-      goog.testing.fs.getBlob('foo', new goog.testing.fs.Blob('bar'), 'baz').
-      toString());
+      goog.testing.fs.getBlob('foo', new goog.testing.fs.Blob('bar'), 'baz')
+          .toString());
 }
 
 function testBlobToString() {
-  goog.testing.fs.blobToString(new goog.testing.fs.Blob('foobarbaz')).
-      addCallback(goog.partial(assertEquals, 'foobarbaz')).
-      addCallback(goog.bind(asyncTestCase.continueTesting, asyncTestCase));
-  asyncTestCase.waitForAsync('testBlobToString');
+  return goog.testing.fs.blobToString(new goog.testing.fs.Blob('foobarbaz'))
+      .then(function(result) { assertEquals('foobarbaz', result); });
 }
 
 function testGetBlobWithProperties() {
   assertEquals(
       'data:spam/eggs;base64,Zm9vYmFy',
-      new goog.testing.fs.getBlobWithProperties(
-          ['foo', new goog.testing.fs.Blob('bar')], 'spam/eggs').toDataUrl());
+      new goog.testing.fs
+          .getBlobWithProperties(
+              ['foo', new goog.testing.fs.Blob('bar')], 'spam/eggs')
+          .toDataUrl());
 }
 
 function testSliceBlob() {
@@ -64,5 +61,4 @@ function testSliceBlob() {
   actual = new goog.testing.fs.sliceBlob(myBlob, 0, -1);
   expected = new goog.testing.fs.Blob('012345678');
   assertEquals(expected.toString(), actual.toString());
-
 }

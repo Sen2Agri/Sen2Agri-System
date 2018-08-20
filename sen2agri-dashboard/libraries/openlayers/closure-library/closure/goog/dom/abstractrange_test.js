@@ -29,8 +29,10 @@ function testCorrectDocument() {
   var selection = goog.dom.AbstractRange.getBrowserSelectionForWindow(a);
   assertNotNull('Selection must not be null', selection);
   var range = goog.dom.Range.createFromBrowserSelection(selection);
-  assertEquals('getBrowserSelectionForWindow must return selection in the ' +
-      'correct document', a.document, range.getDocument());
+  assertEquals(
+      'getBrowserSelectionForWindow must return selection in the ' +
+          'correct document',
+      a.document, range.getDocument());
 
   // This is intended to trip up Internet Explorer --
   // see http://b/2048934
@@ -42,8 +44,10 @@ function testCorrectDocument() {
   // window's document.
   if (selection != null && selection.rangeCount != 0) {
     range = goog.dom.Range.createFromBrowserSelection(selection);
-    assertEquals('getBrowserSelectionForWindow must return selection in ' +
-        'the correct document', a.document, range.getDocument());
+    assertEquals(
+        'getBrowserSelectionForWindow must return selection in ' +
+            'the correct document',
+        a.document, range.getDocument());
   } else {
     assertTrue(selection == null || selection.rangeCount == 0);
   }
@@ -54,7 +58,8 @@ function testSelectionIsControlRange() {
   // Only IE supports control ranges
   if (c.document.body.createControlRange) {
     var controlRange = c.document.body.createControlRange();
-    controlRange.add(c.document.getElementsByTagName(goog.dom.TagName.IMG)[0]);
+    controlRange.add(
+        goog.dom.getElementsByTagName(goog.dom.TagName.IMG, c.document)[0]);
     controlRange.select();
     var selection = goog.dom.AbstractRange.getBrowserSelectionForWindow(c);
     assertNotNull('Selection must not be null', selection);

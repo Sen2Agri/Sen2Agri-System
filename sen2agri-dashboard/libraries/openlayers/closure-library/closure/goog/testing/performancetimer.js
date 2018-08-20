@@ -20,6 +20,7 @@
  * @author attila@google.com (Attila Bodis)
  */
 
+goog.setTestOnly('goog.testing.PerformanceTimer');
 goog.provide('goog.testing.PerformanceTimer');
 goog.provide('goog.testing.PerformanceTimer.Task');
 
@@ -151,8 +152,9 @@ goog.testing.PerformanceTimer.prototype.isDiscardOutliers = function() {
  * @return {!Object} Object containing performance stats.
  */
 goog.testing.PerformanceTimer.prototype.run = function(testFn) {
-  return this.runTask(new goog.testing.PerformanceTimer.Task(
-      /** @type {goog.testing.PerformanceTimer.TestFunction} */ (testFn)));
+  return this.runTask(
+      new goog.testing.PerformanceTimer.Task(
+          /** @type {goog.testing.PerformanceTimer.TestFunction} */ (testFn)));
 };
 
 
@@ -193,6 +195,7 @@ goog.testing.PerformanceTimer.prototype.runTask = function(task) {
  * Finishes the run of a task by creating a result object from samples, in the
  * format described in {@code run}.
  * @see goog.testing.PerformanceTimer#run
+ * @param {!Array<number>} samples The samples to analyze.
  * @return {!Object} Object containing performance stats.
  * @private
  */
@@ -231,8 +234,8 @@ goog.testing.PerformanceTimer.prototype.runAsyncTask = function(task) {
   // implementing runTask() in terms of runAsyncTask() could easily cause
   // a stack overflow if there are many iterations.
   var result = new goog.async.Deferred();
-  this.runAsyncTaskSample_(testFn, setUpFn, tearDownFn, result, samples,
-      testStart);
+  this.runAsyncTaskSample_(
+      testFn, setUpFn, tearDownFn, result, samples, testStart);
   return result;
 };
 
@@ -253,8 +256,8 @@ goog.testing.PerformanceTimer.prototype.runAsyncTask = function(task) {
  * @param {number} testStart The timestamp when the first sample was started.
  * @private
  */
-goog.testing.PerformanceTimer.prototype.runAsyncTaskSample_ = function(testFn,
-    setUpFn, tearDownFn, result, samples, testStart) {
+goog.testing.PerformanceTimer.prototype.runAsyncTaskSample_ = function(
+    testFn, setUpFn, tearDownFn, result, samples, testStart) {
   var timer = this;
   timer.handleOptionalDeferred_(setUpFn, function() {
     var sampleStart = goog.testing.PerformanceTimer.now_();
@@ -265,14 +268,32 @@ goog.testing.PerformanceTimer.prototype.runAsyncTaskSample_ = function(testFn,
         var totalRunTime = sampleEnd - testStart;
         if (samples.length < timer.numSamples_ &&
             totalRunTime <= timer.timeoutInterval_) {
-          timer.runAsyncTaskSample_(testFn, setUpFn, tearDownFn, result,
-              samples, testStart);
+          timer.runAsyncTaskSample_(
+              testFn, setUpFn, tearDownFn, result, samples, testStart);
         } else {
           result.callback(timer.finishTask_(samples));
         }
       });
     });
   });
+};
+
+
+/**
+ * Return the median of the samples.
+ * @param {!Array<number>} samples
+ * @return {number}
+ */
+goog.testing.PerformanceTimer.median = function(samples) {
+  samples.sort(function(a, b) {
+    return a - b;
+  });
+  let half = Math.floor(samples.length / 2);
+  if (samples.length % 2) {
+    return samples[half];
+  } else {
+    return (samples[half - 1] + samples[half]) / 2.0;
+  }
 };
 
 
@@ -300,13 +321,14 @@ goog.testing.PerformanceTimer.prototype.handleOptionalDeferred_ = function(
 /**
  * Creates a performance timer results object by analyzing a given array of
  * sample timings.
- * @param {Array<number>} samples The samples to analyze.
+ * @param {!Array<number>} samples The samples to analyze.
  * @return {!Object} Object containing performance stats.
  */
 goog.testing.PerformanceTimer.createResults = function(samples) {
   return {
     'average': goog.math.average.apply(null, samples),
     'count': samples.length,
+    'median': goog.testing.PerformanceTimer.median(samples),
     'maximum': Math.max.apply(null, samples),
     'minimum': Math.min.apply(null, samples),
     'standardDeviation': goog.math.standardDeviation.apply(null, samples),

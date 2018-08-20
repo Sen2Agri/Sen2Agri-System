@@ -15,6 +15,7 @@
 goog.provide('goog.testing.PropertyReplacerTest');
 goog.setTestOnly('goog.testing.PropertyReplacerTest');
 
+goog.require('goog.dom');
 goog.require('goog.dom.TagName');
 goog.require('goog.testing.PropertyReplacer');
 goog.require('goog.testing.asserts');
@@ -25,7 +26,7 @@ goog.require('goog.userAgent.product.isVersion');
 
 function isSafari8() {
   return goog.userAgent.product.SAFARI &&
-         goog.userAgent.product.isVersion('8.0');
+      goog.userAgent.product.isVersion('8.0');
 }
 
 // Test PropertyReplacer with JavaScript objects.
@@ -123,7 +124,7 @@ function testPrototype() {
 
   // Simple inheritance.
   var a = {a: 0};
-  function B() {};
+  function B() {}
   B.prototype = a;
   var b = new B();
 
@@ -135,13 +136,13 @@ function testPrototype() {
 
   // Inheritance with goog.inherits.
   var c = {a: 0};
-  function C() {};
+  function C() {}
   C.prototype = c;
-  function D() {};
+  function D() {}
   goog.inherits(D, C);
   var d = new D();
 
-  var stubs = new goog.testing.PropertyReplacer();
+  stubs = new goog.testing.PropertyReplacer();
   stubs.set(c, 'a', 1);
   stubs.set(d, 'a', 2);
   stubs.reset();
@@ -190,7 +191,7 @@ function testHasKey() {
   assertFalse('{}.a', f({}, 'a'));
   assertTrue('{a:0}.a', f({a: 0}, 'a'));
 
-  function C() {};
+  function C() {}
   C.prototype.a = 0;
   assertFalse('C.prototype.a set, is C.a own?', f(C, 'a'));
   assertTrue('C.prototype.a', f(C.prototype, 'a'));
@@ -209,7 +210,7 @@ function testHasKey() {
 
   assertFalse('document, invalid key', f(document, 'no such key'));
 
-  var div = document.createElement(goog.dom.TagName.DIV);
+  var div = goog.dom.createElement(goog.dom.TagName.DIV);
   assertFalse('div, invalid key', f(div, 'no such key'));
   div['a'] = 0;
   assertTrue('div, key added by JS', f(div, 'a'));
@@ -226,22 +227,22 @@ function testHasKey() {
   assertFalse('Math, invalid key', f(Math, 'no such key'));
   assertTrue('Math.random', f(Math, 'random'));
 
-  function Parent() {};
+  function Parent() {}
   Parent.prototype.a = 0;
-  function Child() {};
+  function Child() {}
   goog.inherits(Child, Parent);
   assertFalse('goog.inherits, parent prototype', f(new Child, 'a'));
   Child.prototype.a = 1;
   assertFalse('goog.inherits, child prototype', f(new Child, 'a'));
 
-  function OverwrittenProto() {};
+  function OverwrittenProto() {}
   OverwrittenProto.prototype = {a: 0};
   assertFalse(f(new OverwrittenProto, 'a'));
 }
 
 // Test PropertyReplacer with DOM objects' built in attributes.
 function testDomBuiltInAttributes() {
-  var div = document.createElement(goog.dom.TagName.DIV);
+  var div = goog.dom.createElement(goog.dom.TagName.DIV);
   div.id = 'old-id';
 
   var stubs = new goog.testing.PropertyReplacer();
@@ -265,7 +266,7 @@ function testDomBuiltInAttributes() {
 
 // Test PropertyReplacer with DOM objects' custom attributes.
 function testDomCustomAttributes() {
-  var div = document.createElement(goog.dom.TagName.DIV);
+  var div = goog.dom.createElement(goog.dom.TagName.DIV);
   div.attr1 = 'old';
 
   var stubs = new goog.testing.PropertyReplacer();
@@ -289,18 +290,22 @@ function testReadOnlyProperties() {
 
   // Function.prototype.length should be read-only.
   var foo = function(_) {};
-  assertThrows('Trying to set a read-only property fails silently.',
+  assertThrows(
+      'Trying to set a read-only property fails silently.',
       goog.bind(stubs.set, stubs, foo, 'length', 10));
-  assertThrows('Trying to replace a read-only property fails silently.',
+  assertThrows(
+      'Trying to replace a read-only property fails silently.',
       goog.bind(stubs.replace, stubs, foo, 'length', 10));
 
   // Array length should be undeletable.
   var a = [1, 2, 3];
-  assertThrows('Trying to remove a read-only property fails silently.',
+  assertThrows(
+      'Trying to remove a read-only property fails silently.',
       goog.bind(stubs.remove, stubs, a, 'length'));
 
   window.foo = foo;
-  assertThrows('Trying to set a read-only property by path fails silently.',
+  assertThrows(
+      'Trying to set a read-only property by path fails silently.',
       goog.bind(stubs.setPath, stubs, 'window.foo.length', 10));
   window.foo = undefined;
 }
@@ -314,7 +319,8 @@ function testSettingStyleProperties() {
   // Ensures setting a pixel style value doesn't trigger the read-only property
   // exception, considering div.style.margin will return "0px" instead of just
   // "0".
-  assertNotThrows('Trying to set a read-only property fails silently.',
+  assertNotThrows(
+      'Trying to set a read-only property fails silently.',
       goog.bind(stubs.set, stubs, div.style, 'margin', '0'));
 }
 
@@ -326,17 +332,20 @@ function testSealedProperties() {
 
   var stubs = new goog.testing.PropertyReplacer();
   var sealed = Object.seal({a: 1});
-  assertThrows('Trying to set a new sealed property fails silently.',
+  assertThrows(
+      'Trying to set a new sealed property fails silently.',
       goog.bind(stubs.set, stubs, sealed, 'b', 2));
-  assertNotThrows('Trying to remove a new sealed property fails.',
+  assertNotThrows(
+      'Trying to remove a new sealed property fails.',
       goog.bind(stubs.remove, stubs, sealed, 'b'));
-  assertNotThrows('Trying to remove a sealed property fails.',
+  assertNotThrows(
+      'Trying to remove a sealed property fails.',
       goog.bind(stubs.remove, stubs, sealed, 'a'));
 
   window.sealed = sealed;
   assertThrows(
       'Trying to set a new sealed property by path fails silently in strict ' +
-      'mode.',
+          'mode.',
       goog.bind(stubs.setPath, stubs, 'window.sealed.b', 2));
 
   (function() {
@@ -351,13 +360,14 @@ function testSealedProperties() {
     assertNotThrows(
         'Trying to remove a new sealed property fails in strict mode.',
         goog.bind(stubs.remove, stubs, sealed, 'b'));
-    assertNotThrows('Trying to remove a sealed property fails in strict mode.',
+    assertNotThrows(
+        'Trying to remove a sealed property fails in strict mode.',
         goog.bind(stubs.remove, stubs, sealed, 'a'));
 
     window.sealed = sealed;
     assertThrows(
         'Trying to set a new sealed property by path fails silently in ' +
-        'strict mode.',
+            'strict mode.',
         goog.bind(stubs.setPath, stubs, 'window.sealed.b', 2));
   })();
 
@@ -372,20 +382,26 @@ function testFrozenProperty() {
 
   var stubs = new goog.testing.PropertyReplacer();
   var frozen = Object.freeze({a: 1});
-  assertThrows('Trying to set a new frozen property fails silently.',
+  assertThrows(
+      'Trying to set a new frozen property fails silently.',
       goog.bind(stubs.set, stubs, frozen, 'b', 2));
-  assertThrows('Trying to set a frozen property fails silently.',
+  assertThrows(
+      'Trying to set a frozen property fails silently.',
       goog.bind(stubs.set, stubs, frozen, 'a', 2));
-  assertThrows('Trying to replace a frozen property fails silently.',
+  assertThrows(
+      'Trying to replace a frozen property fails silently.',
       goog.bind(stubs.replace, stubs, frozen, 'a', 2));
-  assertNotThrows('Trying to remove a new frozen property fails.',
+  assertNotThrows(
+      'Trying to remove a new frozen property fails.',
       goog.bind(stubs.remove, stubs, frozen, 'b'));
-  assertThrows('Trying to remove a frozen property fails silently.',
+  assertThrows(
+      'Trying to remove a frozen property fails silently.',
       goog.bind(stubs.remove, stubs, frozen, 'a'));
 
 
   window.frozen = frozen;
-  assertThrows('Trying to set a frozen property by path fails silently.',
+  assertThrows(
+      'Trying to set a frozen property by path fails silently.',
       goog.bind(stubs.setPath, stubs, 'window.frozen.a', 2));
 
   (function() {
@@ -413,11 +429,11 @@ function testFrozenProperty() {
     window.frozen = frozen;
     assertThrows(
         'Trying to set a new frozen property by path fails silently in ' +
-        'strict mode.',
+            'strict mode.',
         goog.bind(stubs.setPath, stubs, 'window.frozen.b', 2));
     assertThrows(
         'Trying to set a frozen property by path fails silently in strict ' +
-        'mode.',
+            'mode.',
         goog.bind(stubs.setPath, stubs, 'window.frozen.a', 2));
   })();
 
@@ -439,11 +455,9 @@ function testReplace() {
   var stubs = new goog.testing.PropertyReplacer();
   function C() {
     this.a = 1;
-  };
+  }
   C.prototype.b = 1;
-  C.prototype.toString = function() {
-    return 'obj';
-  };
+  C.prototype.toString = function() { return 'obj'; };
   var obj = new C();
 
   stubs.replace(obj, 'a', 2);
@@ -452,19 +466,60 @@ function testReplace() {
   stubs.replace(obj, 'b', 2);
   assertEquals('successfully replaced the property in the prototype', 2, obj.b);
 
-  var error = assertThrows('cannot replace missing key',
+  var error = assertThrows(
+      'cannot replace missing key',
       goog.bind(stubs.replace, stubs, obj, 'unknown', 1));
   // Using assertContains instead of assertEquals because Opera 10.0 adds
   // the stack trace to the error message.
-  assertEquals('error message for missing key',
+  assertEquals(
+      'error message for missing key',
       'Cannot replace missing property "unknown" in obj', error.message);
   assertFalse('object not touched', 'unknown' in obj);
 
-  var error = assertThrows('cannot change value type',
+  error = assertThrows(
+      'cannot change value type',
       goog.bind(stubs.replace, stubs, obj, 'a', '3'));
-  assertContains('error message for type mismatch',
+  assertContains(
+      'error message for type mismatch',
       'Cannot replace property "a" in obj with a value of different type',
       error.message);
+
+  assertThrows(
+      'cannot change value type to null',
+      goog.bind(stubs.replace, stubs, obj, 'a', null));
+
+  assertThrows(
+      'cannot change value type to undefined',
+      goog.bind(stubs.replace, stubs, obj, 'a', undefined));
+}
+
+function testReplaceAllowNullOrUndefined() {
+  var stubs = new goog.testing.PropertyReplacer();
+  var obj = {value: 1, zero: 0, emptyString: ''};
+
+  stubs.replace(obj, 'value', undefined, true);
+  assertUndefined(
+      'Expected int value to be replaced with undefined', obj.value);
+
+  stubs.replace(obj, 'value', 'b', true);
+  assertEquals(
+      'Expected undefined value to be replace with string', 'b', obj.value);
+
+  stubs.replace(obj, 'value', null, true);
+  assertNull('Expected string value to be replaced with null', obj.value);
+
+  stubs.replace(obj, 'value', 1, true);
+  assertEquals(
+      'Expected null value to be replaced with non-null', 1, obj.value);
+
+  // Replacing 0 with a string or empty string with a number is not allowed.
+  assertThrows(
+      'Cannot change value type',
+      goog.bind(stubs.replace, stubs, obj, 'zero', 'a', true));
+
+  assertThrows(
+      'Cannot change value type',
+      goog.bind(stubs.replace, stubs, obj, 'emptyString', 1, true));
 }
 
 // Tests altering complete namespace paths.
@@ -479,8 +534,8 @@ function testSetPath() {
   stubs.setPath('a.f', 3);
   assertObjectEquals('a.f=3', {b: {c: {d: 1}, e: 2}, f: 3}, goog.global.a);
   stubs.setPath('a.f.g', 4);
-  assertObjectEquals('a.f.g=4', {b: {c: {d: 1}, e: 2}, f: {g: 4}},
-                     goog.global.a);
+  assertObjectEquals(
+      'a.f.g=4', {b: {c: {d: 1}, e: 2}, f: {g: 4}}, goog.global.a);
   stubs.setPath('a', 5);
   assertEquals('a=5', 5, goog.global.a);
 
@@ -511,12 +566,92 @@ function testSetPathWithFunction() {
   assertTrue('a.b.prototype.d=2, proto set', 'd' in goog.global.a.b.prototype);
   assertEquals('a.b.prototype.d=2, d set', 2, new goog.global.a.b().d);
 
-  var invalidSetPath = function() {
-    stubs.setPath('a.prototype.e', 3);
-  };
+  var invalidSetPath = function() { stubs.setPath('a.prototype.e', 3); };
   assertThrows('setting the prototype of a non-function', invalidSetPath);
 
   stubs.reset();
   assertObjectEquals('a.b.c reset', {b: f}, goog.global.a);
   assertObjectEquals('a.b.prototype reset', {}, goog.global.a.b.prototype);
+}
+
+// Tests restoring original attribute values with restore() rather than reset().
+function testRestore() {
+  var stubs = new goog.testing.PropertyReplacer();
+  var x = {a: 1, b: undefined};
+
+  // Setting simple value.
+  stubs.set(x, 'num', 1);
+  assertEquals('x.num = 1', 1, x.num);
+  stubs.restore(x, 'num');
+  assertFalse('x.num removed', 'num' in x);
+
+  // Setting undefined value.
+  stubs.set(x, 'undef', undefined);
+  assertTrue('x.undef = undefined', 'undef' in x && x.undef === undefined);
+  stubs.restore(x, 'undef');
+  assertFalse('x.undef removed', 'undef' in x);
+
+  // Setting null value.
+  stubs.set(x, 'null', null);
+  assertTrue('x["null"] = null', x['null'] === null);
+  stubs.restore(x, 'null');
+  assertFalse('x["null"] removed', 'null' in x);
+
+  // Setting a simple value that existed originally.
+  stubs.set(x, 'b', null);
+  assertTrue('x.b = null', x.b === null);
+
+  // Setting a complex value.
+  stubs.set(x, 'obj', {});
+  assertEquals('x.obj = {}', 'object', typeof x.obj);
+  stubs.set(x.obj, 'num', 2);
+  assertEquals('x.obj.num = 2', 2, x.obj.num);
+  stubs.restore(x.obj, 'num');
+  assertFalse('x.obj.num removed', 'num' in x.obj);
+  stubs.restore(x, 'obj');
+  assertFalse('x.obj removed', 'obj' in x);
+
+  // Setting a function.
+  stubs.set(x, 'func', function(n) { return n + 1; });
+  assertEquals('x.func = lambda n: n+1', 11, x.func(10));
+  stubs.restore(x, 'func');
+  assertFalse('x.func removed', 'func' in x);
+
+  // Setting a constructor and a prototype method.
+  stubs.set(x, 'Class', function(num) { this.num = num; });
+  stubs.set(x.Class.prototype, 'triple', function() { return this.num * 3; });
+  assertEquals('prototype method', 12, (new x.Class(4)).triple());
+  stubs.restore(x, 'Class');
+  assertFalse('x.Class removed', 'Class' in x);
+
+  // Final cleanup with reset(). This should have no effect:
+  // all assertions about the original state shall still hold.
+  stubs.reset();
+  assertEquals('x.a preserved', 1, x.a);
+  assertTrue('x.b reset', 'b' in x && x.b === undefined);
+  assertFalse('x.num removed', 'num' in x);
+  assertFalse('x.undef removed', 'undef' in x);
+  assertFalse('x["null"] removed', 'null' in x);
+  assertFalse('x.obj removed', 'obj' in x);
+  assertFalse('x.func removed', 'func' in x);
+  assertFalse('x.Class removed', 'Class' in x);
+}
+
+// Tests restore() with invalid arguments.
+function testRestoreWithInvalidArguments() {
+  var stubs = new goog.testing.PropertyReplacer();
+  var x = {a: 1, b: undefined};
+  var y = {a: 1};
+
+  stubs.set(x, 'a', 42);
+
+  assertThrows(
+      'Trying to restore state of an unmodified property',
+      goog.bind(stubs.restore, stubs, x, 'b'));
+  assertThrows(
+      'Trying to restore state of a non-existing property',
+      goog.bind(stubs.restore, stubs, x, 'not_here'));
+  assertThrows(
+      'Trying to restore state of an unmodified object',
+      goog.bind(stubs.restore, stubs, y, 'a'));
 }

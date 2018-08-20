@@ -1,16 +1,4 @@
-goog.provide('ol.Size');
 goog.provide('ol.size');
-
-
-goog.require('goog.asserts');
-
-
-/**
- * An array of numbers representing a size: `[width, height]`.
- * @typedef {Array.<number>}
- * @api stable
- */
-ol.Size;
 
 
 /**
@@ -18,7 +6,7 @@ ol.Size;
  * @param {ol.Size} size Size.
  * @param {number} buffer Buffer.
  * @param {ol.Size=} opt_size Optional reusable size array.
- * @return {ol.Size}
+ * @return {ol.Size} The buffered size.
  */
 ol.size.buffer = function(size, buffer, opt_size) {
   if (opt_size === undefined) {
@@ -27,17 +15,6 @@ ol.size.buffer = function(size, buffer, opt_size) {
   opt_size[0] = size[0] + 2 * buffer;
   opt_size[1] = size[1] + 2 * buffer;
   return opt_size;
-};
-
-
-/**
- * Compares sizes for equality.
- * @param {ol.Size} a Size.
- * @param {ol.Size} b Size.
- * @return {boolean} Equals.
- */
-ol.size.equals = function(a, b) {
-  return a[0] == b[0] && a[1] == b[1];
 };
 
 
@@ -56,7 +33,7 @@ ol.size.hasArea = function(size) {
  * @param {ol.Size} size Size.
  * @param {number} ratio Ratio.
  * @param {ol.Size=} opt_size Optional reusable size array.
- * @return {ol.Size}
+ * @return {ol.Size} The scaled size.
  */
 ol.size.scale = function(size, ratio, opt_size) {
   if (opt_size === undefined) {
@@ -75,18 +52,16 @@ ol.size.scale = function(size, ratio, opt_size) {
  * @param {number|ol.Size} size Width and height.
  * @param {ol.Size=} opt_size Optional reusable size array.
  * @return {ol.Size} Size.
- * @api stable
+ * @api
  */
 ol.size.toSize = function(size, opt_size) {
-  if (goog.isArray(size)) {
+  if (Array.isArray(size)) {
     return size;
   } else {
-    goog.asserts.assert(goog.isNumber(size));
     if (opt_size === undefined) {
       opt_size = [size, size];
     } else {
-      opt_size[0] = size;
-      opt_size[1] = size;
+      opt_size[0] = opt_size[1] = /** @type {number} */ (size);
     }
     return opt_size;
   }

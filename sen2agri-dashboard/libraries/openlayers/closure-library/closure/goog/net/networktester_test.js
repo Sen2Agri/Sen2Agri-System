@@ -174,14 +174,11 @@ function testNonDefaultUri() {
 }
 
 function testOffline() {
-
   // set up the tester
   var handler = new Handler();
   var tester = new goog.net.NetworkTester(handler.callback, handler);
   var orgGetNavigatorOffline = goog.net.NetworkTester.getNavigatorOffline_;
-  goog.net.NetworkTester.getNavigatorOffline_ = function() {
-    return true;
-  };
+  goog.net.NetworkTester.getNavigatorOffline_ = function() { return true; };
   try {
     assertFalse(tester.isRunning());
     tester.start();
@@ -226,12 +223,11 @@ Handler.prototype.isEmpty = function() {
 
 Handler.prototype.dequeue = function() {
   if (this.isEmpty()) {
-    throw Error('Handler is empty');
+    throw new Error('Handler is empty');
   }
   return this.events_.shift();
 };
 
 // override image constructor for test - can't use a real image due to
 // async load of images - have to simulate it
-function Image() {
-}
+function Image() {}

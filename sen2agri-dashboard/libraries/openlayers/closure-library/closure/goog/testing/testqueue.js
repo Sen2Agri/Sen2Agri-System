@@ -16,6 +16,7 @@
  * @fileoverview Generic queue for writing unit tests.
  */
 
+goog.setTestOnly('goog.testing.TestQueue');
 goog.provide('goog.testing.TestQueue');
 
 
@@ -60,7 +61,7 @@ goog.testing.TestQueue.prototype.isEmpty = function() {
  */
 goog.testing.TestQueue.prototype.dequeue = function(opt_comment) {
   if (this.isEmpty()) {
-    throw Error('Handler is empty: ' + opt_comment);
+    throw new Error('Handler is empty: ' + opt_comment);
   }
   return this.events_.shift();
 };

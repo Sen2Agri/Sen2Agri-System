@@ -1,11 +1,11 @@
-# Implementing formats with ol.format.Format
-`ol.format.Format` defines a number of abstract methods including:
+# Implementing formats with ol.format.Feature
+`ol.format.Feature` defines a number of abstract methods including:
 
 * `readFeatures` returning an `Array.<ol.Feature>`
 * `readFeature` returning an `ol.Feature`
 * `readGeometry` returning an `ol.geom.Geometry`
 
-Having different functions for multiple return types allows both the user to specify what type of data he wants and for the Compiler to properly type check the code. Depending on the format, it is entirely reasonable to leave one or more of these methods unimplemented, or provide sensible default implementations.
+Having different functions for multiple return types allows both the user to specify what type of data they want and for the compiler to properly type check the code. Depending on the format, it is entirely reasonable to leave one or more of these methods unimplemented, or provide sensible default implementations.
 
 For example, `ol.format.GPX` only supports reading multiple features.  Therefore `readFeature` and `readGeometry` are unimplemented and will raise an exception if called.
 
@@ -18,10 +18,10 @@ If a file cannot be parsed, then the return value should be `null` for all three
 
 # Implementing XML formats
 
-This is an introduction for people looking to contribute an XML format reader to OpenLayers 3. After having read this document, you should read the code of and make sure that you understand the simpler XML format readers like `ol.format.GPX` before embarking on writing your own format reader.
-The document ends with guildelines for implementing a new format.
+This is an introduction for people looking to contribute an XML format reader to OpenLayers. After having read this document, you should read the code of and make sure that you understand the simpler XML format readers like `ol.format.GPX` before embarking on writing your own format reader.
+The document ends with guidelines for implementing a new format.
 
-The `ol.xml` namespace contains a number of useful functions for parsing XML documents. All code in OpenLayers 3 that reads data from XML documents should use it. It has several features:
+The `ol.xml` namespace contains a number of useful functions for parsing XML documents. All code in OpenLayers that reads data from XML documents should use it. It has several features:
 
 * Browser support back to IE9
 * Correct treatment of XML namespaces
@@ -36,7 +36,7 @@ The `ol.format.XML` class includes a number of methods for reading arrays of fea
 
 `ol.format.XML` is for formats that contain features and geometries. If your XML file contains something else then you should not inherit from `ol.format.XML` and can skip ahead to the `ol.xml` section.
 
-`ol.format.XML` is perhaps easiest to explain first, since it is higher level than `ol.xml`, but before reading about `ol.format.XML`, read the description of [`ol.format.Format`](https://github.com/openlayers/ol3/wiki/Implementing-formats-with-%60ol.format.Format%60).
+`ol.format.XML` is perhaps easiest to explain first, since it is higher level than `ol.xml`.
 
 `ol.format.XML` defines a number of abstract type-checked methods with names including:
 
@@ -51,7 +51,7 @@ There are two key concepts to master to understand how `ol.xml` works:
 * How `ol.xml.parse` traverses the XML document (or node) and calls back to your code
 * How `ol.xml` decouples the structure of the XML document (which is always a tree) from the structure of the output data (which could be a single object, an array of objects, or anything else) using an object stack.
 
-It's handy to have the [`src/ol/xml.js` source code](https://github.com/openlayers/ol3/blob/master/src/ol/xml.js) to hand while you read the following.
+It's handy to have the [`src/ol/xml.js` source code](https://github.com/openlayers/openlayers/blob/master/src/ol/xml.js) to hand while you read the following.
 
 ## How `ol.xml.parse` traverses the XML document
 
@@ -124,12 +124,11 @@ In the above there are many common operations, like setting the property of the 
 
 ### Putting it all together
 
-With the above, you should be able to read through the [source code to `ol.format.GPX`](https://github.com/openlayers/ol3/blob/master/src/ol/format/gpxformat.js) and get a feel for how it works. Start from the bottom of the file and work upwards. It's also useful to have [an example GPX file](http://www.topografix.com/fells_loop.gpx) and [the GPX specification](http://www.topografix.com/GPX/1/1/) to hand.
+With the above, you should be able to read through the [source code to `ol.format.GPX`](https://github.com/openlayers/openlayers/blob/master/src/ol/format/gpxformat.js) and get a feel for how it works. Start from the bottom of the file and work upwards. It's also useful to have [an example GPX file](http://www.topografix.com/fells_loop.gpx) and [the GPX specification](http://www.topografix.com/GPX/1/1/) to hand.
 
 ### Handling errors
 
 If, when reading a value from a child element, you find an invalid value, you should return `undefined`. The helper functions above (like `ol.xml.makeObjectPropertySetter`) will then skip this value. If the structure is incomplete or incorrect (e.g. a child element is missing a mandatory tag) then you should also return `undefined` from your reader, which will in turn cause the value to be skipped.
 An `ol.format.Format` should read as many features as it can, skipping features with any errors.
-
 
 

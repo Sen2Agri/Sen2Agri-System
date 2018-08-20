@@ -7,19 +7,19 @@ var colors = {
 };
 
 var styleCache = {};
-var styleFunction = function(feature, resolution) {
+var styleFunction = function(feature) {
   var color = colors[feature.get('PLT')];
-  var styleArray = styleCache[color];
-  if (!styleArray) {
-    styleArray = [new ol.style.Style({
+  var style = styleCache[color];
+  if (!style) {
+    style = new ol.style.Style({
       stroke: new ol.style.Stroke({
         color: color,
         width: 3
       })
-    })];
-    styleCache[color] = styleArray;
+    });
+    styleCache[color] = style;
   }
-  return styleArray;
+  return style;
 };
 
 var vectorSource = new ol.source.Vector();
@@ -68,13 +68,11 @@ var map = new ol.Map({
     new ol.layer.Tile({
       source: new ol.source.OSM({
         attributions: [
-          new ol.Attribution({
-            html: 'All maps &copy; ' +
-                '<a href="http://www.opencyclemap.org/">OpenCycleMap</a>'
-          }),
+          'All maps © <a href="https://www.opencyclemap.org/">OpenCycleMap</a>',
           ol.source.OSM.ATTRIBUTION
         ],
-        url: 'http://{a-c}.tile.opencyclemap.org/cycle/{z}/{x}/{y}.png'
+        url: 'https://{a-c}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png' +
+            '?apikey=0e6fc415256d4fbb9b5166a718591d71'
       })
     }),
     new ol.layer.Vector({
@@ -84,9 +82,9 @@ var map = new ol.Map({
   ],
   target: 'map',
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: new ol.View({
     center: [703365.7089403362, 5714629.865071137],
@@ -137,27 +135,26 @@ map.on('click', function(evt) {
   displaySnap(evt.coordinate);
 });
 
-var imageStyle = new ol.style.Circle({
-  radius: 5,
-  fill: null,
-  stroke: new ol.style.Stroke({
-    color: 'rgba(255,0,0,0.9)',
-    width: 1
-  })
-});
-var strokeStyle = new ol.style.Stroke({
+var stroke = new ol.style.Stroke({
   color: 'rgba(255,0,0,0.9)',
   width: 1
 });
+var style = new ol.style.Style({
+  stroke: stroke,
+  image: new ol.style.Circle({
+    radius: 5,
+    fill: null,
+    stroke: stroke
+  })
+});
 map.on('postcompose', function(evt) {
   var vectorContext = evt.vectorContext;
+  vectorContext.setStyle(style);
   if (point !== null) {
-    vectorContext.setImageStyle(imageStyle);
-    vectorContext.drawPointGeometry(point);
+    vectorContext.drawGeometry(point);
   }
   if (line !== null) {
-    vectorContext.setFillStrokeStyle(null, strokeStyle);
-    vectorContext.drawLineStringGeometry(line);
+    vectorContext.drawGeometry(line);
   }
 });
 
@@ -169,8 +166,7 @@ var featureOverlay = new ol.layer.Vector({
       radius: 5,
       fill: new ol.style.Fill({
         color: 'rgba(255,0,0,0.9)'
-      }),
-      stroke: null
+      })
     })
   })
 });

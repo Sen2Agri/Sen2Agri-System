@@ -1,3 +1,5 @@
+var openSansAdded = false;
+
 var myDom = {
   points: {
     text: document.getElementById('points-text'),
@@ -21,6 +23,9 @@ var myDom = {
     rotation: document.getElementById('lines-rotation'),
     font: document.getElementById('lines-font'),
     weight: document.getElementById('lines-weight'),
+    placement: document.getElementById('lines-placement'),
+    maxangle: document.getElementById('lines-maxangle'),
+    overflow: document.getElementById('lines-overflow'),
     size: document.getElementById('lines-size'),
     offsetX: document.getElementById('lines-offset-x'),
     offsetY: document.getElementById('lines-offset-y'),
@@ -36,6 +41,9 @@ var myDom = {
     rotation: document.getElementById('polygons-rotation'),
     font: document.getElementById('polygons-font'),
     weight: document.getElementById('polygons-weight'),
+    placement: document.getElementById('polygons-placement'),
+    maxangle: document.getElementById('polygons-maxangle'),
+    overflow: document.getElementById('polygons-overflow'),
     size: document.getElementById('polygons-size'),
     offsetX: document.getElementById('polygons-offset-x'),
     offsetY: document.getElementById('polygons-offset-y'),
@@ -57,7 +65,7 @@ var getText = function(feature, resolution, dom) {
     text = '';
   } else if (type == 'shorten') {
     text = text.trunc(12);
-  } else if (type == 'wrap') {
+  } else if (type == 'wrap' && dom.placement.value != 'line') {
     text = stringDivider(text, 16, '\n');
   }
 
@@ -72,14 +80,24 @@ var createTextStyle = function(feature, resolution, dom) {
   var offsetX = parseInt(dom.offsetX.value, 10);
   var offsetY = parseInt(dom.offsetY.value, 10);
   var weight = dom.weight.value;
+  var placement = dom.placement ? dom.placement.value : undefined;
+  var maxAngle = dom.maxangle ? parseFloat(dom.maxangle.value) : undefined;
+  var overflow = dom.overflow ? (dom.overflow.value == 'true') : undefined;
   var rotation = parseFloat(dom.rotation.value);
+  if (dom.font.value == '\'Open Sans\'' && !openSansAdded) {
+    var openSans = document.createElement('link');
+    openSans.href = 'https://fonts.googleapis.com/css?family=Open+Sans';
+    openSans.rel = 'stylesheet';
+    document.getElementsByTagName('head')[0].appendChild(openSans);
+    openSansAdded = true;
+  }
   var font = weight + ' ' + size + ' ' + dom.font.value;
   var fillColor = dom.color.value;
   var outlineColor = dom.outline.value;
   var outlineWidth = parseInt(dom.outlineWidth.value, 10);
 
   return new ol.style.Text({
-    textAlign: align,
+    textAlign: align == '' ? undefined : align,
     textBaseline: baseline,
     font: font,
     text: getText(feature, resolution, dom),
@@ -87,87 +105,81 @@ var createTextStyle = function(feature, resolution, dom) {
     stroke: new ol.style.Stroke({color: outlineColor, width: outlineWidth}),
     offsetX: offsetX,
     offsetY: offsetY,
+    placement: placement,
+    maxAngle: maxAngle,
+    overflow: overflow,
     rotation: rotation
   });
 };
 
 
 // Polygons
-var createPolygonStyleFunction = function() {
-  return function(feature, resolution) {
-    var style = new ol.style.Style({
-      stroke: new ol.style.Stroke({
-        color: 'blue',
-        width: 1
-      }),
-      fill: new ol.style.Fill({
-        color: 'rgba(0, 0, 255, 0.1)'
-      }),
-      text: createTextStyle(feature, resolution, myDom.polygons)
-    });
-    return [style];
-  };
-};
+function polygonStyleFunction(feature, resolution) {
+  return new ol.style.Style({
+    stroke: new ol.style.Stroke({
+      color: 'blue',
+      width: 1
+    }),
+    fill: new ol.style.Fill({
+      color: 'rgba(0, 0, 255, 0.1)'
+    }),
+    text: createTextStyle(feature, resolution, myDom.polygons)
+  });
+}
 
 var vectorPolygons = new ol.layer.Vector({
   source: new ol.source.Vector({
     url: 'data/geojson/polygon-samples.geojson',
     format: new ol.format.GeoJSON()
   }),
-  style: createPolygonStyleFunction()
+  style: polygonStyleFunction
 });
 
 
 // Lines
-var createLineStyleFunction = function() {
-  return function(feature, resolution) {
-    var style = new ol.style.Style({
-      stroke: new ol.style.Stroke({
-        color: 'green',
-        width: 2
-      }),
-      text: createTextStyle(feature, resolution, myDom.lines)
-    });
-    return [style];
-  };
-};
+function lineStyleFunction(feature, resolution) {
+  return new ol.style.Style({
+    stroke: new ol.style.Stroke({
+      color: 'green',
+      width: 2
+    }),
+    text: createTextStyle(feature, resolution, myDom.lines)
+  });
+}
 
 var vectorLines = new ol.layer.Vector({
   source: new ol.source.Vector({
     url: 'data/geojson/line-samples.geojson',
     format: new ol.format.GeoJSON()
   }),
-  style: createLineStyleFunction()
+  style: lineStyleFunction
 });
 
 
 // Points
-var createPointStyleFunction = function() {
-  return function(feature, resolution) {
-    var style = new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 10,
-        fill: new ol.style.Fill({color: 'rgba(255, 0, 0, 0.1)'}),
-        stroke: new ol.style.Stroke({color: 'red', width: 1})
-      }),
-      text: createTextStyle(feature, resolution, myDom.points)
-    });
-    return [style];
-  };
-};
+function pointStyleFunction(feature, resolution) {
+  return new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: 10,
+      fill: new ol.style.Fill({color: 'rgba(255, 0, 0, 0.1)'}),
+      stroke: new ol.style.Stroke({color: 'red', width: 1})
+    }),
+    text: createTextStyle(feature, resolution, myDom.points)
+  });
+}
 
 var vectorPoints = new ol.layer.Vector({
   source: new ol.source.Vector({
     url: 'data/geojson/point-samples.geojson',
     format: new ol.format.GeoJSON()
   }),
-  style: createPointStyleFunction()
+  style: pointStyleFunction
 });
 
 var map = new ol.Map({
   layers: [
     new ol.layer.Tile({
-      source: new ol.source.MapQuest({layer: 'osm'})
+      source: new ol.source.OSM()
     }),
     vectorPolygons,
     vectorLines,
@@ -180,17 +192,20 @@ var map = new ol.Map({
   })
 });
 
-$('#refresh-points').click(function() {
-  vectorPoints.setStyle(createPointStyleFunction());
-});
+document.getElementById('refresh-points')
+    .addEventListener('click', function() {
+      vectorPoints.setStyle(pointStyleFunction);
+    });
 
-$('#refresh-lines').click(function() {
-  vectorLines.setStyle(createLineStyleFunction());
-});
+document.getElementById('refresh-lines')
+    .addEventListener('click', function() {
+      vectorLines.setStyle(lineStyleFunction);
+    });
 
-$('#refresh-polygons').click(function() {
-  vectorPolygons.setStyle(createPolygonStyleFunction());
-});
+document.getElementById('refresh-polygons')
+    .addEventListener('click', function() {
+      vectorPolygons.setStyle(polygonStyleFunction);
+    });
 
 
 /**
@@ -207,7 +222,8 @@ String.prototype.trunc = String.prototype.trunc ||
 function stringDivider(str, width, spaceReplacer) {
   if (str.length > width) {
     var p = width;
-    for (; p > 0 && (str[p] != ' ' && str[p] != '-'); p--) {
+    while (p > 0 && (str[p] != ' ' && str[p] != '-')) {
+      p--;
     }
     if (p > 0) {
       var left;

@@ -1,32 +1,24 @@
 var layers = [
   new ol.layer.Tile({
     source: new ol.source.TileWMS({
-      attributions: [new ol.Attribution({
-        html: '&copy; ' +
-            '<a href="http://www.geo.admin.ch/internet/geoportal/' +
-            'en/home.html">' +
-            'Pixelmap 1:1000000 / geo.admin.ch</a>'
-      })],
+      attributions: '© <a href="http://www.geo.admin.ch/internet/geoportal/' +
+          'en/home.html">Pixelmap 1:1000000 / geo.admin.ch</a>',
       crossOrigin: 'anonymous',
       params: {
         'LAYERS': 'ch.swisstopo.pixelkarte-farbe-pk1000.noscale',
         'FORMAT': 'image/jpeg'
       },
-      url: 'http://wms.geo.admin.ch/'
+      url: 'https://wms.geo.admin.ch/'
     })
   }),
   new ol.layer.Image({
     source: new ol.source.ImageWMS({
-      attributions: [new ol.Attribution({
-        html: '&copy; ' +
-            '<a href="http://www.geo.admin.ch/internet/geoportal/' +
-            'en/home.html">' +
-            'National parks / geo.admin.ch</a>'
-      })],
+      attributions: '© <a href="http://www.geo.admin.ch/internet/geoportal/' +
+          'en/home.html">National parks / geo.admin.ch</a>',
       crossOrigin: 'anonymous',
       params: {'LAYERS': 'ch.bafu.schutzgebiete-paerke_nationaler_bedeutung'},
       serverType: 'mapserver',
-      url: 'http://wms.geo.admin.ch/'
+      url: 'https://wms.geo.admin.ch/'
     })
   })
 ];
@@ -43,7 +35,6 @@ var projection = new ol.proj.Projection({
 
 var map = new ol.Map({
   layers: layers,
-  renderer: common.getRendererFromQueryString(),
   target: 'map',
   view: new ol.View({
     center: [660000, 190000],

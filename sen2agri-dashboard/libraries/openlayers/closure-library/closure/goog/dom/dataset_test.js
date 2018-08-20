@@ -32,37 +32,63 @@ function setUp() {
 function testHas() {
   var el = $('el1');
 
-  assertTrue('Dataset should have an existing key',
-             dataset.has(el, 'basicKey'));
-  assertTrue('Dataset should have an existing (unusual) key',
-             dataset.has(el, 'UnusualKey1'));
-  assertTrue('Dataset should have an existing (unusual) key',
-             dataset.has(el, 'unusual-Key2'));
-  assertTrue('Dataset should have an existing (bizarre) key',
-             dataset.has(el, '-Bizarre--Key'));
-  assertFalse('Dataset should not have a non-existent key',
-              dataset.has(el, 'bogusKey'));
+  assertTrue(
+      'Dataset should have an existing key', dataset.has(el, 'basicKey'));
+  assertTrue(
+      'Dataset should have an existing (unusual) key',
+      dataset.has(el, 'UnusualKey1'));
+  assertTrue(
+      'Dataset should have an existing (unusual) key',
+      dataset.has(el, 'unusual-Key2'));
+  assertTrue(
+      'Dataset should have an existing (bizarre) key',
+      dataset.has(el, '-Bizarre--Key'));
+  assertTrue(
+      'Dataset should have an existing but empty-value attribute key',
+      dataset.has(el, 'emptyString'));
+  assertTrue(
+      'Dataset should have a boolean attribute key',
+      dataset.has(el, 'boolean'));
+  assertFalse(
+      'Dataset should not have a non-existent key',
+      dataset.has(el, 'bogusKey'));
+  assertFalse(
+      'Dataset should not have invalid key', dataset.has(el, 'basic-key'));
 }
 
 
 function testGet() {
   var el = $('el1');
 
-  assertEquals('Dataset should return the proper value for an existing key',
-               dataset.get(el, 'basicKey'), 'basic');
-  assertEquals('Dataset should have an existing (unusual) key',
-               dataset.get(el, 'UnusualKey1'), 'unusual1');
-  assertEquals('Dataset should have an existing (unusual) key',
-               dataset.get(el, 'unusual-Key2'), 'unusual2');
-  assertEquals('Dataset should have an existing (bizarre) key',
-               dataset.get(el, '-Bizarre--Key'), 'bizarre');
-  assertFalse(
-      'Dataset should return null or an empty string for a non-existent key',
-      !!dataset.get(el, 'bogusKey'));
+  assertEquals(
+      'Dataset should return the proper value for an existing key',
+      dataset.get(el, 'basicKey'), 'basic');
+  assertEquals(
+      'Dataset should have an existing (unusual) key',
+      dataset.get(el, 'UnusualKey1'), 'unusual1');
+  assertEquals(
+      'Dataset should have an existing (unusual) key',
+      dataset.get(el, 'unusual-Key2'), 'unusual2');
+  assertEquals(
+      'Dataset should have an existing (bizarre) key',
+      dataset.get(el, '-Bizarre--Key'), 'bizarre');
+  assertEquals(
+      'Dataset should have an existing but empty-value attribute key',
+      dataset.get(el, 'emptyString'), '');
+  assertEquals(
+      'Dataset should have a boolean attribute key', dataset.get(el, 'boolean'),
+      '');
+  assertNull(
+      'Dataset should return null for a non-existent key',
+      dataset.get(el, 'bogusKey'));
+  assertNull(
+      'Dataset should return null for an invalid key',
+      dataset.get(el, 'basic-key'));
 
   el = $('el2');
-  assertEquals('Dataset should return the proper value for an existing key',
-               dataset.get(el, 'dynamicKey'), 'dynamic');
+  assertEquals(
+      'Dataset should return the proper value for an existing key',
+      dataset.get(el, 'dynamicKey'), 'dynamic');
 }
 
 
@@ -70,27 +96,39 @@ function testSet() {
   var el = $('el2');
 
   dataset.set(el, 'newKey', 'newValue');
-  assertTrue('Dataset should have a newly created key',
-             dataset.has(el, 'newKey'));
-  assertEquals('Dataset should return the proper value for a newly created key',
-               dataset.get(el, 'newKey'), 'newValue');
+  assertTrue(
+      'Dataset should have a newly created key', dataset.has(el, 'newKey'));
+  assertEquals(
+      'Dataset should return the proper value for a newly created key',
+      dataset.get(el, 'newKey'), 'newValue');
 
   dataset.set(el, 'dynamicKey', 'customValue');
-  assertTrue('Dataset should have a modified, existing key',
-             dataset.has(el, 'dynamicKey'));
-  assertEquals('Dataset should return the proper value for a modified key',
-               dataset.get(el, 'dynamicKey'), 'customValue');
+  assertTrue(
+      'Dataset should have a modified, existing key',
+      dataset.has(el, 'dynamicKey'));
+  assertEquals(
+      'Dataset should return the proper value for a modified key',
+      dataset.get(el, 'dynamicKey'), 'customValue');
+
+  assertThrows('Invalid key should fail noticeably', function() {
+    dataset.set(el, 'basic-key', '');
+  });
 }
 
 
 function testRemove() {
   var el = $('el2');
 
+  assertTrue('Dataset starts with key', dataset.has(el, 'dynamicKey'));
+  dataset.remove(el, 'dynamic-key');
+  assertTrue('Dataset should still have key', dataset.has(el, 'dynamicKey'));
+
   dataset.remove(el, 'dynamicKey');
-  assertFalse('Dataset should not have a removed key',
-              dataset.has(el, 'dynamicKey'));
-  assertFalse('Dataset should return null or an empty string for removed key',
-              !!dataset.get(el, 'dynamicKey'));
+  assertFalse(
+      'Dataset should not have a removed key', dataset.has(el, 'dynamicKey'));
+  assertNull(
+      'Dataset should return null for removed key',
+      dataset.get(el, 'dynamicKey'));
 }
 
 
@@ -100,9 +138,12 @@ function testGetAll() {
     'basicKey': 'basic',
     'UnusualKey1': 'unusual1',
     'unusual-Key2': 'unusual2',
-    '-Bizarre--Key': 'bizarre'
+    '-Bizarre--Key': 'bizarre',
+    'emptyString': '',
+    'boolean': ''
   };
-  assertHashEquals('Dataset should have basicKey, UnusualKey1, ' +
-                   'unusual-Key2, and -Bizarre--Key',
-                   expectedDataset, dataset.getAll(el));
+  assertHashEquals(
+      'Dataset should have basicKey, UnusualKey1, ' +
+          'unusual-Key2, and -Bizarre--Key',
+      expectedDataset, dataset.getAll(el));
 }

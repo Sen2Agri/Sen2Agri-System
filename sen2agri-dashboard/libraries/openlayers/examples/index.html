@@ -4,20 +4,18 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="../css/ol.css" type="text/css">
     <link rel="stylesheet" href="./resources/layout.css" type="text/css">
     <style>
       body {
         padding-top: 70px;
       }
-      .navbar-form {
-        margin-top: 12px;
-      }
       input.search-query {
         color: #333;
       }
       .example {
+        display: block;
         padding: 10px;
         background-color: #F5F5F5;
         height: 140px;
@@ -179,17 +177,28 @@
 
     </script>
 
-    <title>OpenLayers 3 Examples</title>
+    <title>OpenLayers Examples</title>
   </head>
   <body>
 
     <header class="navbar navbar-fixed-top" role="navigation">
       <div class="container">
-        <a class="navbar-brand" href="./"><img src="./resources/logo-70x70.png">&nbsp;OpenLayers 3 Examples</a>
-        <form class="navbar-form navbar-left" role="search">
-          <input name="q" type="text" id="keywords" class="search-query" placeholder="Search" autofocus>
-          <span id="count"></span>
-        </form>
+        <div class="display-table pull-left">
+          <a class="navbar-brand" href="./"><img src="./resources/logo-70x70.png">&nbsp;OpenLayers Examples</a>
+          <form class="navbar-form" role="search">
+            <input name="q" type="text" id="keywords" class="search-query" placeholder="Search" autofocus>
+            <span id="count"></span>
+          </form>
+        </div>
+        <!-- menu items that get hidden below 768px width -->
+        <nav class='collapse navbar-collapse navbar-responsive-collapse'>
+          <ul class="nav navbar-nav pull-right">
+            <li><a href="../doc">Docs</a></li>
+            <li><a class="active" href="index.html">Examples</a></li>
+            <li><a href="../apidoc">API</a></li>
+            <li><a href="https://github.com/openlayers/openlayers">Code</a></li>
+          </ul>
+        </nav>
       </div>
     </header>
 
@@ -198,13 +207,13 @@
       <div style="display: none;">
         <div id="template" class="row">
           <div class="col-md-4 col-sm-4" jugl:repeat="example examples">
-            <div class="example">
-              <a jugl:attributes="href example.link" class="mainlink">
+            <a jugl:attributes="href example.link" class="example">
+              <span class="mainlink">
                 <strong><span jugl:replace="example.title">title</span></strong><br>
                 <small jugl:content="'(' + example.example + ')'"></small>
-              </a>
+              </span>
               <p class="description" jugl:content="example.shortdesc"></p>
-            </div>
+            </a>
           </div>
         </div>
       </div>

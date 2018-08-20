@@ -83,18 +83,30 @@ function testCoordinateClone() {
   assertEquals(c.toString(), c.clone().toString());
 }
 
+function testCoordinateEquals() {
+  var a = new goog.math.Coordinate(1, 2);
+
+  assertFalse(a.equals(null));
+  assertFalse(a.equals({}));
+  assertFalse(a.equals(new goog.math.Coordinate(1, 3)));
+  assertFalse(a.equals(new goog.math.Coordinate(2, 2)));
+
+  assertTrue(a.equals(a));
+  assertTrue(a.equals(new goog.math.Coordinate(1, 2)));
+}
+
 function testCoordinateDifference() {
-  assertObjectEquals(new goog.math.Coordinate(3, -40),
+  assertObjectEquals(
+      new goog.math.Coordinate(3, -40),
       goog.math.Coordinate.difference(
-          new goog.math.Coordinate(5, 10),
-          new goog.math.Coordinate(2, 50)));
+          new goog.math.Coordinate(5, 10), new goog.math.Coordinate(2, 50)));
 }
 
 function testCoordinateSum() {
-  assertObjectEquals(new goog.math.Coordinate(7, 60),
+  assertObjectEquals(
+      new goog.math.Coordinate(7, 60),
       goog.math.Coordinate.sum(
-          new goog.math.Coordinate(5, 10),
-          new goog.math.Coordinate(2, 50)));
+          new goog.math.Coordinate(5, 10), new goog.math.Coordinate(2, 50)));
 }
 
 function testCoordinateCeil() {

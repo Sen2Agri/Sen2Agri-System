@@ -1,11 +1,10 @@
 goog.provide('ol.control.Control');
 
-goog.require('goog.dom');
-goog.require('goog.events');
 goog.require('ol');
 goog.require('ol.MapEventType');
 goog.require('ol.Object');
-
+goog.require('ol.dom');
+goog.require('ol.events');
 
 
 /**
@@ -35,11 +34,11 @@ goog.require('ol.Object');
  * @extends {ol.Object}
  * @implements {oli.control.Control}
  * @param {olx.control.ControlOptions} options Control options.
- * @api stable
+ * @api
  */
 ol.control.Control = function(options) {
 
-  goog.base(this);
+  ol.Object.call(this);
 
   /**
    * @protected
@@ -55,13 +54,13 @@ ol.control.Control = function(options) {
 
   /**
    * @private
-   * @type {ol.Map}
+   * @type {ol.PluggableMap}
    */
   this.map_ = null;
 
   /**
    * @protected
-   * @type {!Array.<?number>}
+   * @type {!Array.<ol.EventsKey>}
    */
   this.listenerKeys = [];
 
@@ -75,22 +74,22 @@ ol.control.Control = function(options) {
   }
 
 };
-goog.inherits(ol.control.Control, ol.Object);
+ol.inherits(ol.control.Control, ol.Object);
 
 
 /**
  * @inheritDoc
  */
 ol.control.Control.prototype.disposeInternal = function() {
-  goog.dom.removeNode(this.element);
-  goog.base(this, 'disposeInternal');
+  ol.dom.removeNode(this.element);
+  ol.Object.prototype.disposeInternal.call(this);
 };
 
 
 /**
  * Get the map associated with this control.
- * @return {ol.Map} Map.
- * @api stable
+ * @return {ol.PluggableMap} Map.
+ * @api
  */
 ol.control.Control.prototype.getMap = function() {
   return this.map_;
@@ -101,25 +100,26 @@ ol.control.Control.prototype.getMap = function() {
  * Remove the control from its current map and attach it to the new map.
  * Subclasses may set up event handlers to get notified about changes to
  * the map here.
- * @param {ol.Map} map Map.
- * @api stable
+ * @param {ol.PluggableMap} map Map.
+ * @override
+ * @api
  */
 ol.control.Control.prototype.setMap = function(map) {
   if (this.map_) {
-    goog.dom.removeNode(this.element);
+    ol.dom.removeNode(this.element);
   }
-  if (this.listenerKeys.length > 0) {
-    this.listenerKeys.forEach(goog.events.unlistenByKey);
-    this.listenerKeys.length = 0;
+  for (var i = 0, ii = this.listenerKeys.length; i < ii; ++i) {
+    ol.events.unlistenByKey(this.listenerKeys[i]);
   }
+  this.listenerKeys.length = 0;
   this.map_ = map;
   if (this.map_) {
     var target = this.target_ ?
-        this.target_ : map.getOverlayContainerStopEvent();
+      this.target_ : map.getOverlayContainerStopEvent();
     target.appendChild(this.element);
     if (this.render !== ol.nullFunction) {
-      this.listenerKeys.push(goog.events.listen(map,
-          ol.MapEventType.POSTRENDER, this.render, false, this));
+      this.listenerKeys.push(ol.events.listen(map,
+          ol.MapEventType.POSTRENDER, this.render, this));
     }
     map.render();
   }
@@ -136,5 +136,7 @@ ol.control.Control.prototype.setMap = function(map) {
  * @api
  */
 ol.control.Control.prototype.setTarget = function(target) {
-  this.target_ = goog.dom.getElement(target);
+  this.target_ = typeof target === 'string' ?
+    document.getElementById(target) :
+    target;
 };

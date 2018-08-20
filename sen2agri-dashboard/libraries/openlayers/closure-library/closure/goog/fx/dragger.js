@@ -197,9 +197,13 @@ goog.fx.Dragger = function(target, opt_handle, opt_limits) {
 
   // Add listener. Do not use the event handler here since the event handler is
   // used for listeners added and removed during the drag operation.
-  goog.events.listen(this.handle,
+  goog.events.listen(
+      this.handle,
       [goog.events.EventType.TOUCHSTART, goog.events.EventType.MOUSEDOWN],
       this.startDrag, false, this);
+
+  /** @private {boolean} Avoids setCapture() calls to fix click handlers. */
+  this.useSetCapture_ = goog.fx.Dragger.HAS_SET_CAPTURE_;
 };
 goog.inherits(goog.fx.Dragger, goog.events.EventTarget);
 // Dragger is meant to be extended, but defines most properties on its
@@ -209,14 +213,15 @@ goog.tagUnsealableClass(goog.fx.Dragger);
 
 /**
  * Whether setCapture is supported by the browser.
+ * IE and Gecko after 1.9.3 have setCapture. MS Edge and WebKit
+ * (https://bugs.webkit.org/show_bug.cgi?id=27330) don't.
  * @type {boolean}
  * @private
  */
-goog.fx.Dragger.HAS_SET_CAPTURE_ =
-    // IE and Gecko after 1.9.3 has setCapture
-    // WebKit does not yet: https://bugs.webkit.org/show_bug.cgi?id=27330
-    goog.userAgent.IE ||
-    goog.userAgent.GECKO && goog.userAgent.isVersionOrHigher('1.9.3');
+goog.fx.Dragger.HAS_SET_CAPTURE_ = goog.global.document &&
+    goog.global.document.documentElement &&
+    !!goog.global.document.documentElement.setCapture &&
+    !!goog.global.document.releaseCapture;
 
 
 /**
@@ -228,26 +233,29 @@ goog.fx.Dragger.HAS_SET_CAPTURE_ =
  * @return {!Element} The clone of {@code sourceEl}.
  */
 goog.fx.Dragger.cloneNode = function(sourceEl) {
-  var clonedEl = /** @type {Element} */ (sourceEl.cloneNode(true)),
-      origTexts = sourceEl.getElementsByTagName(goog.dom.TagName.TEXTAREA),
-      dragTexts = clonedEl.getElementsByTagName(goog.dom.TagName.TEXTAREA);
+  var clonedEl = sourceEl.cloneNode(true),
+      origTexts =
+          goog.dom.getElementsByTagName(goog.dom.TagName.TEXTAREA, sourceEl),
+      dragTexts =
+          goog.dom.getElementsByTagName(goog.dom.TagName.TEXTAREA, clonedEl);
   // Cloning does not copy the current value of textarea elements, so correct
   // this manually.
   for (var i = 0; i < origTexts.length; i++) {
     dragTexts[i].value = origTexts[i].value;
   }
   switch (sourceEl.tagName) {
-    case goog.dom.TagName.TR:
-      return goog.dom.createDom(goog.dom.TagName.TABLE, null,
-                                goog.dom.createDom(goog.dom.TagName.TBODY,
-                                                   null, clonedEl));
-    case goog.dom.TagName.TD:
-    case goog.dom.TagName.TH:
+    case String(goog.dom.TagName.TR):
       return goog.dom.createDom(
-          goog.dom.TagName.TABLE, null, goog.dom.createDom(
-              goog.dom.TagName.TBODY, null, goog.dom.createDom(
-                  goog.dom.TagName.TR, null, clonedEl)));
-    case goog.dom.TagName.TEXTAREA:
+          goog.dom.TagName.TABLE, null,
+          goog.dom.createDom(goog.dom.TagName.TBODY, null, clonedEl));
+    case String(goog.dom.TagName.TD):
+    case String(goog.dom.TagName.TH):
+      return goog.dom.createDom(
+          goog.dom.TagName.TABLE, null,
+          goog.dom.createDom(
+              goog.dom.TagName.TBODY, null,
+              goog.dom.createDom(goog.dom.TagName.TR, null, clonedEl)));
+    case String(goog.dom.TagName.TEXTAREA):
       clonedEl.value = sourceEl.value;
     default:
       return clonedEl;
@@ -272,6 +280,16 @@ goog.fx.Dragger.EventType = {
 
 
 /**
+ * Prevents the dragger from calling setCapture(), even in browsers that support
+ * it.  If the draggable item has click handlers, setCapture() can break them.
+ * @param {boolean} allow True to use setCapture if the browser supports it.
+ */
+goog.fx.Dragger.prototype.setAllowSetCapture = function(allow) {
+  this.useSetCapture_ = allow && goog.fx.Dragger.HAS_SET_CAPTURE_;
+};
+
+
+/**
  * Turns on/off true RTL behavior.  This should be called immediately after
  * construction.  This is a temporary flag to allow clients to transition
  * to the new component at their convenience.  At some point true will be the
@@ -279,8 +297,8 @@ goog.fx.Dragger.EventType = {
  * @param {boolean} useRightPositioningForRtl True if "right" should be used for
  *     positioning, false if "left" should be used for positioning.
  */
-goog.fx.Dragger.prototype.enableRightPositioningForRtl =
-    function(useRightPositioningForRtl) {
+goog.fx.Dragger.prototype.enableRightPositioningForRtl = function(
+    useRightPositioningForRtl) {
   this.useRightPositioningForRtl_ = useRightPositioningForRtl;
 };
 
@@ -384,7 +402,8 @@ goog.fx.Dragger.prototype.setPreventMouseDown = function(preventMouseDown) {
 /** @override */
 goog.fx.Dragger.prototype.disposeInternal = function() {
   goog.fx.Dragger.superClass_.disposeInternal.call(this);
-  goog.events.unlisten(this.handle,
+  goog.events.unlisten(
+      this.handle,
       [goog.events.EventType.TOUCHSTART, goog.events.EventType.MOUSEDOWN],
       this.startDrag, false, this);
   this.cleanUpAfterDragging_();
@@ -425,14 +444,14 @@ goog.fx.Dragger.prototype.startDrag = function(e) {
     if (this.hysteresisDistanceSquared_ == 0) {
       if (this.fireDragStart_(e)) {
         this.dragging_ = true;
-        if (this.preventMouseDown_) {
+        if (this.preventMouseDown_ && isMouseDown) {
           e.preventDefault();
         }
       } else {
         // If the start drag is cancelled, don't setup for a drag.
         return;
       }
-    } else if (this.preventMouseDown_) {
+    } else if (this.preventMouseDown_ && isMouseDown) {
       // Need to preventDefault for hysteresis to prevent page getting selected.
       e.preventDefault();
     }
@@ -459,39 +478,38 @@ goog.fx.Dragger.prototype.setupDragHandlers = function() {
   var docEl = doc.documentElement;
   // Use bubbling when we have setCapture since we got reports that IE has
   // problems with the capturing events in combination with setCapture.
-  var useCapture = !goog.fx.Dragger.HAS_SET_CAPTURE_;
+  var useCapture = !this.useSetCapture_;
 
-  this.eventHandler_.listen(doc,
-      [goog.events.EventType.TOUCHMOVE, goog.events.EventType.MOUSEMOVE],
-      this.handleMove_, useCapture);
-  this.eventHandler_.listen(doc,
-      [goog.events.EventType.TOUCHEND, goog.events.EventType.MOUSEUP],
+  this.eventHandler_.listen(
+      doc, [goog.events.EventType.TOUCHMOVE, goog.events.EventType.MOUSEMOVE],
+      this.handleMove_, {capture: useCapture, passive: false});
+  this.eventHandler_.listen(
+      doc, [goog.events.EventType.TOUCHEND, goog.events.EventType.MOUSEUP],
       this.endDrag, useCapture);
 
-  if (goog.fx.Dragger.HAS_SET_CAPTURE_) {
+  if (this.useSetCapture_) {
     docEl.setCapture(false);
-    this.eventHandler_.listen(docEl,
-                              goog.events.EventType.LOSECAPTURE,
-                              this.endDrag);
+    this.eventHandler_.listen(
+        docEl, goog.events.EventType.LOSECAPTURE, this.endDrag);
   } else {
     // Make sure we stop the dragging if the window loses focus.
     // Don't use capture in this listener because we only want to end the drag
     // if the actual window loses focus. Since blur events do not bubble we use
     // a bubbling listener on the window.
-    this.eventHandler_.listen(goog.dom.getWindow(doc),
-                              goog.events.EventType.BLUR,
-                              this.endDrag);
+    this.eventHandler_.listen(
+        goog.dom.getWindow(doc), goog.events.EventType.BLUR, this.endDrag);
   }
 
   if (goog.userAgent.IE && this.ieDragStartCancellingOn_) {
     // Cancel IE's 'ondragstart' event.
-    this.eventHandler_.listen(doc, goog.events.EventType.DRAGSTART,
-                              goog.events.Event.preventDefault);
+    this.eventHandler_.listen(
+        doc, goog.events.EventType.DRAGSTART, goog.events.Event.preventDefault);
   }
 
   if (this.scrollTarget_) {
-    this.eventHandler_.listen(this.scrollTarget_, goog.events.EventType.SCROLL,
-                              this.onScroll_, useCapture);
+    this.eventHandler_.listen(
+        this.scrollTarget_, goog.events.EventType.SCROLL, this.onScroll_,
+        useCapture);
   }
 };
 
@@ -503,8 +521,9 @@ goog.fx.Dragger.prototype.setupDragHandlers = function() {
  * @private
  */
 goog.fx.Dragger.prototype.fireDragStart_ = function(e) {
-  return this.dispatchEvent(new goog.fx.DragEvent(
-      goog.fx.Dragger.EventType.START, this, e.clientX, e.clientY, e));
+  return this.dispatchEvent(
+      new goog.fx.DragEvent(
+          goog.fx.Dragger.EventType.START, this, e.clientX, e.clientY, e));
 };
 
 
@@ -515,7 +534,7 @@ goog.fx.Dragger.prototype.fireDragStart_ = function(e) {
  */
 goog.fx.Dragger.prototype.cleanUpAfterDragging_ = function() {
   this.eventHandler_.removeAll();
-  if (goog.fx.Dragger.HAS_SET_CAPTURE_) {
+  if (this.useSetCapture_) {
     this.document_.releaseCapture();
   }
 };
@@ -534,11 +553,12 @@ goog.fx.Dragger.prototype.endDrag = function(e, opt_dragCanceled) {
 
     var x = this.limitX(this.deltaX);
     var y = this.limitY(this.deltaY);
-    var dragCanceled = opt_dragCanceled ||
-        e.type == goog.events.EventType.TOUCHCANCEL;
-    this.dispatchEvent(new goog.fx.DragEvent(
-        goog.fx.Dragger.EventType.END, this, e.clientX, e.clientY, e, x, y,
-        dragCanceled));
+    var dragCanceled =
+        opt_dragCanceled || e.type == goog.events.EventType.TOUCHCANCEL;
+    this.dispatchEvent(
+        new goog.fx.DragEvent(
+            goog.fx.Dragger.EventType.END, this, e.clientX, e.clientY, e, x, y,
+            dragCanceled));
   } else {
     this.dispatchEvent(goog.fx.Dragger.EventType.EARLY_CANCEL);
   }
@@ -562,8 +582,8 @@ goog.fx.Dragger.prototype.endDragCancel = function(e) {
 goog.fx.Dragger.prototype.handleMove_ = function(e) {
   if (this.enabled_) {
     // dx in right-to-left cases is relative to the right.
-    var sign = this.useRightPositioningForRtl_ &&
-        this.isRightToLeft_() ? -1 : 1;
+    var sign =
+        this.useRightPositioningForRtl_ && this.isRightToLeft_() ? -1 : 1;
     var dx = sign * (e.clientX - this.clientX);
     var dy = e.clientY - this.clientY;
     this.clientX = e.clientX;
@@ -594,10 +614,10 @@ goog.fx.Dragger.prototype.handleMove_ = function(e) {
     var y = pos.y;
 
     if (this.dragging_) {
-
-      var rv = this.dispatchEvent(new goog.fx.DragEvent(
-          goog.fx.Dragger.EventType.BEFOREDRAG, this, e.clientX, e.clientY,
-          e, x, y));
+      var rv = this.dispatchEvent(
+          new goog.fx.DragEvent(
+              goog.fx.Dragger.EventType.BEFOREDRAG, this, e.clientX, e.clientY,
+              e, x, y));
 
       // Only do the defaultAction and dispatch drag event if predrag didn't
       // prevent default
@@ -658,8 +678,9 @@ goog.fx.Dragger.prototype.onScroll_ = function(e) {
  */
 goog.fx.Dragger.prototype.doDrag = function(e, x, y, dragFromScroll) {
   this.defaultAction(x, y);
-  this.dispatchEvent(new goog.fx.DragEvent(
-      goog.fx.Dragger.EventType.DRAG, this, e.clientX, e.clientY, e, x, y));
+  this.dispatchEvent(
+      new goog.fx.DragEvent(
+          goog.fx.Dragger.EventType.DRAG, this, e.clientX, e.clientY, e, x, y));
 };
 
 
@@ -751,8 +772,9 @@ goog.fx.Dragger.prototype.isDragging = function() {
  * @struct
  * @extends {goog.events.Event}
  */
-goog.fx.DragEvent = function(type, dragobj, clientX, clientY, browserEvent,
-                             opt_actX, opt_actY, opt_dragCanceled) {
+goog.fx.DragEvent = function(
+    type, dragobj, clientX, clientY, browserEvent, opt_actX, opt_actY,
+    opt_dragCanceled) {
   goog.events.Event.call(this, type);
 
   /**

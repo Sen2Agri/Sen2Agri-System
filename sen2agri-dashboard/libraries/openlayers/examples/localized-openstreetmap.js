@@ -1,30 +1,22 @@
-// tiles.openseamap.org does not set CORS headers, so we have to disable
-// crossOrigin and we cannot use WebGL.
-
 var openCycleMapLayer = new ol.layer.Tile({
   source: new ol.source.OSM({
     attributions: [
-      new ol.Attribution({
-        html: 'All maps &copy; ' +
-            '<a href="http://www.opencyclemap.org/">OpenCycleMap</a>'
-      }),
+      'All maps © <a href="https://www.opencyclemap.org/">OpenCycleMap</a>',
       ol.source.OSM.ATTRIBUTION
     ],
-    url: 'http://{a-c}.tile.opencyclemap.org/cycle/{z}/{x}/{y}.png'
+    url: 'https://{a-c}.tile.thunderforest.com/cycle/{z}/{x}/{y}.png' +
+        '?apikey=0e6fc415256d4fbb9b5166a718591d71'
   })
 });
 
 var openSeaMapLayer = new ol.layer.Tile({
   source: new ol.source.OSM({
     attributions: [
-      new ol.Attribution({
-        html: 'All maps &copy; ' +
-            '<a href="http://www.openseamap.org/">OpenSeaMap</a>'
-      }),
+      'All maps © <a href="http://www.openseamap.org/">OpenSeaMap</a>',
       ol.source.OSM.ATTRIBUTION
     ],
-    crossOrigin: null,
-    url: 'http://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
+    opaque: false,
+    url: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png'
   })
 });
 
@@ -36,9 +28,9 @@ var map = new ol.Map({
   ],
   target: 'map',
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: new ol.View({
     maxZoom: 18,

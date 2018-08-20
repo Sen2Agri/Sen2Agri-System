@@ -1,71 +1,84 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en-US">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" type="text/css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="./resources/prism/prism.css" type="text/css">
     <link rel="stylesheet" href="../css/ol.css" type="text/css">
     <link rel="stylesheet" href="./resources/layout.css" type="text/css">
+    <script src="https://cdn.rawgit.com/dorukeker/gyronorm.js/v2.0.6/dist/gyronorm.complete.min.js"></script>
     
-    
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=fetch,requestAnimationFrame,Element.prototype.classList,URL"></script>
     <script src="./resources/zeroclipboard/ZeroClipboard.min.js"></script>
-    <title>Device-Orientation example</title>
+    <title>Device Orientation</title>
   </head>
   <body>
 
     <header class="navbar" role="navigation">
-      <div class="container" id="navbar-inner-container">
-        <a class="navbar-brand" href="./"><img src="./resources/logo-70x70.png">&nbsp;OpenLayers 3 Examples</a>
+      <div class="container">
+        <div class="display-table pull-left" id="navbar-logo-container">
+          <a class="navbar-brand" href="./"><img src="./resources/logo-70x70.png">&nbsp;OpenLayers Examples</a>
+        </div>
+        <!-- menu items that get hidden below 768px width -->
+        <nav class='collapse navbar-collapse navbar-responsive-collapse'>
+          <ul class="nav navbar-nav pull-right">
+            <li><a href="../doc">Docs</a></li>
+            <li><a class="active" href="index.html">Examples</a></li>
+            <li><a href="../apidoc">API</a></li>
+            <li><a href="https://github.com/openlayers/openlayers">Code</a></li>
+          </ul>
+        </nav>
       </div>
     </header>
 
     <div class="container-fluid">
 
-      <div class="row-fluid">
-  <div class="span12">
-    <div id="map" class="map"></div>
-    <div class="span12">
-      <h4 id="title">Device orientation example</h4>
-      <label class="checkbox" for="track">
-        <input id="track" type="checkbox"/>track changes
-      </label>
-      <p>&alpha; : <code id="alpha"></code></p>
-      <p>&beta; : <code id="beta"></code></p>
-      <p>&gamma; : <code id="gamma"></code></p>
-      <p>heading : <code id="heading"></code></p>
-    </div>
-  </div>
-</div>
-
+      <div id="latest-check" class="alert alert-warning alert-dismissible" role="alert" style="display:none">
+        <button id="latest-dismiss" type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        This example uses OpenLayers v<span>4.6.5</span>. The <a id="latest-link" href="#" class="alert-link">latest</a> is v<span id="latest-version"></span>.
+      </div>
 
       <div class="row-fluid">
         <div class="span12">
-          <h4 id="title">Device-Orientation example</h4>
+          <h4 id="title">Device Orientation</h4>
+          <div id="map" class="map"></div>
+<p>
+  <div>α : <code id="alpha"></code></div>
+  <div>β : <code id="beta"></code></div>
+  <div>γ : <code id="gamma"></code></div>
+</p>
+
+        </div>
+      </div>
+
+      <div class="row-fluid">
+        <div class="span12">
           <p id="shortdesc">Listen to DeviceOrientation events.</p>
-          <div id="docs"><p>This example shows how to track changes in device orientation.</p>
+          <div id="docs"><p>This example shows how to track changes in device orientation. <a href="https://github.com/dorukeker/gyronorm.js">gyronorm.js</a> library is used to access and normalize the events from the browser.</p>
 </div>
-          <div id="tags">orientation, openstreetmap</div>
-          <div id="api-links">Related API documentation: <ul class="inline"><li><a href="../apidoc/ol.DeviceOrientation.html" title="API documentation for ol.DeviceOrientation">ol.DeviceOrientation</a></li>,<li><a href="../apidoc/ol.Map.html" title="API documentation for ol.Map">ol.Map</a></li>,<li><a href="../apidoc/ol.View.html" title="API documentation for ol.View">ol.View</a></li>,<li><a href="../apidoc/ol.control.html" title="API documentation for ol.control">ol.control</a></li>,<li><a href="../apidoc/ol.layer.Tile.html" title="API documentation for ol.layer.Tile">ol.layer.Tile</a></li>,<li><a href="../apidoc/ol.proj.html" title="API documentation for ol.proj">ol.proj</a></li>,<li><a href="../apidoc/ol.source.OSM.html" title="API documentation for ol.source.OSM">ol.source.OSM</a></li></ul></div>
+          <div id="api-links">Related API documentation: <ul class="inline"><li><a href="../apidoc/ol.Map.html" title="API documentation for ol.Map">ol.Map</a></li>,<li><a href="../apidoc/ol.View.html" title="API documentation for ol.View">ol.View</a></li>,<li><a href="../apidoc/ol.control.html" title="API documentation for ol.control">ol.control</a></li>,<li><a href="../apidoc/ol.layer.Tile.html" title="API documentation for ol.layer.Tile">ol.layer.Tile</a></li>,<li><a href="../apidoc/ol.math.html" title="API documentation for ol.math">ol.math</a></li>,<li><a href="../apidoc/ol.proj.html" title="API documentation for ol.proj">ol.proj</a></li>,<li><a href="../apidoc/ol.source.OSM.html" title="API documentation for ol.source.OSM">ol.source.OSM</a></li></ul></div>
         </div>
       </div>
 
       <div class="row-fluid">
         <div id="source-controls">
           <a id="copy-button"><i class="fa fa-clipboard"></i> Copy</a>
-          <a id="jsfiddle-button"><i class="fa fa-jsfiddle"></i> Edit</a>
+          <a id="codepen-button"><i class="fa fa-codepen"></i> Edit</a>
         </div>
-        <form method="POST" id="jsfiddle-form" target="_blank" action="http://jsfiddle.net/api/post/jquery/1.11.0/">
-          <textarea class="hidden" name="js">var projection = ol.proj.get(&#x27;EPSG:3857&#x27;);
-var view = new ol.View({
+        <form method="POST" id="codepen-form" target="_blank" action="https://codepen.io/pen/define/">
+          <textarea class="hidden" name="title">Device Orientation</textarea>
+          <textarea class="hidden" name="description">Listen to DeviceOrientation events.</textarea>
+          <textarea class="hidden" name="js">var projection &#x3D; ol.proj.get(&#x27;EPSG:3857&#x27;);
+var view &#x3D; new ol.View({
   center: [0, 0],
   projection: projection,
   extent: projection.getExtent(),
   zoom: 2
 });
-var map = new ol.Map({
+var map &#x3D; new ol.Map({
   layers: [
     new ol.layer.Tile({
       source: new ol.source.OSM()
@@ -73,158 +86,149 @@ var map = new ol.Map({
   ],
   target: &#x27;map&#x27;,
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: view
 });
-
-var deviceOrientation = new ol.DeviceOrientation();
 
 function el(id) {
   return document.getElementById(id);
 }
 
-el(&#x27;track&#x27;).addEventListener(&#x27;change&#x27;, function() {
-  deviceOrientation.setTracking(this.checked);
-});
 
-deviceOrientation.on(&#x27;change&#x27;, function(event) {
-  el(&#x27;alpha&#x27;).innerText = deviceOrientation.getAlpha() + &#x27; [rad]&#x27;;
-  el(&#x27;beta&#x27;).innerText = deviceOrientation.getBeta() + &#x27; [rad]&#x27;;
-  el(&#x27;gamma&#x27;).innerText = deviceOrientation.getGamma() + &#x27; [rad]&#x27;;
-  el(&#x27;heading&#x27;).innerText = deviceOrientation.getHeading() + &#x27; [rad]&#x27;;
-});
+var gn &#x3D; new GyroNorm();
 
-// tilt the map
-deviceOrientation.on([&#x27;change:beta&#x27;, &#x27;change:gamma&#x27;], function(event) {
-  var center = view.getCenter();
-  var resolution = view.getResolution();
-  var beta = event.target.getBeta() || 0;
-  var gamma = event.target.getGamma() || 0;
+gn.init().then(function() {
+  gn.start(function(event) {
+    var center &#x3D; view.getCenter();
+    var resolution &#x3D; view.getResolution();
+    var alpha &#x3D; ol.math.toRadians(event.do.beta);
+    var beta &#x3D; ol.math.toRadians(event.do.beta);
+    var gamma &#x3D; ol.math.toRadians(event.do.gamma);
 
-  center[0] -= resolution * gamma * 25;
-  center[1] += resolution * beta * 25;
+    el(&#x27;alpha&#x27;).innerText &#x3D; alpha + &#x27; [rad]&#x27;;
+    el(&#x27;beta&#x27;).innerText &#x3D; beta + &#x27; [rad]&#x27;;
+    el(&#x27;gamma&#x27;).innerText &#x3D; gamma + &#x27; [rad]&#x27;;
 
-  view.setCenter(view.constrainCenter(center));
+    center[0] -&#x3D; resolution * gamma * 25;
+    center[1] +&#x3D; resolution * beta * 25;
+
+    view.setCenter(view.constrainCenter(center));
+  });
 });
 </textarea>
           <textarea class="hidden" name="css"></textarea>
-          <textarea class="hidden" name="html">&lt;div class=&quot;row-fluid&quot;&gt;
-  &lt;div class=&quot;span12&quot;&gt;
-    &lt;div id=&quot;map&quot; class=&quot;map&quot;&gt;&lt;/div&gt;
-    &lt;div class=&quot;span12&quot;&gt;
-      &lt;h4 id=&quot;title&quot;&gt;Device orientation example&lt;/h4&gt;
-      &lt;label class=&quot;checkbox&quot; for=&quot;track&quot;&gt;
-        &lt;input id=&quot;track&quot; type=&quot;checkbox&quot;/&gt;track changes
-      &lt;/label&gt;
-      &lt;p&gt;&amp;alpha; : &lt;code id=&quot;alpha&quot;&gt;&lt;/code&gt;&lt;/p&gt;
-      &lt;p&gt;&amp;beta; : &lt;code id=&quot;beta&quot;&gt;&lt;/code&gt;&lt;/p&gt;
-      &lt;p&gt;&amp;gamma; : &lt;code id=&quot;gamma&quot;&gt;&lt;/code&gt;&lt;/p&gt;
-      &lt;p&gt;heading : &lt;code id=&quot;heading&quot;&gt;&lt;/code&gt;&lt;/p&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
+          <textarea class="hidden" name="html">&lt;div id&#x3D;&quot;map&quot; class&#x3D;&quot;map&quot;&gt;&lt;/div&gt;
+&lt;p&gt;
+  &lt;div&gt;α : &lt;code id&#x3D;&quot;alpha&quot;&gt;&lt;/code&gt;&lt;/div&gt;
+  &lt;div&gt;β : &lt;code id&#x3D;&quot;beta&quot;&gt;&lt;/code&gt;&lt;/div&gt;
+  &lt;div&gt;γ : &lt;code id&#x3D;&quot;gamma&quot;&gt;&lt;/code&gt;&lt;/div&gt;
+&lt;/p&gt;
 </textarea>
-          <input type="hidden" name="wrap" value="l">
-          <input type="hidden" name="resources" value="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css,https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js,http://openlayers.org/en/v3.10.1/css/ol.css,http://openlayers.org/en/v3.10.1/build/ol.js">
+          <input type="hidden" name="resources" value="https://openlayers.org/en/v4.6.5/css/ol.css,https://openlayers.org/en/v4.6.5/build/ol.js,https://cdn.rawgit.com/dorukeker/gyronorm.js/v2.0.6/dist/gyronorm.complete.min.js">
+          <input type="hidden" name="data">
         </form>
         <pre><code id="example-source" class="language-markup">&lt;!DOCTYPE html&gt;
 &lt;html&gt;
-&lt;head&gt;
-&lt;title&gt;Device-Orientation example&lt;/title&gt;
-&lt;script src="https://code.jquery.com/jquery-1.11.2.min.js"&gt;&lt;/script&gt;
-&lt;link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"&gt;
-&lt;script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"&gt;&lt;/script&gt;
-&lt;link rel="stylesheet" href="http://openlayers.org/en/v3.10.1/css/ol.css" type="text/css"&gt;
-&lt;script src="http://openlayers.org/en/v3.10.1/build/ol.js"&gt;&lt;/script&gt;
+  &lt;head&gt;
+    &lt;title&gt;Device Orientation&lt;/title&gt;
+    &lt;link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css"&gt;
+    &lt;!-- The line below is only needed for old environments like Internet Explorer and Android 4.x --&gt;
+    &lt;script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"&gt;&lt;/script&gt;
+    &lt;script src="https://openlayers.org/en/v4.6.5/build/ol.js"&gt;&lt;/script&gt;
+    &lt;script src&#x3D;&quot;https://cdn.rawgit.com/dorukeker/gyronorm.js/v2.0.6/dist/gyronorm.complete.min.js&quot;&gt;&lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id&#x3D;&quot;map&quot; class&#x3D;&quot;map&quot;&gt;&lt;/div&gt;
+    &lt;p&gt;
+      &lt;div&gt;α : &lt;code id&#x3D;&quot;alpha&quot;&gt;&lt;/code&gt;&lt;/div&gt;
+      &lt;div&gt;β : &lt;code id&#x3D;&quot;beta&quot;&gt;&lt;/code&gt;&lt;/div&gt;
+      &lt;div&gt;γ : &lt;code id&#x3D;&quot;gamma&quot;&gt;&lt;/code&gt;&lt;/div&gt;
+    &lt;/p&gt;
+    &lt;script&gt;
+      var projection &#x3D; ol.proj.get(&#x27;EPSG:3857&#x27;);
+      var view &#x3D; new ol.View({
+        center: [0, 0],
+        projection: projection,
+        extent: projection.getExtent(),
+        zoom: 2
+      });
+      var map &#x3D; new ol.Map({
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.OSM()
+          })
+        ],
+        target: &#x27;map&#x27;,
+        controls: ol.control.defaults({
+          attributionOptions: {
+            collapsible: false
+          }
+        }),
+        view: view
+      });
 
-&lt;/head&gt;
-&lt;body&gt;
-&lt;div class="container-fluid"&gt;
+      function el(id) {
+        return document.getElementById(id);
+      }
 
-&lt;div class=&quot;row-fluid&quot;&gt;
-  &lt;div class=&quot;span12&quot;&gt;
-    &lt;div id=&quot;map&quot; class=&quot;map&quot;&gt;&lt;/div&gt;
-    &lt;div class=&quot;span12&quot;&gt;
-      &lt;h4 id=&quot;title&quot;&gt;Device orientation example&lt;/h4&gt;
-      &lt;label class=&quot;checkbox&quot; for=&quot;track&quot;&gt;
-        &lt;input id=&quot;track&quot; type=&quot;checkbox&quot;/&gt;track changes
-      &lt;/label&gt;
-      &lt;p&gt;&amp;alpha; : &lt;code id=&quot;alpha&quot;&gt;&lt;/code&gt;&lt;/p&gt;
-      &lt;p&gt;&amp;beta; : &lt;code id=&quot;beta&quot;&gt;&lt;/code&gt;&lt;/p&gt;
-      &lt;p&gt;&amp;gamma; : &lt;code id=&quot;gamma&quot;&gt;&lt;/code&gt;&lt;/p&gt;
-      &lt;p&gt;heading : &lt;code id=&quot;heading&quot;&gt;&lt;/code&gt;&lt;/p&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
 
-&lt;/div&gt;
-&lt;script&gt;
-var projection = ol.proj.get(&#x27;EPSG:3857&#x27;);
-var view = new ol.View({
-  center: [0, 0],
-  projection: projection,
-  extent: projection.getExtent(),
-  zoom: 2
-});
-var map = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
-    })
-  ],
-  target: &#x27;map&#x27;,
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
-  view: view
-});
+      var gn &#x3D; new GyroNorm();
 
-var deviceOrientation = new ol.DeviceOrientation();
+      gn.init().then(function() {
+        gn.start(function(event) {
+          var center &#x3D; view.getCenter();
+          var resolution &#x3D; view.getResolution();
+          var alpha &#x3D; ol.math.toRadians(event.do.beta);
+          var beta &#x3D; ol.math.toRadians(event.do.beta);
+          var gamma &#x3D; ol.math.toRadians(event.do.gamma);
 
-function el(id) {
-  return document.getElementById(id);
-}
+          el(&#x27;alpha&#x27;).innerText &#x3D; alpha + &#x27; [rad]&#x27;;
+          el(&#x27;beta&#x27;).innerText &#x3D; beta + &#x27; [rad]&#x27;;
+          el(&#x27;gamma&#x27;).innerText &#x3D; gamma + &#x27; [rad]&#x27;;
 
-el(&#x27;track&#x27;).addEventListener(&#x27;change&#x27;, function() {
-  deviceOrientation.setTracking(this.checked);
-});
+          center[0] -&#x3D; resolution * gamma * 25;
+          center[1] +&#x3D; resolution * beta * 25;
 
-deviceOrientation.on(&#x27;change&#x27;, function(event) {
-  el(&#x27;alpha&#x27;).innerText = deviceOrientation.getAlpha() + &#x27; [rad]&#x27;;
-  el(&#x27;beta&#x27;).innerText = deviceOrientation.getBeta() + &#x27; [rad]&#x27;;
-  el(&#x27;gamma&#x27;).innerText = deviceOrientation.getGamma() + &#x27; [rad]&#x27;;
-  el(&#x27;heading&#x27;).innerText = deviceOrientation.getHeading() + &#x27; [rad]&#x27;;
-});
-
-// tilt the map
-deviceOrientation.on([&#x27;change:beta&#x27;, &#x27;change:gamma&#x27;], function(event) {
-  var center = view.getCenter();
-  var resolution = view.getResolution();
-  var beta = event.target.getBeta() || 0;
-  var gamma = event.target.getGamma() || 0;
-
-  center[0] -= resolution * gamma * 25;
-  center[1] += resolution * beta * 25;
-
-  view.setCenter(view.constrainCenter(center));
-});
-
-&lt;/script&gt;
-&lt;/body&gt;
+          view.setCenter(view.constrainCenter(center));
+        });
+      });
+    &lt;/script&gt;
+  &lt;/body&gt;
 &lt;/html&gt;</code></pre>
       </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="./resources/common.js"></script>
     <script src="./resources/prism/prism.min.js"></script>
     <script src="loader.js?id=device-orientation"></script>
-
   </body>
+  <script>
+  var packageUrl = 'https://raw.githubusercontent.com/openlayers/openlayers.github.io/build/package.json';
+  fetch(packageUrl).then(function(response) {
+    return response.json();
+  }).then(function(json) {
+    var latestVersion = json.version;
+    document.getElementById('latest-version').innerHTML = latestVersion;
+    var url = window.location.href;
+    var branchSearch = url.match(/\/([^\/]*)\/examples\//);
+    var cookieText = 'dismissed=-' + latestVersion + '-';
+    var dismissed = document.cookie.indexOf(cookieText) != -1;
+    if (!dismissed && /^v[0-9\.]*$/.test(branchSearch[1]) && '4.6.5' != latestVersion) {
+      var link = url.replace(branchSearch[0], '/latest/examples/');
+      fetch(link, {method: 'head'}).then(function(response) {
+        var a = document.getElementById('latest-link');
+        a.href = response.status == 200 ? link : '../../latest/examples/';
+      });
+      var latestCheck = document.getElementById('latest-check');
+      latestCheck.style.display = '';
+      document.getElementById('latest-dismiss').onclick = function() {
+        latestCheck.style.display = 'none';
+        document.cookie = cookieText;
+      }
+    }
+  });
+  </script>
 </html>

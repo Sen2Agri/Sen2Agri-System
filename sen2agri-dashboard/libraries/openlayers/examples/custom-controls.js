@@ -10,7 +10,6 @@ var app = window.app;
 //
 
 
-
 /**
  * @constructor
  * @extends {ol.control.Control}
@@ -24,7 +23,7 @@ app.RotateNorthControl = function(opt_options) {
   button.innerHTML = 'N';
 
   var this_ = this;
-  var handleRotateNorth = function(e) {
+  var handleRotateNorth = function() {
     this_.getMap().getView().setRotation(0);
   };
 
@@ -51,9 +50,9 @@ ol.inherits(app.RotateNorthControl, ol.control.Control);
 
 var map = new ol.Map({
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }).extend([
     new app.RotateNorthControl()
   ]),
@@ -62,11 +61,10 @@ var map = new ol.Map({
       source: new ol.source.OSM()
     })
   ],
-  renderer: common.getRendererFromQueryString(),
   target: 'map',
   view: new ol.View({
     center: [0, 0],
-    zoom: 2,
+    zoom: 3,
     rotation: 1
   })
 });

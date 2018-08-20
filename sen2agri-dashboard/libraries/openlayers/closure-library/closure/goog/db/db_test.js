@@ -46,8 +46,9 @@ var TransactionMode = goog.db.Transaction.TransactionMode;
 var EventTypes = goog.db.Transaction.EventTypes;
 
 function openDatabase() {
-  return goog.db.openDatabase(dbName)
-      .addCallback(function(db) { dbsToClose.push(db); });
+  return goog.db.openDatabase(dbName).addCallback(function(db) {
+    dbsToClose.push(db);
+  });
 }
 
 function incrementVersion(db, onUpgradeNeeded) {
@@ -65,9 +66,8 @@ function incrementVersion(db, onUpgradeNeeded) {
 }
 
 function addStore(db) {
-  return incrementVersion(db, function(ev, db, tx) {
-    db.createObjectStore('store');
-  });
+  return incrementVersion(
+      db, function(ev, db, tx) { db.createObjectStore('store'); });
 }
 
 function addStoreWithIndex(db) {
@@ -102,6 +102,19 @@ function assertStoreValues(values, db) {
   });
 }
 
+/**
+ * Assert the keys are as expected.
+ * @param {!Array<string>} keys - The expected keys.
+ * @param {!goog.db.IndexedDb} db - The indexed db.
+ */
+function assertStoreKeyValues(keys, db) {
+  var assertStoreTx = db.createTransaction(['store']);
+  assertStoreTx.objectStore('store').getAllKeys().addCallback(function(
+      results) {
+    assertSameElements(keys, results);
+  });
+}
+
 function assertStoreObjectValues(values, db) {
   var assertStoreTx = db.createTransaction(['store']);
   assertStoreTx.objectStore('store').getAll().addCallback(function(results) {
@@ -118,8 +131,9 @@ function assertStoreValuesAndCursorsDisposed(values, cursors, db) {
     assertTrue(cursors.length > 0);
     goog.array.forEach(cursors, function(elem, index, array) {
       console.log(elem);
-      assertTrue('array[' + index + '] (' + elem + ') is not disposed',
-                 goog.Disposable.isDisposed(elem));
+      assertTrue(
+          'array[' + index + '] (' + elem + ') is not disposed',
+          goog.Disposable.isDisposed(elem));
     });
   });
 }
@@ -148,27 +162,29 @@ function transactionToPromise(db, trx) {
 // promise resolves.
 function forEachRecord(cursor, onRecordReady) {
   var promises = [];
-  return new goog.Promise(function(resolve, reject) {
-    var key = goog.events.listen(cursor,
-                                 goog.db.Cursor.EventType.NEW_DATA, function() {
-                                   var result = onRecordReady();
-                                   if (result && ('then' in result)) {
-                                     promises.push(result);
-                                   }
-                                 });
+  return new goog
+      .Promise(function(resolve, reject) {
+        var key = goog.events.listen(
+            cursor, goog.db.Cursor.EventType.NEW_DATA, function() {
+              var result = onRecordReady();
+              if (result && ('then' in result)) {
+                promises.push(result);
+              }
+            });
 
-    goog.events.listenOnce(
-        cursor,
-        [goog.db.Cursor.EventType.COMPLETE, goog.db.Cursor.EventType.ERROR],
-        function(evt) {
-          goog.events.unlistenByKey(key);
-          if (evt.type == goog.db.Cursor.EventType.COMPLETE) {
-            resolve();
-          } else {
-            reject(evt);
-          }
-        });
-  }).then(function() { return goog.Promise.all(promises); });
+        goog.events.listenOnce(
+            cursor,
+            [goog.db.Cursor.EventType.COMPLETE, goog.db.Cursor.EventType.ERROR],
+            function(evt) {
+              goog.events.unlistenByKey(key);
+              if (evt.type == goog.db.Cursor.EventType.COMPLETE) {
+                resolve();
+              } else {
+                reject(evt);
+              }
+            });
+      })
+      .then(function() { return goog.Promise.all(promises); });
 }
 
 function failOnErrorEvent(ev) {
@@ -220,9 +236,7 @@ function testOpenWithNewVersion() {
         return incrementVersion(
             db, function(ev, db, tx) { upgradeNeeded = true; });
       })
-      .addCallback(function(db) {
-        assertTrue(upgradeNeeded);
-      });
+      .addCallback(function(db) { assertTrue(upgradeNeeded); });
 }
 
 function testManipulateObjectStores() {
@@ -319,12 +333,11 @@ function testCreateTransaction() {
 
   return globalDb.branch().addCallback(addStore).addCallback(function(db) {
     var tx = db.createTransaction(['store']);
-    assertEquals('mode not READ_ONLY',
-                 TransactionMode.READ_ONLY, tx.getMode());
-    tx = db.createTransaction(['store'],
-                              goog.db.Transaction.TransactionMode.READ_WRITE);
-    assertEquals('mode not READ_WRITE',
-                 TransactionMode.READ_WRITE, tx.getMode());
+    assertEquals('mode not READ_ONLY', TransactionMode.READ_ONLY, tx.getMode());
+    tx = db.createTransaction(
+        ['store'], goog.db.Transaction.TransactionMode.READ_WRITE);
+    assertEquals(
+        'mode not READ_WRITE', TransactionMode.READ_WRITE, tx.getMode());
   });
 }
 
@@ -336,10 +349,13 @@ function testPutRecord() {
   return globalDb.branch()
       .addCallback(addStore)
       .addCallback(function(db) {
-        var initialPutTx = db.createTransaction(
-            ['store'], TransactionMode.READ_WRITE);
-        initialPutTx.objectStore('store')
-            .put({key: 'initial', value: 'value1'}, 'putKey');
+        var initialPutTx =
+            db.createTransaction(['store'], TransactionMode.READ_WRITE);
+        var putOperation = initialPutTx.objectStore('store').put(
+            {key: 'initial', value: 'value1'}, 'putKey');
+        putOperation.addCallback(function(key) {
+          assertEquals('putKey', key);
+        });
         return transactionToPromise(db, initialPutTx);
       })
       .addCallback(function(db) {
@@ -352,17 +368,19 @@ function testPutRecord() {
         return transactionToPromise(db, checkResultsTx);
       })
       .addCallback(function(db) {
-        var overwriteTx = db.createTransaction(
-            ['store'], TransactionMode.READ_WRITE);
-        overwriteTx.objectStore('store')
-            .put({key: 'overwritten', value: 'value2'}, 'putKey');
+        var overwriteTx =
+            db.createTransaction(['store'], TransactionMode.READ_WRITE);
+        var putOperation = overwriteTx.objectStore('store').put(
+            {key: 'overwritten', value: 'value2'}, 'putKey');
+        putOperation.addCallback(function(key) {
+          assertEquals('putKey', key);
+        });
         return transactionToPromise(db, overwriteTx);
       })
       .addCallback(function(db) {
         var checkOverwriteTx = db.createTransaction(['store']);
-        checkOverwriteTx.objectStore('store')
-            .get('putKey')
-            .addCallback(function(result) {
+        checkOverwriteTx.objectStore('store').get('putKey').addCallback(
+            function(result) {
               // this is guaranteed to run before the COMPLETE event fires on
               // the transaction
               assertEquals('overwritten', result.key);
@@ -381,10 +399,13 @@ function testAddRecord() {
   return globalDb.branch()
       .addCallback(addStore)
       .addCallback(function(db) {
-        var initialAddTx = db.createTransaction(
-            ['store'], TransactionMode.READ_WRITE);
-        initialAddTx.objectStore('store')
-            .add({key: 'hi', value: 'something'}, 'stuff');
+        var initialAddTx =
+            db.createTransaction(['store'], TransactionMode.READ_WRITE);
+        var addOperation = initialAddTx.objectStore('store').add(
+            {key: 'hi', value: 'something'}, 'stuff');
+        addOperation.addCallback(function(key) {
+          assertEquals('stuff', key);
+        });
         return transactionToPromise(db, initialAddTx);
       })
       .addCallback(function(db) {
@@ -397,14 +418,14 @@ function testAddRecord() {
         return transactionToPromise(db, successfulAddTx);
       })
       .addCallback(function(db) {
-        var addOverwriteTx = db.createTransaction(
-            ['store'], TransactionMode.READ_WRITE);
+        var addOverwriteTx =
+            db.createTransaction(['store'], TransactionMode.READ_WRITE);
         addOverwriteTx.objectStore('store')
             .add({key: 'bye', value: 'nothing'}, 'stuff')
             .addErrback(function(err) {
               // expected
-              assertEquals(goog.db.Error.ErrorName.CONSTRAINT_ERR,
-                           err.getName());
+              assertEquals(
+                  goog.db.Error.ErrorName.CONSTRAINT_ERR, err.getName());
             });
         return transactionToPromise(db, addOverwriteTx)
             .then(
@@ -413,8 +434,9 @@ function testAddRecord() {
                 },
                 function(ev) {
                   // expected
-                  assertEquals(goog.db.Error.ErrorName.CONSTRAINT_ERR,
-                               ev.target.getName());
+                  assertEquals(
+                      goog.db.Error.ErrorName.CONSTRAINT_ERR,
+                      ev.target.getName());
                 });
       });
 }
@@ -431,9 +453,13 @@ function testPutRecordKeyPathStore() {
         });
       })
       .addCallback(function(db) {
-        var putTx = db.createTransaction(
-            ['keyStore'], TransactionMode.READ_WRITE);
-        putTx.objectStore('keyStore').put({key: 'hi', value: 'something'});
+        var putTx =
+            db.createTransaction(['keyStore'], TransactionMode.READ_WRITE);
+        var putOperation =
+            putTx.objectStore('keyStore').put({key: 'hi', value: 'something'});
+        putOperation.addCallback(function(key) {
+          assertEquals('hi', key);
+        });
         return transactionToPromise(db, putTx);
       })
       .addCallback(function(db) {
@@ -461,8 +487,8 @@ function testPutBadRecordKeyPathStore() {
         });
       })
       .addCallback(function(db) {
-        var badTx = db.createTransaction(
-            ['keyStore'], TransactionMode.READ_WRITE);
+        var badTx =
+            db.createTransaction(['keyStore'], TransactionMode.READ_WRITE);
         return badTx.objectStore('keyStore')
             .put({key: 'diedie', value: 'anything'}, 'badKey')
             .then(
@@ -489,9 +515,18 @@ function testPutRecordAutoIncrementStore() {
       })
       .addCallback(function(db) {
         var tx = db.createTransaction(['aiStore'], TransactionMode.READ_WRITE);
-        tx.objectStore('aiStore').put('1');
-        tx.objectStore('aiStore').put('2');
-        tx.objectStore('aiStore').put('3');
+        var putOperation1 = tx.objectStore('aiStore').put('1');
+        var putOperation2 = tx.objectStore('aiStore').put('2');
+        var putOperation3 = tx.objectStore('aiStore').put('3');
+        putOperation1.addCallback(function(key) {
+          assertNotUndefined(key);
+        });
+        putOperation2.addCallback(function(key) {
+          assertNotUndefined(key);
+        });
+        putOperation3.addCallback(function(key) {
+          assertNotUndefined(key);
+        });
         return transactionToPromise(db, tx);
       })
       .addCallback(function(db) {
@@ -516,26 +551,29 @@ function testPutRecordKeyPathAndAutoIncrementStore() {
   return globalDb.branch()
       .addCallback(function(db) {
         return incrementVersion(db, function(ev, db, tx) {
-          db.createObjectStore('hybridStore',
-                               {keyPath: 'key', autoIncrement: true});
+          db.createObjectStore(
+              'hybridStore', {keyPath: 'key', autoIncrement: true});
         });
       })
       .addCallback(function(db) {
-        var tx = db.createTransaction(
-            ['hybridStore'], TransactionMode.READ_WRITE);
-        return tx.objectStore('hybridStore')
-            .put({value: 'whatever'})
-            .addCallback(function() { return db; });
+        var tx =
+            db.createTransaction(['hybridStore'], TransactionMode.READ_WRITE);
+        var putOperation =
+            tx.objectStore('hybridStore').put({value: 'whatever'});
+        putOperation.addCallback(function(key) {
+          assertNotUndefined(key);
+        });
+        return putOperation.addCallback(function() {
+          return db;
+        });
       })
       .addCallback(function(db) {
         var tx = db.createTransaction(['hybridStore']);
-        return tx.objectStore('hybridStore')
-            .getAll()
-            .then(function(results) {
-              assertEquals(1, results.length);
-              assertEquals('whatever', results[0].value);
-              assertNotUndefined(results[0].key);
-            });
+        return tx.objectStore('hybridStore').getAll().then(function(results) {
+          assertEquals(1, results.length);
+          assertEquals('whatever', results[0].value);
+          assertNotUndefined(results[0].key);
+        });
       });
 }
 
@@ -544,34 +582,36 @@ function testPutIllegalRecords() {
     return;
   }
 
-  return globalDb.branch().addCallback(addStore).addCallback(
-      function(db) {
-        var tx = db.createTransaction(['store'], TransactionMode.READ_WRITE);
+  return globalDb.branch().addCallback(addStore).addCallback(function(db) {
+    var tx = db.createTransaction(['store'], TransactionMode.READ_WRITE);
 
-        var promises = [];
-        var badKeyFail = function(keyKind) {
-          return function() {
-            return fail('putting with ' + keyKind + ' key should have failed');
-          }
-        };
-        var assertExpectedError = function(err) {
-          assertEquals(goog.db.Error.ErrorName.DATA_ERR, err.getName());
-        };
+    var promises = [];
+    var badKeyFail = function(keyKind) {
+      return function() {
+        return fail('putting with ' + keyKind + ' key should have failed');
+      }
+    };
+    var assertExpectedError = function(err) {
+      assertEquals(goog.db.Error.ErrorName.DATA_ERR, err.getName());
+    };
 
-        promises.push(tx.objectStore('store')
+    promises.push(
+        tx.objectStore('store')
             .put('death', null)
             .then(badKeyFail('null'), assertExpectedError));
 
-        promises.push(tx.objectStore('store')
+    promises.push(
+        tx.objectStore('store')
             .put('death', NaN)
             .then(badKeyFail('NaN'), assertExpectedError));
 
-        promises.push(tx.objectStore('store')
+    promises.push(
+        tx.objectStore('store')
             .put('death', undefined)
             .then(badKeyFail('undefined'), assertExpectedError));
 
-        return goog.Promise.all(promises);
-      });
+    return goog.Promise.all(promises);
+  });
 }
 
 function testPutIllegalRecordsWithIndex() {
@@ -594,16 +634,19 @@ function testPutIllegalRecordsWithIndex() {
           assertEquals(goog.db.Error.ErrorName.DATA_ERR, err.getName());
         };
 
-        promises.push(tx.objectStore('store')
-            .put({value: 'diediedie', key: null})
-            .then(badKeyFail('null'), assertExpectedError));
+        promises.push(
+            tx.objectStore('store')
+                .put({value: 'diediedie', key: null})
+                .then(badKeyFail('null'), assertExpectedError));
 
-        promises.push(tx.objectStore('store')
-            .put({value: 'dietodeath', key: NaN})
-            .then(badKeyFail('NaN'), assertExpectedError));
-        promises.push(tx.objectStore('store')
-            .put({value: 'dietodeath', key: undefined})
-            .then(badKeyFail('undefined'), assertExpectedError));
+        promises.push(
+            tx.objectStore('store')
+                .put({value: 'dietodeath', key: NaN})
+                .then(badKeyFail('NaN'), assertExpectedError));
+        promises.push(
+            tx.objectStore('store')
+                .put({value: 'dietodeath', key: undefined})
+                .then(badKeyFail('undefined'), assertExpectedError));
 
         return goog.Promise.all(promises);
       });
@@ -632,9 +675,32 @@ function testDeleteRecord() {
         return db.createTransaction(['store']).objectStore('store').get(
             'stuff');
       })
-      .addCallback(function(result) {
-        assertUndefined(result);
-      });
+      .addCallback(function(result) { assertUndefined(result); });
+}
+
+function testDeleteRange() {
+  if (!idbSupported) {
+    return;
+  }
+
+  var values = ['1', '2', '3'];
+  var keys = ['a', 'b', 'c'];
+
+  var addData = goog.partial(populateStore, values, keys);
+  var checkStore = goog.partial(assertStoreValues, ['1']);
+
+  return globalDb.branch()
+      .addCallback(addStore)
+      .addCallback(addData)
+      .addCallback(function(db) {
+        return db.createTransaction(['store'], TransactionMode.READ_WRITE)
+            .objectStore('store')
+            .remove(goog.db.KeyRange.bound('b', 'c'))
+            .then(function() {
+              return db;
+            });
+      })
+      .addCallback(checkStore);
 }
 
 function testGetAll() {
@@ -647,6 +713,23 @@ function testGetAll() {
 
   var addData = goog.partial(populateStore, values, keys);
   var checkStore = goog.partial(assertStoreValues, values);
+
+  return globalDb.branch()
+      .addCallback(addStore)
+      .addCallback(addData)
+      .addCallback(checkStore);
+}
+
+function testGetAllKeys() {
+  if (!idbSupported) {
+    return;
+  }
+
+  var values = ['1', '2', '3'];
+  var keys = ['a', 'b', 'c'];
+
+  var addData = goog.partial(populateStore, values, keys);
+  var checkStore = goog.partial(assertStoreKeyValues, keys);
 
   return globalDb.branch()
       .addCallback(addStore)
@@ -708,8 +791,8 @@ function testObjectStoreCursorGet() {
         var cursorTx = db.createTransaction(['store']);
         var store = cursorTx.objectStore('store');
 
-        var cursor = store.openCursor(goog.db.KeyRange.bound('b', 'c'),
-                                      goog.db.Cursor.Direction.PREV);
+        var cursor = store.openCursor(
+            goog.db.KeyRange.bound('b', 'c'), goog.db.Cursor.Direction.PREV);
 
         var whenCursorComplete = forEachRecord(cursor, function() {
           resultValues.push(cursor.getValue());
@@ -816,15 +899,14 @@ function testClear() {
       })
       .addCallback(function(results) {
         assertEquals(3, results.length);
-        return db.createTransaction(
-            ['store'], TransactionMode.READ_WRITE).objectStore('store').clear();
+        return db.createTransaction(['store'], TransactionMode.READ_WRITE)
+            .objectStore('store')
+            .clear();
       })
       .addCallback(function() {
         return db.createTransaction(['store']).objectStore('store').getAll();
       })
-      .addCallback(function(results) {
-        assertEquals(0, results.length);
-      });
+      .addCallback(function(results) { assertEquals(0, results.length); });
 }
 
 function testAbortTransaction() {
@@ -838,31 +920,27 @@ function testAbortTransaction() {
       .addCallback(function(theDb) {
         db = theDb;
         return new Promise(function(resolve, reject) {
-          var abortTx = db.createTransaction(
-              ['store'], TransactionMode.READ_WRITE);
+          var abortTx =
+              db.createTransaction(['store'], TransactionMode.READ_WRITE);
           abortTx.objectStore('store')
               .put('data', 'stuff')
               .addCallback(function() { abortTx.abort(); });
-          goog.events.listen(abortTx, EventTypes.ERROR,
-                             reject);
+          goog.events.listen(abortTx, EventTypes.ERROR, reject);
 
-          goog.events.listen(
-              abortTx, EventTypes.COMPLETE, function() {
-                fail('transaction shouldn\'t have' +
-                     ' completed after being aborted');
-              });
+          goog.events.listen(abortTx, EventTypes.COMPLETE, function() {
+            fail(
+                'transaction shouldn\'t have' +
+                ' completed after being aborted');
+          });
 
-          goog.events.listen(abortTx, EventTypes.ABORT,
-                             resolve);
+          goog.events.listen(abortTx, EventTypes.ABORT, resolve);
         });
       })
       .addCallback(function() {
         var checkResultsTx = db.createTransaction(['store']);
         return checkResultsTx.objectStore('store').get('stuff');
       })
-      .addCallback(function(result) {
-        assertUndefined(result);
-      });
+      .addCallback(function(result) { assertUndefined(result); });
 }
 
 function testInactiveTransaction() {
@@ -894,17 +972,16 @@ function testInactiveTransaction() {
     var assertCorrectError = function(err) {
       assertEquals(expectedCode, err.getName());
     };
-    promises.push(store.put({key: 'another', value: 'thing'})
-                      .then(failOp('putting'), assertCorrectError));
+    promises.push(
+        store.put({key: 'another', value: 'thing'})
+            .then(failOp('putting'), assertCorrectError));
     promises.push(
         store.add({key: 'another', value: 'thing'})
             .then(failOp('adding'), assertCorrectError));
     promises.push(
-        store.remove('something')
-            .then(failOp('deleting'), assertCorrectError));
+        store.remove('something').then(failOp('deleting'), assertCorrectError));
     promises.push(
-        store.get('something')
-            .then(failOp('getting'), assertCorrectError));
+        store.get('something').then(failOp('getting'), assertCorrectError));
     promises.push(
         store.getAll().then(failOp('getting all'), assertCorrectError));
     promises.push(
@@ -940,30 +1017,33 @@ function testWrongTransactionMode() {
     var tx = db.createTransaction(['store']);
     assertEquals(goog.db.Transaction.TransactionMode.READ_ONLY, tx.getMode());
     var promises = [];
-    promises.push(tx.objectStore('store')
-                      .put('KABOOM!', 'anything')
-                      .then(function() { fail('putting should have failed'); },
-                            function(err) {
-                              assertEquals(
-                                  goog.db.Error.ErrorName.READ_ONLY_ERR,
-                                  err.getName());
-                            }));
-    promises.push(tx.objectStore('store')
-                      .add('EXPLODE!', 'die')
-                      .then(function() { fail('adding should have failed'); },
-                            function(err) {
-                              assertEquals(
-                                  goog.db.Error.ErrorName.READ_ONLY_ERR,
-                                  err.getName());
-                            }));
-    promises.push(tx.objectStore('store')
-                      .remove('no key', 'nothing')
-                      .then(function() { fail('deleting should have failed'); },
-                            function(err) {
-                              assertEquals(
-                                  goog.db.Error.ErrorName.READ_ONLY_ERR,
-                                  err.getName());
-                            }));
+    promises.push(
+        tx.objectStore('store')
+            .put('KABOOM!', 'anything')
+            .then(
+                function() { fail('putting should have failed'); },
+                function(err) {
+                  assertEquals(
+                      goog.db.Error.ErrorName.READ_ONLY_ERR, err.getName());
+                }));
+    promises.push(
+        tx.objectStore('store')
+            .add('EXPLODE!', 'die')
+            .then(
+                function() { fail('adding should have failed'); },
+                function(err) {
+                  assertEquals(
+                      goog.db.Error.ErrorName.READ_ONLY_ERR, err.getName());
+                }));
+    promises.push(
+        tx.objectStore('store')
+            .remove('no key', 'nothing')
+            .then(
+                function() { fail('deleting should have failed'); },
+                function(err) {
+                  assertEquals(
+                      goog.db.Error.ErrorName.READ_ONLY_ERR, err.getName());
+                }));
     return goog.Promise.all(promises);
   });
 }
@@ -1032,8 +1112,8 @@ function testAddRecordWithIndex() {
   }
 
   var addData = function(db) {
-    var store = db.createTransaction(
-        ['store'], TransactionMode.READ_WRITE).objectStore('store');
+    var store = db.createTransaction(['store'], TransactionMode.READ_WRITE)
+                    .objectStore('store');
     assertFalse(store.getIndex('index').isUnique());
     assertEquals('value', store.getIndex('index').getKeyPath());
     return store.add({key: 'someKey', value: 'lookUpThis'})
@@ -1043,17 +1123,15 @@ function testAddRecordWithIndex() {
     var index =
         db.createTransaction(['store']).objectStore('store').getIndex('index');
     var promises = [
-      index.get('lookUpThis')
-          .addCallback(function(result) {
-            assertNotUndefined(result);
-            assertEquals('someKey', result.key);
-            assertEquals('lookUpThis', result.value);
-          }),
-      index.getKey('lookUpThis')
-          .addCallback(function(result) {
-            assertNotUndefined(result);
-            assertEquals('someKey', result);
-          })
+      index.get('lookUpThis').addCallback(function(result) {
+        assertNotUndefined(result);
+        assertEquals('someKey', result.key);
+        assertEquals('lookUpThis', result.value);
+      }),
+      index.getKey('lookUpThis').addCallback(function(result) {
+        assertNotUndefined(result);
+        assertEquals('someKey', result);
+      })
     ];
     return goog.Promise.all(promises).then(function() { return db; });
   };
@@ -1091,10 +1169,12 @@ function testGetMultipleRecordsFromIndex() {
     promises.push(index.getAllKeys().addCallback(function(results) {
       assertNotUndefined(results);
       assertEquals(3, results.length);
+      assertArrayEquals(['1', '2', '3'], results);
     }));
     promises.push(index.getAllKeys('b').addCallback(function(results) {
       assertNotUndefined(results);
       assertEquals(1, results.length);
+      assertArrayEquals(['3'], results);
     }));
 
     return goog.Promise.all(promises).then(function() { return db; });
@@ -1121,17 +1201,19 @@ function testUniqueIndex() {
         },
         function(ev) {
           // expected
-          assertEquals(goog.db.Error.ErrorName.CONSTRAINT_ERR,
-                       ev.target.getName());
+          assertEquals(
+              goog.db.Error.ErrorName.CONSTRAINT_ERR, ev.target.getName());
         });
   };
 
-  return globalDb.branch().addCallback(function(db) {
-    return incrementVersion(db, function(ev, db, tx) {
-      var store = db.createObjectStore('store', {keyPath: 'key'});
-      store.createIndex('index', 'value', {unique: true});
-    });
-  }).addCallback(storeDuplicatesToUniqueIndex);
+  return globalDb.branch()
+      .addCallback(function(db) {
+        return incrementVersion(db, function(ev, db, tx) {
+          var store = db.createObjectStore('store', {keyPath: 'key'});
+          store.createIndex('index', 'value', {unique: true});
+        });
+      })
+      .addCallback(storeDuplicatesToUniqueIndex);
 }
 
 function testDeleteDatabase() {
@@ -1254,9 +1336,7 @@ function testObjectStoreCountSome() {
     var tx = db.createTransaction(['store']);
     return tx.objectStore('store')
         .count(goog.db.KeyRange.bound('b', 'c'))
-        .addCallback(function(count) {
-          assertEquals(2, count);
-        });
+        .addCallback(function(count) { assertEquals(2, count); });
   };
 
   return globalDb.branch()
@@ -1284,16 +1364,17 @@ function testIndexCursorGet() {
     var values = [];
     var keys = [];
 
-    var cursor = index.openCursor(goog.db.KeyRange.bound('2', '3'),
-                                  goog.db.Cursor.Direction.PREV);
+    var cursor = index.openCursor(
+        goog.db.KeyRange.bound('2', '3'), goog.db.Cursor.Direction.PREV);
     var cursorFinished = forEachRecord(cursor, function() {
       valuesResult.push(cursor.getValue()['value']);
       keysResult.push(cursor.getValue()['key']);
       cursor.next();
     });
 
-    return goog.Promise.all([cursorFinished, cursorTx.wait()])
-        .then(function() { return db });
+    return goog.Promise.all([cursorFinished, cursorTx.wait()]).then(function() {
+      return db
+    });
   };
 
   return globalDb.branch()
@@ -1413,8 +1494,8 @@ function testWaitingOnTransactionThatHasAnError() {
             function() { fail('expected transaction to fail'); },
             function(ev) {
               // expected
-              assertEquals(goog.db.Error.ErrorName.CONSTRAINT_ERR,
-                           ev.target.getName());
+              assertEquals(
+                  goog.db.Error.ErrorName.CONSTRAINT_ERR, ev.target.getName());
             });
       });
 }
@@ -1423,18 +1504,14 @@ function testWaitingOnAnAbortedTransaction() {
   if (!idbSupported) {
     return;
   }
-  return globalDb
-      .addCallback(addStore)
-      .addCallback(function(db) {
-        var tx = db.createTransaction(['store'], TransactionMode.READ_WRITE);
-        var waiting = tx.wait().then(
-           function() {
-             fail('Wait result should have failed');
-           },
-           function(e) {
-             assertEquals(goog.db.Error.ErrorName.ABORT_ERR, e.getName());
-           });
-        tx.abort();
-        return waiting;
-      });
+  return globalDb.addCallback(addStore).addCallback(function(db) {
+    var tx = db.createTransaction(['store'], TransactionMode.READ_WRITE);
+    var waiting = tx.wait().then(
+        function() { fail('Wait result should have failed'); },
+        function(e) {
+          assertEquals(goog.db.Error.ErrorName.ABORT_ERR, e.getName());
+        });
+    tx.abort();
+    return waiting;
+  });
 }

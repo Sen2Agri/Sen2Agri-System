@@ -61,25 +61,6 @@ function testOffsetInDays() {
   assertTrue('last day', new gd(1999, 11, 31).equals(f(d, -1)));
 }
 
-function testCurrentOrLastMonday() {
-  var mon = new gd(2008, 9, 13);
-  var tue = new gd(2008, 9, 14);
-  var wed = new gd(2008, 9, 15);
-  var thu = new gd(2008, 9, 16);
-  var fri = new gd(2008, 9, 17);
-  var sat = new gd(2008, 9, 18);
-  var sun = new gd(2008, 9, 19);
-  var f = gdr.currentOrLastMonday_;
-
-  assertTrue('mon', mon.equals(f(mon)));
-  assertTrue('tue', mon.equals(f(tue)));
-  assertTrue('wed', mon.equals(f(wed)));
-  assertTrue('thu', mon.equals(f(thu)));
-  assertTrue('fri', mon.equals(f(fri)));
-  assertTrue('sat', mon.equals(f(sat)));
-  assertTrue('sun', mon.equals(f(sun)));
-}
-
 function testOffsetInMonths() {
   var d = new gd(2008, 9, 13);
   var f = gdr.offsetInMonths_;
@@ -108,7 +89,8 @@ function testLast7Days() {
   var s = new gd(2008, 9, 6);
   var e = new gd(2008, 9, 12);
   assertStartEnd('last7Days', s, e, gdr.last7Days(d));
-  assertStartEnd('last7Days by key', s, e,
+  assertStartEnd(
+      'last7Days by key', s, e,
       gdr.standardDateRange(gdr.StandardDateRangeKeys.LAST_7_DAYS, d));
 }
 
@@ -117,7 +99,8 @@ function testThisMonth() {
   var s = new gd(2008, 9, 1);
   var e = new gd(2008, 9, 31);
   assertStartEnd('thisMonth', s, e, gdr.thisMonth(d));
-  assertStartEnd('thisMonth by key', s, e,
+  assertStartEnd(
+      'thisMonth by key', s, e,
       gdr.standardDateRange(gdr.StandardDateRangeKeys.THIS_MONTH, d));
 }
 
@@ -126,28 +109,21 @@ function testLastMonth() {
   var s = new gd(2008, 8, 1);
   var e = new gd(2008, 8, 30);
   assertStartEnd('lastMonth', s, e, gdr.lastMonth(d));
-  assertStartEnd('lastMonth by key', s, e,
+  assertStartEnd(
+      'lastMonth by key', s, e,
       gdr.standardDateRange(gdr.StandardDateRangeKeys.LAST_MONTH, d));
 }
 
 function testThisWeek() {
   var startDates = [
-    new gd(2011, 2, 28),
-    new gd(2011, 2, 29),
-    new gd(2011, 2, 30),
-    new gd(2011, 2, 31),
-    new gd(2011, 3, 1),
-    new gd(2011, 2, 26),
+    new gd(2011, 2, 28), new gd(2011, 2, 29), new gd(2011, 2, 30),
+    new gd(2011, 2, 31), new gd(2011, 3, 1), new gd(2011, 2, 26),
     new gd(2011, 2, 27)
   ];
 
   var endDates = [
-    new gd(2011, 3, 3),
-    new gd(2011, 3, 4),
-    new gd(2011, 3, 5),
-    new gd(2011, 3, 6),
-    new gd(2011, 3, 7),
-    new gd(2011, 3, 1),
+    new gd(2011, 3, 3), new gd(2011, 3, 4), new gd(2011, 3, 5),
+    new gd(2011, 3, 6), new gd(2011, 3, 7), new gd(2011, 3, 1),
     new gd(2011, 3, 2)
   ];
 
@@ -155,35 +131,27 @@ function testThisWeek() {
   for (var i = 0; i < 7; i++) {
     var date = new gd(2011, 3, 1);
     date.setFirstDayOfWeek(i);
-    assertStartEnd('thisWeek, ' + i, startDates[i], endDates[i],
-        gdr.thisWeek(date));
+    assertStartEnd(
+        'thisWeek, ' + i, startDates[i], endDates[i], gdr.thisWeek(date));
   }
 
-  assertStartEnd('thisWeek by key ',
-      startDates[goog.i18n.DateTimeSymbols.FIRSTDAYOFWEEK],
+  assertStartEnd(
+      'thisWeek by key ', startDates[goog.i18n.DateTimeSymbols.FIRSTDAYOFWEEK],
       endDates[goog.i18n.DateTimeSymbols.FIRSTDAYOFWEEK],
-      gdr.standardDateRange(gdr.StandardDateRangeKeys.THIS_WEEK,
-          new gd(2011, 3, 1)));
+      gdr.standardDateRange(
+          gdr.StandardDateRangeKeys.THIS_WEEK, new gd(2011, 3, 1)));
 }
 
 function testLastWeek() {
   var startDates = [
-    new gd(2011, 2, 21),
-    new gd(2011, 2, 22),
-    new gd(2011, 2, 23),
-    new gd(2011, 2, 24),
-    new gd(2011, 2, 25),
-    new gd(2011, 2, 19),
+    new gd(2011, 2, 21), new gd(2011, 2, 22), new gd(2011, 2, 23),
+    new gd(2011, 2, 24), new gd(2011, 2, 25), new gd(2011, 2, 19),
     new gd(2011, 2, 20)
   ];
 
   var endDates = [
-    new gd(2011, 2, 27),
-    new gd(2011, 2, 28),
-    new gd(2011, 2, 29),
-    new gd(2011, 2, 30),
-    new gd(2011, 2, 31),
-    new gd(2011, 2, 25),
+    new gd(2011, 2, 27), new gd(2011, 2, 28), new gd(2011, 2, 29),
+    new gd(2011, 2, 30), new gd(2011, 2, 31), new gd(2011, 2, 25),
     new gd(2011, 2, 26)
   ];
 
@@ -191,15 +159,15 @@ function testLastWeek() {
   for (var i = 0; i < 7; i++) {
     var date = new gd(2011, 3, 1);
     date.setFirstDayOfWeek(i);
-    assertStartEnd('lastWeek, ' + i, startDates[i], endDates[i],
-        gdr.lastWeek(date));
+    assertStartEnd(
+        'lastWeek, ' + i, startDates[i], endDates[i], gdr.lastWeek(date));
   }
 
-  assertStartEnd('lastWeek by key',
-      startDates[goog.i18n.DateTimeSymbols.FIRSTDAYOFWEEK],
+  assertStartEnd(
+      'lastWeek by key', startDates[goog.i18n.DateTimeSymbols.FIRSTDAYOFWEEK],
       endDates[goog.i18n.DateTimeSymbols.FIRSTDAYOFWEEK],
-      gdr.standardDateRange(gdr.StandardDateRangeKeys.LAST_WEEK,
-          new gd(2011, 3, 1)));
+      gdr.standardDateRange(
+          gdr.StandardDateRangeKeys.LAST_WEEK, new gd(2011, 3, 1)));
 }
 
 function testLastBusinessWeek() {
@@ -207,15 +175,17 @@ function testLastBusinessWeek() {
   var s = new gd(2008, 9, 6);
   var e = new gd(2008, 9, 10);
   assertStartEnd('lastBusinessWeek', s, e, gdr.lastBusinessWeek(d));
-  assertStartEnd('lastBusinessWeek by key', s, e,
+  assertStartEnd(
+      'lastBusinessWeek by key', s, e,
       gdr.standardDateRange(gdr.StandardDateRangeKeys.LAST_BUSINESS_WEEK, d));
 }
 
 function testAllTime() {
-  var s = new gd(0000, 0, 1);
+  var s = new gd(0, 0, 1);
   var e = new gd(9999, 11, 31);
   assertStartEnd('allTime', s, e, gdr.allTime());
-  assertStartEnd('allTime by key', s, e,
+  assertStartEnd(
+      'allTime by key', s, e,
       gdr.standardDateRange(gdr.StandardDateRangeKeys.ALL_TIME));
 }
 

@@ -1,30 +1,7 @@
 goog.provide('ol.MapEvent');
-goog.provide('ol.MapEventType');
 
-goog.require('goog.events.Event');
-
-
-/**
- * @enum {string}
- */
-ol.MapEventType = {
-
-  /**
-   * Triggered after a map frame is rendered.
-   * @event ol.MapEvent#postrender
-   * @api
-   */
-  POSTRENDER: 'postrender',
-
-  /**
-   * Triggered after the map is moved.
-   * @event ol.MapEvent#moveend
-   * @api stable
-   */
-  MOVEEND: 'moveend'
-
-};
-
+goog.require('ol');
+goog.require('ol.events.Event');
 
 
 /**
@@ -33,20 +10,20 @@ ol.MapEventType = {
  * See {@link ol.Map} for which events trigger a map event.
  *
  * @constructor
- * @extends {goog.events.Event}
+ * @extends {ol.events.Event}
  * @implements {oli.MapEvent}
  * @param {string} type Event type.
- * @param {ol.Map} map Map.
+ * @param {ol.PluggableMap} map Map.
  * @param {?olx.FrameState=} opt_frameState Frame state.
  */
 ol.MapEvent = function(type, map, opt_frameState) {
 
-  goog.base(this, type);
+  ol.events.Event.call(this, type);
 
   /**
    * The map where the event occurred.
-   * @type {ol.Map}
-   * @api stable
+   * @type {ol.PluggableMap}
+   * @api
    */
   this.map = map;
 
@@ -58,4 +35,4 @@ ol.MapEvent = function(type, map, opt_frameState) {
   this.frameState = opt_frameState !== undefined ? opt_frameState : null;
 
 };
-goog.inherits(ol.MapEvent, goog.events.Event);
+ol.inherits(ol.MapEvent, ol.events.Event);

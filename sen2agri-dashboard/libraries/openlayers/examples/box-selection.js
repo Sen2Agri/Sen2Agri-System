@@ -13,7 +13,6 @@ var map = new ol.Map({
       source: vectorSource
     })
   ],
-  renderer: 'canvas',
   target: 'map',
   view: new ol.View({
     center: [0, 0],
@@ -29,39 +28,34 @@ var selectedFeatures = select.getFeatures();
 
 // a DragBox interaction used to select features by drawing boxes
 var dragBox = new ol.interaction.DragBox({
-  condition: ol.events.condition.shiftKeyOnly,
-  style: new ol.style.Style({
-    stroke: new ol.style.Stroke({
-      color: [0, 0, 255, 1]
-    })
-  })
+  condition: ol.events.condition.platformModifierKeyOnly
 });
 
 map.addInteraction(dragBox);
 
-var infoBox = document.getElementById('info');
-
-dragBox.on('boxend', function(e) {
+dragBox.on('boxend', function() {
   // features that intersect the box are added to the collection of
-  // selected features, and their names are displayed in the "info"
-  // div
-  var info = [];
+  // selected features
   var extent = dragBox.getGeometry().getExtent();
   vectorSource.forEachFeatureIntersectingExtent(extent, function(feature) {
     selectedFeatures.push(feature);
-    info.push(feature.get('name'));
   });
-  if (info.length > 0) {
-    infoBox.innerHTML = info.join(', ');
-  }
 });
 
 // clear selection when drawing a new box and when clicking on the map
-dragBox.on('boxstart', function(e) {
+dragBox.on('boxstart', function() {
   selectedFeatures.clear();
-  infoBox.innerHTML = '&nbsp;';
 });
-map.on('click', function() {
-  selectedFeatures.clear();
-  infoBox.innerHTML = '&nbsp;';
+
+var infoBox = document.getElementById('info');
+
+selectedFeatures.on(['add', 'remove'], function() {
+  var names = selectedFeatures.getArray().map(function(feature) {
+    return feature.get('name');
+  });
+  if (names.length > 0) {
+    infoBox.innerHTML = names.join(', ');
+  } else {
+    infoBox.innerHTML = 'No countries selected';
+  }
 });

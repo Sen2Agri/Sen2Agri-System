@@ -66,6 +66,9 @@ function testIsConvertableScaledNumber() {
   assertTrue(isConvertableScaledNumber('45GB'));
   assertTrue(isConvertableScaledNumber('45T'));
   assertTrue(isConvertableScaledNumber('2.33P'));
+  assertTrue(isConvertableScaledNumber('3.45E'));
+  assertTrue(isConvertableScaledNumber('5.33Z'));
+  assertTrue(isConvertableScaledNumber('7.22Y'));
   assertTrue(isConvertableScaledNumber('45m'));
   assertTrue(isConvertableScaledNumber('45u'));
   assertTrue(isConvertableScaledNumber('-5.0n'));
@@ -98,6 +101,10 @@ function testNumericValueToString() {
   assertEquals('1.07G', numericValueToString(1024 * 1024 * 1024));
   assertEquals('6.44G', numericValueToString(6 * 1024 * 1024 * 1024));
   assertEquals('13.26T', numericValueToString(12345.6789 * 1024 * 1024 * 1024));
+  assertEquals('50.67P', numericValueToString(45 * Math.pow(1024, 5)));
+  assertEquals('57.65E', numericValueToString(50 * Math.pow(1024, 6)));
+  assertEquals('77.33Z', numericValueToString(65.5 * Math.pow(1024, 7)));
+  assertEquals('97.56Y', numericValueToString(80.7 * Math.pow(1024, 8)));
 
   assertEquals('23.4m', numericValueToString(0.0234));
   assertEquals('1.23u', numericValueToString(0.00000123));
@@ -120,6 +127,10 @@ function testFormatNumBytes() {
   assertEquals('1MB', numBytesToString(1024 * 1024));
   assertEquals('6GB', numBytesToString(6 * 1024 * 1024 * 1024));
   assertEquals('12.06TB', numBytesToString(12345.6789 * 1024 * 1024 * 1024));
+  assertEquals('45PB', numBytesToString(45 * Math.pow(1024, 5)));
+  assertEquals('50EB', numBytesToString(50 * Math.pow(1024, 6)));
+  assertEquals('65.5ZB', numBytesToString(65.5 * Math.pow(1024, 7)));
+  assertEquals('80.7YB', numBytesToString(80.7 * Math.pow(1024, 8)));
 
   assertEquals('454', numBytesToString(454, 2, true, true));
   assertEquals('5 KB', numBytesToString(5 * 1024, 2, true, true));
@@ -149,6 +160,7 @@ function testStringToNumeric() {
 
 function testStringToNumBytes() {
   var stringToNumBytes = goog.format.stringToNumBytes;
+  var epsilon = 0.1;
 
   assertEquals(45, stringToNumBytes('45'));
   assertEquals(454, stringToNumBytes('454'));
@@ -157,6 +169,8 @@ function testStringToNumBytes() {
   assertEquals(1024 * 1024, stringToNumBytes('1M'));
   assertEquals(6 * 1024 * 1024 * 1024, stringToNumBytes('6G'));
   assertEquals(13260110230978.56, stringToNumBytes('12.06T'));
+  assertTrue(
+      Math.abs(3.191564163782621e+24 - stringToNumBytes('2.64Y')) < epsilon);
 }
 
 function testInsertWordBreaks() {
@@ -173,8 +187,9 @@ function testInsertWordBreaks() {
 
   assertEquals(
       'a&amp;b=<wbr>=fal<wbr>se', insertWordBreaks('a&amp;b==false', 4));
-  assertEquals('&lt;&amp;&gt;&raquo;<wbr>&laquo;',
-               insertWordBreaks('&lt;&amp;&gt;&raquo;&laquo;', 4));
+  assertEquals(
+      '&lt;&amp;&gt;&raquo;<wbr>&laquo;',
+      insertWordBreaks('&lt;&amp;&gt;&raquo;&laquo;', 4));
 
   assertEquals('a<wbr>b<wbr>c d<wbr>e<wbr>f', insertWordBreaks('abc def', 1));
   assertEquals('ab<wbr>c de<wbr>f', insertWordBreaks('abc def', 2));
@@ -182,16 +197,19 @@ function testInsertWordBreaks() {
   assertEquals('abc def', insertWordBreaks('abc def', 4));
 
   assertEquals('a<b>cd</b>e<wbr>f', insertWordBreaks('a<b>cd</b>ef', 4));
-  assertEquals('Thi<wbr>s is a <a href="">lin<wbr>k</a>.',
-               insertWordBreaks('This is a <a href="">link</a>.', 3));
-  assertEquals('<abc a="&amp;&amp;&amp;&amp;&amp;">a<wbr>b',
+  assertEquals(
+      'Thi<wbr>s is a <a href="">lin<wbr>k</a>.',
+      insertWordBreaks('This is a <a href="">link</a>.', 3));
+  assertEquals(
+      '<abc a="&amp;&amp;&amp;&amp;&amp;">a<wbr>b',
       insertWordBreaks('<abc a="&amp;&amp;&amp;&amp;&amp;">ab', 1));
 
   assertEquals('ab\u0300<wbr>cd', insertWordBreaks('ab\u0300cd', 2));
   assertEquals('ab\u036F<wbr>cd', insertWordBreaks('ab\u036Fcd', 2));
   assertEquals('ab<wbr>\u0370c<wbr>d', insertWordBreaks('ab\u0370cd', 2));
   assertEquals('ab<wbr>\uFE1Fc<wbr>d', insertWordBreaks('ab\uFE1Fcd', 2));
-  assertEquals('ab\u0300<wbr>c\u0301<wbr>de<wbr>f',
+  assertEquals(
+      'ab\u0300<wbr>c\u0301<wbr>de<wbr>f',
       insertWordBreaks('ab\u0300c\u0301def', 2));
 }
 
@@ -216,18 +234,14 @@ function testInsertWordBreaksWithFormattingCharacters() {
   // inclusive, except for the exclusion of U+2007 and inclusion of U+2029.
   // See: http://unicode.org/charts/PDF/U2000.pdf
   var stringWithInvisibleFormattingAndSpacelikeCharacters =
-      stringWithInvisibleFormatting + ' ' +
-      stringWithInvisibleFormatting + '\u2000' +
-      stringWithInvisibleFormatting + '\u2001' +
-      stringWithInvisibleFormatting + '\u2002' +
-      stringWithInvisibleFormatting + '\u2003' +
-      stringWithInvisibleFormatting + '\u2005' +
-      stringWithInvisibleFormatting + '\u2006' +
-      stringWithInvisibleFormatting + '\u2008' +
-      stringWithInvisibleFormatting + '\u2009' +
-      stringWithInvisibleFormatting + '\u200A' +
-      stringWithInvisibleFormatting + '\u200B' +
-      stringWithInvisibleFormatting + '\u2029' +
+      stringWithInvisibleFormatting + ' ' + stringWithInvisibleFormatting +
+      '\u2000' + stringWithInvisibleFormatting + '\u2001' +
+      stringWithInvisibleFormatting + '\u2002' + stringWithInvisibleFormatting +
+      '\u2003' + stringWithInvisibleFormatting + '\u2005' +
+      stringWithInvisibleFormatting + '\u2006' + stringWithInvisibleFormatting +
+      '\u2008' + stringWithInvisibleFormatting + '\u2009' +
+      stringWithInvisibleFormatting + '\u200A' + stringWithInvisibleFormatting +
+      '\u200B' + stringWithInvisibleFormatting + '\u2029' +
       stringWithInvisibleFormatting;
 
   // Test that the word break algorithm does not count RLMs towards word
@@ -238,9 +252,10 @@ function testInsertWordBreaksWithFormattingCharacters() {
   // Test that invisible formatting characters are not counted towards word
   // length, and that characters which are treated as breaking spaces behave as
   // breaking spaces.
-  assertEquals(stringWithInvisibleFormattingAndSpacelikeCharacters,
-      insertWordBreaks(stringWithInvisibleFormattingAndSpacelikeCharacters,
-      10));
+  assertEquals(
+      stringWithInvisibleFormattingAndSpacelikeCharacters,
+      insertWordBreaks(
+          stringWithInvisibleFormattingAndSpacelikeCharacters, 10));
 }
 
 function testInsertWordBreaksBasic() {
@@ -253,7 +268,8 @@ function testInsertWordBreaksBasic() {
   assertEquals('ab<wbr>cd<wbr>ef', insertWordBreaksBasic('abcdef', 2));
   assertEquals(
       'a<wbr>b<wbr>c<wbr>d<wbr>e<wbr>f', insertWordBreaksBasic('abcdef', 1));
-  assertEquals('ab\u0300<wbr>c\u0301<wbr>de<wbr>f',
+  assertEquals(
+      'ab\u0300<wbr>c\u0301<wbr>de<wbr>f',
       insertWordBreaksBasic('ab\u0300c\u0301def', 2));
 
   assertEquals(
@@ -263,23 +279,27 @@ function testInsertWordBreaksBasic() {
 
   // The word 'Internet' in Hindi.
   var hindiInternet = '\u0907\u0902\u091F\u0930\u0928\u0947\u091F';
-  assertEquals('The basic algorithm is not good enough to insert word ' +
-      'breaks into Hindi.',
+  assertEquals(
+      'The basic algorithm is not good enough to insert word ' +
+          'breaks into Hindi.',
       hindiInternet, insertWordBreaksBasic(hindiInternet, 2));
   // The word 'Internet' in Hindi broken into slashes.
-  assertEquals('Hindi can have word breaks inserted between slashes',
+  assertEquals(
+      'Hindi can have word breaks inserted between slashes',
       hindiInternet + '<wbr>/' + hindiInternet + '<wbr>.' + hindiInternet,
-      insertWordBreaksBasic(hindiInternet + '/' + hindiInternet + '.' +
-          hindiInternet, 2));
+      insertWordBreaksBasic(
+          hindiInternet + '/' + hindiInternet + '.' + hindiInternet, 2));
 }
 
 function testWordBreaksWorking() {
   var text = goog.string.repeat('test', 20);
   var textWbr = goog.string.repeat('test' + goog.format.WORD_BREAK_HTML, 20);
 
-  var overflowEl = goog.dom.createDom(goog.dom.TagName.DIV,
+  var overflowEl = goog.dom.createDom(
+      goog.dom.TagName.DIV,
       {'style': 'width: 100px; overflow: hidden; margin 5px'});
-  var wbrEl = goog.dom.createDom(goog.dom.TagName.DIV,
+  var wbrEl = goog.dom.createDom(
+      goog.dom.TagName.DIV,
       {'style': 'width: 100px; overflow: hidden; margin-top: 15px'});
   goog.dom.appendChild(goog.global.document.body, overflowEl);
   goog.dom.appendChild(goog.global.document.body, wbrEl);
@@ -298,7 +318,7 @@ function testWordBreaksRemovedFromTextContent() {
   var wbrEl = goog.dom.createDom(goog.dom.TagName.DIV, null);
   wbrEl.innerHTML = textWbr;
 
-  assertEquals('text content should have wbr character removed', expectedText,
+  assertEquals(
+      'text content should have wbr character removed', expectedText,
       goog.dom.getTextContent(wbrEl));
-
 }

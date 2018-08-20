@@ -26,6 +26,7 @@ goog.require('goog.debug');
 goog.require('goog.debug.Error');
 goog.require('goog.debug.ErrorHandler');
 goog.require('goog.debug.entryPointRegistry');
+goog.require('goog.debug.errorcontext');
 goog.require('goog.events');
 goog.require('goog.events.Event');
 goog.require('goog.events.EventTarget');
@@ -216,8 +217,8 @@ goog.debug.ErrorReporter.install = function(
  * @param {Object|goog.structs.Map=} opt_headers Map of headers to add to the
  *     request.
  */
-goog.debug.ErrorReporter.defaultXhrSender = function(uri, method, content,
-    opt_headers) {
+goog.debug.ErrorReporter.defaultXhrSender = function(
+    uri, method, content, opt_headers) {
   goog.net.XhrIo.send(uri, null, method, content, opt_headers);
 };
 
@@ -234,14 +235,12 @@ goog.debug.ErrorReporter.defaultXhrSender = function(uri, method, content,
  *     function or null if the entry point could not be protected.
  */
 goog.debug.ErrorReporter.prototype.protectAdditionalEntryPoint =
-    goog.debug.ErrorReporter.ALLOW_AUTO_PROTECT ?
-    function(fn) {
+    goog.debug.ErrorReporter.ALLOW_AUTO_PROTECT ? function(fn) {
       if (this.errorHandler_) {
         return this.errorHandler_.protectEntryPoint(fn);
       }
       return null;
-    } :
-    function(fn) {
+    } : function(fn) {
       goog.asserts.fail(
           'Cannot call protectAdditionalEntryPoint while ALLOW_AUTO_PROTECT ' +
           'is false.  If ALLOW_AUTO_PROTECT is false, the necessary ' +
@@ -264,8 +263,8 @@ if (goog.debug.ErrorReporter.ALLOW_AUTO_PROTECT) {
           goog.bind(this.handleException, this), false, null);
     } else {
       // "onerror" doesn't work with FF2 or Chrome
-      this.errorHandler_ = new goog.debug.ErrorHandler(
-          goog.bind(this.handleException, this));
+      this.errorHandler_ =
+          new goog.debug.ErrorHandler(goog.bind(this.handleException, this));
 
       this.errorHandler_.protectWindowSetTimeout();
       this.errorHandler_.protectWindowSetInterval();
@@ -281,8 +280,8 @@ if (goog.debug.ErrorReporter.ALLOW_AUTO_PROTECT) {
  * @param {Object|goog.structs.Map} loggingHeaders Extra headers to send
  *     to the logging URL.
  */
-goog.debug.ErrorReporter.prototype.setLoggingHeaders =
-    function(loggingHeaders) {
+goog.debug.ErrorReporter.prototype.setLoggingHeaders = function(
+    loggingHeaders) {
   this.extraHeaders_ = loggingHeaders;
 };
 
@@ -308,18 +307,24 @@ goog.debug.ErrorReporter.prototype.setXhrSender = function(xhrSender) {
  * @param {!Object<string, string>=} opt_context Context values to optionally
  *     include in the error report.
  */
-goog.debug.ErrorReporter.prototype.handleException = function(e,
-    opt_context) {
-  var error = /** @type {!Error} */ (goog.debug.normalizeErrorObject(e));
-
+goog.debug.ErrorReporter.prototype.handleException = function(e, opt_context) {
   // Construct the context, possibly from the one provided in the argument, and
   // pass it to the context provider if there is one.
   var context = opt_context ? goog.object.clone(opt_context) : {};
+  if (e instanceof Error) {
+    goog.object.extend(
+        context,
+        goog.debug.errorcontext.getErrorContext(/** @type {!Error} */ (e)));
+  }
+
+  var error = /** @type {!Error} */ (goog.debug.normalizeErrorObject(e));
+
   if (this.contextProvider_) {
     try {
       this.contextProvider_(error, context);
     } catch (err) {
-      goog.log.error(goog.debug.ErrorReporter.logger_,
+      goog.log.error(
+          goog.debug.ErrorReporter.logger_,
           'Context provider threw an exception: ' + err.message);
     }
   }
@@ -328,8 +333,8 @@ goog.debug.ErrorReporter.prototype.handleException = function(e,
   // some room for the rest of the URL.
   var message = error.message.substring(0, 1900);
   if (!(e instanceof goog.debug.Error) || e.reportErrorToServer) {
-    this.sendErrorReport(message, error.fileName, error.lineNumber, error.stack,
-        context);
+    this.sendErrorReport(
+        message, error.fileName, error.lineNumber, error.stack, context);
   }
 
   try {
@@ -352,16 +357,16 @@ goog.debug.ErrorReporter.prototype.handleException = function(e,
  * @param {!Object<string, string>=} opt_context Context information to include
  *     in the request.
  */
-goog.debug.ErrorReporter.prototype.sendErrorReport =
-    function(message, fileName, line, opt_trace, opt_context) {
+goog.debug.ErrorReporter.prototype.sendErrorReport = function(
+    message, fileName, line, opt_trace, opt_context) {
   try {
     // Create the logging URL.
-    var requestUrl = goog.uri.utils.appendParams(this.handlerUrl_,
-        'script', fileName, 'error', message, 'line', line);
+    var requestUrl = goog.uri.utils.appendParams(
+        this.handlerUrl_, 'script', fileName, 'error', message, 'line', line);
 
     if (!goog.object.isEmpty(this.additionalArguments_)) {
-      requestUrl = goog.uri.utils.appendParamsFromMap(requestUrl,
-          this.additionalArguments_);
+      requestUrl = goog.uri.utils.appendParamsFromMap(
+          requestUrl, this.additionalArguments_);
     }
 
     var queryMap = {};
@@ -386,11 +391,9 @@ goog.debug.ErrorReporter.prototype.sendErrorReport =
     this.xhrSender_(requestUrl, 'POST', queryData, this.extraHeaders_);
   } catch (e) {
     var logMessage = goog.string.buildString(
-        'Error occurred in sending an error report.\n\n',
-        'script:', fileName, '\n',
-        'line:', line, '\n',
-        'error:', message, '\n',
-        'trace:', opt_trace);
+        'Error occurred in sending an error report.\n\n', 'script:', fileName,
+        '\n', 'line:', line, '\n', 'error:', message, '\n', 'trace:',
+        opt_trace);
     goog.log.info(goog.debug.ErrorReporter.logger_, logMessage);
   }
 };
@@ -410,7 +413,8 @@ goog.debug.ErrorReporter.prototype.setContextPrefix = function(prefix) {
  *     null to prevent truncation.  The limit must be >= 0.
  */
 goog.debug.ErrorReporter.prototype.setTruncationLimit = function(limit) {
-  goog.asserts.assert(!goog.isNumber(limit) || limit >= 0,
+  goog.asserts.assert(
+      !goog.isNumber(limit) || limit >= 0,
       'Body limit must be valid number >= 0 or null');
   this.truncationLimit_ = limit;
 };

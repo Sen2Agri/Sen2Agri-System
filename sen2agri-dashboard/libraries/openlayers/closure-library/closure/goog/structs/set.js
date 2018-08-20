@@ -47,6 +47,7 @@ goog.require('goog.structs.Map');
  * @implements {goog.structs.Collection<T>}
  * @final
  * @template T
+ * @deprecated This type is misleading: use ES6 Set instead.
  */
 goog.structs.Set = function(opt_values) {
   this.map_ = new goog.structs.Map;
@@ -263,9 +264,8 @@ goog.structs.Set.prototype.isSubsetOf = function(col) {
     // O(1) time instead of O(n) time.
     col = new goog.structs.Set(col);
   }
-  return goog.structs.every(this, function(value) {
-    return goog.structs.contains(col, value);
-  });
+  return goog.structs.every(
+      this, function(value) { return goog.structs.contains(col, value); });
 };
 
 

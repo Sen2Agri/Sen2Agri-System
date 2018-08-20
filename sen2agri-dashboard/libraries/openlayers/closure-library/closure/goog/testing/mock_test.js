@@ -23,8 +23,7 @@ goog.require('goog.testing.MockExpectation');
 goog.require('goog.testing.jsunit');
 
 // The object that we will be mocking
-var RealObject = function() {
-};
+var RealObject = function() {};
 
 RealObject.prototype.a = function() {
   fail('real object should never be called');
@@ -103,9 +102,8 @@ function testRegisterArgumentListVerifier() {
 
   // Simple matcher that return true if all args are === equivalent.
   mock.$registerArgumentListVerifier('a', function(expectedArgs, args) {
-    return goog.array.equals(expectedArgs, args, function(a, b) {
-      return (a === b);
-    });
+    return goog.array.equals(
+        expectedArgs, args, function(a, b) { return (a === b); });
   });
 
   // test single string arg
@@ -144,17 +142,13 @@ function testRegisterArgumentListVerifier() {
 function testCreateProxy() {
   mock = new goog.testing.Mock(RealObject, false, true);
   assertTrue(mock.$proxy instanceof RealObject);
-  assertThrows(function() {
-    new goog.testing.Mock(RealObject, true, true);
-  });
-  assertThrows(function() {
-    new goog.testing.Mock(1, false, true);
-  });
+  assertThrows(function() { new goog.testing.Mock(RealObject, true, true); });
+  assertThrows(function() { new goog.testing.Mock(1, false, true); });
 }
 
 
 function testValidConstructorArgument() {
-  var someNamespace = { };
+  var someNamespace = {};
   assertThrows(function() {
     new goog.testing.Mock(someNamespace.RealObjectWithTypo);
   });
@@ -163,31 +157,28 @@ function testValidConstructorArgument() {
 
 function testArgumentsAsString() {
   assertEquals('()', mock.$argumentsAsString([]));
-  assertEquals('(string, number, object, null)',
-               mock.$argumentsAsString(['red', 1, {}, null]));
+  assertEquals(
+      '(string, number, object, null)',
+      mock.$argumentsAsString(['red', 1, {}, null]));
 }
 
 
 function testThrowCallExceptionBadArgs() {
   var msg;
-  mock.$throwException = function(m) {
-    msg = m;
-  };
+  mock.$throwException = function(m) { msg = m; };
 
-  mock.$throwCallException(
-      'fn1', ['b'],
-      { name: 'fn1',
-        argumentList: ['c'],
-        getErrorMessage: function() { return ''; } });
+  mock.$throwCallException('fn1', ['b'], {
+    name: 'fn1',
+    argumentList: ['c'],
+    getErrorMessage: function() { return ''; }
+  });
   assertContains(
       'Bad arguments to fn1().\nActual: (string)\nExpected: (string)', msg);
 }
 
 function testThrowCallExceptionUnexpected() {
   var msg;
-  mock.$throwException = function(m) {
-    msg = m;
-  };
+  mock.$throwException = function(m) { msg = m; };
 
   mock.$throwCallException('fn1', ['b']);
   assertEquals('Unexpected call to fn1(string).', msg);
@@ -195,18 +186,17 @@ function testThrowCallExceptionUnexpected() {
 
 function testThrowCallExceptionUnexpectedWithNext() {
   var msg;
-  mock.$throwException = function(m) {
-    msg = m;
-  };
+  mock.$throwException = function(m) { msg = m; };
 
-  mock.$throwCallException(
-      'fn1', ['b'],
-      { name: 'fn2',
-        argumentList: [3],
-        getErrorMessage: function() { return ''; } });
+  mock.$throwCallException('fn1', ['b'], {
+    name: 'fn2',
+    argumentList: [3],
+    getErrorMessage: function() { return ''; }
+  });
   assertEquals(
       'Unexpected call to fn1(string).\n' +
-      'Next expected call was to fn2(number)', msg);
+          'Next expected call was to fn2(number)',
+      msg);
 }
 
 // This tests that base Object functions which are not enumerable in IE can
@@ -256,5 +246,103 @@ function testBindNonEnumerableFunctions() {
   assertEquals('toLocaleString', mock.toLocaleString());
   assertEquals('toString', mock.toString());
   assertEquals('valueOf', mock.valueOf());
+  mockControl.$verifyAll();
+}
+
+function testMockInheritedMethods() {
+  var SubType = function() {};
+  goog.inherits(SubType, RealObject);
+  SubType.prototype.c = function() {
+    fail('real object should never be called');
+  };
+
+  var mockControl = new goog.testing.MockControl();
+  var mock = mockControl.createLooseMock(SubType);
+  mock.a().$returns('a');
+  mock.b().$returns('b');
+  mock.c().$returns('c');
+
+  // Execute and assert that the Mock is working correctly.
+  mockControl.$replayAll();
+  assertEquals('a', mock.a());
+  assertEquals('b', mock.b());
+  assertEquals('c', mock.c());
+  mockControl.$verifyAll();
+}
+
+function testMockStaticMethods() {
+  var SomeType = function() {};
+  SomeType.staticMethod = function() {
+    fail('real object should never be called');
+  };
+
+  var mockControl = new goog.testing.MockControl();
+  var mock = mockControl.createLooseMock(
+      SomeType, false /* opt_ignoreUnexpectedCalls */,
+      true /* opt_mockStaticMethods */);
+  mock.staticMethod().$returns('staticMethod');
+
+  // Execute and assert that the Mock is working correctly.
+  mockControl.$replayAll();
+  assertEquals('staticMethod', mock.staticMethod());
+  mockControl.$verifyAll();
+}
+
+function testMockEs6ClassMethods() {
+  // Create an ES6 class via eval so we can bail out if it's a syntax error in
+  // browsers that don't support ES6 classes.
+  try {
+    eval(
+        'var Foo = class {' +
+        '  a() {' +
+        '    fail(\'real object should never be called\');' +
+        '  }' +
+        '}');
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      return;
+    }
+  }
+
+  var mockControl = new goog.testing.MockControl();
+  var mock = mockControl.createLooseMock(Foo);
+  mock.a().$returns('a');
+
+  // Execute and assert that the Mock is working correctly.
+  mockControl.$replayAll();
+  assertEquals('a', mock.a());
+  mockControl.$verifyAll();
+}
+
+function testMockEs6ClassStaticMethods() {
+  // Create an ES6 class via eval so we can bail out if it's a syntax error in
+  // browsers that don't support ES6 classes.
+  try {
+    eval(
+        'var Foo = class {' +
+        '  static a() {' +
+        '    fail(\'real object should never be called\');' +
+        '  }' +
+        '  static apply() {' +
+        '    fail(\'real object should never be called\');' +
+        '  }' +
+        '}');
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      return;
+    }
+  }
+
+  var mockControl = new goog.testing.MockControl();
+  var mock = mockControl.createLooseMock(
+      Foo, false /* opt_ignoreUnexpectedCalls */,
+      true /* opt_mockStaticMethods */);
+  mock.a().$returns('a');
+  mock.apply().$returns('apply');
+
+  // Execute and assert that the Mock is working correctly.
+  mockControl.$replayAll();
+  assertEquals('a', mock.a());
+  assertEquals('apply', mock.apply());
   mockControl.$verifyAll();
 }

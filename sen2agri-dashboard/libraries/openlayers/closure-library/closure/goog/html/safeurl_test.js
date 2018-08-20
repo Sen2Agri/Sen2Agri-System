@@ -19,13 +19,14 @@
 goog.provide('goog.html.safeUrlTest');
 
 goog.require('goog.html.SafeUrl');
+goog.require('goog.html.TrustedResourceUrl');
 goog.require('goog.i18n.bidi.Dir');
+goog.require('goog.object');
 goog.require('goog.string.Const');
 goog.require('goog.testing.jsunit');
 goog.require('goog.userAgent');
 
 goog.setTestOnly('goog.html.safeUrlTest');
-
 
 
 function testSafeUrl() {
@@ -49,6 +50,7 @@ function testSafeUrlFromBlob_withSafeType() {
   if (isIE9OrLower()) {
     return;
   }
+  assertBlobTypeIsSafe('audio/ogg', true);
   assertBlobTypeIsSafe('image/png', true);
   assertBlobTypeIsSafe('iMage/pNg', true);
   assertBlobTypeIsSafe('video/mpeg', true);
@@ -97,14 +99,13 @@ function assertBlobTypeIsSafe(type, isSafe) {
 
 
 function testSafeUrlFromDataUrl_withSafeType() {
-  if (isIE9OrLower()) {
-    return;
-  }
-  assertDataUrlIsSafe('data:image/png;base64,' +
-      'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=',
+  assertDataUrlIsSafe(
+      'data:image/png;base64,' +
+          'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=',
       true);
   assertDataUrlIsSafe('dATa:iMage/pNg;bASe64,abc===', true);
   assertDataUrlIsSafe('data:image/webp;base64,abc===', true);
+  assertDataUrlIsSafe('data:audio/ogg;base64,abc', true);
   assertDataUrlIsSafe('data:video/mpeg;base64,abc', true);
   assertDataUrlIsSafe('data:video/ogg;base64,z=', true);
   assertDataUrlIsSafe('data:video/mp4;base64,z=', true);
@@ -114,18 +115,18 @@ function testSafeUrlFromDataUrl_withSafeType() {
 
 
 function testSafeUrlFromDataUrl_withUnsafeType() {
-  if (isIE9OrLower()) {
-    return;
-  }
   assertDataUrlIsSafe('', false);
   assertDataUrlIsSafe(':', false);
   assertDataUrlIsSafe('data:', false);
   assertDataUrlIsSafe('not-data:image/png;base64,z=', false);
   assertDataUrlIsSafe(' data:image/png;base64,z=', false);
+  assertDataUrlIsSafe('data:image/;base64,z=', false);
   assertDataUrlIsSafe('data:image/png;base64,z= ', false);
   assertDataUrlIsSafe('data:ximage/png', false);
   assertDataUrlIsSafe('data:ximage/png;base64,z=', false);
   assertDataUrlIsSafe('data:image/pngx;base64,z=', false);
+  assertDataUrlIsSafe('data:audio/whatever;base64,z=', false);
+  assertDataUrlIsSafe('data:audio/;base64,z=', false);
   assertDataUrlIsSafe('data:video/whatever;base64,z=', false);
   assertDataUrlIsSafe('data:video/;base64,z=', false);
   assertDataUrlIsSafe('data:image/png;base64,', false);
@@ -135,6 +136,8 @@ function testSafeUrlFromDataUrl_withUnsafeType() {
   assertDataUrlIsSafe('data:video/mp4;baze64,z=', false);
   assertDataUrlIsSafe('data:video/mp4;,z=', false);
   assertDataUrlIsSafe('data:text/html,sdfsdfsdfsfsdfs;base64,anything', false);
+  // Valid base64 image URL, but with disallowed mime-type.
+  assertDataUrlIsSafe('data:image/svg+xml;base64,abc', false);
 }
 
 
@@ -147,22 +150,65 @@ function testSafeUrlFromDataUrl_withUnsafeType() {
  */
 function assertDataUrlIsSafe(url, isSafe) {
   var safeUrl = goog.html.SafeUrl.fromDataUrl(url);
-  assertEquals(isSafe ? url : goog.html.SafeUrl.INNOCUOUS_STRING,
+  assertEquals(
+      isSafe ? url : goog.html.SafeUrl.INNOCUOUS_STRING,
       goog.html.SafeUrl.unwrap(safeUrl));
+}
+
+
+
+function testSafeUrlFromTelUrl_withSafeType() {
+  assertTelUrlIsSafe('tEl:+1(23)129-29192A.ABC#;eXt=29', true);
+  assertTelUrlIsSafe('tEL:123;randmomparam=123', true);
+}
+
+
+function testSafeUrlFromTelUrl_withUnsafeType() {
+  assertTelUrlIsSafe('', false);
+  assertTelUrlIsSafe(':', false);
+  assertTelUrlIsSafe('tell:', false);
+  assertTelUrlIsSafe('not-tel:+1', false);
+  assertTelUrlIsSafe(' tel:+1', false);
+}
+
+
+/**
+ * Tests creating a SafeUrl from a tel URL, asserting whether or not the
+ * SafeUrl returned is innocuous or not depending on the given boolean.
+ * @param {string} url URL to test.
+ * @param {boolean} isSafe Whether the given URL type should be considered safe
+ *     by {@link SafeUrl.fromTelUrl}.
+ */
+function assertTelUrlIsSafe(url, isSafe) {
+  var safeUrl = goog.html.SafeUrl.fromTelUrl(url);
+  assertEquals(
+      isSafe ? url : goog.html.SafeUrl.INNOCUOUS_STRING,
+      goog.html.SafeUrl.unwrap(safeUrl));
+}
+
+
+function testFromTrustedResourceUrl() {
+  var url = goog.string.Const.from('test');
+  var trustedResourceUrl = goog.html.TrustedResourceUrl.fromConstant(url);
+  var safeUrl = goog.html.SafeUrl.fromTrustedResourceUrl(trustedResourceUrl);
+  assertEquals(
+      goog.string.Const.unwrap(url), goog.html.SafeUrl.unwrap(safeUrl));
 }
 
 
 /** @suppress {checkTypes} */
 function testUnwrap() {
+  var privateFieldName = 'privateDoNotAccessOrElseSafeHtmlWrappedValue_';
+  var markerFieldName = 'SAFE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_';
+  var propNames = goog.object.getKeys(goog.html.SafeUrl.sanitize(''));
+  assertContains(privateFieldName, propNames);
+  assertContains(markerFieldName, propNames);
   var evil = {};
-  evil.safeUrlValueWithSecurityContract_googHtmlSecurityPrivate_ =
-      '<script>evil()</script';
-  evil.SAFE_URL_TYPE_MARKER_GOOG_HTML_SECURITY_PRIVATE_ = {};
+  evil[privateFieldName] = 'javascript:evil()';
+  evil[markerFieldName] = {};
 
-  var exception = assertThrows(function() {
-    goog.html.SafeUrl.unwrap(evil);
-  });
-  assertTrue(exception.message.indexOf('expected object of type SafeUrl') > 0);
+  var exception = assertThrows(function() { goog.html.SafeUrl.unwrap(evil); });
+  assertContains('expected object of type SafeUrl', exception.message);
 }
 
 
@@ -176,8 +222,10 @@ function assertGoodUrl(url) {
     expected = url.getTypedStringValue();
   }
   var safeUrl = goog.html.SafeUrl.sanitize(url);
+  var safeUrlAssertedUnchanged = goog.html.SafeUrl.sanitizeAssertUnchanged(url);
   var extracted = goog.html.SafeUrl.unwrap(safeUrl);
   assertEquals(expected, extracted);
+  assertEquals(expected, goog.html.SafeUrl.unwrap(safeUrlAssertedUnchanged));
 }
 
 
@@ -188,8 +236,10 @@ function assertGoodUrl(url) {
 function assertBadUrl(url) {
   assertEquals(
       goog.html.SafeUrl.INNOCUOUS_STRING,
-      goog.html.SafeUrl.unwrap(
-          goog.html.SafeUrl.sanitize(url)));
+      goog.html.SafeUrl.unwrap(goog.html.SafeUrl.sanitize(url)));
+  assertThrows(function() {
+    goog.html.SafeUrl.sanitizeAssertUnchanged(url);
+  });
 }
 
 
@@ -215,8 +265,8 @@ function testSafeUrlSanitize_validatesUrl() {
   assertGoodUrl('path?foo=bar#baz');
   assertGoodUrl('p//ath');
   assertGoodUrl('p//ath?foo=bar#baz');
-  // Restricted characters ('&', ':', \') after [/?#].
-  assertGoodUrl('/&');
+  assertGoodUrl('#baz');
+  // Restricted character ':' after [/?#].
   assertGoodUrl('?:');
 
   // .sanitize() works on program constants.
@@ -226,8 +276,7 @@ function testSafeUrlSanitize_validatesUrl() {
   assertBadUrl('javascript:evil();');
   assertBadUrl('javascript:evil();//\nhttp://good.com/');
   assertBadUrl('data:blah');
-  // Restricted characters before [/?#].
-  assertBadUrl('&');
+  // Restricted character before [/?#].
   assertBadUrl(':');
   // '\' is not treated like '/': no restricted characters allowed after it.
   assertBadUrl('\\:');

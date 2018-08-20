@@ -16,35 +16,15 @@ goog.provide('goog.debugTest');
 goog.setTestOnly('goog.debugTest');
 
 goog.require('goog.debug');
-goog.require('goog.html.SafeHtml');
+goog.require('goog.debug.errorcontext');
 goog.require('goog.structs.Set');
 goog.require('goog.testing.jsunit');
-
-function testExposeException() {
-  var expected =
-      'Message: message&quot;<br>' +
-      'Url: <a href="view-source:http://fileName&quot;" ' +
-          'target="_new">http://fileName&quot;</a><br>' +
-      'Line: lineNumber&quot;<br><br>' +
-      'Browser stack:<br>' +
-      'stack&quot;-&gt; [end]';
-  var error = {
-    message: 'message"',
-    fileName: 'http://fileName"',
-    lineNumber: 'lineNumber"',
-    stack: 'stack"'
-  };
-  var actualHtml = goog.debug.exposeExceptionAsHtml(error);
-  var actual = goog.html.SafeHtml.unwrap(actualHtml);
-  actual = actual.substring(0, expected.length);
-  assertEquals(expected, actual);
-}
 
 function testMakeWhitespaceVisible() {
   assertEquals(
       'Hello[_][_]World![r][n]\n' +
-      '[r][n]\n' +
-      '[f][f]I[_]am[t][t]here![r][n]\n',
+          '[r][n]\n' +
+          '[f][f]I[_]am[t][t]here![r][n]\n',
       goog.debug.makeWhitespaceVisible(
           'Hello  World!\r\n\r\n\f\fI am\t\there!\r\n'));
 }
@@ -69,17 +49,14 @@ function testGetFunctionName() {
       'goog.debug.getFunctionName',
       goog.debug.getFunctionName(goog.debug.getFunctionName));
   assertEquals(
-      'goog.structs.Set',
-      goog.debug.getFunctionName(goog.structs.Set));
+      'goog.structs.Set', goog.debug.getFunctionName(goog.structs.Set));
   var set = new goog.structs.Set();
   assertEquals(
-      'goog.structs.Set.getCount',
-      goog.debug.getFunctionName(set.getCount));
+      'goog.structs.Set.getCount', goog.debug.getFunctionName(set.getCount));
 
   // This function is matched by the fallback heuristic.
   assertEquals(
-      'testGetFunctionName',
-      goog.debug.getFunctionName(testGetFunctionName));
+      'testGetFunctionName', goog.debug.getFunctionName(testGetFunctionName));
 
   goog.debug.setFunctionResolver(null);
 }
@@ -92,22 +69,74 @@ function testGetFunctionName() {
  * @param {string} text The text string to search within.
  */
 function assertContainsSubstring(substring, text) {
-  assertNotEquals('Could not find "' + substring + '" in "' + text + '"',
-      -1, text.search(substring));
+  assertNotEquals(
+      'Could not find "' + substring + '" in "' + text + '"', -1,
+      text.search(substring));
 }
 
 
 function testDeepExpose() {
   var a = {};
   var b = {};
+  var c = {};
   a.ancestor = a;
   a.otherObject = b;
   a.otherObjectAgain = b;
+  b.nextLevel = c;
+  // Add Uid to a before deepExpose.
+  var aUid = goog.getUid(a);
 
   var deepExpose = goog.debug.deepExpose(a);
 
-  assertContainsSubstring('ancestor = ... reference loop detected ...',
-                          deepExpose);
+  assertContainsSubstring(
+      'ancestor = ... reference loop detected .id=' + aUid + '. ...',
+      deepExpose);
 
   assertContainsSubstring('otherObjectAgain = {', deepExpose);
+
+  // Make sure we've reset Uids after the deepExpose call.
+  assert(goog.hasUid(a));
+  assertFalse(goog.hasUid(b));
+  assertFalse(goog.hasUid(c));
+}
+
+
+function testEnhanceErrorWithContext() {
+  var err = 'abc';
+  var context = {firstKey: 'first', secondKey: 'another key'};
+  var errorWithContext = goog.debug.enhanceErrorWithContext(err, context);
+  assertObjectEquals(
+      context, goog.debug.errorcontext.getErrorContext(errorWithContext));
+}
+
+
+function testEnhanceErrorWithContext_combinedContext() {
+  var err = new Error('abc');
+  goog.debug.errorcontext.addErrorContext(err, 'a', '123');
+  var context = {b: '456', c: '789'};
+  var errorWithContext = goog.debug.enhanceErrorWithContext(err, context);
+  assertObjectEquals(
+      {a: '123', b: '456', c: '789'},
+      goog.debug.errorcontext.getErrorContext(errorWithContext));
+}
+
+
+function testFreeze_nonDebug() {
+  if (goog.DEBUG && typeof Object.freeze == 'function') return;
+  var a = {};
+  assertEquals(a, goog.debug.freeze(a));
+  a.foo = 42;
+  assertEquals(42, a.foo);
+}
+
+
+function testFreeze_debug() {
+  if (goog.DEBUG || typeof Object.freeze != 'function') return;
+  var a = {};
+  assertEquals(a, goog.debug.freeze(a));
+  try {
+    a.foo = 42;
+  } catch (expectedInStrictMode) {
+  }
+  assertUndefined(a.foo);
 }

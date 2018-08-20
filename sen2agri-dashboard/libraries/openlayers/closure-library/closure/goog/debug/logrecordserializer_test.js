@@ -24,22 +24,9 @@ var NOW = 1311484654000;
 var SEQ = 1231;
 
 function testBasic() {
-  var rec = new goog.debug.LogRecord(goog.debug.Logger.Level.FINE,
-      'An awesome message', 'logger.name', NOW, SEQ);
-  var thawed = goog.debug.logRecordSerializer.parse(
-      goog.debug.logRecordSerializer.serialize(rec));
-
-  assertEquals(goog.debug.Logger.Level.FINE, thawed.getLevel());
-  assertEquals('An awesome message', thawed.getMessage());
-  assertEquals('logger.name', thawed.getLoggerName());
-  assertEquals(NOW, thawed.getMillis());
-  assertEquals(SEQ, thawed.getSequenceNumber());
-  assertNull(thawed.getException());
-}
-
-function testUnsafeParse() {
-  var rec = new goog.debug.LogRecord(goog.debug.Logger.Level.FINE,
-      'An awesome message', 'logger.name', NOW, SEQ);
+  var rec = new goog.debug.LogRecord(
+      goog.debug.Logger.Level.FINE, 'An awesome message', 'logger.name', NOW,
+      SEQ);
   var thawed = goog.debug.logRecordSerializer.parse(
       goog.debug.logRecordSerializer.serialize(rec));
 
@@ -53,18 +40,19 @@ function testUnsafeParse() {
 
 function testWithException() {
   var err = new Error('it broke!');
-  var rec = new goog.debug.LogRecord(goog.debug.Logger.Level.FINE,
-      'An awesome message', 'logger.name', NOW, SEQ);
+  var rec = new goog.debug.LogRecord(
+      goog.debug.Logger.Level.FINE, 'An awesome message', 'logger.name', NOW,
+      SEQ);
   rec.setException(err);
-  var thawed = goog.debug.logRecordSerializer.unsafeParse(
+  var thawed = goog.debug.logRecordSerializer.parse(
       goog.debug.logRecordSerializer.serialize(rec));
   assertEquals(err.message, thawed.getException().message);
 }
 
 function testCustomLogLevel() {
   var rec = new goog.debug.LogRecord(
-      new goog.debug.Logger.Level('CUSTOM', -1),
-      'An awesome message', 'logger.name', NOW, SEQ);
+      new goog.debug.Logger.Level('CUSTOM', -1), 'An awesome message',
+      'logger.name', NOW, SEQ);
   var thawed = goog.debug.logRecordSerializer.parse(
       goog.debug.logRecordSerializer.serialize(rec));
 
@@ -74,8 +62,8 @@ function testCustomLogLevel() {
 
 function testWeirdLogLevel() {
   var rec = new goog.debug.LogRecord(
-      new goog.debug.Logger.Level('FINE', -1),
-      'An awesome message', 'logger.name', NOW, SEQ);
+      new goog.debug.Logger.Level('FINE', -1), 'An awesome message',
+      'logger.name', NOW, SEQ);
   var thawed = goog.debug.logRecordSerializer.parse(
       goog.debug.logRecordSerializer.serialize(rec));
 

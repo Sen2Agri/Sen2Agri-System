@@ -1,4 +1,4 @@
-var serviceUrl = 'http://services.arcgis.com/rOo16HdIMeOBI4Mb/arcgis/rest/' +
+var serviceUrl = 'https://services.arcgis.com/rOo16HdIMeOBI4Mb/arcgis/rest/' +
     'services/PDX_Pedestrian_Districts/FeatureServer/';
 var layer = '0';
 
@@ -37,9 +37,18 @@ var vector = new ol.layer.Vector({
   source: vectorSource
 });
 
+var raster = new ol.layer.Tile({
+  source: new ol.source.XYZ({
+    attributions: 'Tiles © <a href="https://services.arcgisonline.com/ArcGIS/' +
+        'rest/services/World_Topo_Map/MapServer">ArcGIS</a>',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/' +
+        'World_Topo_Map/MapServer/tile/{z}/{y}/{x}'
+  })
+});
+
 var draw = new ol.interaction.Draw({
   source: vectorSource,
-  type: /** @type {ol.geom.GeometryType} */ ('Polygon')
+  type: 'Polygon'
 });
 
 var select = new ol.interaction.Select();
@@ -51,14 +60,23 @@ var modify = new ol.interaction.Modify({
 });
 modify.setActive(false);
 
+var map = new ol.Map({
+  interactions: ol.interaction.defaults().extend([draw, select, modify]),
+  layers: [raster, vector],
+  target: document.getElementById('map'),
+  view: new ol.View({
+    center: ol.proj.transform([-122.619, 45.512], 'EPSG:4326', 'EPSG:3857'),
+    zoom: 12
+  })
+});
+
 var typeSelect = document.getElementById('type');
 
 
 /**
  * Let user change the interaction type.
- * @param {Event} e Change event.
  */
-typeSelect.onchange = function(e) {
+typeSelect.onchange = function() {
   draw.setActive(typeSelect.value === 'DRAW');
   select.setActive(typeSelect.value === 'MODIFY');
   modify.setActive(typeSelect.value === 'MODIFY');
@@ -81,7 +99,7 @@ selected.on('remove', function(evt) {
       featureProjection: map.getView().getProjection()
     }) + ']';
     var url = serviceUrl + layer + '/updateFeatures';
-    $.post(url, { f: 'json', features: payload }).done(function(data) {
+    $.post(url, {f: 'json', features: payload}).done(function(data) {
       var result = JSON.parse(data);
       if (result.updateResults && result.updateResults.length > 0) {
         if (result.updateResults[0].success !== true) {
@@ -101,7 +119,7 @@ draw.on('drawend', function(evt) {
     featureProjection: map.getView().getProjection()
   }) + ']';
   var url = serviceUrl + layer + '/addFeatures';
-  $.post(url, { f: 'json', features: payload }).done(function(data) {
+  $.post(url, {f: 'json', features: payload}).done(function(data) {
     var result = JSON.parse(data);
     if (result.addResults && result.addResults.length > 0) {
       if (result.addResults[0].success === true) {
@@ -113,27 +131,4 @@ draw.on('drawend', function(evt) {
       }
     }
   });
-});
-
-var attribution = new ol.Attribution({
-  html: 'Tiles &copy; <a href="http://services.arcgisonline.com/ArcGIS/' +
-      'rest/services/World_Topo_Map/MapServer">ArcGIS</a>'
-});
-
-var raster = new ol.layer.Tile({
-  source: new ol.source.XYZ({
-    attributions: [attribution],
-    url: 'http://server.arcgisonline.com/ArcGIS/rest/services/' +
-        'World_Topo_Map/MapServer/tile/{z}/{y}/{x}'
-  })
-});
-
-var map = new ol.Map({
-  interactions: ol.interaction.defaults().extend([draw, select, modify]),
-  layers: [raster, vector],
-  target: document.getElementById('map'),
-  view: new ol.View({
-    center: ol.proj.transform([-122.619, 45.512], 'EPSG:4326', 'EPSG:3857'),
-    zoom: 12
-  })
 });
