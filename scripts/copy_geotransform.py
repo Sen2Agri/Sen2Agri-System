@@ -16,5 +16,5 @@ if not source_ds:
 if not target_ds:
     raise Exception("Could not open target dataset", args.target)
 
+target_ds.SetProjection(source_ds.GetProjectionRef())
 target_ds.SetGeoTransform(source_ds.GetGeoTransform())
-target_ds.Update()
