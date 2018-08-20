@@ -69,6 +69,8 @@ def main():
                 print("Feature with no geometry")
             if not args.fix:
                 status = ERR_BAD_GEOMETRY
+            else:
+                layer.DeleteFeature(feature.GetFID())
             continue
         elif not geometry.IsValid():
             if id_field_idx is not None:
@@ -80,7 +82,7 @@ def main():
             bad = True
             if args.fix:
                 geometry = geometry.Buffer(0)
-                if geometry.IsValid():
+                if geometry.IsValid() and not geometry.IsEmpty():
                     feature.SetGeometryDirectly(geometry)
                     layer.SetFeature(feature)
 
@@ -90,6 +92,9 @@ def main():
                         print("Fixed feature")
 
                     bad = False
+                else:
+                    print("Unable to fix feature")
+                    layer.DeleteFeature(feature.GetFID())
 
             if bad:
                 status = ERR_BAD_GEOMETRY
@@ -105,6 +110,9 @@ def main():
             else:
                 union.AddGeometry(geometry_clone)
 
+    if args.fix:
+        layer.SyncToDisk()
+
     if not args.bounds:
         for f0 in features:
             g0 = f0.GetGeometryRef()
@@ -117,7 +125,7 @@ def main():
                     intersection = g0.Intersection(g1)
                 else:
                     intersection = None
-                if intersection is not None and intersection.Area() > 0:
+                if intersection is not None and not intersection.IsEmpty() and intersection.Area() > 0:
                     if code_field_idx is not None:
                         c0, c1 = f0.GetField(
                             code_field_idx), f1.GetField(code_field_idx)
