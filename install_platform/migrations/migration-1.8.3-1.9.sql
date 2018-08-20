@@ -736,6 +736,63 @@ begin
                 execute _statement;
             end if;
 
+			
+
+			if not exists (
+				select *
+				from pg_attribute
+				where attrelid = 'user' :: regclass
+				and attnum > 0
+				and attname = 'site_id'
+				and not attisdropped
+			) then  
+				_statement := $str$
+					alter table 'user' add column site_id integer[];
+					$str$;                     
+                raise notice '%', _statement;
+                execute _statement;
+			elsif (
+				select format_type(atttypid, atttypmod)
+				from pg_attribute
+				where attrelid = 'user' :: regclass
+				and attnum > 0
+				and attname = 'site_id'
+				and not attisdropped
+			) in ('smallint','integer') then
+				_statement := $str$			
+					alter table "user" drop constraint user_fk1;
+					alter table "user" alter column site_id drop default;
+					alter table "user" alter column site_id type integer[] 
+					using case when site_id is null then null else array[site_id]::integer[] end;
+					alter table "user" alter column password drop not null;
+				$str$;
+                raise notice '%', _statement;
+                execute _statement;
+			end if;
+			
+			_statement := $str$		
+				CREATE OR REPLACE FUNCTION sp_get_all_users()
+				RETURNS TABLE(user_id smallint, user_name character varying, email character varying, role_id smallint, role_name character varying, site_id integer[], site_name text) AS
+				$BODY$
+				BEGIN
+				RETURN QUERY 
+					SELECT u.id as user_id, 
+						u.login as user_name,
+						u. email,
+						u.role_id,
+						r.name as role_name, 
+						u.site_id,
+						(SELECT array_to_string(array_agg(name),', ') from site where id = ANY(u.site_id::int[]) ) as site_name
+					FROM "user" u 
+					INNER JOIN role r ON u.role_id = r.id;
+
+				END;
+				$BODY$
+				LANGUAGE plpgsql VOLATILE;
+				$str$;
+			raise notice '%', _statement;
+			execute _statement;
+			   
             _statement := 'update meta set version = ''1.9'';';
             raise notice '%', _statement;
             execute _statement;
