@@ -736,8 +736,6 @@ begin
                 execute _statement;
             end if;
 
-			
-
 			if not exists (
 				select *
 				from pg_attribute
@@ -793,6 +791,21 @@ begin
 			raise notice '%', _statement;
 			execute _statement;
 			   
+            if not exists (
+                select *
+                from pg_attribute
+                where attrelid = 'downloader_history' :: regclass
+                and attnum > 0
+                and attname = 'footprint'
+                and not attisdropped
+            ) then
+                _statement := $str$
+                    alter table downloader_history add column footprint geography;
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
             _statement := 'update meta set version = ''1.9'';';
             raise notice '%', _statement;
             execute _statement;
