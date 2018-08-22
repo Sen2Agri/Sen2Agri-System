@@ -1,7 +1,8 @@
 create or replace function sp_mark_l1_tile_failed(
     _downloader_history_id int,
     _tile_id text,
-    _reason text
+    _reason text,
+    _should_retry boolean
 )
 returns boolean
 as
@@ -14,7 +15,10 @@ begin
     update l1_tile_history
     set status_id = 2, -- failed
         status_timestamp = now(),
-        retry_count = retry_count + 1,
+        retry_count = case _should_retry
+            when true then retry_count + 1
+            else 3
+        end,
         failed_reason = _reason
     where (downloader_history_id, tile_id) = (_downloader_history_id, _tile_id);
 
