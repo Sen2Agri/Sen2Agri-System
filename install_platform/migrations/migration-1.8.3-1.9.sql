@@ -298,8 +298,8 @@ begin
                         BEGIN
                             q := $sql$
                             WITH
-                                product_type_names(id, name, description, row) AS (
-                                select id, name, description, row_number() over (order by description)
+                                product_type_names(id, name, description, row, is_raster) AS (
+                                select id, name, description, row_number() over (order by description), is_raster
                                 from product_type
                                 ),
                         $sql$;
@@ -310,7 +310,7 @@ begin
                                 select id, name, st_astext(geog), row_number() over (order by name)
                                 from site
                                 ),
-                            data(id, product, footprint, site_coord, product_type_id, satellite_id ) AS (
+                            data(id, product, footprint, site_coord, product_type_id, satellite_id, is_raster ) AS (
 
                                 SELECT
                                 P.id,
@@ -318,7 +318,8 @@ begin
                                 P.footprint,
                                 S.geog,
                                 PT.id,
-                                P.satellite_id
+                                P.satellite_id,
+								PT.is_raster
                                 $sql$;
                             ELSE
                             q := q || $sql$
@@ -809,7 +810,173 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
+			
+			
+			if not exists (
+				select *
+				from pg_attribute
+				where attrelid = 'config_metadata' :: regclass
+				and attnum > 0
+				and attname = 'is_site_visible'
+				and not attisdropped
+			) then  
+				_statement := $str$
+					alter table 'config_metadata' add column is_site_visible boolean NOT NULL DEFAULT false;
+					$str$;
+				raise notice '%', _statement;
+				execute _statement;
+			end if;
+			
+			
+			if not exists (
+				select *
+				from pg_attribute
+				where attrelid = 'config_metadata' :: regclass
+				and attnum > 0
+				and attname = 'label'
+				and not attisdropped
+			) then  
+				_statement := $str$
+					alter table 'config_metadata' add column label character varying;
+					$str$;
+				raise notice '%', _statement;
+				execute _statement;
+			end if;
+			
+			if not exists (
+				select *
+				from pg_attribute
+				where attrelid = 'config_metadata' :: regclass
+				and attnum > 0
+				and attname = 'values'
+				and not attisdropped
+			) then  
+				_statement := $str$
+					alter table 'config_metadata' add column values json;
+					$str$;
+				raise notice '%', _statement;
+				execute _statement;
+			end if;
 
+			_statement := $str$
+				UPDATE config_metadata
+				SET is_site_visible = true
+				WHERE
+					key in ('processor.l3a.weight.cloud.coarseresolution'
+					,'processor.l3a.weight.total.weightdatemin'
+					,'processor.l3a.weight.aot.maxaot'
+					,'processor.l3a.weight.aot.minweight'
+					,'processor.l3a.weight.aot.maxweight'
+					,'processor.l3a.weight.cloud.sigmasmall'
+					,'processor.l3a.weight.cloud.sigmalarge'
+					,'processor.l3a.half_synthesis'
+					,'processor.l3b.generate_models'
+					,'processor.l4a.random_seed'
+					,'processor.l4a.window'
+					,'processor.l4a.nbcomp'
+					,'processor.l4a.range-radius'
+					,'processor.l4a.erode-radius'
+					,'processor.l4a.mahalanobis-alpha'
+					,'processor.l4a.segmentation-spatial-radius'
+					,'processor.l4a.segmentation-minsize'
+					,'processor.l4a.classifier.rf.nbtrees'
+					,'processor.l4a.classifier.rf.max'
+					,'processor.l4a.classifier.rf.min'
+					,'processor.l4a.min-area'
+					,'processor.l4b.random_seed'
+					,'processor.l4b.classifier.rf.nbtrees'
+					,'processor.l4b.classifier.rf.max'
+					,'processor.l4b.classifier.rf.min');
+				$str$;
+				raise notice '%', _statement;
+				execute _statement;
+				
+			_statement := $str$
+				UPDATE config_metadata
+				SET is_advanced = true
+				WHERE
+					key in ('processor.l3a.weight.cloud.coarseresolution'
+					,'processor.l3a.weight.total.weightdatemin'
+					,'processor.l3a.weight.aot.maxaot' 
+					,'processor.l3a.weight.aot.minweight'
+					,'processor.l3a.weight.aot.maxweight'
+					,'processor.l3a.weight.cloud.sigmasmall'
+					,'processor.l3a.weight.cloud.sigmalarge'
+					,'processor.l3b.generate_models'
+					,'processor.l4a.random_seed'
+					,'processor.l4a.window'
+					,'processor.l4a.nbcomp'
+					,'processor.l4a.range-radius'
+					,'processor.l4a.erode-radius'
+					,'processor.l4a.mahalanobis-alpha'
+					,'processor.l4a.segmentation-spatial-radius'
+					,'processor.l4a.segmentation-minsize'
+					,'processor.l4a.classifier.rf.nbtrees'
+					,'processor.l4a.classifier.rf.max'
+					,'processor.l4a.classifier.rf.min'
+					,'processor.l4a.min-area'
+					,'processor.l4b.random_seed'
+					,'processor.l4b.classifier.rf.nbtrees'
+					,'processor.l4b.classifier.rf.max'
+					,'processor.l4b.classifier.rf.min');
+				$str$;
+				raise notice '%', _statement;
+				execute _statement;
+				
+			_statement := $str$
+				UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"1"}'::json, label ='Generate models' WHERE key ='processor.l3b.generate_models';
+				$str$;
+				raise notice '%', _statement;
+				execute _statement;
+
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Maximum value of the linear range for weights w.r.t. AOT' WHERE key ='processor.l3a.weight.aot.maxaot';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Minimum weight depending on AOT'  WHERE key ='processor.l3a.weight.aot.minweight';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Maximum weight depending on AOT'  WHERE key ='processor.l3a.weight.aot.maxweight';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Standard deviation of gaussian filter for distance to small clouds'  WHERE key ='processor.l3a.weight.cloud.sigmasmall';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Standard deviation of gaussian filter for distance to large clouds'  WHERE key ='processor.l3a.weight.cloud.sigmalarge';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Coarse resolution for quicker convolution'  WHERE key ='processor.l3a.weight.cloud.coarseresolution';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Minimum weight at edge of the synthesis time window'  WHERE key ='processor.l3a.weight.total.weightdatemin';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Half synthesis'  WHERE key ='processor.l3a.half_synthesis';
+			UPDATE config_metadata SET values ='{}'::json,is_site_visible = false  WHERE key ='processor.l3a.synth_date_sched_offset';
+			
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"1"}'::json, label ='Generate models' WHERE key ='processor.l3b.generate_models';
+			
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Random seed' WHERE key ='processor.l4a.random_seed';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Window records' WHERE key ='processor.l4a.window';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Number of components' WHERE key ='processor.l4a.nbcomp';
+			UPDATE config_metadata SET values ='{"min":"0","step":"0.01","max":""}'::json, label ='Range radius' WHERE key ='processor.l4a.range-radius';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Erosion radius' WHERE key ='processor.l4a.erode-radius';
+			UPDATE config_metadata SET values ='{"min":"0","step":"0.01","max":""}'::json, label ='Erosion radius' WHERE key ='processor.l4a.mahalanobis-alpha';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"segmentation"}'::json, label ='Spatial radius' WHERE key ='processor.l4a.segmentation-spatial-radius';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"segmentation"}'::json, label ='Minimum size of a region' WHERE key ='processor.l4a.segmentation-minsize';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Training trees' WHERE key ='processor.l4a.classifier.rf.nbtrees';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Max depth' WHERE key ='processor.l4a.classifier.rf.max';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Minimum number of samples'WHERE key ='processor.l4a.classifier.rf.min';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='The minium number of pixels' WHERE key ='processor.l4a.min-area';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json,is_advanced = false, is_site_visible = true, label ='Ratio' WHERE key ='processor.l4a.sample-ratio';
+			
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Random seed'  WHERE key ='processor.l4b.random_seed';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Training trees'  WHERE key ='processor.l4b.classifier.rf.nbtrees';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Random Forest classifier max depth'  WHERE key ='processor.l4b.classifier.rf.max';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Minimum number of samples'  WHERE key ='processor.l4b.classifier.rf.min';
+			UPDATE config_metadata SET values ='{"name":"cropMask"}', is_site_visible = true, is_advanced = false, label ='Crop masks'  WHERE key ='processor.l4b.crop-mask';
+			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, is_site_visible = true, is_advanced = false, label ='Ratio'  WHERE key ='processor.l4b.sample-ratio';
+			
+			if not exists (
+				select *
+				from pg_attribute
+				where attrelid = 'product_type' :: regclass
+				and attnum > 0
+				and attname = 'is_raster'
+				and not attisdropped
+			) then  
+				_statement := $str$
+					alter table 'product_type' is_raster boolean NOT NULL DEFAULT TRUE;
+					$str$;
+				raise notice '%', _statement;
+				execute _statement;
+			end if;
+			
             _statement := 'update meta set version = ''1.9'';';
             raise notice '%', _statement;
             execute _statement;

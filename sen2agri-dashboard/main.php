@@ -20,7 +20,7 @@ $sql ='SELECT * FROM sp_get_product_types() ';
 $result = pg_query ( $dbconn, $sql ) or die ( "Could not execute." );
 $option_product_type = "";
 while ( $row = pg_fetch_row ( $result ) ) {
-    if($row [0] != "7"){//if product type is not L1C 
+	if((ConfigParams::isSen2Agri() && $row [0] != "7") || !ConfigParams::isSen2Agri()){//if product type is not L1C 
 		$option = "<option value='" . $row [0] . "'>" . $row [1] . "</option>";
 		$option_product_type .= $option;
     }
@@ -730,7 +730,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 					selectedFeatures.clear();
 					
 					
-					//if(productType == "image"){
+					if(!data.hasOwnProperty('is_raster') || (data.hasOwnProperty('is_raster') && data.is_raster == true)){
 						var extent;    					
     				
     					if(data['productCoord']) {
@@ -748,18 +748,17 @@ while ( $row = pg_fetch_row ( $result ) ) {
     					displayProductImage('getProductImage.php?id='+data['productId'],/* data['productImageWidth'], data['productImageHeight'],*/ extent);
     					
     			        vector.getSource().once('change', function(e) {
-    			        	  map.getView().fit(extent, {duration: 1000})
+    			        	  map.getView().fit(e.target.getExtent(), {duration: 1500});
     			        	});
-					/*}else{
-						productType++;
-						
+					}else{
+						//@TODO 'http://sen2agri-dev:6767/CZ_SEN4CAP_TestSite2/{z}/{x}/{y}.pbf' De inlocuit cu produsul care vine din DB
 						displayProductVector('http://sen2agri-dev:6767/CZ_SEN4CAP_TestSite2/{z}/{x}/{y}.pbf');
 						
 					    //Fit the map's view to our combined extent
 					    vector.getSource().once('change', function(e) {
-    			        	  map.getView().fit(e.target.getExtent(), {duration: 1000})
+    			        	  map.getView().fit(e.target.getExtent(), {duration: 1500})
     			        	});
-						}*/
+						}
 					
 					//Create polygone for the site
 					var format = new ol.format.WKT();

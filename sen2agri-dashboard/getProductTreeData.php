@@ -104,6 +104,10 @@ try {
         	            $productObj->siteCoord = $productRow->site_coord;
         	            
         	            $productObj->productId =$productRow->id;
+        	            
+        	            if(!ConfigParams::isSen2Agri())
+        	            	$productObj->is_raster = $productRow->is_raster;
+        	            
         	            $products->nodes[] = $productObj;
     	            }
 

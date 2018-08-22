@@ -13,8 +13,8 @@ $BODY$
 		BEGIN
 		    q := $sql$
 			WITH
-			    product_type_names(id, name, description, row) AS (
-				select id, name, description, row_number() over (order by description)
+			    product_type_names(id, name, description, row, is_raster) AS (
+				select id, name, description, row_number() over (order by description), is_raster
 				from product_type
 			    ),
 		$sql$;
@@ -25,7 +25,7 @@ $BODY$
 				select id, name, st_astext(geog), row_number() over (order by name)
 				from site
 			    ),
-			data(id, product, footprint, site_coord, product_type_id, satellite_id ) AS (
+			data(id, product, footprint, site_coord, product_type_id, satellite_id, is_raster) AS (
 
 			    SELECT
 				P.id,
@@ -33,7 +33,8 @@ $BODY$
 				P.footprint,
 				S.geog,
 				PT.id,
-				P.satellite_id
+				P.satellite_id,
+				PT.is_raster
 	            $sql$;
 	        ELSE
 		    q := q || $sql$
