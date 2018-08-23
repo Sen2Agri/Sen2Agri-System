@@ -821,7 +821,7 @@ begin
 				and not attisdropped
 			) then  
 				_statement := $str$
-					alter table 'config_metadata' add column is_site_visible boolean NOT NULL DEFAULT false;
+					alter table config_metadata add column is_site_visible boolean NOT NULL DEFAULT false;
 					$str$;
 				raise notice '%', _statement;
 				execute _statement;
@@ -837,7 +837,7 @@ begin
 				and not attisdropped
 			) then  
 				_statement := $str$
-					alter table 'config_metadata' add column label character varying;
+					alter table config_metadata add column label character varying;
 					$str$;
 				raise notice '%', _statement;
 				execute _statement;
@@ -852,7 +852,7 @@ begin
 				and not attisdropped
 			) then  
 				_statement := $str$
-					alter table 'config_metadata' add column values json;
+					alter table config_metadata add column values json;
 					$str$;
 				raise notice '%', _statement;
 				execute _statement;
