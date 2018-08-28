@@ -7,7 +7,7 @@
 //
 // Note that we are setting the projection's extent here, which is used to
 // determine the view resolution for zoom level 0. Recommended values for a
-// projection's validity extent can be found at http://epsg.io/.
+// projection's validity extent can be found at https://epsg.io/.
 //
 // If you use Proj4js only to transform coordinates, you don't even need to
 // create an ol.proj.Projection instance. ol.proj.get() will take care of it
@@ -23,34 +23,26 @@ var layers = [
   new ol.layer.Image({
     extent: extent,
     source: new ol.source.ImageWMS({
-      url: 'http://wms.geo.admin.ch/',
+      url: 'https://wms.geo.admin.ch/',
       crossOrigin: 'anonymous',
-      attributions: [new ol.Attribution({
-        html: '&copy; ' +
-            '<a href="http://www.geo.admin.ch/internet/geoportal/' +
-            'en/home.html">' +
-            'Pixelmap 1:1000000 / geo.admin.ch</a>'
-      })],
+      attributions: '© <a href="http://www.geo.admin.ch/internet/geoportal/' +
+          'en/home.html">Pixelmap 1:1000000 / geo.admin.ch</a>',
       params: {
         'LAYERS': 'ch.swisstopo.pixelkarte-farbe-pk1000.noscale',
         'FORMAT': 'image/jpeg'
       },
-      serverType: /** @type {ol.source.wms.ServerType} */ ('mapserver')
+      serverType: 'mapserver'
     })
   }),
   new ol.layer.Image({
     extent: extent,
     source: new ol.source.ImageWMS({
-      url: 'http://wms.geo.admin.ch/',
+      url: 'https://wms.geo.admin.ch/',
       crossOrigin: 'anonymous',
-      attributions: [new ol.Attribution({
-        html: '&copy; ' +
-            '<a href="http://www.geo.admin.ch/internet/geoportal/' +
-            'en/home.html">' +
-            'National parks / geo.admin.ch</a>'
-      })],
+      attributions: '© <a href="http://www.geo.admin.ch/internet/geoportal/' +
+          'en/home.html">National parks / geo.admin.ch</a>',
       params: {'LAYERS': 'ch.bafu.schutzgebiete-paerke_nationaler_bedeutung'},
-      serverType: /** @type {ol.source.wms.ServerType} */ ('mapserver')
+      serverType: 'mapserver'
     })
   })
 ];
@@ -60,7 +52,6 @@ var map = new ol.Map({
     new ol.control.ScaleLine()
   ]),
   layers: layers,
-  renderer: common.getRendererFromQueryString(),
   target: 'map',
   view: new ol.View({
     projection: projection,

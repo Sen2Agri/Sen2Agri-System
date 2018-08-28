@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /**
- * @fileoverview Similiar functionality of {@link goog.ui.ButtonRenderer},
+ * @fileoverview Similar functionality of {@link goog.ui.ButtonRenderer},
  * but uses a <div> element instead of a <button> or <input> element.
  *
  */
@@ -64,11 +64,10 @@ goog.ui.FlatButtonRenderer.CSS_CLASS = goog.getCssName('goog-flat-button');
  */
 goog.ui.FlatButtonRenderer.prototype.createDom = function(button) {
   var classNames = this.getClassNames(button);
-  var attributes = {
-    'class': goog.ui.INLINE_BLOCK_CLASSNAME + ' ' + classNames.join(' ')
-  };
   var element = button.getDomHelper().createDom(
-      goog.dom.TagName.DIV, attributes, button.getContent());
+      goog.dom.TagName.DIV,
+      goog.ui.INLINE_BLOCK_CLASSNAME + ' ' + classNames.join(' '),
+      button.getContent());
   this.setTooltip(element, button.getTooltip());
   return element;
 };
@@ -110,8 +109,8 @@ goog.ui.FlatButtonRenderer.prototype.canDecorate = function(element) {
 goog.ui.FlatButtonRenderer.prototype.decorate = function(button, element) {
   goog.asserts.assert(element);
   goog.dom.classlist.add(element, goog.ui.INLINE_BLOCK_CLASSNAME);
-  return goog.ui.FlatButtonRenderer.superClass_.decorate.call(this, button,
-      element);
+  return goog.ui.FlatButtonRenderer.superClass_.decorate.call(
+      this, button, element);
 };
 
 
@@ -141,8 +140,8 @@ goog.ui.FlatButtonRenderer.prototype.getCssClass = function() {
 
 
 // Register a decorator factory function for Flat Buttons.
-goog.ui.registry.setDecoratorByClassName(goog.ui.FlatButtonRenderer.CSS_CLASS,
-    function() {
+goog.ui.registry.setDecoratorByClassName(
+    goog.ui.FlatButtonRenderer.CSS_CLASS, function() {
       // Uses goog.ui.Button, but with FlatButtonRenderer.
       return new goog.ui.Button(null, goog.ui.FlatButtonRenderer.getInstance());
     });

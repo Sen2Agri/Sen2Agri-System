@@ -21,9 +21,16 @@ goog.require('goog.labs.testing.StringContainsInOrderMatcher');
 goog.require('goog.labs.testing.assertThat');
 goog.require('goog.testing.jsunit');
 
+function testAnyString() {
+  goog.labs.testing.assertThat('foo', anyString(), 'typeof "foo" == "string"');
+  assertMatcherError(function() {
+    goog.labs.testing.assertThat(1, anyString());
+  }, 'typeof 1 == "string"');
+}
+
 function testContainsString() {
-  goog.labs.testing.assertThat('hello', containsString('ell'),
-      'hello contains ell');
+  goog.labs.testing.assertThat(
+      'hello', containsString('ell'), 'hello contains ell');
 
   assertMatcherError(function() {
     goog.labs.testing.assertThat('hello', containsString('world!'));
@@ -39,8 +46,8 @@ function testEndsWith() {
 }
 
 function testEqualToIgnoringWhitespace() {
-  goog.labs.testing.assertThat('    h\n   EL L\tO',
-      equalToIgnoringWhitespace('h el l o'),
+  goog.labs.testing.assertThat(
+      '    h\n   EL L\tO', equalToIgnoringWhitespace('h el l o'),
       '"   h   EL L\tO   " is equal to "h el l o"');
 
   assertMatcherError(function() {
@@ -49,8 +56,7 @@ function testEqualToIgnoringWhitespace() {
 }
 
 function testEquals() {
-  goog.labs.testing.assertThat('hello', equals('hello'),
-      'hello equals hello');
+  goog.labs.testing.assertThat('hello', equals('hello'), 'hello equals hello');
 
   assertMatcherError(function() {
     goog.labs.testing.assertThat('thousand', equals('suns'));
@@ -58,8 +64,8 @@ function testEquals() {
 }
 
 function testStartsWith() {
-  goog.labs.testing.assertThat('hello', startsWith('hel'),
-      'hello starts with hel');
+  goog.labs.testing.assertThat(
+      'hello', startsWith('hel'), 'hello starts with hel');
 
   assertMatcherError(function() {
     goog.labs.testing.assertThat('linkin', startsWith('park'));
@@ -67,13 +73,13 @@ function testStartsWith() {
 }
 
 function testStringContainsInOrder() {
-  goog.labs.testing.assertThat('hello',
-      stringContainsInOrder(['h', 'el', 'el', 'l', 'o']),
+  goog.labs.testing.assertThat(
+      'hello', stringContainsInOrder(['h', 'el', 'el', 'l', 'o']),
       'hello contains in order: [h, el, l, o]');
 
   assertMatcherError(function() {
-    goog.labs.testing.assertThat('hybrid', stringContainsInOrder(['hy', 'brid',
-      'theory']));
+    goog.labs.testing.assertThat(
+        'hybrid', stringContainsInOrder(['hy', 'brid', 'theory']));
   }, 'stringContainsInOrder should throw exception when it fails');
 }
 

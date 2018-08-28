@@ -23,6 +23,9 @@ goog.provide('goog.events.ListenableKey');
 /** @suppress {extraRequire} */
 goog.require('goog.events.EventId');
 
+goog.forwardDeclare('goog.events.EventLike');
+goog.forwardDeclare('goog.events.EventTarget');
+
 
 
 /**
@@ -72,8 +75,8 @@ goog.events.Listenable.IMPLEMENTED_BY_PROP =
  * Marks a given class (constructor) as an implementation of
  * Listenable, do that we can query that fact at runtime. The class
  * must have already implemented the interface.
- * @param {!Function} cls The class constructor. The corresponding
- *     class must have already implemented the interface.
+ * @param {!function(new:goog.events.Listenable,...)} cls The class constructor.
+ *     The corresponding class must have already implemented the interface.
  */
 goog.events.Listenable.addImplementation = function(cls) {
   cls.prototype[goog.events.Listenable.IMPLEMENTED_BY_PROP] = true;
@@ -104,7 +107,7 @@ goog.events.Listenable.isImplementedBy = function(obj) {
  *     (defaults to false).
  * @param {SCOPE=} opt_listenerScope Object in whose scope to call the
  *     listener.
- * @return {goog.events.ListenableKey} Unique key for the listener.
+ * @return {!goog.events.ListenableKey} Unique key for the listener.
  * @template SCOPE,EVENTOBJ
  */
 goog.events.Listenable.prototype.listen;
@@ -128,7 +131,7 @@ goog.events.Listenable.prototype.listen;
  *     (defaults to false).
  * @param {SCOPE=} opt_listenerScope Object in whose scope to call the
  *     listener.
- * @return {goog.events.ListenableKey} Unique key for the listener.
+ * @return {!goog.events.ListenableKey} Unique key for the listener.
  * @template SCOPE,EVENTOBJ
  */
 goog.events.Listenable.prototype.listenOnce;
@@ -154,7 +157,7 @@ goog.events.Listenable.prototype.unlisten;
  * Removes an event listener which was added with listen() by the key
  * returned by listen().
  *
- * @param {goog.events.ListenableKey} key The key returned by
+ * @param {!goog.events.ListenableKey} key The key returned by
  *     listen() or listenOnce().
  * @return {boolean} Whether any listener was removed.
  */
@@ -228,7 +231,7 @@ goog.events.Listenable.prototype.fireListeners;
  *
  * @param {string|!goog.events.EventId} type The type of the listeners to fire.
  * @param {boolean} capture The capture mode of the listeners to fire.
- * @return {!Array<goog.events.ListenableKey>} An array of registered
+ * @return {!Array<!goog.events.ListenableKey>} An array of registered
  *     listeners.
  * @template EVENTOBJ
  */
@@ -295,7 +298,7 @@ goog.events.ListenableKey.reserveKey = function() {
 
 /**
  * The source event target.
- * @type {!(Object|goog.events.Listenable|goog.events.EventTarget)}
+ * @type {Object|goog.events.Listenable|goog.events.EventTarget}
  */
 goog.events.ListenableKey.prototype.src;
 
@@ -323,7 +326,7 @@ goog.events.ListenableKey.prototype.capture;
 
 /**
  * The 'this' object for the listener function's scope.
- * @type {Object}
+ * @type {Object|undefined}
  */
 goog.events.ListenableKey.prototype.handler;
 

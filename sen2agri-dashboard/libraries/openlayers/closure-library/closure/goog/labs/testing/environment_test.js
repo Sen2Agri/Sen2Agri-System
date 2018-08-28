@@ -15,7 +15,9 @@
 goog.provide('goog.labs.testing.environmentTest');
 goog.setTestOnly('goog.labs.testing.environmentTest');
 
+goog.require('goog.Promise');
 goog.require('goog.labs.testing.Environment');
+goog.require('goog.testing.MockClock');
 goog.require('goog.testing.MockControl');
 goog.require('goog.testing.PropertyReplacer');
 goog.require('goog.testing.TestCase');
@@ -35,7 +37,8 @@ function setUp() {
   // as well as the part of the environment that is being tested as part
   // of the test.  Bail if the test is already running.
   if (testing) {
-    return;
+    // This value is used by the testSetupReturnsValue test below
+    return 'hello';
   }
 
   // Temporarily override the initializeTestRunner method to avoid installing
@@ -103,6 +106,82 @@ function testLifecycle() {
   testing = false;
 }
 
+function testLifecycle_withPromises() {
+  var mockClock = new goog.testing.MockClock(true /* autoinstall */);
+  testing = true;
+
+  var envOne = mockControl.createStrictMock(goog.labs.testing.Environment);
+  testCase.registerEnvironment_(envOne);
+  var envTwo = mockControl.createStrictMock(goog.labs.testing.Environment);
+  testCase.registerEnvironment_(envTwo);
+  var testObj = {
+    'configureEnvironment':
+        mockControl.createFunctionMock('configureEnvironment'),
+    'setUpPage': mockControl.createFunctionMock('setUpPage'),
+    'setUp': mockControl.createFunctionMock('setUp'),
+    'tearDown': mockControl.createFunctionMock('tearDown'),
+    'tearDownPage': mockControl.createFunctionMock('tearDownPage'),
+    'testFoo': mockControl.createFunctionMock('testFoo')
+  };
+  testCase.setTestObj(testObj);
+
+  // Make the testCase.runTestsReturningPromise() a pending operation so we can
+  // use assertNextCall also for checking the first call.
+  var resultPromise;
+  var pendingOp = goog.Promise.withResolver();
+  pendingOp.promise.then(function() {
+    resultPromise = testCase.runTestsReturningPromise();
+  });
+  var nextOp = null;
+  var finishPendingOp = function() {
+    pendingOp.resolve();
+    pendingOp = nextOp;
+    nextOp = null;
+    mockClock.tick();
+  };
+  var expectCallTo = function(expectedCall) {
+    assertNull(nextOp);
+    mockControl.$resetAll();
+    nextOp = goog.Promise.withResolver();
+    expectedCall().$returns(nextOp.promise);
+    mockControl.$replayAll();
+    finishPendingOp();
+    mockControl.$verifyAll();
+  };
+  // Make sure there are no hanging expecations dropped by the first $resetAll.
+  mockControl.$replayAll();
+  mockControl.$verifyAll();
+
+  expectCallTo(envOne.setUpPage);
+  expectCallTo(envTwo.setUpPage);
+  expectCallTo(testObj.setUpPage);
+  expectCallTo(testObj.configureEnvironment);
+  expectCallTo(envOne.setUp);
+  expectCallTo(envTwo.setUp);
+  expectCallTo(testObj.setUp);
+  expectCallTo(testObj.testFoo);
+
+  mockControl.$resetAll();
+  testObj.tearDown();
+  envTwo.tearDown();
+  envOne.tearDown();
+  testObj.tearDownPage();
+  envTwo.tearDownPage();
+  envOne.tearDownPage();
+  mockControl.$replayAll();
+  finishPendingOp();
+  var result = mockClock.tickPromise(resultPromise);
+  mockControl.$verifyAll();
+  assertTrue(result.complete);
+  assertEquals(1, result.totalCount);
+  assertEquals(1, result.runCount);
+  assertEquals(1, result.successCount);
+  assertEquals(0, result.errors.length);
+
+  testing = false;
+  mockClock.uninstall();
+}
+
 function testTearDownWithMockControl() {
   testing = true;
 
@@ -110,8 +189,8 @@ function testTearDownWithMockControl() {
   var envWithout = new goog.labs.testing.Environment();
 
   var mockControlMock = mockControl.createStrictMock(goog.testing.MockControl);
-  var mockControlCtorMock = mockControl.createMethodMock(goog.testing,
-      'MockControl');
+  var mockControlCtorMock =
+      mockControl.createMethodMock(goog.testing, 'MockControl');
   mockControlCtorMock().$times(1).$returns(mockControlMock);
   // Expecting verify / reset calls twice since two environments use the same
   // mockControl, but only one created it and is allowed to tear it down.
@@ -153,7 +232,7 @@ function testAutoDiscoverTests() {
 
   // Note that this number changes when more tests are added to this file as
   // the environment reflects on the window global scope for JsUnit.
-  assertEquals(7, testCase.tests_.length);
+  assertEquals(9, testCase.tests_.length);
 
   testing = false;
 }
@@ -197,6 +276,18 @@ function testTestSuiteTests() {
   testing = false;
 }
 
+function testSetupReturnsValue() {
+  testing = true;
+
+  var env = new goog.labs.testing.Environment();
+
+  // Expect the environment to pass on any value returned by the user defined
+  // setUp method.
+  assertEquals('hello', testCase.setUp());
+
+  testCase.tearDown();
+  testing = false;
+}
 
 function testMockClock() {
   testing = true;
@@ -204,9 +295,7 @@ function testMockClock() {
   var env = new goog.labs.testing.Environment().withMockClock();
 
   testCase.addNewTest('testThatThrowsEventually', function() {
-    setTimeout(function() {
-      throw new Error('LateErrorMessage');
-    }, 200);
+    setTimeout(function() { throw new Error('LateErrorMessage'); }, 200);
   });
 
   testCase.runTests();
@@ -237,9 +326,7 @@ function testMock() {
   testing = true;
 
   var env = new goog.labs.testing.Environment().withMockControl();
-  var mock = env.mock({
-    test: function() {}
-  });
+  var mock = env.mock({test: function() {}});
 
   testCase.addNewTest('testMockCalled', function() {
     mock.test().$times(2);
@@ -256,5 +343,5 @@ function testMock() {
 }
 
 function assertTestFailure(testCase, name, message) {
-  assertContains(message, testCase.result_.resultsByName[name][0]);
+  assertContains(message, testCase.result_.resultsByName[name][0].toString());
 }

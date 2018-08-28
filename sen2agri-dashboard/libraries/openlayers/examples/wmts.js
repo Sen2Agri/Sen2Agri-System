@@ -9,12 +9,6 @@ for (var z = 0; z < 14; ++z) {
   matrixIds[z] = z;
 }
 
-var attribution = new ol.Attribution({
-  html: 'Tiles &copy; <a href="http://services.arcgisonline.com/arcgis/rest/' +
-      'services/Demographics/USA_Population_Density/MapServer/">ArcGIS</a>'
-});
-
-
 var map = new ol.Map({
   layers: [
     new ol.layer.Tile({
@@ -24,8 +18,9 @@ var map = new ol.Map({
     new ol.layer.Tile({
       opacity: 0.7,
       source: new ol.source.WMTS({
-        attributions: [attribution],
-        url: 'http://services.arcgisonline.com/arcgis/rest/' +
+        attributions: 'Tiles © <a href="https://services.arcgisonline.com/arcgis/rest/' +
+            'services/Demographics/USA_Population_Density/MapServer/">ArcGIS</a>',
+        url: 'https://services.arcgisonline.com/arcgis/rest/' +
             'services/Demographics/USA_Population_Density/MapServer/WMTS/',
         layer: '0',
         matrixSet: 'EPSG:3857',
@@ -43,9 +38,9 @@ var map = new ol.Map({
   ],
   target: 'map',
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: new ol.View({
     center: [-11158582, 4813697],

@@ -2,12 +2,12 @@
  * Helper method for map-creation.
  *
  * @param {string} divId The id of the div for the map.
- * @return {ol.Map} The ol.Map instance.
+ * @return {ol.PluggableMap} The ol.Map instance.
  */
 var createMap = function(divId) {
-  var source, layer, map, zoomslider, resolutions;
+  var source, layer, map, zoomslider;
 
-  source = new ol.source.MapQuest({layer: 'sat'});
+  source = new ol.source.OSM();
   layer = new ol.layer.Tile({
     source: source
   });

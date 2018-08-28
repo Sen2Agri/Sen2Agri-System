@@ -28,6 +28,10 @@ goog.require('goog.testing.jsunit');
 goog.require('goog.testing.mockmatchers.InstanceOf');
 goog.require('goog.testing.net.XhrIo');
 
+// In order to emulate the actual behavior of XhrIo, set this value for all
+// tests until the default value is false.
+goog.testing.net.XhrIo.allowUnsafeAccessToXhrIoOutsideCallbacks = false;
+
 var mockControl;
 
 function setUp() {
@@ -37,30 +41,28 @@ function setUp() {
 function testStaticSend() {
   sendInstances = goog.testing.net.XhrIo.getSendInstances();
   var returnedXhr = goog.testing.net.XhrIo.send('url');
-  assertEquals('sendInstances_ after send',
-               1, sendInstances.length);
+  assertEquals('sendInstances_ after send', 1, sendInstances.length);
   xhr = sendInstances[sendInstances.length - 1];
   assertTrue('isActive after request', xhr.isActive());
   assertEquals(returnedXhr, xhr);
-  assertEquals('readyState after request',
-               goog.net.XmlHttp.ReadyState.LOADING,
-               xhr.getReadyState());
+  assertEquals(
+      'readyState after request', goog.net.XmlHttp.ReadyState.LOADING,
+      xhr.getReadyState());
 
   xhr.simulateResponse(200, '');
   assertFalse('isActive after response', xhr.isActive());
-  assertEquals('readyState after response',
-               goog.net.XmlHttp.ReadyState.COMPLETE,
-               xhr.getReadyState());
+  assertEquals(
+      'readyState after response', goog.net.XmlHttp.ReadyState.COMPLETE,
+      xhr.getReadyState());
 
   xhr.simulateReady();
-  assertEquals('sendInstances_ after READY',
-               0, sendInstances.length);
+  assertEquals('sendInstances_ after READY', 0, sendInstances.length);
 }
 
 function testStaticSendWithException() {
   goog.testing.net.XhrIo.send('url', function() {
     if (!this.isSuccess()) {
-      throw Error('The xhr did not complete successfully!');
+      throw new Error('The xhr did not complete successfully!');
     }
   });
   var sendInstances = goog.testing.net.XhrIo.getSendInstances();
@@ -72,34 +74,34 @@ function testStaticSendWithException() {
     // the class cleans itself up properly when an exception is
     // thrown.
   }
-  assertEquals('Send instance array not cleaned up properly!',
-               0, sendInstances.length);
+  assertEquals(
+      'Send instance array not cleaned up properly!', 0, sendInstances.length);
 }
 
 function testMultipleSend() {
   var xhr = new goog.testing.net.XhrIo();
   assertFalse('isActive before first request', xhr.isActive());
-  assertEquals('readyState before first request',
-               goog.net.XmlHttp.ReadyState.UNINITIALIZED,
-               xhr.getReadyState());
+  assertEquals(
+      'readyState before first request',
+      goog.net.XmlHttp.ReadyState.UNINITIALIZED, xhr.getReadyState());
 
   xhr.send('url');
   assertTrue('isActive after first request', xhr.isActive());
-  assertEquals('readyState after first request',
-               goog.net.XmlHttp.ReadyState.LOADING,
-               xhr.getReadyState());
+  assertEquals(
+      'readyState after first request', goog.net.XmlHttp.ReadyState.LOADING,
+      xhr.getReadyState());
 
   xhr.simulateResponse(200, '');
   assertFalse('isActive after first response', xhr.isActive());
-  assertEquals('readyState after first response',
-               goog.net.XmlHttp.ReadyState.COMPLETE,
-               xhr.getReadyState());
+  assertEquals(
+      'readyState after first response', goog.net.XmlHttp.ReadyState.COMPLETE,
+      xhr.getReadyState());
 
   xhr.send('url');
   assertTrue('isActive after second request', xhr.isActive());
-  assertEquals('readyState after second request',
-               goog.net.XmlHttp.ReadyState.LOADING,
-               xhr.getReadyState());
+  assertEquals(
+      'readyState after second request', goog.net.XmlHttp.ReadyState.LOADING,
+      xhr.getReadyState());
 }
 
 function testGetLastUri() {
@@ -130,8 +132,8 @@ function testGetLastContent() {
 
   var postContent = 'var=value&var2=value2';
   xhr.send('http://www.example.com/', undefined, postContent);
-  assertEquals('POST message sent, content saved',
-               postContent, xhr.getLastContent());
+  assertEquals(
+      'POST message sent, content saved', postContent, xhr.getLastContent());
   xhr.simulateResponse(200, '');
 
   xhr.send('http://www.example.com/');
@@ -140,19 +142,30 @@ function testGetLastContent() {
 
 function testGetLastRequestHeaders() {
   var xhr = new goog.testing.net.XhrIo();
-  assertUndefined('nothing sent yet, empty headers',
-                  xhr.getLastRequestHeaders());
+  assertUndefined(
+      'nothing sent yet, empty headers', xhr.getLastRequestHeaders());
 
-  xhr.send('http://www.example.com/', undefined, undefined,
+  xhr.send(
+      'http://www.example.com/', undefined, undefined,
       {'From': 'page@google.com'});
-  assertObjectEquals('Request sent with extra headers, headers saved',
-      {'From': 'page@google.com'},
-      xhr.getLastRequestHeaders());
+  assertObjectEquals(
+      'Request sent with extra headers, headers saved',
+      {'From': 'page@google.com'}, xhr.getLastRequestHeaders());
   xhr.simulateResponse(200, '');
 
   xhr.send('http://www.example.com');
-  assertUndefined('New request sent without extra headers',
-      xhr.getLastRequestHeaders());
+  assertUndefined(
+      'New request sent without extra headers', xhr.getLastRequestHeaders());
+  xhr.simulateResponse(200, '');
+
+  xhr.headers.set('X', 'A');
+  xhr.headers.set('Y', 'B');
+  xhr.send(
+      'http://www.example.com/', undefined, undefined, {'Y': 'P', 'Z': 'Q'});
+  assertObjectEquals(
+      'Default headers combined with call headers',
+      {'X': 'A', 'Y': 'P', 'Z': 'Q'}, xhr.getLastRequestHeaders());
+  xhr.simulateResponse(200, '');
 }
 
 function testGetResponseText() {
@@ -167,8 +180,8 @@ function testGetResponseText() {
   assertTrue(called);
 
   // XML response came.
-  var called = false;
-  var xhr = new goog.testing.net.XhrIo();
+  called = false;
+  xhr = new goog.testing.net.XhrIo();
   var xml = goog.dom.xml.createDocument();
   xml.appendChild(xml.createElement('root'));
   goog.events.listen(xhr, goog.net.EventType.SUCCESS, function(e) {
@@ -178,6 +191,9 @@ function testGetResponseText() {
   });
   xhr.simulateResponse(200, xml);
   assertTrue(called);
+
+  // Outside the callback, getResponseText returns an empty string.
+  assertEquals('', xhr.getResponseText());
 }
 
 function testGetResponseJson() {
@@ -201,12 +217,15 @@ function testGetResponseJson() {
   xhr.simulateResponse(200, ')]}\', \n[0, 1]');
   assertTrue(called);
 
+  // Outside the callback, getResponseJson returns undefined.
+  assertUndefined(xhr.getResponseJson());
+
   // Invalid JSON response came.
   var called = false;
   var xhr = new goog.testing.net.XhrIo();
   goog.events.listen(xhr, goog.net.EventType.SUCCESS, function(e) {
     called = true;
-    assertThrows(e.target.getResponseJson);
+    assertThrows(goog.bind(e.target.getResponseJson, e.target));
   });
   xhr.simulateResponse(200, '[0, 1');
   assertTrue(called);
@@ -218,7 +237,7 @@ function testGetResponseJson() {
   xml.appendChild(xml.createElement('root'));
   goog.events.listen(xhr, goog.net.EventType.SUCCESS, function(e) {
     called = true;
-    assertThrows(e.target.getResponseJson);
+    assertThrows(goog.bind(e.target.getResponseJson, e.target));
   });
   xhr.simulateResponse(200, xml);
   assertTrue(called);
@@ -246,6 +265,35 @@ function testGetResponseXml() {
   });
   xhr.simulateResponse(200, xml);
   assertTrue(called);
+
+  // Outside the callback, getResponseXml returns null.
+  assertNull(xhr.getResponseXml());
+}
+
+function testGetResponsesAllowUnsafeAccessToXhrIoOutsideCallbacks() {
+  // Test that if true is passed for opt_allowAccessToXhrIoOutsideOfCallback,
+  // then we can call getResponse*() outside of the SUCCESS event callback.
+  goog.testing.net.XhrIo.allowUnsafeAccessToXhrIoOutsideCallbacks = true;
+
+  var xhr = new goog.testing.net.XhrIo();
+  xhr.simulateResponse(200, 'text');
+  assertEquals('text', xhr.getResponseText());
+
+  xhr.simulateResponse(200, '[0, 1]');
+  assertArrayEquals([0, 1], xhr.getResponseJson());
+
+  var xml = goog.dom.xml.createDocument();
+  xml.appendChild(xml.createElement('root'));
+  xhr.simulateResponse(200, xml);
+  assertEquals(xml, xhr.getResponseXml());
+
+  var headers = {'test1': 'foo', 'test2': 'bar'};
+  xhr.simulateResponse(200, '', headers);
+  assertObjectEquals(headers, xhr.getResponseHeaders());
+  assertEquals('test1: foo\r\ntest2: bar', xhr.getAllResponseHeaders());
+
+  // Reset the value for future tests.
+  goog.testing.net.XhrIo.allowUnsafeAccessToXhrIoOutsideCallbacks = false;
 }
 
 function testGetResponseHeaders_noHeadersPresent() {
@@ -370,8 +418,8 @@ function testEvents_Success() {
       });
   mockControl.$replayAll();
 
-  goog.events.listen(xhr, goog.net.EventType.READY_STATE_CHANGE,
-      readyStateListener);
+  goog.events.listen(
+      xhr, goog.net.EventType.READY_STATE_CHANGE, readyStateListener);
   goog.events.listen(xhr, goog.net.EventType.COMPLETE, mockListener);
   goog.events.listen(xhr, goog.net.EventType.SUCCESS, mockListener);
   goog.events.listen(xhr, goog.net.EventType.ABORT, mockListener);
@@ -399,6 +447,10 @@ function testGetResponseHeaders() {
 
   // Simulate an XHR with 2 headers.
   xhr.simulateResponse(200, '', {'test1': 'foo', 'test2': 'bar'});
+
+  // Outside the callback, getResponseHeaders returns an empty object.
+  assertObjectEquals({}, xhr.getResponseHeaders());
+  assertEquals('', xhr.getAllResponseHeaders());
 
   mockControl.$verifyAll();
   mockControl.$resetAll();

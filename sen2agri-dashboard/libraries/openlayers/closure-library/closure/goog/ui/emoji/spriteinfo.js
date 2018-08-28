@@ -41,15 +41,16 @@ goog.provide('goog.ui.emoji.SpriteInfo');
  * @constructor
  * @final
  */
-goog.ui.emoji.SpriteInfo = function(cssClass, opt_url, opt_width, opt_height,
-                                    opt_xOffset, opt_yOffset, opt_animated) {
+goog.ui.emoji.SpriteInfo = function(
+    cssClass, opt_url, opt_width, opt_height, opt_xOffset, opt_yOffset,
+    opt_animated) {
   if (cssClass != null) {
     this.cssClass_ = cssClass;
   } else {
     if (opt_url == undefined || opt_width === undefined ||
         opt_height === undefined || opt_xOffset == undefined ||
         opt_yOffset === undefined) {
-      throw Error('Sprite info is not fully specified');
+      throw new Error('Sprite info is not fully specified');
     }
 
     this.url_ = opt_url;

@@ -1,18 +1,6 @@
 goog.provide('ol.webgl.Buffer');
 
-goog.require('goog.webgl');
-goog.require('ol');
-
-
-/**
- * @enum {number}
- */
-ol.webgl.BufferUsage = {
-  STATIC_DRAW: goog.webgl.STATIC_DRAW,
-  STREAM_DRAW: goog.webgl.STREAM_DRAW,
-  DYNAMIC_DRAW: goog.webgl.DYNAMIC_DRAW
-};
-
+goog.require('ol.webgl');
 
 
 /**
@@ -34,7 +22,7 @@ ol.webgl.Buffer = function(opt_arr, opt_usage) {
    * @type {number}
    */
   this.usage_ = opt_usage !== undefined ?
-      opt_usage : ol.webgl.BufferUsage.STATIC_DRAW;
+    opt_usage : ol.webgl.Buffer.Usage_.STATIC_DRAW;
 
 };
 
@@ -52,4 +40,15 @@ ol.webgl.Buffer.prototype.getArray = function() {
  */
 ol.webgl.Buffer.prototype.getUsage = function() {
   return this.usage_;
+};
+
+
+/**
+ * @enum {number}
+ * @private
+ */
+ol.webgl.Buffer.Usage_ = {
+  STATIC_DRAW: ol.webgl.STATIC_DRAW,
+  STREAM_DRAW: ol.webgl.STREAM_DRAW,
+  DYNAMIC_DRAW: ol.webgl.DYNAMIC_DRAW
 };

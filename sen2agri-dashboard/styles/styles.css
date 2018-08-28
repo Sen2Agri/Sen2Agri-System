@@ -1084,3 +1084,8 @@ div#wait {
 	opacity: 0.89;
 }
 /*------------- end css main ------------------*/
+
+.spanDialogMsg{
+	float:left;
+	margin:0 7px 50px 0;
+}

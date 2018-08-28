@@ -1,24 +1,26 @@
+var style = new ol.style.Style({
+  fill: new ol.style.Fill({
+    color: 'rgba(255, 255, 255, 0.6)'
+  }),
+  stroke: new ol.style.Stroke({
+    color: '#319FD3',
+    width: 1
+  }),
+  text: new ol.style.Text()
+});
+
 var map = new ol.Map({
   layers: [
-    new ol.layer.Tile({
-      source: new ol.source.MapQuest({layer: 'sat'})
-    }),
-    new ol.layer.Image({
-      source: new ol.source.ImageVector({
-        source: new ol.source.Vector({
-          url: 'data/geojson/countries.geojson',
-          format: new ol.format.GeoJSON()
-        }),
-        style: new ol.style.Style({
-          fill: new ol.style.Fill({
-            color: 'rgba(255, 255, 255, 0.6)'
-          }),
-          stroke: new ol.style.Stroke({
-            color: '#319FD3',
-            width: 1
-          })
-        })
-      })
+    new ol.layer.Vector({
+      renderMode: 'image',
+      source: new ol.source.Vector({
+        url: 'data/geojson/countries.geojson',
+        format: new ol.format.GeoJSON()
+      }),
+      style: function(feature) {
+        style.getText().setText(feature.get('name'));
+        return style;
+      }
     })
   ],
   target: 'map',
@@ -45,7 +47,7 @@ var featureOverlay = new ol.layer.Vector({
 var highlight;
 var displayFeatureInfo = function(pixel) {
 
-  var feature = map.forEachFeatureAtPixel(pixel, function(feature, layer) {
+  var feature = map.forEachFeatureAtPixel(pixel, function(feature) {
     return feature;
   });
 

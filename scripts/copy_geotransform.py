@@ -16,5 +16,11 @@ if not source_ds:
 if not target_ds:
     raise Exception("Could not open target dataset", args.target)
 
+srs = source_ds.GetProjectionRef()
+if srs == "":
+    srs = source_ds.GetMetadata("GEOLOCATION").get("SRS")
+
+if srs is not None and srs != "":
+    target_ds.SetProjection(srs)
+
 target_ds.SetGeoTransform(source_ds.GetGeoTransform())
-target_ds.Update()

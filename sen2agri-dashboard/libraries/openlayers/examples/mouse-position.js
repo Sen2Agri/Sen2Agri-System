@@ -10,16 +10,15 @@ var mousePositionControl = new ol.control.MousePosition({
 
 var map = new ol.Map({
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }).extend([mousePositionControl]),
   layers: [
     new ol.layer.Tile({
       source: new ol.source.OSM()
     })
   ],
-  renderer: common.getRendererFromQueryString(),
   target: 'map',
   view: new ol.View({
     center: [0, 0],
@@ -27,14 +26,13 @@ var map = new ol.Map({
   })
 });
 
-var projectionSelect = $('#projection');
-projectionSelect.on('change', function() {
-  mousePositionControl.setProjection(ol.proj.get(this.value));
+var projectionSelect = document.getElementById('projection');
+projectionSelect.addEventListener('change', function(event) {
+  mousePositionControl.setProjection(event.target.value);
 });
-projectionSelect.val(mousePositionControl.getProjection().getCode());
 
-var precisionInput = $('#precision');
-precisionInput.on('change', function() {
-  var format = ol.coordinate.createStringXY(this.valueAsNumber);
+var precisionInput = document.getElementById('precision');
+precisionInput.addEventListener('change', function(event) {
+  var format = ol.coordinate.createStringXY(event.target.valueAsNumber);
   mousePositionControl.setCoordinateFormat(format);
 });

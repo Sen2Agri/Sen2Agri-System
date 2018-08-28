@@ -36,10 +36,7 @@ function tearDown() {
 }
 
 function testEmojiWithEmoticonsPlugin() {
-  runEmojiTestWithPlugin(new goog.editor.plugins.Emoticons());
-}
-
-function runEmojiTestWithPlugin(plugin) {
+  var plugin = new goog.editor.plugins.Emoticons();
   var field = new goog.editor.Field('testField');
   field.registerPlugin(plugin);
   field.makeEditable();
@@ -51,34 +48,37 @@ function runEmojiTestWithPlugin(plugin) {
   field.execCommand(goog.editor.plugins.Emoticons.COMMAND, emoji);
 
   // The url may be relative or absolute.
-  var imgs = field.getEditableDomHelper().
-      getElementsByTagNameAndClass(goog.dom.TagName.IMG);
+  var imgs = field.getEditableDomHelper().getElementsByTagNameAndClass(
+      goog.dom.TagName.IMG);
   assertEquals(1, imgs.length);
 
   var img = imgs[0];
   assertUriEquals(src, img.getAttribute('src'));
   assertEquals(id, img.getAttribute(goog.ui.emoji.Emoji.ATTRIBUTE));
+  assertEquals(id, img.getAttribute(goog.ui.emoji.Emoji.DATA_ATTRIBUTE));
 
   var range = field.getRange();
   assertNotNull('must have a selection', range);
   assertTrue('range must be a cursor', range.isCollapsed());
-  if (goog.userAgent.WEBKIT) {
-    assertEquals('range starts after image',
-        2, range.getStartOffset());
-  } else if (goog.userAgent.GECKO) {
-    assertEquals('range starts after image',
-        2, goog.array.indexOf(range.getContainerElement().childNodes,
-                              range.getStartNode()));
+
+  if (!goog.userAgent.IE) {
+    var webkitValid = (2 == range.getStartOffset());
+    var otherValid =
+        (2 ==
+         goog.array.indexOf(
+             range.getContainerElement().childNodes, range.getStartNode()));
+
+    assertTrue('range starts after image', webkitValid || otherValid);
   }
-  // Firefox 3.6 is still tested, and would fail here - treitel December 2012
-  if (!(goog.userAgent.GECKO && !goog.userAgent.isVersionOrHigher(2))) {
-    assertEquals('range must be around image',
-        img.parentElement, range.getContainerElement());
-  }
+
+  assertEquals(
+      'range must be around image', img.parentElement,
+      range.getContainerElement());
 }
 
 function assertUriEquals(expected, actual) {
   var winUri = new goog.Uri(window.location);
-  assertEquals(winUri.resolve(new goog.Uri(expected)).toString(),
+  assertEquals(
+      winUri.resolve(new goog.Uri(expected)).toString(),
       winUri.resolve(new goog.Uri(actual)).toString());
 }

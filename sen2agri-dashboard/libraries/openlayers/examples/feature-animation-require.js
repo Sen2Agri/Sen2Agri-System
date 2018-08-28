@@ -12,3 +12,4 @@ goog.require('ol.source.OSM');
 goog.require('ol.source.Vector');
 goog.require('ol.style.Circle');
 goog.require('ol.style.Stroke');
+goog.require('ol.style.Style');

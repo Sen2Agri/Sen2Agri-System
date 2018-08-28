@@ -17,6 +17,7 @@ goog.setTestOnly('goog.style.transformTest');
 
 goog.require('goog.dom');
 goog.require('goog.dom.TagName');
+goog.require('goog.style');
 goog.require('goog.style.transform');
 goog.require('goog.testing.jsunit');
 goog.require('goog.userAgent');
@@ -24,8 +25,15 @@ goog.require('goog.userAgent.product.isVersion');
 
 
 /**
+ * Floating point equality tolerance.
+ * @const {number}
+ */
+var EPSILON = .0001;
+
+
+/**
  * Element being transformed.
- * @type {Element}
+ * @type {!Element}
  */
 var element;
 
@@ -76,6 +84,41 @@ var setAndAssertScale = function(x, y, z) {
     if (goog.style.transform.is3dSupported()) {
       assertEquals(z, scale.z);
     }
+  }
+};
+
+
+/**
+ * Sets a transform rotation and asserts the translation was applied.
+ * @param {number|function(number):boolean} expectedDegrees
+ *     The expected resulting rotation in degrees, or a function to evaluate
+ *     the resulting rotation.
+ * @param {string=} opt_transform The plaintext CSS transform value.
+ */
+var setAndAssertRotation = function(expectedDegrees, opt_transform) {
+  if (goog.userAgent.GECKO ||
+      goog.userAgent.IE && !goog.userAgent.isDocumentModeOrHigher(10)) {
+    // Mozilla and <IE10 do not support CSSMatrix.
+    return;
+  }
+  if (opt_transform) {
+    goog.style.setStyle(
+        element, goog.style.transform.getTransformProperty_(), opt_transform);
+  } else {
+    var success =
+        goog.style.transform.setRotation(element, Number(expectedDegrees));
+    if (!goog.style.transform.isSupported()) {
+      assertFalse(success);
+      return;
+    } else {
+      assertTrue(success);
+    }
+  }
+  var rotation = goog.style.transform.getRotation(element);
+  if (expectedDegrees instanceof Function) {
+    assertTrue('Incorrect rotation: ' + rotation, expectedDegrees(rotation));
+  } else {
+    assertRoughlyEquals(expectedDegrees, rotation, EPSILON);
   }
 };
 
@@ -134,4 +177,32 @@ function testScaleZ() {
 
 function testScale() {
   setAndAssertScale(2, 2, 2);
+}
+
+function testRotatePositive() {
+  setAndAssertRotation(90);
+}
+
+function testRotateNegative() {
+  setAndAssertRotation(-90);
+}
+
+function testGetRotationWhenScaledUp() {
+  setAndAssertRotation(90, 'scale(5) rotate3d(0,0,1,90deg)');
+}
+
+function testGetRotationWhenScaledDown() {
+  setAndAssertRotation(90, 'scale(.5) rotate3d(0,0,1,90deg)');
+}
+
+function testGetRotationWithSkew() {
+  setAndAssertRotation(0, 'skew(30deg, 30deg)');
+  // NOTE: Non-zero rotations are not well-defined with a skew, but the lower
+  // and upper bounds are. So check that the rotation is within these bounds.
+  setAndAssertRotation(function(x) {
+    return (x > 0 && x < 30);
+  }, 'skew(0, 30deg)');
+  setAndAssertRotation(function(x) {
+    return (x < 0 && x > -30);
+  }, 'skew(30deg, 0)');
 }

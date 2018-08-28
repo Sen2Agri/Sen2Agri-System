@@ -23,7 +23,9 @@ goog.provide('goog.labs.net.webChannel.webChannelBaseTransportTest');
 
 goog.require('goog.events');
 goog.require('goog.functions');
+goog.require('goog.json');
 goog.require('goog.labs.net.webChannel.ChannelRequest');
+goog.require('goog.labs.net.webChannel.WebChannelBase');
 goog.require('goog.labs.net.webChannel.WebChannelBaseTransport');
 goog.require('goog.net.WebChannel');
 goog.require('goog.testing.PropertyReplacer');
@@ -44,8 +46,7 @@ function shouldRunTests() {
 }
 
 
-function setUp() {
-}
+function setUp() {}
 
 
 function tearDown() {
@@ -58,7 +59,8 @@ function tearDown() {
  * Stubs goog.labs.net.webChannel.ChannelRequest.
  */
 function stubChannelRequest() {
-  stubs.set(goog.labs.net.webChannel.ChannelRequest, 'supportsXhrStreaming',
+  stubs.set(
+      goog.labs.net.webChannel.ChannelRequest, 'supportsXhrStreaming',
       goog.functions.FALSE);
 }
 
@@ -79,10 +81,9 @@ function testOpenWithUrl() {
   webChannel = webChannelTransport.createWebChannel(channelUrl);
 
   var eventFired = false;
-  goog.events.listen(webChannel, goog.net.WebChannel.EventType.OPEN,
-      function(e) {
-        eventFired = true;
-      });
+  goog.events.listen(
+      webChannel, goog.net.WebChannel.EventType.OPEN,
+      function(e) { eventFired = true; });
 
   webChannel.open();
   assertFalse(eventFired);
@@ -116,6 +117,18 @@ function testOpenWithCustomHeaders() {
   assertNotNullNorUndefined(extraHeaders_);
   assertEquals('foo-value', extraHeaders_['foo-key']);
   assertEquals(undefined, extraHeaders_['X-Client-Protocol']);
+}
+
+function testOpenWithInitHeaders() {
+  var webChannelTransport =
+      new goog.labs.net.webChannel.WebChannelBaseTransport();
+  var options = {'initMessageHeaders': {'foo-key': 'foo-value'}};
+  webChannel = webChannelTransport.createWebChannel(channelUrl, options);
+  webChannel.open();
+
+  var initHeaders_ = webChannel.channel_.initHeaders_;
+  assertNotNullNorUndefined(initHeaders_);
+  assertEquals('foo-value', initHeaders_['foo-key']);
 }
 
 function testClientProtocolHeaderRequired() {
@@ -167,6 +180,34 @@ function testOpenWithCustomParams() {
   assertNotNullNorUndefined(extraParams);
 }
 
+function testOpenWithHttpSessionIdParam() {
+  var webChannelTransport =
+      new goog.labs.net.webChannel.WebChannelBaseTransport();
+  var options = {'httpSessionIdParam': 'xsessionid'};
+  webChannel = webChannelTransport.createWebChannel(channelUrl, options);
+  webChannel.open();
+
+  var httpSessionIdParam = webChannel.channel_.getHttpSessionIdParam();
+  assertEquals('xsessionid', httpSessionIdParam);
+}
+
+function testOpenWithDuplicatedHttpSessionIdParam() {
+  var webChannelTransport =
+      new goog.labs.net.webChannel.WebChannelBaseTransport();
+  var options = {
+    'messageUrlParams': {'xsessionid': 'abcd1234'},
+    'httpSessionIdParam': 'xsessionid'
+  };
+  webChannel = webChannelTransport.createWebChannel(channelUrl, options);
+  webChannel.open();
+
+  var httpSessionIdParam = webChannel.channel_.getHttpSessionIdParam();
+  assertEquals('xsessionid', httpSessionIdParam);
+
+  var extraParams = webChannel.channel_.extraParams_;
+  assertUndefined(extraParams['xsessionid']);
+}
+
 function testOpenWithCorsEnabled() {
   var webChannelTransport =
       new goog.labs.net.webChannel.WebChannelBaseTransport();
@@ -177,16 +218,33 @@ function testOpenWithCorsEnabled() {
   assertTrue(webChannel.channel_.supportsCrossDomainXhrs_);
 }
 
+function testSendRawJson() {
+  var channelMsg;
+  stubs.set(
+      goog.labs.net.webChannel.WebChannelBase.prototype, 'sendMap',
+      function(message) { channelMsg = message; });
+
+  var webChannelTransport =
+      new goog.labs.net.webChannel.WebChannelBaseTransport();
+  var options = {'sendRawJson': true};
+  webChannel = webChannelTransport.createWebChannel(channelUrl, options);
+  webChannel.open();
+
+  webChannel.send({foo: 'bar'});
+
+  var receivedMsg = goog.json.parse(channelMsg['__data__']);
+  assertEquals('bar', receivedMsg.foo);
+}
+
 function testOpenThenCloseChannel() {
   var webChannelTransport =
       new goog.labs.net.webChannel.WebChannelBaseTransport();
   webChannel = webChannelTransport.createWebChannel(channelUrl);
 
   var eventFired = false;
-  goog.events.listen(webChannel, goog.net.WebChannel.EventType.CLOSE,
-      function(e) {
-        eventFired = true;
-      });
+  goog.events.listen(
+      webChannel, goog.net.WebChannel.EventType.CLOSE,
+      function(e) { eventFired = true; });
 
   webChannel.open();
   assertFalse(eventFired);
@@ -205,8 +263,8 @@ function testChannelError() {
   webChannel = webChannelTransport.createWebChannel(channelUrl);
 
   var eventFired = false;
-  goog.events.listen(webChannel, goog.net.WebChannel.EventType.ERROR,
-      function(e) {
+  goog.events.listen(
+      webChannel, goog.net.WebChannel.EventType.ERROR, function(e) {
         eventFired = true;
         assertEquals(goog.net.WebChannel.ErrorStatus.NETWORK_ERROR, e.status);
       });
@@ -229,8 +287,8 @@ function testChannelMessage() {
 
   var eventFired = false;
   var data = 'foo';
-  goog.events.listen(webChannel, goog.net.WebChannel.EventType.MESSAGE,
-      function(e) {
+  goog.events.listen(
+      webChannel, goog.net.WebChannel.EventType.MESSAGE, function(e) {
         eventFired = true;
         assertEquals(e.data, data);
       });

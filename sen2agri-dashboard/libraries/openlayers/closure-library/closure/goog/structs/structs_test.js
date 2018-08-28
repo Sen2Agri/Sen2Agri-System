@@ -16,6 +16,7 @@ goog.provide('goog.structsTest');
 goog.setTestOnly('goog.structsTest');
 
 goog.require('goog.array');
+goog.require('goog.dom');
 goog.require('goog.dom.TagName');
 goog.require('goog.structs');
 goog.require('goog.structs.Map');
@@ -54,7 +55,7 @@ var node;
 
 
 function addNode() {
-  node = document.createElement(goog.dom.TagName.SPAN);
+  node = goog.dom.createElement(goog.dom.TagName.SPAN);
   getTestElement().appendChild(node);
 }
 
@@ -190,10 +191,12 @@ function testContains() {
       "contains, Should not contain 'd'", goog.structs.contains(s, 'd'));
 
   var all = getAll();
-  assertTrue("contains, Should contain 'h1'",
-             goog.structs.contains(all, document.getElementById('h1')));
-  assertFalse("contains, Should not contain 'document.body'",
-              goog.structs.contains(all, document.body));
+  assertTrue(
+      "contains, Should contain 'h1'",
+      goog.structs.contains(all, document.getElementById('h1')));
+  assertFalse(
+      "contains, Should not contain 'document.body'",
+      goog.structs.contains(all, document.body));
 
   var aMap = new goog.structs.Map({a: 1, b: 2, c: 3});
   assertTrue("contains, Should contain '1'", goog.structs.contains(aMap, 1));
@@ -224,7 +227,8 @@ function testClear() {
   var aMap = new goog.structs.Map({a: 1, b: 2, c: 3});
   goog.structs.clear(aMap);
   assertTrue('cleared map so it should be empty', goog.structs.isEmpty(aMap));
-  assertFalse("cleared map so it should not contain '1' value",
+  assertFalse(
+      "cleared map so it should not contain '1' value",
       goog.structs.contains(aMap, 1));
 
   var aSet = new goog.structs.Set([1, 2, 3]);
@@ -294,7 +298,7 @@ function testMapArrayLike2() {
 function testMapString() {
   var col = '012';
   function f(v, i, col2) {
-    // Teh SpiderMonkey Array.map for strings turns the string into a String
+    // The SpiderMonkey Array.map for strings turns the string into a String
     // so we cannot use assertEquals because it uses ===.
     assertTrue(col == col2);
     assertEquals('number', typeof i);
@@ -509,8 +513,7 @@ function testFilterNodeList() {
     assertEquals('number', typeof i);
     return v.tagName == goog.dom.TagName.P;
   }
-  assertEquals('P,P,P,P,P,P,P,P',
-               nodeNames(goog.structs.filter(col, f)));
+  assertEquals('P,P,P,P,P,P,P,P', nodeNames(goog.structs.filter(col, f)));
 }
 
 function testFilterNodeList2() {
@@ -522,8 +525,8 @@ function testFilterNodeList2() {
     assertEquals(THIS_OBJ, this);
     return v.tagName == goog.dom.TagName.P;
   }
-  assertEquals('P,P,P,P,P,P,P,P',
-               nodeNames(goog.structs.filter(col, f, THIS_OBJ)));
+  assertEquals(
+      'P,P,P,P,P,P,P,P', nodeNames(goog.structs.filter(col, f, THIS_OBJ)));
 }
 
 // Some
@@ -843,7 +846,7 @@ function testEverySet2() {
 }
 
 function testEveryNodeList() {
-  var nodeType = 1; // ELEMENT
+  var nodeType = 1;  // ELEMENT
   var col = getAll();
   function f(v, i, col2) {
     assertEquals(col, col2);
@@ -851,13 +854,13 @@ function testEveryNodeList() {
     return v.nodeType == nodeType;
   }
   assertTrue(goog.structs.every(col, f));
-  nodeType = 3; // TEXT
+  nodeType = 3;  // TEXT
   assertFalse(goog.structs.every(col, f));
 }
 
 function testEveryNodeList2() {
   var THIS_OBJ = {};
-  var nodeType = 1; // ELEMENT
+  var nodeType = 1;  // ELEMENT
   var col = getAll();
   function f(v, i, col2) {
     assertEquals(col, col2);
@@ -866,7 +869,7 @@ function testEveryNodeList2() {
     return v.nodeType == nodeType;
   }
   assertTrue(goog.structs.every(col, f, THIS_OBJ));
-  nodeType = 3; // TEXT
+  nodeType = 3;  // TEXT
   assertFalse(goog.structs.every(col, f, THIS_OBJ));
 }
 

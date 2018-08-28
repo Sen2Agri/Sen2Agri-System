@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>OpenLayers 3 - Compiling Application with Closure Compiler</title>
+    <title>OpenLayers - Compiling Application with Closure Compiler</title>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <link href='http://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700' rel='stylesheet' type='text/css'>
+    <link href='https://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700' rel='stylesheet' type='text/css'>
     <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
@@ -22,15 +22,15 @@
           <span class='icon-bar'></span>
         </button>
 
-        <a href='/' class='navbar-brand'><img src='../../../../assets/theme/img/logo70.png'>&nbsp;OpenLayers 3</a>
+        <a href='/' class='navbar-brand'><img src='../../../../assets/theme/img/logo70.png'>&nbsp;OpenLayers</a>
 
         <!-- menu items that get hidden below 768px width -->
         <nav class='collapse navbar-collapse navbar-responsive-collapse'>
           <ul class='nav navbar-nav pull-right'>
-            <li><a href='/en/v3.10.1/doc'class="active">Docs</a></li>
-            <li><a href='/en/v3.10.1/examples'>Examples</a></li>
-            <li><a href='/en/v3.10.1/apidoc'>API</a></li>
-            <li><a href='https://github.com/openlayers/ol3'>Code</a></li>
+            <li><a href='/en/latest/doc/'class="active">Docs</a></li>
+            <li><a href='/en/latest/examples/'>Examples</a></li>
+            <li><a href='/en/latest/apidoc/'>API</a></li>
+            <li><a href='https://github.com/openlayers/openlayers'>Code</a></li>
           </ul>
         </nav>
       </div>
@@ -39,11 +39,13 @@
 
 <div class='container'>
 <h1 id="compiling-application-with-closure-compiler">Compiling Application with Closure Compiler</h1>
-<p>The OpenLayers 3 code uses the Closure Library, and it is compiled with the
-Closure Compiler. Using OpenLayers 3 in an application does not require using
-Closure. But using Closure in an OpenLayers 3 application is possible. And this
+<p><strong>Note</strong>: When building an application with dependencies that are available as <a href="https://npmjs.com/">npm</a> packages, it will probably be easier to use the <a href="https://npmjs.com/package/ol">ol</a> package and follow the instructions there.</p>
+<p>The OpenLayers code uses the Closure Library, and it is compiled with the
+Closure Compiler. Using OpenLayers in an application does not require using
+Closure. But using Closure in an OpenLayers application is possible. And this
 is what this tutorial is about.</p>
-<p>This tutorial will teach you how to set up an OpenLayers 3 application based on
+<p>When you want to include OpenLayers as separate script without bundling with your application, follow the <a href="./custom-builds.html">Creating custom builds</a> tutorial instead.</p>
+<p>This tutorial will teach you how to set up an OpenLayers application based on
 the <a href="https://github.com/openlayers/closure-util"><code>closure-util</code></a> node package,
 which provides utilities for working with Closure. Using <code>closure-util</code> is one
 way to use Closure in a web application, but there are others. This tutorial
@@ -59,17 +61,17 @@ need it.</p>
 GitHub.</p>
 <h2 id="advantages-of-using-closure">Advantages of using Closure</h2>
 <p>This tutorial will show you how to use the Closure Compiler to compile an
-application and OpenLayers 3 together. Compiling the application code together
-with the OpenLayers 3 code has a number of advantages.</p>
-<p>First of all, it allows you to only &quot;pay&quot; for the OpenLayers 3 code your
-application uses, as the compiler will exclude the OpenLayers 3 code that the
+application and OpenLayers together. Compiling the application code together
+with the OpenLayers code has a number of advantages.</p>
+<p>First of all, it allows you to only &quot;pay&quot; for the OpenLayers code your
+application uses, as the compiler will exclude the OpenLayers code that the
 application doesn&#39;t use. And there is no need to write and maintain a list of
-&quot;exports&quot;, which is necessary when creating custom builds of OpenLayers 3.</p>
-<p>Also, compiling the application and OpenLayers 3 together allows using
-OpenLayers 3 functions and objects that are not part of the official OpenLayers
+&quot;exports&quot;, which is necessary when creating custom builds of OpenLayers.</p>
+<p>Also, compiling the application and OpenLayers together allows using
+OpenLayers functions and objects that are not part of the official OpenLayers
 3 API. Using non-API functions and objects may be risky, but it is mitigated by
 the fact that the compiler will complain if you use functions or objects
-that are not in OpenLayers 3 anymore.</p>
+that are not in OpenLayers anymore.</p>
 <h2 id="setting-up-the-application">Setting up the Application</h2>
 <p>First, create a directory for the application. We will name that directory
 <code>openlayers-closure-application</code> in this tutorial.</p>
@@ -86,7 +88,7 @@ application.</p>
 <pre><code>$ npm init</code></pre>
 <p>You can pretty much use the default answers to the questions <code>npm init</code> asks
 you.</p>
-<p>Now install OpenLayers 3 using:</p>
+<p>Now install OpenLayers using:</p>
 <pre><code>$ npm install openlayers --save</code></pre>
 <p>The <code>--save</code> flag persists the <code>openlayers</code> dependency in the application&#39;s
 <code>package.json</code> file. You can edit <code>package.json</code> to verify that the dependency
@@ -109,8 +111,8 @@ command
 
 Options:
    -l LEVEL, --loglevel LEVEL   Log level  [info]</code></pre>
-<h2 id="create-an-openlayers-3-map">Create an OpenLayers 3 map</h2>
-<p>You&#39;re now going to create a JavaScript file that creates an OpenLayers 3 map.
+<h2 id="create-an-openlayers-map">Create an OpenLayers map</h2>
+<p>You&#39;re now going to create a JavaScript file that creates an OpenLayers map.
 This is the file that we will define the application&#39;s entry point.</p>
 <p>First of all create an <code>src</code> directory at the root of the application:</p>
 <pre><code>$ mkdir src</code></pre>
@@ -124,7 +126,7 @@ goog.require(<span class="string">'ol.source.OSM'</span>);
 
 
 <span class="comment">/**
- * @type {ol.Map}
+ * @type {ol.PluggableMap}
  */</span>
 app.map = <span class="keyword">new</span> ol.Map({
   target: <span class="string">'map'</span>,
@@ -143,7 +145,7 @@ app.map = <span class="keyword">new</span> ol.Map({
 namespaces that the application uses. The rest of the code just creates the
 OpenLayers map as you would do in any OpenLayers application.</p>
 <h2 id="compiling-the-application">Compiling the Application</h2>
-<p>We&#39;re now going to compile the application and OpenLayers 3 together, using the
+<p>We&#39;re now going to compile the application and OpenLayers together, using the
 Closure Compiler and <code>closure-util</code>. For this we need to create a JSON config
 file, that we will then pass as an input file to the <code>closure-util</code> command.</p>
 <p>The minimum config file looks like this:</p>
@@ -157,30 +159,26 @@ file, that we will then pass as an input file to the <code>closure-util</code> c
     "<span class="attribute">closure_entry_point</span>": <span class="value"><span class="string">"app"</span></span>,
     "<span class="attribute">externs</span>": <span class="value">[
       <span class="string">"node_modules/openlayers/externs/bingmaps.js"</span>,
+      <span class="string">"node_modules/openlayers/externs/cartodb.js"</span>,
       <span class="string">"node_modules/openlayers/externs/closure-compiler.js"</span>,
+      <span class="string">"node_modules/openlayers/externs/esrijson.js"</span>,
       <span class="string">"node_modules/openlayers/externs/geojson.js"</span>,
       <span class="string">"node_modules/openlayers/externs/proj4js.js"</span>,
       <span class="string">"node_modules/openlayers/externs/tilejson.js"</span>,
       <span class="string">"node_modules/openlayers/externs/topojson.js"</span>
     ]</span>,
     "<span class="attribute">define</span>": <span class="value">[
-      <span class="string">"goog.array.ASSUME_NATIVE_FUNCTIONS=true"</span>,
-      <span class="string">"goog.dom.ASSUME_STANDARDS_MODE=true"</span>,
-      <span class="string">"goog.json.USE_NATIVE_JSON=true"</span>,
-      <span class="string">"goog.DEBUG=false"</span>,
-      <span class="string">"ol.ENABLE_DOM=false"</span>,
       <span class="string">"ol.ENABLE_WEBGL=false"</span>
     ]</span>,
     "<span class="attribute">js</span>": <span class="value">[
+      <span class="string">"node_modules/openlayers/src/ol/typedefs.js"</span>,
       <span class="string">"node_modules/openlayers/externs/olx.js"</span>,
       <span class="string">"node_modules/openlayers/externs/oli.js"</span>
-    ]</span>,
-    "<span class="attribute">jscomp_off</span>": <span class="value">[
-      <span class="string">"unknownDefines"</span>
     ]</span>,
     "<span class="attribute">extra_annotation_name</span>": <span class="value">[
       <span class="string">"api"</span>, <span class="string">"observable"</span>
     ]</span>,
+    "<span class="attribute">rewrite_polyfills</span>": <span class="value"><span class="string">"false"</span></span>,
     "<span class="attribute">compilation_level</span>": <span class="value"><span class="string">"ADVANCED"</span></span>,
     "<span class="attribute">warning_level</span>": <span class="value"><span class="string">"VERBOSE"</span></span>,
     "<span class="attribute">output_wrapper</span>": <span class="value"><span class="string">"(function(){%output%})();"</span></span>,
@@ -193,7 +191,7 @@ application directory.</p>
 <pre><code>$ ./node_modules/openlayers/node_modules/.bin/closure-util build config.json app.js</code></pre>
 <p>The resulting <code>app.js</code> file, which you can view in your editor if you&#39;re
 curious, includes a minified version of the application code (<code>main.js</code>), and
-the OpenLayers 3 code that the application code uses.</p>
+the OpenLayers code that the application code uses.</p>
 <p>Here is a version of <code>config.json</code> with more compilation checks enabled:</p>
 <pre><code class="language-json">{
   "<span class="attribute">lib</span>": <span class="value">[
@@ -205,60 +203,29 @@ the OpenLayers 3 code that the application code uses.</p>
     "<span class="attribute">closure_entry_point</span>": <span class="value"><span class="string">"app"</span></span>,
     "<span class="attribute">externs</span>": <span class="value">[
       <span class="string">"node_modules/openlayers/externs/bingmaps.js"</span>,
+      <span class="string">"node_modules/openlayers/externs/cartodb.js"</span>,
       <span class="string">"node_modules/openlayers/externs/closure-compiler.js"</span>,
+      <span class="string">"node_modules/openlayers/externs/esrijson.js"</span>,
       <span class="string">"node_modules/openlayers/externs/geojson.js"</span>,
       <span class="string">"node_modules/openlayers/externs/proj4js.js"</span>,
       <span class="string">"node_modules/openlayers/externs/tilejson.js"</span>,
       <span class="string">"node_modules/openlayers/externs/topojson.js"</span>
     ]</span>,
     "<span class="attribute">define</span>": <span class="value">[
-      <span class="string">"goog.array.ASSUME_NATIVE_FUNCTIONS=true"</span>,
-      <span class="string">"goog.dom.ASSUME_STANDARDS_MODE=true"</span>,
-      <span class="string">"goog.json.USE_NATIVE_JSON=true"</span>,
-      <span class="string">"goog.DEBUG=false"</span>,
-      <span class="string">"ol.ENABLE_DOM=false"</span>,
       <span class="string">"ol.ENABLE_WEBGL=false"</span>
     ]</span>,
     "<span class="attribute">js</span>": <span class="value">[
+      <span class="string">"node_modules/openlayers/src/ol/typedefs.js"</span>,
       <span class="string">"node_modules/openlayers/externs/olx.js"</span>,
       <span class="string">"node_modules/openlayers/externs/oli.js"</span>
     ]</span>,
     "<span class="attribute">jscomp_error</span>": <span class="value">[
-      <span class="string">"accessControls"</span>,
-      <span class="string">"ambiguousFunctionDecl"</span>,
-      <span class="string">"checkEventfulObjectDisposal"</span>,
-      <span class="string">"checkRegExp"</span>,
-      <span class="string">"checkTypes"</span>,
-      <span class="string">"checkVars"</span>,
-      <span class="string">"const"</span>,
-      <span class="string">"constantProperty"</span>,
-      <span class="string">"deprecated"</span>,
-      <span class="string">"duplicateMessage"</span>,
-      <span class="string">"es3"</span>,
-      <span class="string">"es5Strict"</span>,
-      <span class="string">"externsValidation"</span>,
-      <span class="string">"fileoverviewTags"</span>,
-      <span class="string">"globalThis"</span>,
-      <span class="string">"internetExplorerChecks"</span>,
-      <span class="string">"invalidCasts"</span>,
-      <span class="string">"misplacedTypeAnnotation"</span>,
-      <span class="string">"missingGetCssName"</span>,
-      <span class="string">"missingProperties"</span>,
-      <span class="string">"missingProvide"</span>,
-      <span class="string">"missingRequire"</span>,
-      <span class="string">"missingReturn"</span>,
-      <span class="string">"newCheckTypes"</span>,
-      <span class="string">"nonStandardJsDocs"</span>,
-      <span class="string">"suspiciousCode"</span>,
-      <span class="string">"strictModuleDepCheck"</span>,
-      <span class="string">"typeInvalidation"</span>,
-      <span class="string">"undefinedNames"</span>,
-      <span class="string">"undefinedVars"</span>,
-      <span class="string">"uselessCode"</span>,
-      <span class="string">"visibility"</span>
+      <span class="string">"*"</span>
     ]</span>,
     "<span class="attribute">jscomp_off</span>": <span class="value">[
-      <span class="string">"unknownDefines"</span>
+      <span class="string">"unknownDefines"</span>,
+      <span class="string">"lintChecks"</span>,
+      <span class="string">"analyzerChecks"</span>
     ]</span>,
     "<span class="attribute">extra_annotation_name</span>": <span class="value">[
       <span class="string">"api"</span>, <span class="string">"observable"</span>
@@ -294,7 +261,7 @@ directory:</p>
   &lt;/body&gt;
 &lt;/html&gt;</code></pre>
 <p>Note that the page includes a <code>script</code> tag referencing the <code>app.js</code> file,
-which is the file resuted from the compilation.</p>
+which is the file resulting from the compilation.</p>
 <p>You are done!</p>
 <h2 id="run-application-in-debug-mode">Run Application in Debug Mode</h2>
 <p>As a bonus, we&#39;re going to show how to use <code>closure-util</code> to run the

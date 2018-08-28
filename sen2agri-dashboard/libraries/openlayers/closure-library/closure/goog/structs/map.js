@@ -39,6 +39,7 @@ goog.require('goog.object');
  *     will be used as key-value pairs.
  * @constructor
  * @template K, V
+ * @deprecated This type is misleading: use ES6 Map instead.
  */
 goog.structs.Map = function(opt_map, var_args) {
 
@@ -79,7 +80,7 @@ goog.structs.Map = function(opt_map, var_args) {
 
   if (argLength > 1) {
     if (argLength % 2) {
-      throw Error('Uneven number of arguments');
+      throw new Error('Uneven number of arguments');
     }
     for (var i = 0; i < argLength; i += 2) {
       this.set(arguments[i], arguments[i + 1]);
@@ -223,7 +224,7 @@ goog.structs.Map.prototype.remove = function(key) {
     this.count_--;
     this.version_++;
 
-    // clean up the keys array if the threshhold is hit
+    // clean up the keys array if the threshold is hit
     if (this.keys_.length > 2 * this.count_) {
       this.cleanupKeysArray_();
     }
@@ -302,7 +303,9 @@ goog.structs.Map.prototype.get = function(key, opt_val) {
 goog.structs.Map.prototype.set = function(key, value) {
   if (!(goog.structs.Map.hasKey_(this.map_, key))) {
     this.count_++;
-    this.keys_.push(key);
+    // TODO(johnlenz): This class lies, it claims to return an array of string
+    // keys, but instead returns the original object used.
+    this.keys_.push(/** @type {?} */ (key));
     // Only change the version if we add a new key.
     this.version_++;
   }
@@ -430,7 +433,7 @@ goog.structs.Map.prototype.__iterator__ = function(opt_keys) {
   var newIter = new goog.iter.Iterator;
   newIter.next = function() {
     if (version != selfObj.version_) {
-      throw Error('The map has changed since the iterator was created');
+      throw new Error('The map has changed since the iterator was created');
     }
     if (i >= selfObj.keys_.length) {
       throw goog.iter.StopIteration;

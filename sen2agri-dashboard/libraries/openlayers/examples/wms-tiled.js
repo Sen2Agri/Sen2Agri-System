@@ -1,13 +1,15 @@
 var layers = [
   new ol.layer.Tile({
-    source: new ol.source.MapQuest({layer: 'sat'})
+    source: new ol.source.OSM()
   }),
   new ol.layer.Tile({
     extent: [-13884991, 2870341, -7455066, 6338219],
     source: new ol.source.TileWMS({
-      url: 'http://demo.boundlessgeo.com/geoserver/wms',
+      url: 'https://ahocevar.com/geoserver/wms',
       params: {'LAYERS': 'topp:states', 'TILED': true},
-      serverType: 'geoserver'
+      serverType: 'geoserver',
+      // Countries have transparency, so do not fade tiles:
+      transition: 0
     })
   })
 ];

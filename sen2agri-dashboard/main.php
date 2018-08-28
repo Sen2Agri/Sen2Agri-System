@@ -1,7 +1,7 @@
 ﻿<?php include "master.php"; ?>
 <?php 
 
-$dbconn       = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+$dbconn       = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 $sites_id = sizeof(ConfigParams::$SITE_ID)>0? '{'.implode(',',ConfigParams::$SITE_ID).'}':null;
 
 $sites = array();
@@ -20,7 +20,7 @@ $sql ='SELECT * FROM sp_get_product_types() ';
 $result = pg_query ( $dbconn, $sql ) or die ( "Could not execute." );
 $option_product_type = "";
 while ( $row = pg_fetch_row ( $result ) ) {
-    if($row [0] != "7"){//if product type is not L1C 
+	if((ConfigParams::isSen2Agri() && $row [0] != "7") || !ConfigParams::isSen2Agri()){//if product type is not L1C 
 		$option = "<option value='" . $row [0] . "'>" . $row [1] . "</option>";
 		$option_product_type .= $option;
     }
@@ -65,19 +65,22 @@ while ( $row = pg_fetch_row ( $result ) ) {
                          </div>
                          
                          <!-- Sensor -->                      
-                          <div class="row" id="div_senzor">
+                          <div class="row" id="div_sensor">
                          	<div class="col-md-3">
                                	<label>Sensor:<span style="color:red">*</span></label>                                                        
                             </div>
                             <div>
-                            	<label class="checkbox-inline" style="margin-bottom: 5px" for="senzor"><input type="checkbox" id="S2" name="senzor" value="1" checked>S2</label>
-                                <label class="checkbox-inline" style="margin-bottom: 5px" for="senzor"><input type="checkbox" id="L8" name="senzor" value="2" checked>L8</label>                                                       
+                            <?php if(!ConfigParams::isSen2Agri()){?>
+                            	<label class="checkbox-inline" style="margin-bottom: 5px" for="sensor"><input type="checkbox" id="S1" name="sensor" value="1" checked>S1</label>
+                            <?php }?>
+                            	<label class="checkbox-inline" style="margin-bottom: 5px" for="sensor"><input type="checkbox" id="S2" name="sensor" value="1" checked>S2</label>
+                                <label class="checkbox-inline" style="margin-bottom: 5px" for="sensor"><input type="checkbox" id="L8" name="sensor" value="2" checked>L8</label>                                                       
                             </div>                           
                          </div>
                          <div class="row errorClass" style="display:none;">
                          	<div class="col-md-3" >
                             </div>
-                            <div>Senzor field is required.</div>
+                            <div>Sensor field is required.</div>
                          </div>
                        
                          
@@ -217,7 +220,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 	        resizable: false
 	    });
 
-		$("input[name='senzor']").change(function(){
+		$("input[name='sensor']").change(function(){
 			$(".errorClass").css("display","none");
 			});
 		
@@ -299,14 +302,16 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		    source: function( request, response ) {
 						var product = new Array();
 						var productSelected = false;
-			  	   	  	if($("#S2").is(':checked')){
-			  	   	  		product.push($("#S2").val());
-			  	   	  		productSelected = true;
-				  	   	  }
-				  	   	if($("#L8").is(':checked')){
-				  	   		product.push($("#L8").val());
-				  	   		productSelected = true;
-				  	   	  }
+
+						var sensors = $("input:checkbox[name='sensor']");
+						$.each(sensors, function(index, sensor){
+							if( $(sensor).is(':checked')){
+								//push sensor id
+				  	   	  		product.push($(sensor).val());
+				  	   	  		productSelected = true;
+					  	   	  }
+							});
+						
 			  	   		var site_id = $('#choose_site').find(":selected").val();
 
 			  	   		if(site_id != "" && productSelected == true){
@@ -355,22 +360,6 @@ while ( $row = pg_fetch_row ( $result ) ) {
 	
 	function abortApplyFilter(){
 	   $("#div_filter").dialog("close");
-	   
-	   //reset form after dialog close
-	   /*$("#apply_filter")[0].reset();
-	   
-	   // reset multiselect after dialog close
-	   $("#product_type").multiselect( 'destroy' );
-	   initMultiSelect();
-
-		$('#optseason').attr('disabled',true);
-		$('#choose_season').attr('disabled',true);
-
-		$('input[name="startdate"]').removeAttr("disabled");
-    	$('input[name="enddate"]').removeAttr("disabled");
-
-		$('#tiles').attr('disabled',true);*/
-	   
 	}	
 
 	//reset filters
@@ -410,31 +399,28 @@ while ( $row = pg_fetch_row ( $result ) ) {
 
 	var dataFiltered = {};
 	$("input[name='apply_filter_submit']").click(function() { 
-		var error = false;
+		var error = true;
+		var satellit_id = new Array();
 
-		// check if senzor is selected
-		if($("#S2").is(':checked')==false && $("#L8").is(':checked')==false){
-			error = true;
-	   	    $(".errorClass").css("display","");
-		}
+		// check if sensor is selected
+		var sensors = $("input:checkbox[name='sensor']");
+		$.each(sensors, function(index, sensor){
+			if( $(sensor).is(':checked')){
+				error = false;
+				$(".errorClass").css("display","none");
 
-		if(error == false){
-			$(".errorClass").css("display","none");
-			
+				//push sensor id
+				satellit_id.push($(sensor).val());
+  	   	        dataFiltered.satellit_id = satellit_id ;
+	  	   	  }
+			});
+	
+		if(error == false){			
 			dataFiltered = {};
 			
 			var site_id = $('#choose_site').find(":selected").val();
 			if(site_id!="") dataFiltered.site_id= site_id ;
 			
-			var satellit_id = new Array();
-			if($("#S2").is(':checked') ){
-	  	   		satellit_id.push($("#S2").val());	  		
-		  	  }
-		   if($("#L8").is(':checked')){
-		  		satellit_id.push($("#L8").val());
-	  	   	  }
-  	   		if($("#S2").is(':checked') == true || $("#L8").is(':checked') ==true)dataFiltered.satellit_id= satellit_id ;
-	  	  	
 	  	    var product_id = $('#product_type').val();
 	  	    if(product_id!=null) dataFiltered.product_id= product_id ;
 
@@ -494,7 +480,9 @@ while ( $row = pg_fetch_row ( $result ) ) {
 			});
 
 			
-		}
+		}else {
+			 $(".errorClass").css("display","");
+			 }
 	});
 
 	function applyFilter(){
@@ -535,6 +523,10 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		var imageLayer;
 		var displayProductImage = function(imageUrl,/* imageWidth, imageHeight,*/ extent) {
 			if(imageLayer) map.removeLayer(imageLayer);
+			if(vectorLayer) {
+				map.removeLayer(vectorLayer);
+			}
+			
 
 			if(!imageUrl) return;
 			imageLayer = new ol.layer.Image({
@@ -552,6 +544,38 @@ while ( $row = pg_fetch_row ( $result ) ) {
 			});
 
 			map.addLayer(imageLayer);
+		};
+
+
+		// Create a vector layer
+		var vectorLayer;
+		var displayProductVector = function(productUrl) {
+			if(vectorLayer) {
+				map.removeLayer(vectorLayer);
+			}
+			if(imageLayer) map.removeLayer(imageLayer);
+
+			if(!productUrl) return;
+			vectorLayer =  new ol.layer.VectorTile({
+				source: new ol.source.VectorTile({
+		            format: new ol.format.MVT({
+		            	  geometryName: 'myGeom',
+		            	  layerName: 'myLayer'
+		            	}),
+		            tileGrid: ol.tilegrid.createXYZ({maxZoom: 22}),
+		            tilePixelRatio: 16,		           
+					url: productUrl,
+					attributions: [
+						new ol.Attribution({
+							html: ''
+						})
+					]
+				}),
+		        style: styleSelected,
+		        projection: map.getView().getProjection()
+			});
+
+			map.addLayer(vectorLayer);
 		};
 
 		// select interaction working on "singleclick"
@@ -591,19 +615,6 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		          ' and deselected ' + e.deselected.length + ' features)');
 		    });
 		  }
-		};
-
-		var panToLocation = function(extent) {
-		  var pan = ol.animation.pan({
-		    duration: 1000,
-		    source: /** @type {ol.Coordinate} */ (view.getCenter())
-		  });
-		  map.beforeRender(pan);
-		  //view.setCenter(location);
-		  //view.setZoom(zoom);
-		  view.fit(extent, map.getSize());
-		  var zoom = view.getZoom()-3;
-		  view.setZoom(zoom);
 		};
 
 		initInteraction();
@@ -648,6 +659,15 @@ while ( $row = pg_fetch_row ( $result ) ) {
     					var	dataNodes = {};
     									
     					if(dataFiltered != {}){
+        					var satellite = new Array();
+    						var sensors = $("input:checkbox[name='sensor']");
+    						$.each(sensors, function(index, sensor){
+    							if( $(sensor).is(':checked')){
+    								//push sensor id
+    				  	   	  		satellite.push($(sensor).val());
+    				  	   		    dataFiltered.satellite_id = satellite;
+    					  	   	  }
+    							});
         					
     						dataFiltered.action = 'getNodes';
     						dataFiltered.product_id = [data.id];
@@ -706,28 +726,40 @@ while ( $row = pg_fetch_row ( $result ) ) {
 						}
 				},
 				onNodeSelected: function(event, data) {
-					var extent;
-
 					var selectedFeatures = vector.getSource();//selectMethod.getFeatures();
 					selectedFeatures.clear();
-
-					if(data['productCoord']) {
-						extent = ol.extent.applyTransform(data['productCoord'], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
+					
+					
+					if(!data.hasOwnProperty('is_raster') || (data.hasOwnProperty('is_raster') && data.is_raster == true)){
+						var extent;    					
+    				
+    					if(data['productCoord']) {
+    						extent = ol.extent.applyTransform(data['productCoord'], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
+    						
+    						var feature = new ol.Feature({
+    							geometry: ol.geom.Polygon.fromExtent(extent)
+    						});
+    						selectedFeatures.addFeature(feature);
+    
+    					} else {
+    						extent = ol.extent.applyTransform([-90,-50,90,50], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
+    					}
+    
+    					displayProductImage('getProductImage.php?id='+data['productId'],/* data['productImageWidth'], data['productImageHeight'],*/ extent);
+    					
+    			        vector.getSource().once('change', function(e) {
+    			        	  map.getView().fit(e.target.getExtent(), {duration: 1500});
+    			        	});
+					}else{
+						//@TODO 'http://sen2agri-dev:6767/CZ_SEN4CAP_TestSite2/{z}/{x}/{y}.pbf' De inlocuit cu produsul care vine din DB
+						displayProductVector('http://sen2agri-dev:6767/CZ_SEN4CAP_TestSite2/{z}/{x}/{y}.pbf');
 						
-						var feature = new ol.Feature({
-							geometry: ol.geom.Polygon.fromExtent(extent)
-						});
-						//selectedFeatures.push(feature);
-						selectedFeatures.addFeature(feature);
-
-					} else {
-						extent = ol.extent.applyTransform([-90,-50,90,50], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
-					}
-
-					displayProductImage('getProductImage.php?id='+data['productId'],/* data['productImageWidth'], data['productImageHeight'],*/ extent);
-
-					panToLocation(extent);
-
+					    //Fit the map's view to our combined extent
+					    vector.getSource().once('change', function(e) {
+    			        	  map.getView().fit(e.target.getExtent(), {duration: 1500})
+    			        	});
+						}
+					
 					//Create polygone for the site
 					var format = new ol.format.WKT();
 					var feature2 = format.readFeature(data.siteCoord);

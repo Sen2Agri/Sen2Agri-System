@@ -69,9 +69,8 @@ goog.define('goog.userAgent.product.ASSUME_SAFARI', false);
  * @type {boolean}
  * @private
  */
-goog.userAgent.product.PRODUCT_KNOWN_ =
-    goog.userAgent.ASSUME_IE ||
-    goog.userAgent.ASSUME_OPERA ||
+goog.userAgent.product.PRODUCT_KNOWN_ = goog.userAgent.ASSUME_IE ||
+    goog.userAgent.ASSUME_EDGE || goog.userAgent.ASSUME_OPERA ||
     goog.userAgent.product.ASSUME_FIREFOX ||
     goog.userAgent.product.ASSUME_IPHONE ||
     goog.userAgent.product.ASSUME_IPAD ||
@@ -92,6 +91,13 @@ goog.userAgent.product.OPERA = goog.userAgent.OPERA;
  * @type {boolean}
  */
 goog.userAgent.product.IE = goog.userAgent.IE;
+
+
+/**
+ * Whether the code is running on an Edge web browser.
+ * @type {boolean}
+ */
+goog.userAgent.product.EDGE = goog.userAgent.EDGE;
 
 
 /**

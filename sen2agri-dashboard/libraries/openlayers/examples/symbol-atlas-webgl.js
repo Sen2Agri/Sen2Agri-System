@@ -93,14 +93,8 @@ var vector = new ol.layer.Vector({
   source: vectorSource
 });
 
-// Use the "webgl" renderer by default.
-var renderer = common.getRendererFromQueryString();
-if (!renderer) {
-  renderer = 'webgl';
-}
-
 var map = new ol.Map({
-  renderer: renderer,
+  renderer: /** @type {Array<ol.renderer.Type>} */ (['webgl', 'canvas']),
   layers: [vector],
   target: document.getElementById('map'),
   view: new ol.View({

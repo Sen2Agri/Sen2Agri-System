@@ -1,46 +1,47 @@
-// This server does not support CORS, and so is incompatible with WebGL.
-//var imgWidth = 8001;
-//var imgHeight = 6943;
-//var url = 'http://mapy.mzk.cz/AA22/0103/';
-//var crossOrigin = undefined;
-
 var imgWidth = 9911;
 var imgHeight = 6100;
-var url = 'http://vips.vtech.fr/cgi-bin/iipsrv.fcgi?zoomify=' +
-        '/mnt/MD1/AD00/plan_CHU-4HD-01/FOND.TIF/';
-var crossOrigin = 'anonymous';
 
-var imgCenter = [imgWidth / 2, - imgHeight / 2];
+var zoomifyUrl = 'http://vips.vtech.fr/cgi-bin/iipsrv.fcgi?zoomify=' +
+    '/mnt/MD1/AD00/plan_CHU-4HD-01/FOND.TIF/';
+var iipUrl = 'http://vips.vtech.fr/cgi-bin/iipsrv.fcgi?FIF=' + '/mnt/MD1/AD00/plan_CHU-4HD-01/FOND.TIF' +  '&JTL={z},{tileIndex}';
 
-// Maps always need a projection, but Zoomify layers are not geo-referenced, and
-// are only measured in pixels.  So, we create a fake projection that the map
-// can use to properly display the layer.
-var proj = new ol.proj.Projection({
-  code: 'ZOOMIFY',
-  units: 'pixels',
-  extent: [0, 0, imgWidth, imgHeight]
+var layer = new ol.layer.Tile({
+  source: new ol.source.Zoomify({
+    url: zoomifyUrl,
+    size: [imgWidth, imgHeight],
+    crossOrigin: 'anonymous'
+  })
 });
 
-var source = new ol.source.Zoomify({
-  url: url,
-  size: [imgWidth, imgHeight],
-  crossOrigin: crossOrigin
-});
+var extent = [0, -imgHeight, imgWidth, 0];
 
 var map = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      source: source
-    })
-  ],
-  renderer: common.getRendererFromQueryString(),
+  layers: [layer],
   target: 'map',
   view: new ol.View({
-    projection: proj,
-    center: imgCenter,
-    zoom: 0,
-    // constrain the center: center cannot be set outside
-    // this extent
-    extent: [0, -imgHeight, imgWidth, 0]
+    // adjust zoom levels to those provided by the source
+    resolutions: layer.getSource().getTileGrid().getResolutions(),
+    // constrain the center: center cannot be set outside this extent
+    extent: extent
   })
+});
+map.getView().fit(extent);
+
+var control = document.getElementById('zoomifyProtocol');
+control.addEventListener('change', function(event) {
+  var value = event.currentTarget.value;
+  if (value === 'iip') {
+    layer.setSource(new ol.source.Zoomify({
+      url: iipUrl,
+      size: [imgWidth, imgHeight],
+      crossOrigin: 'anonymous'
+    }));
+  } else if (value === 'zoomify') {
+    layer.setSource(new ol.source.Zoomify({
+      url: zoomifyUrl,
+      size: [imgWidth, imgHeight],
+      crossOrigin: 'anonymous'
+    }));
+  }
+
 });

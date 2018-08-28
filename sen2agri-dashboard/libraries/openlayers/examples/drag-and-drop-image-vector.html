@@ -1,60 +1,74 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en-US">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css" type="text/css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css">
     <link rel="stylesheet" href="./resources/prism/prism.css" type="text/css">
     <link rel="stylesheet" href="../css/ol.css" type="text/css">
     <link rel="stylesheet" href="./resources/layout.css" type="text/css">
     
     
+    <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=fetch,requestAnimationFrame,Element.prototype.classList,URL"></script>
     <script src="./resources/zeroclipboard/ZeroClipboard.min.js"></script>
-    <title>Drag-and-Drop image vector example</title>
+    <title>Drag-and-Drop Image Vector</title>
   </head>
   <body>
 
     <header class="navbar" role="navigation">
-      <div class="container" id="navbar-inner-container">
-        <a class="navbar-brand" href="./"><img src="./resources/logo-70x70.png">&nbsp;OpenLayers 3 Examples</a>
+      <div class="container">
+        <div class="display-table pull-left" id="navbar-logo-container">
+          <a class="navbar-brand" href="./"><img src="./resources/logo-70x70.png">&nbsp;OpenLayers Examples</a>
+        </div>
+        <!-- menu items that get hidden below 768px width -->
+        <nav class='collapse navbar-collapse navbar-responsive-collapse'>
+          <ul class="nav navbar-nav pull-right">
+            <li><a href="../doc">Docs</a></li>
+            <li><a class="active" href="index.html">Examples</a></li>
+            <li><a href="../apidoc">API</a></li>
+            <li><a href="https://github.com/openlayers/openlayers">Code</a></li>
+          </ul>
+        </nav>
       </div>
     </header>
 
     <div class="container-fluid">
 
-      <div class="row-fluid">
-  <div class="span12">
-    <div id="map" class="map"></div>
-    <div class="span4 offset4 pull-right">
-      <div id="info" class="alert alert-success">
-        &nbsp;
+      <div id="latest-check" class="alert alert-warning alert-dismissible" role="alert" style="display:none">
+        <button id="latest-dismiss" type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        This example uses OpenLayers v<span>4.6.5</span>. The <a id="latest-link" href="#" class="alert-link">latest</a> is v<span id="latest-version"></span>.
       </div>
-    </div>
-  </div>
-</div>
-
 
       <div class="row-fluid">
         <div class="span12">
-          <h4 id="title">Drag-and-Drop image vector example</h4>
-          <p id="shortdesc">Example of using the drag-and-drop interaction with a ol.source.ImageVector. Drag and drop GPX, GeoJSON, IGC, KML, or TopoJSON files on to the map. Each file is rendered to an image on the client.</p>
-          <div id="docs"><p>Example of using the drag-and-drop interaction with a ol.source.ImageVector. Drag and drop GPX, GeoJSON, IGC, KML, or TopoJSON files on to the map. Each file is rendered to an image on the client.</p>
+          <h4 id="title">Drag-and-Drop Image Vector</h4>
+          <div id="map" class="map"></div>
+<div id="info">&nbsp;</div>
+
+        </div>
+      </div>
+
+      <div class="row-fluid">
+        <div class="span12">
+          <p id="shortdesc">Example of using the drag-and-drop interaction with image vector rendering.</p>
+          <div id="docs"><p>Example of using the drag-and-drop interaction with an <code>ol.layer.Vector</code> with `renderMode: &#39;image&#39;``. Drag and drop GPX, GeoJSON, IGC, KML, or TopoJSON files on to the map. Each file is rendered to an image on the client.</p>
 </div>
-          <div id="tags">drag-and-drop-image-vector, gpx, geojson, igc, kml, topojson, vector, image</div>
-          <div id="api-links">Related API documentation: <ul class="inline"><li><a href="../apidoc/ol.Map.html" title="API documentation for ol.Map">ol.Map</a></li>,<li><a href="../apidoc/ol.View.html" title="API documentation for ol.View">ol.View</a></li>,<li><a href="../apidoc/ol.format.GPX.html" title="API documentation for ol.format.GPX">ol.format.GPX</a></li>,<li><a href="../apidoc/ol.format.GeoJSON.html" title="API documentation for ol.format.GeoJSON">ol.format.GeoJSON</a></li>,<li><a href="../apidoc/ol.format.IGC.html" title="API documentation for ol.format.IGC">ol.format.IGC</a></li>,<li><a href="../apidoc/ol.format.KML.html" title="API documentation for ol.format.KML">ol.format.KML</a></li>,<li><a href="../apidoc/ol.format.TopoJSON.html" title="API documentation for ol.format.TopoJSON">ol.format.TopoJSON</a></li>,<li><a href="../apidoc/ol.interaction.html" title="API documentation for ol.interaction">ol.interaction</a></li>,<li><a href="../apidoc/ol.interaction.DragAndDrop.html" title="API documentation for ol.interaction.DragAndDrop">ol.interaction.DragAndDrop</a></li>,<li><a href="../apidoc/ol.layer.Image.html" title="API documentation for ol.layer.Image">ol.layer.Image</a></li>,<li><a href="../apidoc/ol.layer.Tile.html" title="API documentation for ol.layer.Tile">ol.layer.Tile</a></li>,<li><a href="../apidoc/ol.source.BingMaps.html" title="API documentation for ol.source.BingMaps">ol.source.BingMaps</a></li>,<li><a href="../apidoc/ol.source.ImageVector.html" title="API documentation for ol.source.ImageVector">ol.source.ImageVector</a></li>,<li><a href="../apidoc/ol.source.Vector.html" title="API documentation for ol.source.Vector">ol.source.Vector</a></li>,<li><a href="../apidoc/ol.style.Circle.html" title="API documentation for ol.style.Circle">ol.style.Circle</a></li>,<li><a href="../apidoc/ol.style.Fill.html" title="API documentation for ol.style.Fill">ol.style.Fill</a></li>,<li><a href="../apidoc/ol.style.Stroke.html" title="API documentation for ol.style.Stroke">ol.style.Stroke</a></li>,<li><a href="../apidoc/ol.style.Style.html" title="API documentation for ol.style.Style">ol.style.Style</a></li></ul></div>
+          <div id="api-links">Related API documentation: <ul class="inline"><li><a href="../apidoc/ol.Map.html" title="API documentation for ol.Map">ol.Map</a></li>,<li><a href="../apidoc/ol.View.html" title="API documentation for ol.View">ol.View</a></li>,<li><a href="../apidoc/ol.format.GPX.html" title="API documentation for ol.format.GPX">ol.format.GPX</a></li>,<li><a href="../apidoc/ol.format.GeoJSON.html" title="API documentation for ol.format.GeoJSON">ol.format.GeoJSON</a></li>,<li><a href="../apidoc/ol.format.IGC.html" title="API documentation for ol.format.IGC">ol.format.IGC</a></li>,<li><a href="../apidoc/ol.format.KML.html" title="API documentation for ol.format.KML">ol.format.KML</a></li>,<li><a href="../apidoc/ol.format.TopoJSON.html" title="API documentation for ol.format.TopoJSON">ol.format.TopoJSON</a></li>,<li><a href="../apidoc/ol.interaction.html" title="API documentation for ol.interaction">ol.interaction</a></li>,<li><a href="../apidoc/ol.interaction.DragAndDrop.html" title="API documentation for ol.interaction.DragAndDrop">ol.interaction.DragAndDrop</a></li>,<li><a href="../apidoc/ol.layer.Vector.html" title="API documentation for ol.layer.Vector">ol.layer.Vector</a></li>,<li><a href="../apidoc/ol.layer.Tile.html" title="API documentation for ol.layer.Tile">ol.layer.Tile</a></li>,<li><a href="../apidoc/ol.source.BingMaps.html" title="API documentation for ol.source.BingMaps">ol.source.BingMaps</a></li>,<li><a href="../apidoc/ol.source.Vector.html" title="API documentation for ol.source.Vector">ol.source.Vector</a></li>,<li><a href="../apidoc/ol.style.Circle.html" title="API documentation for ol.style.Circle">ol.style.Circle</a></li>,<li><a href="../apidoc/ol.style.Fill.html" title="API documentation for ol.style.Fill">ol.style.Fill</a></li>,<li><a href="../apidoc/ol.style.Stroke.html" title="API documentation for ol.style.Stroke">ol.style.Stroke</a></li>,<li><a href="../apidoc/ol.style.Style.html" title="API documentation for ol.style.Style">ol.style.Style</a></li></ul></div>
         </div>
       </div>
 
       <div class="row-fluid">
         <div id="source-controls">
           <a id="copy-button"><i class="fa fa-clipboard"></i> Copy</a>
-          <a id="jsfiddle-button"><i class="fa fa-jsfiddle"></i> Edit</a>
+          <a id="codepen-button"><i class="fa fa-codepen"></i> Edit</a>
         </div>
-        <form method="POST" id="jsfiddle-form" target="_blank" action="http://jsfiddle.net/api/post/jquery/1.11.0/">
-          <textarea class="hidden" name="js">var defaultStyle = {
-  &#x27;Point&#x27;: [new ol.style.Style({
+        <form method="POST" id="codepen-form" target="_blank" action="https://codepen.io/pen/define/">
+          <textarea class="hidden" name="title">Drag-and-Drop Image Vector</textarea>
+          <textarea class="hidden" name="description">Example of using the drag-and-drop interaction with image vector rendering.</textarea>
+          <textarea class="hidden" name="js">var defaultStyle &#x3D; {
+  &#x27;Point&#x27;: new ol.style.Style({
     image: new ol.style.Circle({
       fill: new ol.style.Fill({
         color: &#x27;rgba(255,255,0,0.5)&#x27;
@@ -65,14 +79,14 @@
         width: 1
       })
     })
-  })],
-  &#x27;LineString&#x27;: [new ol.style.Style({
+  }),
+  &#x27;LineString&#x27;: new ol.style.Style({
     stroke: new ol.style.Stroke({
       color: &#x27;#f00&#x27;,
       width: 3
     })
-  })],
-  &#x27;Polygon&#x27;: [new ol.style.Style({
+  }),
+  &#x27;Polygon&#x27;: new ol.style.Style({
     fill: new ol.style.Fill({
       color: &#x27;rgba(0,255,255,0.5)&#x27;
     }),
@@ -80,8 +94,8 @@
       color: &#x27;#0ff&#x27;,
       width: 1
     })
-  })],
-  &#x27;MultiPoint&#x27;: [new ol.style.Style({
+  }),
+  &#x27;MultiPoint&#x27;: new ol.style.Style({
     image: new ol.style.Circle({
       fill: new ol.style.Fill({
         color: &#x27;rgba(255,0,255,0.5)&#x27;
@@ -92,14 +106,14 @@
         width: 1
       })
     })
-  })],
-  &#x27;MultiLineString&#x27;: [new ol.style.Style({
+  }),
+  &#x27;MultiLineString&#x27;: new ol.style.Style({
     stroke: new ol.style.Stroke({
       color: &#x27;#0f0&#x27;,
       width: 3
     })
-  })],
-  &#x27;MultiPolygon&#x27;: [new ol.style.Style({
+  }),
+  &#x27;MultiPolygon&#x27;: new ol.style.Style({
     fill: new ol.style.Fill({
       color: &#x27;rgba(0,0,255,0.5)&#x27;
     }),
@@ -107,11 +121,11 @@
       color: &#x27;#00f&#x27;,
       width: 1
     })
-  })]
+  })
 };
 
-var styleFunction = function(feature, resolution) {
-  var featureStyleFunction = feature.getStyleFunction();
+var styleFunction &#x3D; function(feature, resolution) {
+  var featureStyleFunction &#x3D; feature.getStyleFunction();
   if (featureStyleFunction) {
     return featureStyleFunction.call(feature, resolution);
   } else {
@@ -119,7 +133,7 @@ var styleFunction = function(feature, resolution) {
   }
 };
 
-var dragAndDropInteraction = new ol.interaction.DragAndDrop({
+var dragAndDropInteraction &#x3D; new ol.interaction.DragAndDrop({
   formatConstructors: [
     ol.format.GPX,
     ol.format.GeoJSON,
@@ -129,13 +143,13 @@ var dragAndDropInteraction = new ol.interaction.DragAndDrop({
   ]
 });
 
-var map = new ol.Map({
+var map &#x3D; new ol.Map({
   interactions: ol.interaction.defaults().extend([dragAndDropInteraction]),
   layers: [
     new ol.layer.Tile({
       source: new ol.source.BingMaps({
         imagerySet: &#x27;Aerial&#x27;,
-        key: &#x27;Ak-dzM4wZjSqTlzveKz5u0d4IQ4bRzVI309GxmkgSVr1ewS6iPSrOvOKhA-CJlm3&#x27;
+        key: &#x27;Your Bing Maps Key from http://www.bingmapsportal.com/ here&#x27;
       })
     })
   ],
@@ -147,33 +161,31 @@ var map = new ol.Map({
 });
 
 dragAndDropInteraction.on(&#x27;addfeatures&#x27;, function(event) {
-  var vectorSource = new ol.source.Vector({
+  var vectorSource &#x3D; new ol.source.Vector({
     features: event.features
   });
-  map.addLayer(new ol.layer.Image({
-    source: new ol.source.ImageVector({
-      source: vectorSource,
-      style: styleFunction
-    })
+  map.addLayer(new ol.layer.Vector({
+    renderMode: &#x27;image&#x27;,
+    source: vectorSource,
+    style: styleFunction
   }));
-  map.getView().fit(
-      vectorSource.getExtent(), /** @type {ol.Size} */ (map.getSize()));
+  map.getView().fit(vectorSource.getExtent());
 });
 
-var displayFeatureInfo = function(pixel) {
-  var features = [];
-  map.forEachFeatureAtPixel(pixel, function(feature, layer) {
+var displayFeatureInfo &#x3D; function(pixel) {
+  var features &#x3D; [];
+  map.forEachFeatureAtPixel(pixel, function(feature) {
     features.push(feature);
   });
   if (features.length &gt; 0) {
-    var info = [];
+    var info &#x3D; [];
     var i, ii;
-    for (i = 0, ii = features.length; i &lt; ii; ++i) {
+    for (i &#x3D; 0, ii &#x3D; features.length; i &lt; ii; ++i) {
       info.push(features[i].get(&#x27;name&#x27;));
     }
-    document.getElementById(&#x27;info&#x27;).innerHTML = info.join(&#x27;, &#x27;) || &#x27;&amp;nbsp&#x27;;
+    document.getElementById(&#x27;info&#x27;).innerHTML &#x3D; info.join(&#x27;, &#x27;) || &#x27;&amp;nbsp&#x27;;
   } else {
-    document.getElementById(&#x27;info&#x27;).innerHTML = &#x27;&amp;nbsp;&#x27;;
+    document.getElementById(&#x27;info&#x27;).innerHTML &#x3D; &#x27;&amp;nbsp;&#x27;;
   }
 };
 
@@ -181,7 +193,7 @@ map.on(&#x27;pointermove&#x27;, function(evt) {
   if (evt.dragging) {
     return;
   }
-  var pixel = map.getEventPixel(evt.originalEvent);
+  var pixel &#x3D; map.getEventPixel(evt.originalEvent);
   displayFeatureInfo(pixel);
 });
 
@@ -190,194 +202,192 @@ map.on(&#x27;click&#x27;, function(evt) {
 });
 </textarea>
           <textarea class="hidden" name="css"></textarea>
-          <textarea class="hidden" name="html">&lt;div class=&quot;row-fluid&quot;&gt;
-  &lt;div class=&quot;span12&quot;&gt;
-    &lt;div id=&quot;map&quot; class=&quot;map&quot;&gt;&lt;/div&gt;
-    &lt;div class=&quot;span4 offset4 pull-right&quot;&gt;
-      &lt;div id=&quot;info&quot; class=&quot;alert alert-success&quot;&gt;
-        &amp;nbsp;
-      &lt;/div&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
+          <textarea class="hidden" name="html">&lt;div id&#x3D;&quot;map&quot; class&#x3D;&quot;map&quot;&gt;&lt;/div&gt;
+&lt;div id&#x3D;&quot;info&quot;&gt;&amp;nbsp;&lt;/div&gt;
 </textarea>
-          <input type="hidden" name="wrap" value="l">
-          <input type="hidden" name="resources" value="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css,https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js,http://openlayers.org/en/v3.10.1/css/ol.css,http://openlayers.org/en/v3.10.1/build/ol.js">
+          <input type="hidden" name="resources" value="https://openlayers.org/en/v4.6.5/css/ol.css,https://openlayers.org/en/v4.6.5/build/ol.js">
+          <input type="hidden" name="data">
         </form>
         <pre><code id="example-source" class="language-markup">&lt;!DOCTYPE html&gt;
 &lt;html&gt;
-&lt;head&gt;
-&lt;title&gt;Drag-and-Drop image vector example&lt;/title&gt;
-&lt;script src="https://code.jquery.com/jquery-1.11.2.min.js"&gt;&lt;/script&gt;
-&lt;link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css"&gt;
-&lt;script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"&gt;&lt;/script&gt;
-&lt;link rel="stylesheet" href="http://openlayers.org/en/v3.10.1/css/ol.css" type="text/css"&gt;
-&lt;script src="http://openlayers.org/en/v3.10.1/build/ol.js"&gt;&lt;/script&gt;
+  &lt;head&gt;
+    &lt;title&gt;Drag-and-Drop Image Vector&lt;/title&gt;
+    &lt;link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css"&gt;
+    &lt;!-- The line below is only needed for old environments like Internet Explorer and Android 4.x --&gt;
+    &lt;script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"&gt;&lt;/script&gt;
+    &lt;script src="https://openlayers.org/en/v4.6.5/build/ol.js"&gt;&lt;/script&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id&#x3D;&quot;map&quot; class&#x3D;&quot;map&quot;&gt;&lt;/div&gt;
+    &lt;div id&#x3D;&quot;info&quot;&gt;&amp;nbsp;&lt;/div&gt;
+    &lt;script&gt;
+      var defaultStyle &#x3D; {
+        &#x27;Point&#x27;: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill: new ol.style.Fill({
+              color: &#x27;rgba(255,255,0,0.5)&#x27;
+            }),
+            radius: 5,
+            stroke: new ol.style.Stroke({
+              color: &#x27;#ff0&#x27;,
+              width: 1
+            })
+          })
+        }),
+        &#x27;LineString&#x27;: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: &#x27;#f00&#x27;,
+            width: 3
+          })
+        }),
+        &#x27;Polygon&#x27;: new ol.style.Style({
+          fill: new ol.style.Fill({
+            color: &#x27;rgba(0,255,255,0.5)&#x27;
+          }),
+          stroke: new ol.style.Stroke({
+            color: &#x27;#0ff&#x27;,
+            width: 1
+          })
+        }),
+        &#x27;MultiPoint&#x27;: new ol.style.Style({
+          image: new ol.style.Circle({
+            fill: new ol.style.Fill({
+              color: &#x27;rgba(255,0,255,0.5)&#x27;
+            }),
+            radius: 5,
+            stroke: new ol.style.Stroke({
+              color: &#x27;#f0f&#x27;,
+              width: 1
+            })
+          })
+        }),
+        &#x27;MultiLineString&#x27;: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: &#x27;#0f0&#x27;,
+            width: 3
+          })
+        }),
+        &#x27;MultiPolygon&#x27;: new ol.style.Style({
+          fill: new ol.style.Fill({
+            color: &#x27;rgba(0,0,255,0.5)&#x27;
+          }),
+          stroke: new ol.style.Stroke({
+            color: &#x27;#00f&#x27;,
+            width: 1
+          })
+        })
+      };
 
-&lt;/head&gt;
-&lt;body&gt;
-&lt;div class="container-fluid"&gt;
+      var styleFunction &#x3D; function(feature, resolution) {
+        var featureStyleFunction &#x3D; feature.getStyleFunction();
+        if (featureStyleFunction) {
+          return featureStyleFunction.call(feature, resolution);
+        } else {
+          return defaultStyle[feature.getGeometry().getType()];
+        }
+      };
 
-&lt;div class=&quot;row-fluid&quot;&gt;
-  &lt;div class=&quot;span12&quot;&gt;
-    &lt;div id=&quot;map&quot; class=&quot;map&quot;&gt;&lt;/div&gt;
-    &lt;div class=&quot;span4 offset4 pull-right&quot;&gt;
-      &lt;div id=&quot;info&quot; class=&quot;alert alert-success&quot;&gt;
-        &amp;nbsp;
-      &lt;/div&gt;
-    &lt;/div&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
+      var dragAndDropInteraction &#x3D; new ol.interaction.DragAndDrop({
+        formatConstructors: [
+          ol.format.GPX,
+          ol.format.GeoJSON,
+          ol.format.IGC,
+          ol.format.KML,
+          ol.format.TopoJSON
+        ]
+      });
 
-&lt;/div&gt;
-&lt;script&gt;
-var defaultStyle = {
-  &#x27;Point&#x27;: [new ol.style.Style({
-    image: new ol.style.Circle({
-      fill: new ol.style.Fill({
-        color: &#x27;rgba(255,255,0,0.5)&#x27;
-      }),
-      radius: 5,
-      stroke: new ol.style.Stroke({
-        color: &#x27;#ff0&#x27;,
-        width: 1
-      })
-    })
-  })],
-  &#x27;LineString&#x27;: [new ol.style.Style({
-    stroke: new ol.style.Stroke({
-      color: &#x27;#f00&#x27;,
-      width: 3
-    })
-  })],
-  &#x27;Polygon&#x27;: [new ol.style.Style({
-    fill: new ol.style.Fill({
-      color: &#x27;rgba(0,255,255,0.5)&#x27;
-    }),
-    stroke: new ol.style.Stroke({
-      color: &#x27;#0ff&#x27;,
-      width: 1
-    })
-  })],
-  &#x27;MultiPoint&#x27;: [new ol.style.Style({
-    image: new ol.style.Circle({
-      fill: new ol.style.Fill({
-        color: &#x27;rgba(255,0,255,0.5)&#x27;
-      }),
-      radius: 5,
-      stroke: new ol.style.Stroke({
-        color: &#x27;#f0f&#x27;,
-        width: 1
-      })
-    })
-  })],
-  &#x27;MultiLineString&#x27;: [new ol.style.Style({
-    stroke: new ol.style.Stroke({
-      color: &#x27;#0f0&#x27;,
-      width: 3
-    })
-  })],
-  &#x27;MultiPolygon&#x27;: [new ol.style.Style({
-    fill: new ol.style.Fill({
-      color: &#x27;rgba(0,0,255,0.5)&#x27;
-    }),
-    stroke: new ol.style.Stroke({
-      color: &#x27;#00f&#x27;,
-      width: 1
-    })
-  })]
-};
+      var map &#x3D; new ol.Map({
+        interactions: ol.interaction.defaults().extend([dragAndDropInteraction]),
+        layers: [
+          new ol.layer.Tile({
+            source: new ol.source.BingMaps({
+              imagerySet: &#x27;Aerial&#x27;,
+              key: &#x27;Your Bing Maps Key from http://www.bingmapsportal.com/ here&#x27;
+            })
+          })
+        ],
+        target: &#x27;map&#x27;,
+        view: new ol.View({
+          center: [0, 0],
+          zoom: 2
+        })
+      });
 
-var styleFunction = function(feature, resolution) {
-  var featureStyleFunction = feature.getStyleFunction();
-  if (featureStyleFunction) {
-    return featureStyleFunction.call(feature, resolution);
-  } else {
-    return defaultStyle[feature.getGeometry().getType()];
-  }
-};
+      dragAndDropInteraction.on(&#x27;addfeatures&#x27;, function(event) {
+        var vectorSource &#x3D; new ol.source.Vector({
+          features: event.features
+        });
+        map.addLayer(new ol.layer.Vector({
+          renderMode: &#x27;image&#x27;,
+          source: vectorSource,
+          style: styleFunction
+        }));
+        map.getView().fit(vectorSource.getExtent());
+      });
 
-var dragAndDropInteraction = new ol.interaction.DragAndDrop({
-  formatConstructors: [
-    ol.format.GPX,
-    ol.format.GeoJSON,
-    ol.format.IGC,
-    ol.format.KML,
-    ol.format.TopoJSON
-  ]
-});
+      var displayFeatureInfo &#x3D; function(pixel) {
+        var features &#x3D; [];
+        map.forEachFeatureAtPixel(pixel, function(feature) {
+          features.push(feature);
+        });
+        if (features.length &gt; 0) {
+          var info &#x3D; [];
+          var i, ii;
+          for (i &#x3D; 0, ii &#x3D; features.length; i &lt; ii; ++i) {
+            info.push(features[i].get(&#x27;name&#x27;));
+          }
+          document.getElementById(&#x27;info&#x27;).innerHTML &#x3D; info.join(&#x27;, &#x27;) || &#x27;&amp;nbsp&#x27;;
+        } else {
+          document.getElementById(&#x27;info&#x27;).innerHTML &#x3D; &#x27;&amp;nbsp;&#x27;;
+        }
+      };
 
-var map = new ol.Map({
-  interactions: ol.interaction.defaults().extend([dragAndDropInteraction]),
-  layers: [
-    new ol.layer.Tile({
-      source: new ol.source.BingMaps({
-        imagerySet: &#x27;Aerial&#x27;,
-        key: &#x27;Ak-dzM4wZjSqTlzveKz5u0d4IQ4bRzVI309GxmkgSVr1ewS6iPSrOvOKhA-CJlm3&#x27;
-      })
-    })
-  ],
-  target: &#x27;map&#x27;,
-  view: new ol.View({
-    center: [0, 0],
-    zoom: 2
-  })
-});
+      map.on(&#x27;pointermove&#x27;, function(evt) {
+        if (evt.dragging) {
+          return;
+        }
+        var pixel &#x3D; map.getEventPixel(evt.originalEvent);
+        displayFeatureInfo(pixel);
+      });
 
-dragAndDropInteraction.on(&#x27;addfeatures&#x27;, function(event) {
-  var vectorSource = new ol.source.Vector({
-    features: event.features
-  });
-  map.addLayer(new ol.layer.Image({
-    source: new ol.source.ImageVector({
-      source: vectorSource,
-      style: styleFunction
-    })
-  }));
-  map.getView().fit(
-      vectorSource.getExtent(), /** @type {ol.Size} */ (map.getSize()));
-});
-
-var displayFeatureInfo = function(pixel) {
-  var features = [];
-  map.forEachFeatureAtPixel(pixel, function(feature, layer) {
-    features.push(feature);
-  });
-  if (features.length &gt; 0) {
-    var info = [];
-    var i, ii;
-    for (i = 0, ii = features.length; i &lt; ii; ++i) {
-      info.push(features[i].get(&#x27;name&#x27;));
-    }
-    document.getElementById(&#x27;info&#x27;).innerHTML = info.join(&#x27;, &#x27;) || &#x27;&amp;nbsp&#x27;;
-  } else {
-    document.getElementById(&#x27;info&#x27;).innerHTML = &#x27;&amp;nbsp;&#x27;;
-  }
-};
-
-map.on(&#x27;pointermove&#x27;, function(evt) {
-  if (evt.dragging) {
-    return;
-  }
-  var pixel = map.getEventPixel(evt.originalEvent);
-  displayFeatureInfo(pixel);
-});
-
-map.on(&#x27;click&#x27;, function(evt) {
-  displayFeatureInfo(evt.pixel);
-});
-
-&lt;/script&gt;
-&lt;/body&gt;
+      map.on(&#x27;click&#x27;, function(evt) {
+        displayFeatureInfo(evt.pixel);
+      });
+    &lt;/script&gt;
+  &lt;/body&gt;
 &lt;/html&gt;</code></pre>
       </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="./resources/common.js"></script>
     <script src="./resources/prism/prism.min.js"></script>
     <script src="loader.js?id=drag-and-drop-image-vector"></script>
-
   </body>
+  <script>
+  var packageUrl = 'https://raw.githubusercontent.com/openlayers/openlayers.github.io/build/package.json';
+  fetch(packageUrl).then(function(response) {
+    return response.json();
+  }).then(function(json) {
+    var latestVersion = json.version;
+    document.getElementById('latest-version').innerHTML = latestVersion;
+    var url = window.location.href;
+    var branchSearch = url.match(/\/([^\/]*)\/examples\//);
+    var cookieText = 'dismissed=-' + latestVersion + '-';
+    var dismissed = document.cookie.indexOf(cookieText) != -1;
+    if (!dismissed && /^v[0-9\.]*$/.test(branchSearch[1]) && '4.6.5' != latestVersion) {
+      var link = url.replace(branchSearch[0], '/latest/examples/');
+      fetch(link, {method: 'head'}).then(function(response) {
+        var a = document.getElementById('latest-link');
+        a.href = response.status == 200 ? link : '../../latest/examples/';
+      });
+      var latestCheck = document.getElementById('latest-check');
+      latestCheck.style.display = '';
+      document.getElementById('latest-dismiss').onclick = function() {
+        latestCheck.style.display = 'none';
+        document.cookie = cookieText;
+      }
+    }
+  });
+  </script>
 </html>

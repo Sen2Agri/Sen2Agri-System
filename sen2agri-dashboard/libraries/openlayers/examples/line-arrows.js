@@ -1,10 +1,10 @@
 var raster = new ol.layer.Tile({
-  source: new ol.source.MapQuest({layer: 'sat'})
+  source: new ol.source.OSM()
 });
 
 var source = new ol.source.Vector();
 
-var styleFunction = function(feature, resolution) {
+var styleFunction = function(feature) {
   var geometry = feature.getGeometry();
   var styles = [
     // linestring
@@ -26,7 +26,7 @@ var styleFunction = function(feature, resolution) {
       image: new ol.style.Icon({
         src: 'data/arrow.png',
         anchor: [0.75, 0.5],
-        rotateWithView: false,
+        rotateWithView: true,
         rotation: -rotation
       })
     }));
@@ -41,7 +41,6 @@ var vector = new ol.layer.Vector({
 
 var map = new ol.Map({
   layers: [raster, vector],
-  renderer: common.getRendererFromQueryString(),
   target: 'map',
   view: new ol.View({
     center: [-11000000, 4600000],
@@ -51,5 +50,5 @@ var map = new ol.Map({
 
 map.addInteraction(new ol.interaction.Draw({
   source: source,
-  type: /** @type {ol.geom.GeometryType} */ ('LineString')
+  type: 'LineString'
 }));

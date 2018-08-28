@@ -13,9 +13,9 @@ var map = new ol.Map({
   ],
   target: 'map',
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: view
 });
@@ -36,19 +36,19 @@ var positions = new ol.geom.LineString([],
     /** @type {ol.geom.GeometryLayout} */ ('XYZM'));
 
 // Geolocation Control
-var geolocation = new ol.Geolocation(/** @type {olx.GeolocationOptions} */ ({
+var geolocation = new ol.Geolocation({
   projection: view.getProjection(),
   trackingOptions: {
     maximumAge: 10000,
     enableHighAccuracy: true,
     timeout: 600000
   }
-}));
+});
 
 var deltaMean = 500; // the geolocation sampling period mean in ms
 
 // Listen to position changes
-geolocation.on('change', function(evt) {
+geolocation.on('change', function() {
   var position = geolocation.getPosition();
   var accuracy = geolocation.getAccuracy();
   var heading = geolocation.getHeading() || 0;
@@ -103,7 +103,7 @@ function addPosition(position, heading, m, speed) {
     // force the rotation change to be less than 180°
     if (Math.abs(headingDiff) > Math.PI) {
       var sign = (headingDiff >= 0) ? 1 : -1;
-      headingDiff = - sign * (2 * Math.PI - Math.abs(headingDiff));
+      headingDiff = -sign * (2 * Math.PI - Math.abs(headingDiff));
     }
     heading = prevHeading + headingDiff;
   }
@@ -120,26 +120,6 @@ function addPosition(position, heading, m, speed) {
   }
 }
 
-var previousM = 0;
-// change center and rotation before render
-map.beforeRender(function(map, frameState) {
-  if (frameState !== null) {
-    // use sampling period to get a smooth transition
-    var m = frameState.time - deltaMean * 1.5;
-    m = Math.max(m, previousM);
-    previousM = m;
-    // interpolate position along positions LineString
-    var c = positions.getCoordinateAtM(m, true);
-    var view = frameState.viewState;
-    if (c) {
-      view.center = getCenterWithHeading(c, -c[2], view.resolution);
-      view.rotation = -c[2];
-      marker.setPosition(c);
-    }
-  }
-  return true; // Force animation to continue
-});
-
 // recenters the view by putting the given coordinates at 3/4 from the top or
 // the screen
 function getCenterWithHeading(position, rotation, resolution) {
@@ -152,9 +132,19 @@ function getCenterWithHeading(position, rotation, resolution) {
   ];
 }
 
-// postcompose callback
-function render() {
-  map.render();
+var previousM = 0;
+function updateView() {
+  // use sampling period to get a smooth transition
+  var m = Date.now() - deltaMean * 1.5;
+  m = Math.max(m, previousM);
+  previousM = m;
+  // interpolate position along positions LineString
+  var c = positions.getCoordinateAtM(m, true);
+  if (c) {
+    view.setCenter(getCenterWithHeading(c, -c[2], view.getResolution()));
+    view.setRotation(-c[2]);
+    marker.setPosition(c);
+  }
 }
 
 // geolocate device
@@ -162,7 +152,7 @@ var geolocateBtn = document.getElementById('geolocate');
 geolocateBtn.addEventListener('click', function() {
   geolocation.setTracking(true); // Start position tracking
 
-  map.on('postcompose', render);
+  map.on('postcompose', updateView);
   map.render();
 
   disableButtons();
@@ -204,7 +194,7 @@ simulateBtn.addEventListener('click', function() {
   }
   geolocate();
 
-  map.on('postcompose', render);
+  map.on('postcompose', updateView);
   map.render();
 
   disableButtons();

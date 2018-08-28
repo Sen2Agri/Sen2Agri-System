@@ -3,7 +3,7 @@ session_start();
 require_once('ConfigParams.php');
 
 function get_active_processors($seasonId) {
-	$db = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $db = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 	if ($seasonId == 0) {
 		$result = pg_query($db, "SELECT id, short_name FROM sp_get_processors() WHERE name NOT LIKE '%NDVI%'") or die ("Could not execute.");
 	} else {
@@ -51,7 +51,7 @@ function set_season_line($seasonId, $seasonName, $seasonStart, $seasonMid, $seas
 }
 
 if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 	$result = pg_query_params ( $db, "SELECT * FROM sp_get_site_seasons($1)", array ($_REQUEST['siteId']) ) or die ( "Could not execute." );
 	
 	// get list of seasons to be displayed on the main page

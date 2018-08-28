@@ -24,6 +24,14 @@ goog.require('goog.storage.mechanism.mechanismSharingTester');
 goog.require('goog.storage.mechanism.mechanismTestDefinition');
 goog.require('goog.testing.jsunit');
 goog.require('goog.userAgent');
+goog.require('goog.userAgent.product');
+
+function shouldRunTests() {
+  // Disabled in Safari because Apple SafariDriver runs tests in Private
+  // Browsing mode, and Safari does not permit writing to sessionStorage in
+  // Private Browsing windows.
+  return !goog.userAgent.product.SAFARI;
+}
 
 function setUp() {
   var sessionStorage = new goog.storage.mechanism.HTML5SessionStorage();
@@ -49,7 +57,7 @@ function tearDown() {
 function testAvailability() {
   if (goog.userAgent.WEBKIT && goog.userAgent.isVersionOrHigher('532.5') ||
       goog.userAgent.GECKO && goog.userAgent.isVersionOrHigher('1.9.1') &&
-      window.location.protocol != 'file:' ||
+          window.location.protocol != 'file:' ||
       goog.userAgent.IE && goog.userAgent.isVersionOrHigher('8')) {
     assertNotNull(mechanism);
     assertTrue(mechanism.isAvailable());

@@ -16,7 +16,7 @@
 	<link rel="stylesheet" href="libraries/bootstrap-3.3.6/css/bootstrap-theme.min.css" />
 	<link rel="stylesheet" href="styles/styles.css" />
 	<link rel="stylesheet" href="styles/theme.css" />
-	<link rel="stylesheet" href="libraries/openlayers/build/ol.css" />
+	<link rel="stylesheet" href="libraries/openlayers/css/ol.css" />
 	<link rel="stylesheet" href="libraries/bootstrap-treeview/bootstrap-treeview.css" />
 	
 	<script src="libraries/aspnetcdn/ajax/jQuery/jquery-2.1.4.min.js"></script>

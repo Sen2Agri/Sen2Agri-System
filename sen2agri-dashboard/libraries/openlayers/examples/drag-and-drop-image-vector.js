@@ -1,5 +1,5 @@
 var defaultStyle = {
-  'Point': [new ol.style.Style({
+  'Point': new ol.style.Style({
     image: new ol.style.Circle({
       fill: new ol.style.Fill({
         color: 'rgba(255,255,0,0.5)'
@@ -10,14 +10,14 @@ var defaultStyle = {
         width: 1
       })
     })
-  })],
-  'LineString': [new ol.style.Style({
+  }),
+  'LineString': new ol.style.Style({
     stroke: new ol.style.Stroke({
       color: '#f00',
       width: 3
     })
-  })],
-  'Polygon': [new ol.style.Style({
+  }),
+  'Polygon': new ol.style.Style({
     fill: new ol.style.Fill({
       color: 'rgba(0,255,255,0.5)'
     }),
@@ -25,8 +25,8 @@ var defaultStyle = {
       color: '#0ff',
       width: 1
     })
-  })],
-  'MultiPoint': [new ol.style.Style({
+  }),
+  'MultiPoint': new ol.style.Style({
     image: new ol.style.Circle({
       fill: new ol.style.Fill({
         color: 'rgba(255,0,255,0.5)'
@@ -37,14 +37,14 @@ var defaultStyle = {
         width: 1
       })
     })
-  })],
-  'MultiLineString': [new ol.style.Style({
+  }),
+  'MultiLineString': new ol.style.Style({
     stroke: new ol.style.Stroke({
       color: '#0f0',
       width: 3
     })
-  })],
-  'MultiPolygon': [new ol.style.Style({
+  }),
+  'MultiPolygon': new ol.style.Style({
     fill: new ol.style.Fill({
       color: 'rgba(0,0,255,0.5)'
     }),
@@ -52,7 +52,7 @@ var defaultStyle = {
       color: '#00f',
       width: 1
     })
-  })]
+  })
 };
 
 var styleFunction = function(feature, resolution) {
@@ -80,11 +80,10 @@ var map = new ol.Map({
     new ol.layer.Tile({
       source: new ol.source.BingMaps({
         imagerySet: 'Aerial',
-        key: 'Ak-dzM4wZjSqTlzveKz5u0d4IQ4bRzVI309GxmkgSVr1ewS6iPSrOvOKhA-CJlm3'
+        key: 'As1HiMj1PvLPlqc_gtM7AqZfBL8ZL3VrjaS3zIb22Uvb9WKhuJObROC-qUpa81U5'
       })
     })
   ],
-  renderer: common.getRendererFromQueryString(),
   target: 'map',
   view: new ol.View({
     center: [0, 0],
@@ -96,19 +95,17 @@ dragAndDropInteraction.on('addfeatures', function(event) {
   var vectorSource = new ol.source.Vector({
     features: event.features
   });
-  map.addLayer(new ol.layer.Image({
-    source: new ol.source.ImageVector({
-      source: vectorSource,
-      style: styleFunction
-    })
+  map.addLayer(new ol.layer.Vector({
+    renderMode: 'image',
+    source: vectorSource,
+    style: styleFunction
   }));
-  map.getView().fit(
-      vectorSource.getExtent(), /** @type {ol.Size} */ (map.getSize()));
+  map.getView().fit(vectorSource.getExtent());
 });
 
 var displayFeatureInfo = function(pixel) {
   var features = [];
-  map.forEachFeatureAtPixel(pixel, function(feature, layer) {
+  map.forEachFeatureAtPixel(pixel, function(feature) {
     features.push(feature);
   });
   if (features.length > 0) {

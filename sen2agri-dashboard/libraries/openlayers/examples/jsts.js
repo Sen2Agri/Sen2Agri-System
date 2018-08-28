@@ -1,10 +1,11 @@
 var source = new ol.source.Vector();
-$.ajax('data/geojson/roads-seoul.geojson').then(function(response) {
+fetch('data/geojson/roads-seoul.geojson').then(function(response) {
+  return response.json();
+}).then(function(json) {
   var format = new ol.format.GeoJSON();
-  var features = format.readFeatures(response,
-      {featureProjection: 'EPSG:3857'});
+  var features = format.readFeatures(json, {featureProjection: 'EPSG:3857'});
 
-  var parser = new jsts.io.olParser();
+  var parser = new jsts.io.OL3Parser();
 
   for (var i = 0; i < features.length; i++) {
     var feature = features[i];
@@ -25,9 +26,7 @@ var vectorLayer = new ol.layer.Vector({
 });
 
 var rasterLayer = new ol.layer.Tile({
-  source: new ol.source.MapQuest({
-    layer: 'osm'
-  })
+  source: new ol.source.OSM()
 });
 
 var map = new ol.Map({

@@ -1,5 +1,6 @@
 <?php
 session_start();
+require_once('ConfigParams.php');
 
 include 'ms_doc.php';
 include 'ms_head.php';

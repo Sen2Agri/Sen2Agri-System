@@ -15,66 +15,75 @@
 goog.module('goog.async.AnimationDelayTest');
 goog.setTestOnly('goog.async.AnimationDelayTest');
 
-goog.require('goog.Timer');
-goog.require('goog.async.AnimationDelay');
-goog.require('goog.testing.PropertyReplacer');
-goog.require('goog.testing.jsunit');
-goog.require('goog.testing.recordFunction');
-
+var AnimationDelay = goog.require('goog.async.AnimationDelay');
+var Promise = goog.require('goog.Promise');
+var PropertyReplacer = goog.require('goog.testing.PropertyReplacer');
+var Timer = goog.require('goog.Timer');
+var jsunit = goog.require('goog.testing.jsunit');
 var testSuite = goog.require('goog.testing.testSuite');
 
-var TEST_DELAY = 20;
-var stubs = new goog.testing.PropertyReplacer();
+var TEST_DELAY = 50;
+var stubs = new PropertyReplacer();
 
 testSuite({
-  tearDown: function() {
-    stubs.reset();
-  },
+  tearDown: function() { stubs.reset(); },
 
   testStart: function() {
-    var callCount = 0;
+    var resolver = Promise.withResolver();
     var start = goog.now();
-    var delay = new goog.async.AnimationDelay(function(end) {
-      callCount++;
+    var delay = new AnimationDelay(function(end) {
+      assertNotNull(resolver);  // fail if called multiple times
+      resolver.resolve();
+      resolver = null;
     });
 
     delay.start();
 
-    return goog.Timer.promise(TEST_DELAY).then(function() {
-      assertEquals(1, callCount);
-    });
+    return resolver.promise;
   },
 
   testStop: function() {
-    var callCount = 0;
+    var resolver = Promise.withResolver();
     var start = goog.now();
-    var delay = new goog.async.AnimationDelay(function(end) {
-      callCount++;
-    });
+    var delay = new AnimationDelay(function(end) { resolver.reject(); });
 
     delay.start();
     delay.stop();
 
-    return goog.Timer.promise(TEST_DELAY).then(function() {
-      assertEquals(0, callCount);
+    return Timer.promise(TEST_DELAY).then(function() {
+      resolver.resolve();
+      return resolver.promise;
     });
   },
 
   testAlwaysUseGoogNowForHandlerTimestamp: function() {
+    var resolver = Promise.withResolver();
     var expectedValue = 12345.1;
-    stubs.set(goog, 'now', function() {
-      return expectedValue;
-    });
+    stubs.set(goog, 'now', function() { return expectedValue; });
 
-    var handler = goog.testing.recordFunction(function(timestamp) {
+    var delay = new AnimationDelay(function(timestamp) {
       assertEquals(expectedValue, timestamp);
+      resolver.resolve();
     });
-    var delay = new goog.async.AnimationDelay(handler);
 
     delay.start();
 
-    return goog.Timer.promise(TEST_DELAY).then(function() {
-      assertEquals(1, handler.getCallCount());
+    return resolver.promise;
+  },
+
+  testStartIfActive: function() {
+    var delay = new AnimationDelay(goog.nullFunction);
+    delay.start();
+
+    var startWasCalled = false;
+    stubs.set(AnimationDelay.prototype, 'start', function() {
+      startWasCalled = true;
     });
+
+    delay.startIfNotActive();
+    assertEquals(startWasCalled, false);
+    delay.stop();
+    delay.startIfNotActive();
+    assertEquals(startWasCalled, true);
   }
 });

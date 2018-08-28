@@ -5,7 +5,7 @@
 		$page_no = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
 		$rows_per_page = isset($_REQUEST['rows_per_page']) ? $_REQUEST['rows_per_page'] : 20;
 
-		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+		$db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 		$result = "";
 		$result_cnt="";
 		if ($_REQUEST['siteID_selected'] == 0) {

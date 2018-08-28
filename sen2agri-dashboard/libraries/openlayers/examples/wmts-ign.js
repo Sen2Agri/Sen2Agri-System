@@ -1,9 +1,9 @@
 var map = new ol.Map({
   target: 'map',
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: new ol.View({
     zoom: 5,
@@ -32,18 +32,16 @@ var tileGrid = new ol.tilegrid.WMTS({
 var key = '2mqbg0z6cx7ube8gsou10nrt';
 
 var ign_source = new ol.source.WMTS({
-  url: 'http://wxs.ign.fr/' + key + '/wmts',
+  url: 'https://wxs.ign.fr/' + key + '/wmts',
   layer: 'GEOGRAPHICALGRIDSYSTEMS.MAPS',
   matrixSet: 'PM',
   format: 'image/jpeg',
   projection: 'EPSG:3857',
   tileGrid: tileGrid,
   style: 'normal',
-  attributions: [new ol.Attribution({
-    html: '<a href="http://www.geoportail.fr/" target="_blank">' +
-        '<img src="http://api.ign.fr/geoportail/api/js/latest/' +
+  attributions: '<a href="http://www.geoportail.fr/" target="_blank">' +
+        '<img src="https://api.ign.fr/geoportail/api/js/latest/' +
         'theme/geoportal/img/logo_gp.gif"></a>'
-  })]
 });
 
 var ign = new ol.layer.Tile({

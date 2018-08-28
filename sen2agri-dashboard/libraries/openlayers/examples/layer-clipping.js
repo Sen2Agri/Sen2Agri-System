@@ -6,9 +6,9 @@ var map = new ol.Map({
   layers: [osm],
   target: 'map',
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: new ol.View({
     center: [0, 0],
@@ -19,8 +19,10 @@ var map = new ol.Map({
 osm.on('precompose', function(event) {
   var ctx = event.context;
   ctx.save();
-  ctx.translate(ctx.canvas.width / 2, ctx.canvas.height / 2);
-  ctx.scale(3, 3);
+  var pixelRatio = event.frameState.pixelRatio;
+  var size = map.getSize();
+  ctx.translate(size[0] / 2 * pixelRatio, size[1] / 2 * pixelRatio);
+  ctx.scale(3 * pixelRatio, 3 * pixelRatio);
   ctx.translate(-75, -80);
   ctx.beginPath();
   ctx.moveTo(75, 40);
@@ -31,7 +33,9 @@ osm.on('precompose', function(event) {
   ctx.bezierCurveTo(130, 62.5, 130, 25, 100, 25);
   ctx.bezierCurveTo(85, 25, 75, 37, 75, 40);
   ctx.clip();
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.translate(75, 80);
+  ctx.scale(1 / 3 / pixelRatio, 1 / 3 / pixelRatio);
+  ctx.translate(-size[0] / 2 * pixelRatio, -size[1] / 2 * pixelRatio);
 });
 
 osm.on('postcompose', function(event) {

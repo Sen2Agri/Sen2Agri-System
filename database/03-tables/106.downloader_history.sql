@@ -11,6 +11,7 @@ CREATE TABLE downloader_history
   product_date timestamp with time zone NOT NULL DEFAULT now(),
   orbit_id INTEGER NOT NULL DEFAULT -1,
   status_reason character varying NULL,
-  tiles character varying NULL,
+  tiles text[] NULL,
+  footprint geography NULL,
   CONSTRAINT downloader_history_pkey PRIMARY KEY (id)
 )

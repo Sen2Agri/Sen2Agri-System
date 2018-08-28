@@ -1,47 +1,13 @@
 goog.provide('ol.geom.Geometry');
-goog.provide('ol.geom.GeometryLayout');
-goog.provide('ol.geom.GeometryType');
 
-goog.require('goog.functions');
+goog.require('ol');
 goog.require('ol.Object');
 goog.require('ol.extent');
+goog.require('ol.functions');
+goog.require('ol.geom.flat.transform');
 goog.require('ol.proj');
-
-
-/**
- * The geometry type. One of `'Point'`, `'LineString'`, `'LinearRing'`,
- * `'Polygon'`, `'MultiPoint'`, `'MultiLineString'`, `'MultiPolygon'`,
- * `'GeometryCollection'`, `'Circle'`.
- * @enum {string}
- * @api stable
- */
-ol.geom.GeometryType = {
-  POINT: 'Point',
-  LINE_STRING: 'LineString',
-  LINEAR_RING: 'LinearRing',
-  POLYGON: 'Polygon',
-  MULTI_POINT: 'MultiPoint',
-  MULTI_LINE_STRING: 'MultiLineString',
-  MULTI_POLYGON: 'MultiPolygon',
-  GEOMETRY_COLLECTION: 'GeometryCollection',
-  CIRCLE: 'Circle'
-};
-
-
-/**
- * The coordinate layout for geometries, indicating whether a 3rd or 4th z ('Z')
- * or measure ('M') coordinate is available. Supported values are `'XY'`,
- * `'XYZ'`, `'XYM'`, `'XYZM'`.
- * @enum {string}
- * @api stable
- */
-ol.geom.GeometryLayout = {
-  XY: 'XY',
-  XYZ: 'XYZ',
-  XYM: 'XYM',
-  XYZM: 'XYZM'
-};
-
+goog.require('ol.proj.Units');
+goog.require('ol.transform');
 
 
 /**
@@ -54,12 +20,13 @@ ol.geom.GeometryLayout = {
  * generic `change` event on your geometry instance.
  *
  * @constructor
+ * @abstract
  * @extends {ol.Object}
- * @api stable
+ * @api
  */
 ol.geom.Geometry = function() {
 
-  goog.base(this);
+  ol.Object.call(this);
 
   /**
    * @private
@@ -91,26 +58,33 @@ ol.geom.Geometry = function() {
    */
   this.simplifiedGeometryRevision = 0;
 
+  /**
+   * @private
+   * @type {ol.Transform}
+   */
+  this.tmpTransform_ = ol.transform.create();
+
 };
-goog.inherits(ol.geom.Geometry, ol.Object);
+ol.inherits(ol.geom.Geometry, ol.Object);
 
 
 /**
  * Make a complete copy of the geometry.
- * @function
+ * @abstract
  * @return {!ol.geom.Geometry} Clone.
  */
-ol.geom.Geometry.prototype.clone = goog.abstractMethod;
+ol.geom.Geometry.prototype.clone = function() {};
 
 
 /**
+ * @abstract
  * @param {number} x X.
  * @param {number} y Y.
  * @param {ol.Coordinate} closestPoint Closest point.
  * @param {number} minSquaredDistance Minimum squared distance.
  * @return {number} Minimum squared distance.
  */
-ol.geom.Geometry.prototype.closestPointXY = goog.abstractMethod;
+ol.geom.Geometry.prototype.closestPointXY = function(x, y, closestPoint, minSquaredDistance) {};
 
 
 /**
@@ -119,7 +93,7 @@ ol.geom.Geometry.prototype.closestPointXY = goog.abstractMethod;
  * @param {ol.Coordinate} point Point.
  * @param {ol.Coordinate=} opt_closestPoint Closest point.
  * @return {ol.Coordinate} Closest point.
- * @api stable
+ * @api
  */
 ol.geom.Geometry.prototype.getClosestPoint = function(point, opt_closestPoint) {
   var closestPoint = opt_closestPoint ? opt_closestPoint : [NaN, NaN];
@@ -129,20 +103,24 @@ ol.geom.Geometry.prototype.getClosestPoint = function(point, opt_closestPoint) {
 
 
 /**
+ * Returns true if this geometry includes the specified coordinate. If the
+ * coordinate is on the boundary of the geometry, returns false.
  * @param {ol.Coordinate} coordinate Coordinate.
  * @return {boolean} Contains coordinate.
+ * @api
  */
-ol.geom.Geometry.prototype.containsCoordinate = function(coordinate) {
+ol.geom.Geometry.prototype.intersectsCoordinate = function(coordinate) {
   return this.containsXY(coordinate[0], coordinate[1]);
 };
 
 
 /**
+ * @abstract
  * @param {ol.Extent} extent Extent.
  * @protected
  * @return {ol.Extent} extent Extent.
  */
-ol.geom.Geometry.prototype.computeExtent = goog.abstractMethod;
+ol.geom.Geometry.prototype.computeExtent = function(extent) {};
 
 
 /**
@@ -150,14 +128,14 @@ ol.geom.Geometry.prototype.computeExtent = goog.abstractMethod;
  * @param {number} y Y.
  * @return {boolean} Contains (x, y).
  */
-ol.geom.Geometry.prototype.containsXY = goog.functions.FALSE;
+ol.geom.Geometry.prototype.containsXY = ol.functions.FALSE;
 
 
 /**
  * Get the extent of the geometry.
  * @param {ol.Extent=} opt_extent Extent.
  * @return {ol.Extent} extent Extent.
- * @api stable
+ * @api
  */
 ol.geom.Geometry.prototype.getExtent = function(opt_extent) {
   if (this.extentRevision_ != this.getRevision()) {
@@ -166,6 +144,31 @@ ol.geom.Geometry.prototype.getExtent = function(opt_extent) {
   }
   return ol.extent.returnOrUpdate(this.extent_, opt_extent);
 };
+
+
+/**
+ * Rotate the geometry around a given coordinate. This modifies the geometry
+ * coordinates in place.
+ * @abstract
+ * @param {number} angle Rotation angle in radians.
+ * @param {ol.Coordinate} anchor The rotation center.
+ * @api
+ */
+ol.geom.Geometry.prototype.rotate = function(angle, anchor) {};
+
+
+/**
+ * Scale the geometry (with an optional origin).  This modifies the geometry
+ * coordinates in place.
+ * @abstract
+ * @param {number} sx The scaling factor in the x-direction.
+ * @param {number=} opt_sy The scaling factor in the y-direction (defaults to
+ *     sx).
+ * @param {ol.Coordinate=} opt_anchor The scale origin (defaults to the center
+ *     of the geometry extent).
+ * @api
+ */
+ol.geom.Geometry.prototype.scale = function(sx, opt_sy, opt_anchor) {};
 
 
 /**
@@ -189,67 +192,83 @@ ol.geom.Geometry.prototype.simplify = function(tolerance) {
  * Create a simplified version of this geometry using the Douglas Peucker
  * algorithm.
  * @see https://en.wikipedia.org/wiki/Ramer-Douglas-Peucker_algorithm
- * @function
+ * @abstract
  * @param {number} squaredTolerance Squared tolerance.
  * @return {ol.geom.Geometry} Simplified geometry.
  */
-ol.geom.Geometry.prototype.getSimplifiedGeometry = goog.abstractMethod;
+ol.geom.Geometry.prototype.getSimplifiedGeometry = function(squaredTolerance) {};
 
 
 /**
  * Get the type of this geometry.
- * @function
+ * @abstract
  * @return {ol.geom.GeometryType} Geometry type.
  */
-ol.geom.Geometry.prototype.getType = goog.abstractMethod;
+ol.geom.Geometry.prototype.getType = function() {};
 
 
 /**
  * Apply a transform function to each coordinate of the geometry.
  * The geometry is modified in place.
- * If you do not want the geometry modified in place, first clone() it and
+ * If you do not want the geometry modified in place, first `clone()` it and
  * then use this function on the clone.
- * @function
+ * @abstract
  * @param {ol.TransformFunction} transformFn Transform.
  */
-ol.geom.Geometry.prototype.applyTransform = goog.abstractMethod;
+ol.geom.Geometry.prototype.applyTransform = function(transformFn) {};
 
 
 /**
  * Test if the geometry and the passed extent intersect.
+ * @abstract
  * @param {ol.Extent} extent Extent.
  * @return {boolean} `true` if the geometry and the extent intersect.
- * @function
  */
-ol.geom.Geometry.prototype.intersectsExtent = goog.abstractMethod;
+ol.geom.Geometry.prototype.intersectsExtent = function(extent) {};
 
 
 /**
  * Translate the geometry.  This modifies the geometry coordinates in place.  If
  * instead you want a new geometry, first `clone()` this geometry.
+ * @abstract
  * @param {number} deltaX Delta X.
  * @param {number} deltaY Delta Y.
- * @function
  */
-ol.geom.Geometry.prototype.translate = goog.abstractMethod;
+ol.geom.Geometry.prototype.translate = function(deltaX, deltaY) {};
 
 
 /**
  * Transform each coordinate of the geometry from one coordinate reference
  * system to another. The geometry is modified in place.
  * For example, a line will be transformed to a line and a circle to a circle.
- * If you do not want the geometry modified in place, first clone() it and
+ * If you do not want the geometry modified in place, first `clone()` it and
  * then use this function on the clone.
  *
- * @param {ol.proj.ProjectionLike} source The current projection.  Can be a
+ * @param {ol.ProjectionLike} source The current projection.  Can be a
  *     string identifier or a {@link ol.proj.Projection} object.
- * @param {ol.proj.ProjectionLike} destination The desired projection.  Can be a
+ * @param {ol.ProjectionLike} destination The desired projection.  Can be a
  *     string identifier or a {@link ol.proj.Projection} object.
  * @return {ol.geom.Geometry} This geometry.  Note that original geometry is
  *     modified in place.
- * @api stable
+ * @api
  */
 ol.geom.Geometry.prototype.transform = function(source, destination) {
-  this.applyTransform(ol.proj.getTransform(source, destination));
+  var tmpTransform = this.tmpTransform_;
+  source = ol.proj.get(source);
+  var transformFn = source.getUnits() == ol.proj.Units.TILE_PIXELS ?
+    function(inCoordinates, outCoordinates, stride) {
+      var pixelExtent = source.getExtent();
+      var projectedExtent = source.getWorldExtent();
+      var scale = ol.extent.getHeight(projectedExtent) / ol.extent.getHeight(pixelExtent);
+      ol.transform.compose(tmpTransform,
+          projectedExtent[0], projectedExtent[3],
+          scale, -scale, 0,
+          0, 0);
+      ol.geom.flat.transform.transform2D(inCoordinates, 0, inCoordinates.length, stride,
+          tmpTransform, outCoordinates);
+      return ol.proj.getTransform(source, destination)(inCoordinates, outCoordinates, stride);
+    } :
+    ol.proj.getTransform(source, destination);
+  this.applyTransform(transformFn);
   return this;
 };

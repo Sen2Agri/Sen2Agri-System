@@ -30,10 +30,11 @@ goog.provide('goog.labs.net.xhr.ResponseType');
 goog.provide('goog.labs.net.xhr.TimeoutError');
 
 goog.require('goog.Promise');
+goog.require('goog.asserts');
 goog.require('goog.debug.Error');
-goog.require('goog.json');
 goog.require('goog.net.HttpStatus');
 goog.require('goog.net.XmlHttp');
+goog.require('goog.object');
 goog.require('goog.string');
 goog.require('goog.uri.utils');
 goog.require('goog.userAgent');
@@ -41,6 +42,7 @@ goog.require('goog.userAgent');
 
 
 goog.scope(function() {
+var userAgent = goog.userAgent;
 var xhr = goog.labs.net.xhr;
 var HttpStatus = goog.net.HttpStatus;
 
@@ -79,7 +81,7 @@ xhr.Options;
 
 /**
  * Defines the types that are allowed as post data.
- * @typedef {(ArrayBuffer|Blob|Document|FormData|null|string|undefined)}
+ * @typedef {(ArrayBuffer|ArrayBufferView|Blob|Document|FormData|null|string|undefined)}
  */
 xhr.PostData;
 
@@ -163,23 +165,46 @@ xhr.getJson = function(url, opt_options) {
 
 /**
  * Sends a get request, returning a promise that will be resolved with the
+ * response as a Blob.
+ *
+ * @param {string} url The URL to request.
+ * @param {xhr.Options=} opt_options Configuration options for the request. If
+ *     responseType is set, it will be ignored for this request.
+ * @return {!goog.Promise<!Blob>} A promise that will be resolved with an
+ *     immutable Blob representing the file once the request completes.
+ */
+xhr.getBlob = function(url, opt_options) {
+  goog.asserts.assert(
+      'Blob' in goog.global, 'getBlob is not supported in this browser.');
+
+  var options = opt_options ? goog.object.clone(opt_options) : {};
+  options.responseType = xhr.ResponseType.BLOB;
+
+  return xhr.send('GET', url, null, options).then(function(request) {
+    return /** @type {!Blob} */ (request.response);
+  });
+};
+
+
+/**
+ * Sends a get request, returning a promise that will be resolved with the
  * response as an array of bytes.
  *
  * Supported in all XMLHttpRequest level 2 browsers, as well as IE9. IE8 and
  * earlier are not supported.
  *
  * @param {string} url The URL to request.
- * @param {xhr.Options=} opt_options Configuration options for the request. The
- *     responseType will be overwritten to 'arraybuffer' if it was set.
+ * @param {xhr.Options=} opt_options Configuration options for the request. If
+ *     responseType is set, it will be ignored for this request.
  * @return {!goog.Promise<!Uint8Array|!Array<number>>} A promise that will be
  *     resolved with an array of bytes once the request completes.
  */
 xhr.getBytes = function(url, opt_options) {
-  if (goog.userAgent.IE && !goog.userAgent.isDocumentModeOrHigher(9)) {
-    throw new Error('getBytes is not supported in this browser.');
-  }
+  goog.asserts.assert(
+      !userAgent.IE || userAgent.isDocumentModeOrHigher(9),
+      'getBytes is not supported in this browser.');
 
-  var options = opt_options || {};
+  var options = opt_options ? goog.object.clone(opt_options) : {};
   options.responseType = xhr.ResponseType.ARRAYBUFFER;
 
   return xhr.send('GET', url, null, options).then(function(request) {
@@ -240,12 +265,14 @@ xhr.postJson = function(url, data, opt_options) {
  *     resolved with the XHR object once the request completes.
  */
 xhr.send = function(method, url, data, opt_options) {
-  return new goog.Promise(function(resolve, reject) {
-    var options = opt_options || {};
+  var options = opt_options || {};
+  var request = options.xmlHttpFactory ?
+      options.xmlHttpFactory.createInstance() :
+      goog.net.XmlHttp();
+
+  var result = new goog.Promise(function(resolve, reject) {
     var timer;
 
-    var request = options.xmlHttpFactory ?
-        options.xmlHttpFactory.createInstance() : goog.net.XmlHttp();
     try {
       request.open(method, url, true);
     } catch (e) {
@@ -286,8 +313,8 @@ xhr.send = function(method, url, data, opt_options) {
 
     // Browsers will automatically set the content type to multipart/form-data
     // when passed a FormData object.
-    var dataIsFormData = (goog.global['FormData'] &&
-        (data instanceof goog.global['FormData']));
+    var dataIsFormData =
+        (goog.global['FormData'] && (data instanceof goog.global['FormData']));
     // If a content type hasn't been set, it hasn't been explicitly set to null,
     // and the data isn't a FormData, default to form-urlencoded/UTF8 for POSTs.
     // This is because some proxies have been known to reject posts without a
@@ -336,6 +363,12 @@ xhr.send = function(method, url, data, opt_options) {
       reject(new xhr.Error('Error sending XHR: ' + e.message, url, request));
     }
   });
+  return result.thenCatch(function(error) {
+    if (error instanceof goog.Promise.CancellationError) {
+      request.abort();
+    }
+    throw error;
+  });
 };
 
 
@@ -363,10 +396,10 @@ xhr.isEffectiveSchemeHttp_ = function(url) {
 xhr.parseJson_ = function(responseText, options) {
   var prefixStrippedResult = responseText;
   if (options && options.xssiPrefix) {
-    prefixStrippedResult = xhr.stripXssiPrefix_(
-        options.xssiPrefix, prefixStrippedResult);
+    prefixStrippedResult =
+        xhr.stripXssiPrefix_(options.xssiPrefix, prefixStrippedResult);
   }
-  return goog.json.parse(prefixStrippedResult);
+  return /** @type {!Object} */ (JSON.parse(prefixStrippedResult));
 };
 
 

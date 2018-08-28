@@ -11,20 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Utility to use the Closure Compiler CLI from Python."""
-
 
 import logging
 import os
 import re
 import subprocess
-
+import tempfile
 
 # Pulls just the major and minor version numbers from the first line of
-# 'java -version'. Versions are in the format of [0-9]+\.[0-9]+\..* See:
-# http://www.oracle.com/technetwork/java/javase/versioning-naming-139433.html
-_VERSION_REGEX = re.compile(r'"([0-9]+)\.([0-9]+)')
+# 'java -version'. Versions are in the format of [0-9]+(\.[0-9]+)? See:
+# http://openjdk.java.net/jeps/223
+_VERSION_REGEX = re.compile(r'"([0-9]+)(?:\.([0-9]+))?')
 
 
 class JsCompilerError(Exception):
@@ -48,7 +46,7 @@ def _ParseJavaVersion(version_string):
   """
   match = _VERSION_REGEX.search(version_string)
   if match:
-    version = tuple(int(x, 10) for x in match.groups())
+    version = tuple(int(x or 0) for x in match.groups())
     assert len(version) == 2
     return version
 
@@ -69,8 +67,7 @@ def _JavaSupports32BitMode():
   return supported
 
 
-def _GetJsCompilerArgs(compiler_jar_path, java_version, source_paths,
-                       jvm_flags, compiler_flags):
+def _GetJsCompilerArgs(compiler_jar_path, java_version, jvm_flags):
   """Assembles arguments for call to JsCompiler."""
 
   if java_version < (1, 7):
@@ -97,6 +94,23 @@ def _GetJsCompilerArgs(compiler_jar_path, java_version, source_paths,
   # Add the application JAR.
   args += ['-jar', compiler_jar_path]
 
+  return args
+
+
+def _GetFlagFile(source_paths, compiler_flags):
+  """Writes given source paths and compiler flags to a --flagfile.
+
+  The given source_paths will be written as '--js' flags and the compiler_flags
+  are written as-is.
+
+  Args:
+    source_paths: List of string js source paths.
+    compiler_flags: List of string compiler flags.
+
+  Returns:
+    The file to which the flags were written.
+  """
+  args = []
   for path in source_paths:
     args += ['--js', path]
 
@@ -104,10 +118,15 @@ def _GetJsCompilerArgs(compiler_jar_path, java_version, source_paths,
   if compiler_flags:
     args += compiler_flags
 
-  return args
+  flags_file = tempfile.NamedTemporaryFile(delete=False)
+  flags_file.write(' '.join(args))
+  flags_file.close()
+
+  return flags_file
 
 
-def Compile(compiler_jar_path, source_paths,
+def Compile(compiler_jar_path,
+            source_paths,
             jvm_flags=None,
             compiler_flags=None):
   """Prepares command-line call to Closure Compiler.
@@ -122,10 +141,15 @@ def Compile(compiler_jar_path, source_paths,
     The compiled source, as a string, or None if compilation failed.
   """
 
-  java_version = _ParseJavaVersion(_GetJavaVersionString())
+  java_version = _ParseJavaVersion(str(_GetJavaVersionString()))
 
-  args = _GetJsCompilerArgs(
-      compiler_jar_path, java_version, source_paths, jvm_flags, compiler_flags)
+  args = _GetJsCompilerArgs(compiler_jar_path, java_version, jvm_flags)
+
+  # Write source path arguments to flag file for avoiding "The filename or
+  # extension is too long" error in big projects. See
+  # https://github.com/google/closure-library/pull/678
+  flags_file = _GetFlagFile(source_paths, compiler_flags)
+  args += ['--flagfile', flags_file.name]
 
   logging.info('Compiling with the following command: %s', ' '.join(args))
 
@@ -133,3 +157,5 @@ def Compile(compiler_jar_path, source_paths,
     return subprocess.check_output(args)
   except subprocess.CalledProcessError:
     raise JsCompilerError('JavaScript compilation failed.')
+  finally:
+    os.remove(flags_file.name)

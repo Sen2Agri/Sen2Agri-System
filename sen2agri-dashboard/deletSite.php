@@ -4,7 +4,7 @@
 	
 	function removeSite($id) {
 		echo "here 1";
-		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+		$db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 		$result = pg_query_params ($db, "SELECT sp_delete_site($1)", array($id)) or die ("An error occurred.");
 		return "SUCCESS: removed " . $result;
 	}

@@ -18,50 +18,46 @@ goog.setTestOnly('goog.net.jsloaderTest');
 goog.require('goog.array');
 goog.require('goog.dom');
 goog.require('goog.dom.TagName');
+goog.require('goog.html.TrustedResourceUrl');
 goog.require('goog.net.jsloader');
 goog.require('goog.net.jsloader.ErrorCode');
-goog.require('goog.testing.AsyncTestCase');
+goog.require('goog.string.Const');
 goog.require('goog.testing.jsunit');
 
-// Initialize the AsyncTestCase.
-var testCase = goog.testing.AsyncTestCase.createAndInstall(document.title);
-testCase.stepTimeout = 5 * 1000; // 5 seconds
 
-
-testCase.setUp = function() {
+function setUp() {
   goog.provide = goog.nullFunction;
-};
+}
 
 
-testCase.tearDown = function() {
+function tearDown() {
   // Remove all the fake scripts.
-  var scripts = goog.array.clone(
-      document.getElementsByTagName(goog.dom.TagName.SCRIPT));
+  var scripts =
+      goog.array.clone(goog.dom.getElementsByTagName(goog.dom.TagName.SCRIPT));
   for (var i = 0; i < scripts.length; i++) {
     if (scripts[i].src.indexOf('testdata') != -1) {
       goog.dom.removeNode(scripts[i]);
     }
   }
-};
+}
 
 
 // Sunny day scenario for load function.
-function testLoad() {
-  testCase.waitForAsync('testLoad');
-
+function testSafeLoad() {
   window.test1 = null;
-  var testUrl = 'testdata/jsloader_test1.js';
-  var result = goog.net.jsloader.load(testUrl);
-  result.addCallback(function() {
-    testCase.continueTesting();
+  var testUrl = goog.html.TrustedResourceUrl.fromConstant(
+      goog.string.Const.from('testdata/jsloader_test1.js'));
+  var testUrlValue = goog.html.TrustedResourceUrl.unwrap(testUrl);
+  var result = goog.net.jsloader.safeLoad(testUrl);
 
+  return result.then(function() {
     var script = result.defaultScope_.script_;
 
     assertNotNull('script created', script);
     assertEquals('encoding is utf-8', 'UTF-8', script.charset);
 
     // Check that the URI matches ours.
-    assertTrue('server URI', script.src.indexOf(testUrl) >= 0);
+    assertTrue('server URI', script.src.indexOf(testUrlValue) >= 0);
 
     // Check that the script was really loaded.
     assertEquals('verification object', 'Test #1 loaded', window.test1);
@@ -69,15 +65,13 @@ function testLoad() {
 }
 
 
-// Sunny day scenario for loadAndVerify function.
-function testLoadAndVerify() {
-  testCase.waitForAsync('testLoadAndVerify');
+// Sunny day scenario for safeLoadAndVerify function.
+function testSafeLoadAndVerify() {
+  var testUrl = goog.html.TrustedResourceUrl.fromConstant(
+      goog.string.Const.from('testdata/jsloader_test2.js'));
+  var result = goog.net.jsloader.safeLoadAndVerify(testUrl, 'test2');
 
-  var testUrl = 'testdata/jsloader_test2.js';
-  var result = goog.net.jsloader.loadAndVerify(testUrl, 'test2');
-  result.addCallback(function(verifyObj) {
-    testCase.continueTesting();
-
+  return result.then(function(verifyObj) {
     // Check that the verification object has passed ok.
     assertEquals('verification object', 'Test #2 loaded', verifyObj);
   });
@@ -85,72 +79,62 @@ function testLoadAndVerify() {
 
 
 // What happens when the verification object is not set by the loaded script?
-function testLoadAndVerifyError() {
-  testCase.waitForAsync('testLoadAndVerifyError');
+function testSafeLoadAndVerifyError() {
+  var testUrl = goog.html.TrustedResourceUrl.fromConstant(
+      goog.string.Const.from('testdata/jsloader_test2.js'));
+  var result = goog.net.jsloader.safeLoadAndVerify(testUrl, 'fake');
 
-  var testUrl = 'testdata/jsloader_test2.js';
-  var result = goog.net.jsloader.loadAndVerify(testUrl, 'fake');
-  result.addErrback(function(error) {
-    testCase.continueTesting();
-
+  return result.then(fail, function(error) {
     // Check that the error code is right.
-    assertEquals('verification error', goog.net.jsloader.ErrorCode.VERIFY_ERROR,
+    assertEquals(
+        'verification error', goog.net.jsloader.ErrorCode.VERIFY_ERROR,
         error.code);
   });
 }
 
 
 // Tests that callers can cancel the deferred without error.
-function testLoadAndVerifyCancelled() {
-  var testUrl = 'testdata/jsloader_test2.js';
-  var result = goog.net.jsloader.loadAndVerify(testUrl, 'test2');
+function testSafeLoadAndVerifyCanceled() {
+  var testUrl = goog.html.TrustedResourceUrl.fromConstant(
+      goog.string.Const.from('testdata/jsloader_test2.js'));
+  var result = goog.net.jsloader.safeLoadAndVerify(testUrl, 'test2');
   result.cancel();
 }
 
 
-// Test the loadMany function.
-function testLoadMany() {
-  testCase.waitForAsync('testLoadMany');
-
-  // Load test #3 and then #1.
+// Test the safeLoadMany function.
+function testSafeLoadMany() {
   window.test1 = null;
   window.test4 = null;
-  var testUrls1 = ['testdata/jsloader_test3.js', 'testdata/jsloader_test1.js'];
-  var result = goog.net.jsloader.loadMany(testUrls1);
+
+  // Load test #3 and then #1.
+  var testUrls1 = [
+    goog.html.TrustedResourceUrl.fromConstant(
+        goog.string.Const.from('testdata/jsloader_test3.js')),
+    goog.html.TrustedResourceUrl.fromConstant(
+        goog.string.Const.from('testdata/jsloader_test1.js'))
+  ];
+  var result = goog.net.jsloader.safeLoadMany(testUrls1);
 
   window.test3Callback = function(msg) {
-    testCase.continueTesting();
-
     // Check that the 1st test was not loaded yet.
     assertEquals('verification object', null, window.test1);
 
-    // check that result has not fired yet
-    assertFalse('deferred has fired', result.hasFired());
-
     // Load test #4, which is supposed to wait for #1 to load.
-    testCase.waitForAsync('testLoadMany');
-    var testUrls2 = ['testdata/jsloader_test4.js'];
-    goog.net.jsloader.loadMany(testUrls2);
+    var testUrls2 = [goog.html.TrustedResourceUrl.fromConstant(
+        goog.string.Const.from('testdata/jsloader_test4.js'))];
+    goog.net.jsloader.safeLoadMany(testUrls2);
   };
 
   window.test4Callback = function(msg) {
-    testCase.continueTesting();
-
     // Check that the 1st test was already loaded.
     assertEquals('verification object', 'Test #1 loaded', window.test1);
 
-    // all scripts loaded - verify that result has fired
-    assertTrue('deferred has fired', result.hasFired());
-
     // on last script loaded, set variable
     window.test4 = msg;
-
-    testCase.waitForAsync('testLoadMany');
   };
 
-  result.addCallback(function() {
-    testCase.continueTesting();
-
+  return result.then(function() {
     // verify that the last loaded script callback has executed
     assertEquals('verification object', 'Test #4 loaded', window.test4);
   });
@@ -159,31 +143,29 @@ function testLoadMany() {
 
 // Test the load function with additional options.
 function testLoadWithOptions() {
-  testCase.waitForAsync('testLoadWithOptions');
-
-  var testUrl = 'testdata/jsloader_test1.js';
+  var testUrl = goog.html.TrustedResourceUrl.fromConstant(
+      goog.string.Const.from('testdata/jsloader_test1.js'));
+  var testUrlValue = goog.html.TrustedResourceUrl.unwrap(testUrl);
   var options = {
-    attributes: {
-      'data-attr1' : 'enabled',
-      'data-attr2' : 'disabled',
-    },
-    timeout: undefined,  // Use default
+    attributes: {'data-attr1': 'enabled', 'data-attr2': 'disabled'},
+    timeout: undefined,          // Use default
     cleanupWhenDone: undefined,  // Use default
-    document: undefined  // Use default
+    document: undefined          // Use default
   };
-  var result = goog.net.jsloader.load(testUrl, options);
-  result.addCallback(function() {
-    testCase.continueTesting();
+  var result = goog.net.jsloader.safeLoad(testUrl, options);
 
+  return result.then(function() {
     var script = result.defaultScope_.script_;
 
     // Check that the URI matches ours.
-    assertTrue('server URI', script.src.indexOf(testUrl) >= 0);
+    assertTrue('server URI', script.src.indexOf(testUrlValue) >= 0);
 
     // Check that the attributes specified are set on the script tag.
-    assertEquals('attribute option not applied for attr1',
-        'enabled', script.getAttribute('data-attr1'));
-    assertEquals('attribute option not applied for attr2',
-        'disabled', script.getAttribute('data-attr2'));
+    assertEquals(
+        'attribute option not applied for attr1', 'enabled',
+        script.getAttribute('data-attr1'));
+    assertEquals(
+        'attribute option not applied for attr2', 'disabled',
+        script.getAttribute('data-attr2'));
   });
 }

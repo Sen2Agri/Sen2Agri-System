@@ -9,7 +9,7 @@
 	}
 	
 	// get preview image from database using full_path and quicklook_image
-	$dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	$dbconn = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
 	$rows = pg_query($dbconn, "select full_path, quicklook_image from product where id=".$_GET['id']) or die(pg_last_error());
 	$image_path = false;
 	if (pg_numrows($rows) > 0) {

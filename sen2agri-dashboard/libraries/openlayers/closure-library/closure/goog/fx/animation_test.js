@@ -37,9 +37,8 @@ function testPauseLogic() {
     assertRoughlyEquals(e.progress, progress, 1e-6);
     nFrames++;
   });
-  goog.events.listen(anim, goog.fx.Animation.EventType.END, function(e) {
-    nFrames++;
-  });
+  goog.events.listen(
+      anim, goog.fx.Animation.EventType.END, function(e) { nFrames++; });
   var nSteps = 10;
   for (var i = 0; i < nSteps; i++) {
     progress = i / (nSteps - 1);
@@ -98,6 +97,30 @@ function testPauseOffset() {
   assertEquals(1000, anim.coords[0]);
   assertRoughlyEquals(1, anim.progress, 1e-4);
   assertEquals(goog.fx.Animation.State.STOPPED, anim.getStateInternal());
+}
+
+function testClockReset() {
+  var anim = new goog.fx.Animation([0], [1000], 1000);
+  anim.play();
+
+  assertEquals(0, anim.coords[0]);
+  assertRoughlyEquals(0, anim.progress, 1e-4);
+
+  // Possible when clock is reset.
+  clock.tick(-200000);
+  anim.pause();
+  anim.play();
+
+  assertEquals(0, anim.coords[0]);
+  assertRoughlyEquals(0, anim.progress, 1e-4);
+
+  // Animation shoud still only last a second.
+  clock.tick(900);
+  anim.pause();
+  anim.play();
+
+  assertEquals(900, anim.coords[0]);
+  assertRoughlyEquals(0.9, anim.progress, 1e-4);
 }
 
 function testSetProgress() {

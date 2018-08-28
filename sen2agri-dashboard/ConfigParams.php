@@ -1,17 +1,38 @@
 <?php
 class ConfigParams {
-    static $CONN_STRING  = 'host=localhost port=5432 dbname=sen2agri user=admin password=sen2agri';
+    static $DB_NAME = 'sen2agri';
+    static $CONN_STRING;
     static $SERVICES_URL = 'http://localhost:8080/dashboard';
     static $REST_SERVICES_URL = 'http://localhost:8080';
     static $SITE_ID;
     static $USER_NAME;
 
+    public function __construct(){
+        self::setConnection();
+    }
+    
+    public function getConnection(){
+        self::setConnection();
+        return self::$CONN_STRING;
+    }
+    
+    private static function setConnection(){
+        if(!isset(self::$CONN_STRING)){
+            self::$CONN_STRING = 'host=localhost port=5432 dbname='.self::$DB_NAME.' user=admin password=sen2agri';
+        }
+    }
+    
     static function init() {
         // set login information
         if (isset($_SESSION['siteId']) && isset($_SESSION['userId']) && isset($_SESSION['userName'])) {
             self::$SITE_ID   = $_SESSION['siteId'];
             self::$USER_NAME = $_SESSION['userName'];
         }
+    }
+    
+    public function isSen2Agri(){
+        if(self::$DB_NAME == "sen2agri")
+            return true;
     }
     
     static function getServicePort(){

@@ -1,9 +1,7 @@
 /**
  * Define a namespace for the application.
  */
-window.app = {};
-var app = window.app;
-
+var app = {};
 
 
 /**
@@ -55,7 +53,7 @@ app.Drag.prototype.handleDownEvent = function(evt) {
   var map = evt.map;
 
   var feature = map.forEachFeatureAtPixel(evt.pixel,
-      function(feature, layer) {
+      function(feature) {
         return feature;
       });
 
@@ -72,18 +70,10 @@ app.Drag.prototype.handleDownEvent = function(evt) {
  * @param {ol.MapBrowserEvent} evt Map browser event.
  */
 app.Drag.prototype.handleDragEvent = function(evt) {
-  var map = evt.map;
-
-  var feature = map.forEachFeatureAtPixel(evt.pixel,
-      function(feature, layer) {
-        return feature;
-      });
-
   var deltaX = evt.coordinate[0] - this.coordinate_[0];
   var deltaY = evt.coordinate[1] - this.coordinate_[1];
 
-  var geometry = /** @type {ol.geom.SimpleGeometry} */
-      (this.feature_.getGeometry());
+  var geometry = this.feature_.getGeometry();
   geometry.translate(deltaX, deltaY);
 
   this.coordinate_[0] = evt.coordinate[0];
@@ -98,7 +88,7 @@ app.Drag.prototype.handleMoveEvent = function(evt) {
   if (this.cursor_) {
     var map = evt.map;
     var feature = map.forEachFeatureAtPixel(evt.pixel,
-        function(feature, layer) {
+        function(feature) {
           return feature;
         });
     var element = evt.map.getTargetElement();
@@ -116,10 +106,9 @@ app.Drag.prototype.handleMoveEvent = function(evt) {
 
 
 /**
- * @param {ol.MapBrowserEvent} evt Map browser event.
  * @return {boolean} `false` to stop the drag sequence.
  */
-app.Drag.prototype.handleUpEvent = function(evt) {
+app.Drag.prototype.handleUpEvent = function() {
   this.coordinate_ = null;
   this.feature_ = null;
   return false;
@@ -133,7 +122,7 @@ var lineFeature = new ol.Feature(
 
 var polygonFeature = new ol.Feature(
     new ol.geom.Polygon([[[-3e6, -1e6], [-3e6, 1e6],
-        [-1e6, 1e6], [-1e6, -1e6], [-3e6, -1e6]]]));
+      [-1e6, 1e6], [-1e6, -1e6], [-3e6, -1e6]]]));
 
 
 var map = new ol.Map({
@@ -141,7 +130,7 @@ var map = new ol.Map({
   layers: [
     new ol.layer.Tile({
       source: new ol.source.TileJSON({
-        url: 'http://api.tiles.mapbox.com/v3/mapbox.geography-class.jsonp'
+        url: 'https://api.tiles.mapbox.com/v3/mapbox.geography-class.json?secure'
       })
     }),
     new ol.layer.Vector({

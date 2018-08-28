@@ -12,9 +12,9 @@ var map = new ol.Map({
   ],
   target: 'map',
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }),
   view: new ol.View({
     center: [0, 0],
@@ -22,20 +22,16 @@ var map = new ol.Map({
   })
 });
 
-var exportPNGElement = document.getElementById('export-png');
-
-if ('download' in exportPNGElement) {
-  exportPNGElement.addEventListener('click', function(e) {
-    map.once('postcompose', function(event) {
-      var canvas = event.context.canvas;
-      exportPNGElement.href = canvas.toDataURL('image/png');
-    });
-    map.renderSync();
-  }, false);
-} else {
-  var info = document.getElementById('no-download');
-  /**
-   * display error message
-   */
-  info.style.display = '';
-}
+document.getElementById('export-png').addEventListener('click', function() {
+  map.once('postcompose', function(event) {
+    var canvas = event.context.canvas;
+    if (navigator.msSaveBlob) {
+      navigator.msSaveBlob(canvas.msToBlob(), 'map.png');
+    } else {
+      canvas.toBlob(function(blob) {
+        saveAs(blob, 'map.png');
+      });
+    }
+  });
+  map.renderSync();
+});

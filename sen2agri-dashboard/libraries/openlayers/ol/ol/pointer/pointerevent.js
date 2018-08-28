@@ -31,9 +31,8 @@
 goog.provide('ol.pointer.PointerEvent');
 
 
-goog.require('goog.events');
-goog.require('goog.events.Event');
-
+goog.require('ol');
+goog.require('ol.events.Event');
 
 
 /**
@@ -43,20 +42,20 @@ goog.require('goog.events.Event');
  * touch events and even native pointer events.
  *
  * @constructor
- * @extends {goog.events.Event}
+ * @extends {ol.events.Event}
  * @param {string} type The type of the event to create.
- * @param {goog.events.BrowserEvent} browserEvent
+ * @param {Event} originalEvent The event.
  * @param {Object.<string, ?>=} opt_eventDict An optional dictionary of
  *    initial event properties.
  */
-ol.pointer.PointerEvent = function(type, browserEvent, opt_eventDict) {
-  goog.base(this, type);
+ol.pointer.PointerEvent = function(type, originalEvent, opt_eventDict) {
+  ol.events.Event.call(this, type);
 
   /**
    * @const
-   * @type {goog.events.BrowserEvent}
+   * @type {Event}
    */
-  this.browserEvent = browserEvent;
+  this.originalEvent = originalEvent;
 
   var eventDict = opt_eventDict ? opt_eventDict : {};
 
@@ -141,7 +140,7 @@ ol.pointer.PointerEvent = function(type, browserEvent, opt_eventDict) {
    * @type {Node}
    */
   this.relatedTarget = 'relatedTarget' in eventDict ?
-      eventDict['relatedTarget'] : null;
+    eventDict['relatedTarget'] : null;
 
   // PointerEvent related properties
 
@@ -187,19 +186,19 @@ ol.pointer.PointerEvent = function(type, browserEvent, opt_eventDict) {
   this.isPrimary = 'isPrimary' in eventDict ? eventDict['isPrimary'] : false;
 
   // keep the semantics of preventDefault
-  if (browserEvent.preventDefault) {
+  if (originalEvent.preventDefault) {
     this.preventDefault = function() {
-      browserEvent.preventDefault();
+      originalEvent.preventDefault();
     };
   }
 };
-goog.inherits(ol.pointer.PointerEvent, goog.events.Event);
+ol.inherits(ol.pointer.PointerEvent, ol.events.Event);
 
 
 /**
  * @private
- * @param {Object.<string, ?>} eventDict
- * @return {number}
+ * @param {Object.<string, ?>} eventDict The event dictionary.
+ * @return {number} Button indicator.
  */
 ol.pointer.PointerEvent.prototype.getButtons_ = function(eventDict) {
   // According to the w3c spec,
@@ -240,9 +239,9 @@ ol.pointer.PointerEvent.prototype.getButtons_ = function(eventDict) {
 
 /**
  * @private
- * @param {Object.<string, ?>} eventDict
- * @param {number} buttons
- * @return {number}
+ * @param {Object.<string, ?>} eventDict The event dictionary.
+ * @param {number} buttons Button indicator.
+ * @return {number} The pressure.
  */
 ol.pointer.PointerEvent.prototype.getPressure_ = function(eventDict, buttons) {
   // Spec requires that pointers without pressure specified use 0.5 for down
@@ -272,5 +271,6 @@ ol.pointer.PointerEvent.HAS_BUTTONS = false;
     var ev = new MouseEvent('click', {buttons: 1});
     ol.pointer.PointerEvent.HAS_BUTTONS = ev.buttons === 1;
   } catch (e) {
+    // pass
   }
 })();

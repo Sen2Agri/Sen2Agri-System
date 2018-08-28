@@ -20,15 +20,14 @@ goog.require('goog.storage.EncryptedStorage');
 goog.require('goog.storage.ErrorCode');
 goog.require('goog.storage.RichStorage');
 goog.require('goog.storage.collectableStorageTester');
-goog.require('goog.storage.storage_test');
+goog.require('goog.storage.storageTester');
 goog.require('goog.testing.MockClock');
 goog.require('goog.testing.PseudoRandom');
 goog.require('goog.testing.jsunit');
 goog.require('goog.testing.storage.FakeMechanism');
 
 function getEncryptedWrapper(storage, key) {
-  return goog.json.parse(
-      storage.mechanism.get(storage.hashKeyWithSecret_(key)));
+  return JSON.parse(storage.mechanism.get(storage.hashKeyWithSecret_(key)));
 }
 
 function getEncryptedData(storage, key) {
@@ -36,14 +35,14 @@ function getEncryptedData(storage, key) {
 }
 
 function decryptWrapper(storage, key, wrapper) {
-  return goog.json.parse(
-      storage.decryptValue_(wrapper[goog.storage.EncryptedStorage.SALT_KEY],
-          key, wrapper[goog.storage.RichStorage.DATA_KEY]));
+  return JSON.parse(storage.decryptValue_(
+      wrapper[goog.storage.EncryptedStorage.SALT_KEY], key,
+      wrapper[goog.storage.RichStorage.DATA_KEY]));
 }
 
 function hammingDistance(a, b) {
   if (a.length != b.length) {
-    throw Error('Lengths must be the same for Hamming distance');
+    throw new Error('Lengths must be the same for Hamming distance');
   }
   var distance = 0;
   for (var i = 0; i < a.length; ++i) {
@@ -58,7 +57,7 @@ function hammingDistance(a, b) {
 function testBasicOperations() {
   var mechanism = new goog.testing.storage.FakeMechanism();
   var storage = new goog.storage.EncryptedStorage(mechanism, 'secret');
-  goog.storage.storage_test.runBasicTests(storage);
+  goog.storage.storageTester.runBasicTests(storage);
 }
 
 
@@ -67,8 +66,8 @@ function testExpiredKeyCollection() {
   var clock = new goog.testing.MockClock(true);
   var storage = new goog.storage.EncryptedStorage(mechanism, 'secret');
 
-  goog.storage.collectableStorageTester.runBasicTests(mechanism, clock,
-      storage);
+  goog.storage.collectableStorageTester.runBasicTests(
+      mechanism, clock, storage);
 }
 
 
@@ -104,18 +103,21 @@ function testEncryption() {
 
   // Wrong secret can't decode values even if the key is revealed.
   var encryptedWrapper = getEncryptedWrapper(storage, 'first');
-  assertObjectEquals('Hello world!',
-      decryptWrapper(storage, 'first', encryptedWrapper));
+  assertObjectEquals(
+      'Hello world!', decryptWrapper(storage, 'first', encryptedWrapper));
   assertThrows(function() {
     decryptWrapper(mallory, 'first', encryptedWrapper);
   });
 
   // If the value is overwritten, it can't be decrypted.
   encryptedWrapper[goog.storage.RichStorage.DATA_KEY] = 'kaboom';
-  mechanism.set(storage.hashKeyWithSecret_('first'),
-                goog.json.serialize(encryptedWrapper));
-  assertEquals(goog.storage.ErrorCode.DECRYPTION_ERROR,
-               assertThrows(function() {storage.get('first')}));
+  mechanism.set(
+      storage.hashKeyWithSecret_('first'),
+      goog.json.serialize(encryptedWrapper));
+  assertEquals(
+      goog.storage.ErrorCode.DECRYPTION_ERROR, assertThrows(function() {
+        storage.get('first');
+      }));
 
   // Test garbage collection.
   storage.collect();
@@ -149,15 +151,17 @@ function testSalting() {
   // Same value under two different keys should appear very different,
   // even with the same salt.
   storage.set('one', 'Hello world!');
-  randomMock.seed(0); // Reset the generator so we get the same salt.
+  randomMock.seed(0);  // Reset the generator so we get the same salt.
   storage.set('two', 'Hello world!');
   var golden = getEncryptedData(storage, 'one');
-  assertRoughlyEquals('Ciphertext did not change with keys', golden.length,
+  assertRoughlyEquals(
+      'Ciphertext did not change with keys', golden.length,
       hammingDistance(golden, getEncryptedData(storage, 'two')), 2);
 
   // Same key-value pair written second time should appear very different.
   storage.set('one', 'Hello world!');
-  assertRoughlyEquals('Salting seems to have failed', golden.length,
+  assertRoughlyEquals(
+      'Salting seems to have failed', golden.length,
       hammingDistance(golden, getEncryptedData(storage, 'one')), 2);
 
   // Clean up.

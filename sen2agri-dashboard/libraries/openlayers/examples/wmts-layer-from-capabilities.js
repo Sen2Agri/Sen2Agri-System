@@ -1,10 +1,14 @@
 var parser = new ol.format.WMTSCapabilities();
 var map;
 
-$.ajax('data/WMTSCapabilities.xml').then(function(response) {
-  var result = parser.read(response);
-  var options = ol.source.WMTS.optionsFromCapabilities(result,
-      {layer: 'layer-7328', matrixSet: 'EPSG:3857'});
+fetch('data/WMTSCapabilities.xml').then(function(response) {
+  return response.text();
+}).then(function(text) {
+  var result = parser.read(text);
+  var options = ol.source.WMTS.optionsFromCapabilities(result, {
+    layer: 'layer-7328',
+    matrixSet: 'EPSG:3857'
+  });
 
   map = new ol.Map({
     layers: [
@@ -14,7 +18,7 @@ $.ajax('data/WMTSCapabilities.xml').then(function(response) {
       }),
       new ol.layer.Tile({
         opacity: 1,
-        source: new ol.source.WMTS(options)
+        source: new ol.source.WMTS(/** @type {!olx.source.WMTSOptions} */ (options))
       })
     ],
     target: 'map',

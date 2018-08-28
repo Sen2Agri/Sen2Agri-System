@@ -15,31 +15,34 @@
 goog.provide('goog.string.linkifyTest');
 goog.setTestOnly('goog.string.linkifyTest');
 
+goog.require('goog.dom');
 goog.require('goog.dom.TagName');
+goog.require('goog.dom.safe');
+goog.require('goog.html.SafeHtml');
 goog.require('goog.string');
 goog.require('goog.string.linkify');
 goog.require('goog.testing.dom');
 goog.require('goog.testing.jsunit');
 
-var div = document.createElement(goog.dom.TagName.DIV);
+var div = goog.dom.createElement(goog.dom.TagName.DIV);
 
-function assertLinkify(comment, input, expected) {
+function assertLinkify(comment, input, expected, opt_preserveNewlines) {
   assertEquals(
       comment, expected,
-      goog.string.linkify.linkifyPlainText(input, {rel: '', target: ''}));
+      goog.html.SafeHtml.unwrap(
+          goog.string.linkify.linkifyPlainTextAsHtml(
+              input, {rel: '', target: ''}, opt_preserveNewlines)));
 }
 
 function testContainsNoLink() {
   assertLinkify(
-      'Text does not contain any links',
-      'Text with no links in it.',
+      'Text does not contain any links', 'Text with no links in it.',
       'Text with no links in it.');
 }
 
 function testContainsALink() {
   assertLinkify(
-      'Text only contains a link',
-      'http://www.google.com/',
+      'Text only contains a link', 'http://www.google.com/',
       '<a href="http://www.google.com/">http://www.google.com/<\/a>');
 }
 
@@ -61,8 +64,7 @@ function testEndsWithALink() {
 
 function testContainsOnlyEmail() {
   assertLinkify(
-      'Text only contains an email address',
-      'bolinfest@google.com',
+      'Text only contains an email address', 'bolinfest@google.com',
       '<a href="mailto:bolinfest@google.com">bolinfest@google.com<\/a>');
 }
 
@@ -84,8 +86,7 @@ function testEndsWithAnEmail() {
 
 function testUrlWithPortNumber() {
   assertLinkify(
-      'URL with a port number',
-      'http://www.google.com:80/',
+      'URL with a port number', 'http://www.google.com:80/',
       '<a href="http://www.google.com:80/">http://www.google.com:80/<\/a>');
 }
 
@@ -99,29 +100,25 @@ function testUrlWithUserPasswordAndPortNumber() {
 
 function testUrlWithUnderscore() {
   assertLinkify(
-      'URL with an underscore',
-      'http://www_foo.google.com/',
+      'URL with an underscore', 'http://www_foo.google.com/',
       '<a href="http://www_foo.google.com/">http://www_foo.google.com/<\/a>');
 }
 
 function testInternalUrlWithoutDomain() {
   assertLinkify(
-      'Internal URL without a proper domain',
-      'http://tracker/1068594',
+      'Internal URL without a proper domain', 'http://tracker/1068594',
       '<a href="http://tracker/1068594">http://tracker/1068594<\/a>');
 }
 
 function testInternalUrlOneChar() {
   assertLinkify(
-      'Internal URL with a one char domain',
-      'http://b',
+      'Internal URL with a one char domain', 'http://b',
       '<a href="http://b">http://b<\/a>');
 }
 
 function testSecureInternalUrlWithoutDomain() {
   assertLinkify(
-      'Secure Internal URL without a proper domain',
-      'https://review/6594805',
+      'Secure Internal URL without a proper domain', 'https://review/6594805',
       '<a href="https://review/6594805">https://review/6594805<\/a>');
 }
 
@@ -136,8 +133,7 @@ function testTwoUrls() {
 
 function testGetParams() {
   assertLinkify(
-      'URL with GET params',
-      'http://google.com/?a=b&c=d&e=f',
+      'URL with GET params', 'http://google.com/?a=b&c=d&e=f',
       '<a href="http://google.com/?a=b&amp;c=d&amp;e=f">' +
           'http://google.com/?a=b&amp;c=d&amp;e=f<\/a>');
 }
@@ -174,25 +170,22 @@ function testUrlWithCapitalsWithoutHttp() {
 
 function testUrlHashBang() {
   assertLinkify(
-      'URL with #!',
+      'URL with #!', 'Another test URL: ' +
+          'https://www.google.com/testurls/#!/page',
       'Another test URL: ' +
-      'https://www.google.com/testurls/#!/page',
-      'Another test URL: ' +
-      '<a href="https://www.google.com/testurls/#!/page">' +
-      'https://www.google.com/testurls/#!/page<\/a>');
+          '<a href="https://www.google.com/testurls/#!/page">' +
+          'https://www.google.com/testurls/#!/page<\/a>');
 }
 
 function testTextLooksLikeUrlWithoutHttp() {
   assertLinkify(
-      'Text looks like an url but is not',
-      'This showww.is just great: www.is',
+      'Text looks like an url but is not', 'This showww.is just great: www.is',
       'This showww.is just great: <a href="http://www.is">www.is<\/a>');
 }
 
 function testEmailWithSubdomain() {
   assertLinkify(
-      'Email with a subdomain',
-      'Send mail to bolinfest@groups.google.com.',
+      'Email with a subdomain', 'Send mail to bolinfest@groups.google.com.',
       'Send mail to <a href="mailto:bolinfest@groups.google.com">' +
           'bolinfest@groups.google.com<\/a>.');
 }
@@ -211,6 +204,11 @@ function testEmailUsernameWithSpecialChars() {
       'Send mail to bolin-fest+for.um@google.com',
       'Send mail to <a href="mailto:bolin-fest+for.um@google.com">' +
           'bolin-fest+for.um@google.com<\/a>');
+  assertLinkify(
+      'Email with all special characters in the user name',
+      'Send mail to muad\'dib!#$%&\*/=?^_`{|}~@google.com', 'Send mail to ' +
+          '<a href="mailto:muad&#39;dib!#$%&amp;\*/=?^_`{|}~@google.com">' +
+          'muad&#39;dib!#$%&amp;\*/=?^_`{|}~@google.com<\/a>');
 }
 
 function testEmailWithUnderscoreInvalid() {
@@ -225,7 +223,7 @@ function testUrlNotHttp() {
       'Url using unusual scheme',
       'Looking for some goodies: ftp://ftp.google.com/goodstuff/',
       'Looking for some goodies: ' +
-      '<a href="ftp://ftp.google.com/goodstuff/">' +
+          '<a href="ftp://ftp.google.com/goodstuff/">' +
           'ftp://ftp.google.com/goodstuff/<\/a>');
 }
 
@@ -265,8 +263,7 @@ function testJsInjectionWithTextarea() {
   assertLinkify(
       'Putting the result in a textarea can\'t cause other textarea text to ' +
           'be treated as tag content.',
-      '</textarea',
-      '&lt;/textarea');
+      '</textarea', '&lt;/textarea');
 }
 
 function testJsInjectionWithNewlineConversion() {
@@ -301,84 +298,136 @@ function testProtocolWhitelistingEffective() {
 }
 
 function testLinkifyNoOptions() {
-  div.innerHTML = goog.string.linkify.linkifyPlainText('http://www.google.com');
+  goog.dom.safe.setInnerHtml(div,
+      goog.string.linkify.linkifyPlainTextAsHtml('http://www.google.com'));
   goog.testing.dom.assertHtmlContentsMatch(
       '<a href="http://www.google.com" target="_blank" rel="nofollow">' +
-      'http://www.google.com<\/a>',
+          'http://www.google.com<\/a>',
       div, true /* opt_strictAttributes */);
 }
 
 function testLinkifyOptionsNoAttributes() {
-  div.innerHTML = goog.string.linkify.linkifyPlainText(
+  goog.dom.safe.setInnerHtml(div, goog.string.linkify.linkifyPlainTextAsHtml(
       'The link for www.google.com is located somewhere in ' +
-      'https://www.google.fr/?hl=en, you should find it easily.',
-      {rel: '', target: ''});
+          'https://www.google.fr/?hl=en, you should find it easily.',
+      {rel: '', target: ''}));
   goog.testing.dom.assertHtmlContentsMatch(
       'The link for <a href="http://www.google.com">www.google.com<\/a> is ' +
-      'located somewhere in ' +
-      '<a href="https://www.google.fr/?hl=en">https://www.google.fr/?hl=en' +
-      '<\/a>, you should find it easily.',
+          'located somewhere in ' +
+          '<a href="https://www.google.fr/?hl=en">https://www.google.fr/?hl=en' +
+          '<\/a>, you should find it easily.',
       div, true /* opt_strictAttributes */);
 }
 
 function testLinkifyOptionsClassName() {
-  div.innerHTML = goog.string.linkify.linkifyPlainText(
-      'Attribute with <class> name www.w3c.org.',
-      {'class': 'link-added'});
+  goog.dom.safe.setInnerHtml(div, goog.string.linkify.linkifyPlainTextAsHtml(
+      'Attribute with <class> name www.w3c.org.', {'class': 'link-added'}));
   goog.testing.dom.assertHtmlContentsMatch(
       'Attribute with &lt;class&gt; name <a href="http://www.w3c.org" ' +
-      'target="_blank" rel="nofollow" class="link-added">www.w3c.org<\/a>.',
+          'target="_blank" rel="nofollow" class="link-added">www.w3c.org<\/a>.',
       div, true /* opt_strictAttributes */);
 }
 
 function testFindFirstUrlNoScheme() {
-  assertEquals('www.google.com', goog.string.linkify.findFirstUrl(
-      'www.google.com'));
+  assertEquals(
+      'www.google.com', goog.string.linkify.findFirstUrl('www.google.com'));
+}
+
+function testFindFirstUrlNoSchemeUppercase() {
+  assertEquals(
+      'WWW.GOOGLE.COM', goog.string.linkify.findFirstUrl('WWW.GOOGLE.COM'));
+}
+
+function testFindFirstUrlNoSchemeMixedcase() {
+  assertEquals(
+      'WwW.GoOgLe.CoM', goog.string.linkify.findFirstUrl('WwW.GoOgLe.CoM'));
 }
 
 function testFindFirstUrlNoSchemeWithText() {
-  assertEquals('www.google.com', goog.string.linkify.findFirstUrl(
-      'prefix www.google.com something'));
+  assertEquals(
+      'www.google.com',
+      goog.string.linkify.findFirstUrl('prefix www.google.com something'));
 }
 
 function testFindFirstUrlScheme() {
-  assertEquals('http://www.google.com', goog.string.linkify.findFirstUrl(
-      'http://www.google.com'));
+  assertEquals(
+      'http://www.google.com',
+      goog.string.linkify.findFirstUrl('http://www.google.com'));
+}
+
+function testFindFirstUrlSchemeUppercase() {
+  assertEquals(
+      'HTTP://WWW.GOOGLE.COM',
+      goog.string.linkify.findFirstUrl('HTTP://WWW.GOOGLE.COM'));
+}
+
+function testFindFirstUrlSchemeMixedcase() {
+  assertEquals(
+      'HtTp://WwW.gOoGlE.cOm',
+      goog.string.linkify.findFirstUrl('HtTp://WwW.gOoGlE.cOm'));
 }
 
 function testFindFirstUrlSchemeWithText() {
-  assertEquals('http://www.google.com', goog.string.linkify.findFirstUrl(
-      'prefix http://www.google.com something'));
+  assertEquals(
+      'http://www.google.com', goog.string.linkify.findFirstUrl(
+                                   'prefix http://www.google.com something'));
 }
 
 function testFindFirstUrlNoUrl() {
-  assertEquals('', goog.string.linkify.findFirstUrl(
-      'ygvtfr676 5v68fk uygbt85F^&%^&I%FVvc .'));
+  assertEquals(
+      '', goog.string.linkify.findFirstUrl(
+              'ygvtfr676 5v68fk uygbt85F^&%^&I%FVvc .'));
 }
 
 function testFindFirstEmailNoScheme() {
-  assertEquals('fake@google.com', goog.string.linkify.findFirstEmail(
-      'fake@google.com'));
+  assertEquals(
+      'fake@google.com', goog.string.linkify.findFirstEmail('fake@google.com'));
+}
+
+function testFindFirstEmailNoSchemeUppercase() {
+  assertEquals(
+      'FAKE@GOOGLE.COM', goog.string.linkify.findFirstEmail('FAKE@GOOGLE.COM'));
+}
+
+function testFindFirstEmailNoSchemeMixedcase() {
+  assertEquals(
+      'fAkE@gOoGlE.cOm', goog.string.linkify.findFirstEmail('fAkE@gOoGlE.cOm'));
 }
 
 function testFindFirstEmailNoSchemeWithText() {
-  assertEquals('fake@google.com', goog.string.linkify.findFirstEmail(
-      'prefix fake@google.com something'));
+  assertEquals(
+      'fake@google.com',
+      goog.string.linkify.findFirstEmail('prefix fake@google.com something'));
 }
 
 function testFindFirstEmailScheme() {
-  assertEquals('mailto:fake@google.com', goog.string.linkify.findFirstEmail(
-      'mailto:fake@google.com'));
+  assertEquals(
+      'mailto:fake@google.com',
+      goog.string.linkify.findFirstEmail('mailto:fake@google.com'));
+}
+
+function testFindFirstEmailSchemeUppercase() {
+  assertEquals(
+      'MAILTO:FAKE@GOOGLE.COM',
+      goog.string.linkify.findFirstEmail('MAILTO:FAKE@GOOGLE.COM'));
+}
+
+function testFindFirstEmailSchemeMixedcase() {
+  assertEquals(
+      'MaIlTo:FaKe@GoOgLe.CoM',
+      goog.string.linkify.findFirstEmail('MaIlTo:FaKe@GoOgLe.CoM'));
 }
 
 function testFindFirstEmailSchemeWithText() {
-  assertEquals('mailto:fake@google.com', goog.string.linkify.findFirstEmail(
-      'prefix mailto:fake@google.com something'));
+  assertEquals(
+      'mailto:fake@google.com', goog.string.linkify.findFirstEmail(
+                                    'prefix mailto:fake@google.com something'));
 }
 
-function testFindFirstEmailNoUrl() {
-  assertEquals('', goog.string.linkify.findFirstEmail(
-      'ygvtfr676 5v68fk uygbt85F^&%^&I%FVvc .'));
+function testFindFirstEmailNoEmail() {
+  assertEquals(
+      '', goog.string.linkify.findFirstEmail(
+              'ygvtfr676 5v68fk uygbt85F^&%^&I%FVvc .'));
 }
 
 function testContainsPunctuation_parens() {
@@ -394,13 +443,12 @@ function testEndsWithPunctuation() {
       'Link ends with punctuation',
       'Have you seen www.google.com? It\'s awesome.',
       'Have you seen <a href="http://www.google.com">www.google.com<\/a>?' +
-      goog.string.htmlEscape(' It\'s awesome.'));
+          goog.string.htmlEscape(' It\'s awesome.'));
 }
 
 function testEndsWithPunctuation_closeParen() {
   assertLinkify(
-      'Link inside parentheses',
-      '(For more info see www.googl.com)',
+      'Link inside parentheses', '(For more info see www.googl.com)',
       '(For more info see <a href="http://www.googl.com">www.googl.com<\/a>)');
   assertLinkify(
       'Parentheses inside link',
@@ -411,8 +459,7 @@ function testEndsWithPunctuation_closeParen() {
 
 function testEndsWithPunctuation_openParen() {
   assertLinkify(
-      'Link followed by open parenthesis',
-      'www.google.com(',
+      'Link followed by open parenthesis', 'www.google.com(',
       '<a href="http://www.google.com(">www.google.com(<\/a>');
 }
 
@@ -422,6 +469,13 @@ function testEndsWithPunctuation_angles() {
       'Here is a bibliography entry <http://www.google.com/>',
       'Here is a bibliography entry &lt;<a href="http://www.google.com/">' +
           'http://www.google.com/<\/a>&gt;');
+}
+
+function testEndsWithPunctuation_curlies() {
+  assertLinkify(
+      'Link inside curly brackets', '{http://www.google.com/}',
+      '{<a href="http://www.google.com/">' +
+          'http://www.google.com/<\/a>}');
 }
 
 function testEndsWithPunctuation_closingPairThenSingle() {
@@ -434,8 +488,7 @@ function testEndsWithPunctuation_closingPairThenSingle() {
 
 function testEndsWithPunctuation_ellipses() {
   assertLinkify(
-      'Link followed by three dots',
-      'just look it up on www.google.com...',
+      'Link followed by three dots', 'just look it up on www.google.com...',
       'just look it up on <a href="http://www.google.com">www.google.com' +
           '<\/a>...');
 }
@@ -450,15 +503,42 @@ function testBracketsInUrl() {
 
 function testUrlWithExclamation() {
   assertLinkify(
-      'URL with exclamation points',
-      'This is awesome www.google.com!',
+      'URL with exclamation points', 'This is awesome www.google.com!',
       'This is awesome <a href="http://www.google.com">www.google.com<\/a>!');
+}
+
+function testSpecialCharactersInUrl() {
+  assertLinkify(
+      'Link with characters that are neither reserved nor unreserved as per' +
+          'RFC 3986 but that are recognized by other Google properties.',
+      'https://www.google.com/?q=\`{|}recognized',
+      '<a href="https://www.google.com/?q=\`{|}recognized">' +
+          'https://www.google.com/?q=\`{|}recognized<\/a>');
+}
+
+function testUsuallyUnrecognizedCharactersAreNotInUrl() {
+  assertLinkify(
+      'Link with characters that are neither reserved nor unreserved as per' +
+          'RFC 3986 and which are not recognized by other Google properties.',
+      'https://www.google.com/?q=<^>"',
+      '<a href="https://www.google.com/?q=">' +
+          'https://www.google.com/?q=<\/a>&lt;^&gt;&quot;');
 }
 
 function testIpv6Url() {
   assertLinkify(
-      'IPv6 URL',
-      'http://[::FFFF:129.144.52.38]:80/index.html',
+      'IPv6 URL', 'http://[::FFFF:129.144.52.38]:80/index.html',
       '<a href="http://[::FFFF:129.144.52.38]:80/index.html">' +
-      'http://[::FFFF:129.144.52.38]:80/index.html<\/a>');
+          'http://[::FFFF:129.144.52.38]:80/index.html<\/a>');
+}
+
+function testPreserveNewlines() {
+  assertLinkify(
+      'Preserving newlines', 'Example:\nhttp://www.google.com/',
+      'Example:<br>' +
+          '<a href="http://www.google.com/">http://www.google.com/<\/a>',
+      /* preserveNewlines */ true);
+  assertLinkify(
+      'Preserving newlines with no links', 'Line 1\nLine 2', 'Line 1<br>Line 2',
+      /* preserveNewlines */ true);
 }

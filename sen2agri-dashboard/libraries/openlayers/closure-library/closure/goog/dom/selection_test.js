@@ -28,14 +28,14 @@ var textarea;
 var hiddenTextarea;
 
 function setUp() {
-  input = goog.dom.createDom(goog.dom.TagName.INPUT,
-                             {type: goog.dom.InputType.TEXT});
+  input = goog.dom.createDom(
+      goog.dom.TagName.INPUT, {type: goog.dom.InputType.TEXT});
   textarea = goog.dom.createDom(goog.dom.TagName.TEXTAREA);
   hiddenInput = goog.dom.createDom(
       goog.dom.TagName.INPUT,
       {type: goog.dom.InputType.TEXT, style: 'display: none'});
-  hiddenTextarea = goog.dom.createDom(
-      goog.dom.TagName.TEXTAREA, {style: 'display: none'});
+  hiddenTextarea =
+      goog.dom.createDom(goog.dom.TagName.TEXTAREA, {style: 'display: none'});
 
   document.body.appendChild(input);
   document.body.appendChild(textarea);
@@ -44,10 +44,7 @@ function setUp() {
 }
 
 function tearDown() {
-  goog.dom.removeNode(input);
-  goog.dom.removeNode(textarea);
-  goog.dom.removeNode(hiddenInput);
-  goog.dom.removeNode(hiddenTextarea);
+  goog.dom.removeChildren(document.body);
 }
 
 
@@ -60,6 +57,19 @@ function testGetStartInput() {
 
 function testGetStartTextarea() {
   getStartHelper(textarea, hiddenTextarea);
+}
+
+/**
+ * Tests that getStart routine does not error for elements that are neither
+ * text inputs nor text areas.
+ */
+function testGetStartOther() {
+  var button = goog.dom.createDom(goog.dom.TagName.BUTTON);
+  var hiddenButton =
+      goog.dom.createDom(goog.dom.TagName.BUTTON, {style: 'display: none'});
+  document.body.appendChild(button);
+  document.body.appendChild(hiddenButton);
+  getStartHelper(button, hiddenButton);
 }
 
 function getStartHelper(field, hiddenField) {
@@ -100,13 +110,11 @@ function testSetTextMultipleLines() {
   select(textarea);
   assertEquals('', goog.dom.selection.getText(textarea));
   var isLegacyIE = goog.userAgent.IE && !goog.userAgent.isVersionOrHigher('9');
-  var message = isLegacyIE ?
-                'Get Behind Me\r\nSatan' :
-                'Get Behind Me\nSatan';
+  var message = isLegacyIE ? 'Get Behind Me\r\nSatan' : 'Get Behind Me\nSatan';
   goog.dom.selection.setText(textarea, message);
   assertEquals(message, goog.dom.selection.getText(textarea));
 
-  // Select the text upto the point just after the \r\n combination
+  // Select the text up to the point just after the \r\n combination
   // or \n in GECKO.
   var endOfNewline = isLegacyIE ? 15 : 14;
   var selectedMessage = message.substring(0, endOfNewline);
@@ -282,11 +290,13 @@ function testGetStartOnUnfocusedTextarea() {
   input.focus();
   goog.dom.selection.setCursorPosition(input, 5);
 
-  assertEquals('getStart on input should return where we put the cursor',
-      5, goog.dom.selection.getStart(input));
+  assertEquals(
+      'getStart on input should return where we put the cursor', 5,
+      goog.dom.selection.getStart(input));
 
-  assertEquals('getStart on unfocused textarea should succeed without error',
-      0, goog.dom.selection.getStart(textarea));
+  assertEquals(
+      'getStart on unfocused textarea should succeed without error', 0,
+      goog.dom.selection.getStart(textarea));
 }
 
 
@@ -308,9 +318,11 @@ function testSetCursorPositionTextareaWithNewlines() {
   var linebreak = isLegacyIE ? '\r\n' : '\n';
   var expectedLeftString = 'Hello' + linebreak + 'W';
 
-  assertEquals('getStart on input should return after the newline',
+  assertEquals(
+      'getStart on input should return after the newline',
       expectedLeftString.length, goog.dom.selection.getStart(textarea));
-  assertEquals('getEnd on input should return after the newline',
+  assertEquals(
+      'getEnd on input should return after the newline',
       expectedLeftString.length, goog.dom.selection.getEnd(textarea));
 
   goog.dom.selection.setEnd(textarea, textarea.value.length);

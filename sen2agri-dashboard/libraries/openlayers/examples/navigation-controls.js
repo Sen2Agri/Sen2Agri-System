@@ -1,8 +1,8 @@
 var map = new ol.Map({
   controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+    attributionOptions: {
       collapsible: false
-    })
+    }
   }).extend([
     new ol.control.ZoomToExtent({
       extent: [
@@ -16,7 +16,6 @@ var map = new ol.Map({
       source: new ol.source.OSM()
     })
   ],
-  renderer: common.getRendererFromQueryString(),
   target: 'map',
   view: new ol.View({
     center: [0, 0],

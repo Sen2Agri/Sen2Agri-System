@@ -61,10 +61,9 @@ function testOpenInUnsupportingBrowserThrowsException() {
   }
 
   webSocket = new goog.net.WebSocket();
-  assertThrows('Open should fail if WebSocket is not defined.',
-      function() {
-        webSocket.open(testUrl);
-      });
+  assertThrows('Open should fail if WebSocket is not defined.', function() {
+    webSocket.open(testUrl);
+  });
 }
 
 function testOpenTwiceThrowsException() {
@@ -72,19 +71,17 @@ function testOpenTwiceThrowsException() {
   webSocket.open(testUrl);
   simulateOpenEvent(webSocket.webSocket_);
 
-  assertThrows('Attempting to open a second time should fail.',
-      function() {
-        webSocket.open(testUrl);
-      });
+  assertThrows('Attempting to open a second time should fail.', function() {
+    webSocket.open(testUrl);
+  });
 }
 
 function testSendWithoutOpeningThrowsException() {
   webSocket = new goog.net.WebSocket();
 
-  assertThrows('Send should fail if the web socket was not first opened.',
-      function() {
-        webSocket.send('test message');
-      });
+  assertThrows(
+      'Send should fail if the web socket was not first opened.',
+      function() { webSocket.send('test message'); });
 }
 
 function testOpenWithProtocol() {
@@ -98,6 +95,23 @@ function testOpenWithProtocol() {
 
 function testOpenAndClose() {
   webSocket = new goog.net.WebSocket();
+  assertFalse(webSocket.isOpen());
+  webSocket.open(testUrl);
+  var ws = webSocket.webSocket_;
+  simulateOpenEvent(ws);
+  assertTrue(webSocket.isOpen());
+  assertEquals(testUrl, ws.url);
+  webSocket.close();
+  simulateCloseEvent(ws);
+  assertFalse(webSocket.isOpen());
+}
+
+function testOpenAndCloseWithOptions() {
+  webSocket = new goog.net.WebSocket({
+    autoReconnect: true,
+    getNextReconnect: linearBackOff,
+    binaryType: goog.net.WebSocket.BinaryType.ARRAY_BUFFER
+  });
   assertFalse(webSocket.isOpen());
   webSocket.open(testUrl);
   var ws = webSocket.webSocket_;
@@ -241,8 +255,8 @@ function testExponentialBackOff() {
 function testEntryPointRegistry() {
   var monitor = new goog.debug.EntryPointMonitor();
   var replacement = function() {};
-  monitor.wrap = goog.testing.recordFunction(
-      goog.functions.constant(replacement));
+  monitor.wrap =
+      goog.testing.recordFunction(goog.functions.constant(replacement));
 
   goog.debug.entryPointRegistry.monitorAll(monitor);
   assertTrue(monitor.wrap.getCallCount() >= 1);
@@ -254,25 +268,24 @@ function testEntryPointRegistry() {
 
 function testErrorHandlerCalled() {
   var errorHandlerCalled = false;
-  var errorHandler = new goog.debug.ErrorHandler(function() {
-    errorHandlerCalled = true;
-  });
+  var errorHandler =
+      new goog.debug.ErrorHandler(function() { errorHandlerCalled = true; });
   goog.net.WebSocket.protectEntryPoints(errorHandler);
 
   webSocket = new goog.net.WebSocket();
-  goog.events.listenOnce(webSocket, goog.net.WebSocket.EventType.OPENED,
-      function() {
-        throw Error();
+  goog.events.listenOnce(
+      webSocket, goog.net.WebSocket.EventType.OPENED, function() {
+        throw new Error();
       });
 
   webSocket.open(testUrl);
   var ws = webSocket.webSocket_;
-  assertThrows(function() {
-    simulateOpenEvent(ws);
-  });
+  assertThrows(function() { simulateOpenEvent(ws); });
 
-  assertTrue('Error handler callback should be called when registered as ' +
-      'protecting the entry points.', errorHandlerCalled);
+  assertTrue(
+      'Error handler callback should be called when registered as ' +
+          'protecting the entry points.',
+      errorHandlerCalled);
 }
 
 

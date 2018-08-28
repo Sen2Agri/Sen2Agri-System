@@ -18,19 +18,26 @@ goog.setTestOnly('goog.testing.fs.EntryTest');
 goog.require('goog.fs.DirectoryEntry');
 goog.require('goog.fs.Error');
 goog.require('goog.testing.MockClock');
+goog.require('goog.testing.TestCase');
 goog.require('goog.testing.fs.FileSystem');
 goog.require('goog.testing.jsunit');
 
 var fs, file, mockClock;
+
+function setUpPage() {
+  // This test has a tendency to timeout on external Travis testing
+  // infrastructure. Up to 5s from 1s.
+  goog.testing.TestCase.getActiveTestCase().promiseTimeout = 5000;
+}
 
 function setUp() {
   // Install the MockClock to create predictable timestamps for new files.
   mockClock = new goog.testing.MockClock(true);
 
   fs = new goog.testing.fs.FileSystem();
-  file = fs.getRoot().
-      getDirectorySync('foo', goog.fs.DirectoryEntry.Behavior.CREATE).
-      getFileSync('bar', goog.fs.DirectoryEntry.Behavior.CREATE);
+  file = fs.getRoot()
+             .getDirectorySync('foo', goog.fs.DirectoryEntry.Behavior.CREATE)
+             .getFileSync('bar', goog.fs.DirectoryEntry.Behavior.CREATE);
 
   // Uninstall the MockClock since it interferes with goog.Promise execution.
   // Tests that require specific timing may reinstall the MockClock and manually
@@ -66,34 +73,38 @@ function testMoveToNewName() {
   // Advance the clock to an arbitrary, known time.
   mockClock.install();
   mockClock.tick(71);
-  var promise = file.moveTo(fs.getRoot(), 'baz').then(function(newFile) {
-    mockClock.tick();
-    assertTrue(file.deleted);
-    assertFalse(newFile.deleted);
-    assertEquals('/baz', newFile.getFullPath());
-    assertEquals(fs.getRoot(), newFile.parent);
-    assertEquals(newFile, fs.getRoot().getFileSync('baz'));
+  var promise = file.moveTo(fs.getRoot(), 'baz')
+                    .then(function(newFile) {
+                      mockClock.tick();
+                      assertTrue(file.deleted);
+                      assertFalse(newFile.deleted);
+                      assertEquals('/baz', newFile.getFullPath());
+                      assertEquals(fs.getRoot(), newFile.parent);
+                      assertEquals(newFile, fs.getRoot().getFileSync('baz'));
 
-    var oldParentDir = fs.getRoot().getDirectorySync('foo');
-    assertFalse(oldParentDir.hasChild('bar'));
-    assertFalse(oldParentDir.hasChild('baz'));
+                      var oldParentDir = fs.getRoot().getDirectorySync('foo');
+                      assertFalse(oldParentDir.hasChild('bar'));
+                      assertFalse(oldParentDir.hasChild('baz'));
 
-    return oldParentDir.getLastModified();
-  }).then(function(lastModifiedDate) {
-    assertEquals(71, lastModifiedDate.getTime());
-    var oldParentDir = fs.getRoot().getDirectorySync('foo');
-    return oldParentDir.getMetadata();
-  }).then(function(metadata) {
-    assertEquals(71, metadata.modificationTime.getTime());
-    return fs.getRoot().getLastModified();
-  }).then(function(rootLastModifiedDate) {
-    assertEquals(71, rootLastModifiedDate.getTime());
-    return fs.getRoot().getMetadata();
-  }).then(function(rootMetadata) {
-    assertEquals(71, rootMetadata.modificationTime.getTime());
-  }).thenAlways(function() {
-    mockClock.uninstall();
-  });
+                      return oldParentDir.getLastModified();
+                    })
+                    .then(function(lastModifiedDate) {
+                      assertEquals(71, lastModifiedDate.getTime());
+                      var oldParentDir = fs.getRoot().getDirectorySync('foo');
+                      return oldParentDir.getMetadata();
+                    })
+                    .then(function(metadata) {
+                      assertEquals(71, metadata.modificationTime.getTime());
+                      return fs.getRoot().getLastModified();
+                    })
+                    .then(function(rootLastModifiedDate) {
+                      assertEquals(71, rootLastModifiedDate.getTime());
+                      return fs.getRoot().getMetadata();
+                    })
+                    .then(function(rootMetadata) {
+                      assertEquals(71, rootMetadata.modificationTime.getTime());
+                    })
+                    .thenAlways(function() { mockClock.uninstall(); });
   mockClock.tick();
   return promise;
 }
@@ -107,33 +118,39 @@ function testMoveDeletedFile() {
 function testCopyTo() {
   mockClock.install();
   mockClock.tick(61);
-  var promise = file.copyTo(fs.getRoot()).then(function(newFile) {
-    assertFalse(file.deleted);
-    assertFalse(newFile.deleted);
-    assertEquals('/bar', newFile.getFullPath());
-    assertEquals(fs.getRoot(), newFile.parent);
-    assertEquals(newFile, fs.getRoot().getFileSync('bar'));
+  var promise = file.copyTo(fs.getRoot())
+                    .then(function(newFile) {
+                      assertFalse(file.deleted);
+                      assertFalse(newFile.deleted);
+                      assertEquals('/bar', newFile.getFullPath());
+                      assertEquals(fs.getRoot(), newFile.parent);
+                      assertEquals(newFile, fs.getRoot().getFileSync('bar'));
 
-    var oldParentDir = fs.getRoot().getDirectorySync('foo');
-    assertEquals(file, oldParentDir.getFileSync('bar'));
-    return oldParentDir.getLastModified();
-  }).then(function(lastModifiedDate) {
-    assertEquals('The original parent directory was not modified.',
-                 0, lastModifiedDate.getTime());
-    var oldParentDir = fs.getRoot().getDirectorySync('foo');
-    return oldParentDir.getMetadata();
-  }).then(function(metadata) {
-    assertEquals('The original parent directory was not modified.',
-                 0, metadata.modificationTime.getTime());
-    return fs.getRoot().getLastModified();
-  }).then(function(rootLastModifiedDate) {
-    assertEquals(61, rootLastModifiedDate.getTime());
-    return fs.getRoot().getMetadata();
-  }).then(function(rootMetadata) {
-    assertEquals(61, rootMetadata.modificationTime.getTime());
-  }).thenAlways(function() {
-    mockClock.uninstall();
-  });
+                      var oldParentDir = fs.getRoot().getDirectorySync('foo');
+                      assertEquals(file, oldParentDir.getFileSync('bar'));
+                      return oldParentDir.getLastModified();
+                    })
+                    .then(function(lastModifiedDate) {
+                      assertEquals(
+                          'The original parent directory was not modified.', 0,
+                          lastModifiedDate.getTime());
+                      var oldParentDir = fs.getRoot().getDirectorySync('foo');
+                      return oldParentDir.getMetadata();
+                    })
+                    .then(function(metadata) {
+                      assertEquals(
+                          'The original parent directory was not modified.', 0,
+                          metadata.modificationTime.getTime());
+                      return fs.getRoot().getLastModified();
+                    })
+                    .then(function(rootLastModifiedDate) {
+                      assertEquals(61, rootLastModifiedDate.getTime());
+                      return fs.getRoot().getMetadata();
+                    })
+                    .then(function(rootMetadata) {
+                      assertEquals(61, rootMetadata.modificationTime.getTime());
+                    })
+                    .thenAlways(function() { mockClock.uninstall(); });
   mockClock.tick();
   return promise;
 }
@@ -159,31 +176,31 @@ function testCopyDeletedFile() {
 function testRemove() {
   mockClock.install();
   mockClock.tick(57);
-  var promise = file.remove().then(function() {
-    mockClock.tick();
-    var parentDir = fs.getRoot().getDirectorySync('foo');
+  var promise = file.remove()
+                    .then(function() {
+                      mockClock.tick();
+                      var parentDir = fs.getRoot().getDirectorySync('foo');
 
-    assertTrue(file.deleted);
-    assertFalse(parentDir.hasChild('bar'));
+                      assertTrue(file.deleted);
+                      assertFalse(parentDir.hasChild('bar'));
 
-    return parentDir.getLastModified();
-  }).then(function(date) {
-    assertEquals(57, date.getTime());
-    var parentDir = fs.getRoot().getDirectorySync('foo');
-    return parentDir.getMetadata();
-  }).then(function(metadata) {
-    assertEquals(57, metadata.modificationTime.getTime());
-  }).thenAlways(function() {
-    mockClock.uninstall();
-  });
+                      return parentDir.getLastModified();
+                    })
+                    .then(function(date) {
+                      assertEquals(57, date.getTime());
+                      var parentDir = fs.getRoot().getDirectorySync('foo');
+                      return parentDir.getMetadata();
+                    })
+                    .then(function(metadata) {
+                      assertEquals(57, metadata.modificationTime.getTime());
+                    })
+                    .thenAlways(function() { mockClock.uninstall(); });
   mockClock.tick();
   return promise;
 }
 
 function testRemoveDeletedFile() {
-  return assertFailsWhenDeleted(function() {
-    return file.remove();
-  });
+  return assertFailsWhenDeleted(function() { return file.remove(); });
 }
 
 function testGetParent() {
@@ -195,15 +212,13 @@ function testGetParent() {
 }
 
 function testGetDeletedFileParent() {
-  return assertFailsWhenDeleted(function() {
-    return file.getParent();
-  });
+  return assertFailsWhenDeleted(function() { return file.getParent(); });
 }
 
 function assertFailsWhenDeleted(fn) {
-  return file.remove().then(fn).then(function() {
-    fail('Expected an error');
-  }, function(err) {
-    assertEquals(goog.fs.Error.ErrorCode.NOT_FOUND, err.code);
-  });
+  return file.remove().then(fn).then(
+      function() { fail('Expected an error'); },
+      function(err) {
+        assertEquals(goog.fs.Error.ErrorCode.NOT_FOUND, err.code);
+      });
 }

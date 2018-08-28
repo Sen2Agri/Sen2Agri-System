@@ -3,7 +3,7 @@ session_start();
 require_once('ConfigParams.php');
 
 function getAllUsers(){
-	$db = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+	$db = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
 
     $sql ="SELECT * FROM sp_get_all_users()";
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
@@ -18,7 +18,7 @@ function getAllUsers(){
 }
 
 function checkUser(){
-    $db = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $db = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
     
     $sql = "SELECT login FROM \"user\" u WHERE u.login ='".$_REQUEST['login']."'";
     if(isset($_REQUEST['id']) && trim($_REQUEST['id'])){
@@ -34,21 +34,21 @@ function checkUser(){
 }
 
 function getSites(){
-    $db = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $db = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
     $rows = pg_query($db, "SELECT id, name as text FROM sp_get_sites()") or die(pg_last_error());
     $result = pg_fetch_all($rows);
     echo json_encode(array('results'=>$result));
 }
 
 function deleteUser(){
-    $db = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $db = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
     $rows = pg_query_params($db, "DELETE FROM \"user\" WHERE id = $1",array($_POST['user_id'])) or die(pg_last_error());
     
     echo  "The user has been successfully removed!";
 }
 
 function addUser(){
-    $db = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $db = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
     $sites_id = isset($_REQUEST['site'])? '{'.implode(',',$_REQUEST['site']).'}':null;
     $user_id = isset($_REQUEST['user_id'])?$_REQUEST['user_id']:null;
 

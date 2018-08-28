@@ -94,9 +94,18 @@ function testOperaLinux() {
 function testOpera15() {
   goog.labs.userAgent.util.setUserAgent(
       goog.labs.userAgent.testAgents.OPERA_15);
+  // Opera 15 is Chromium 28.  We treat all Chromium variants as Chrome.
+  assertBrowser(Browser.CHROME);
+  assertVersion('28.0.1500.52');
+  assertVersionBetween('28.00', '29.00');
+}
+
+function testOperaMini() {
+  goog.labs.userAgent.util.setUserAgent(
+      goog.labs.userAgent.testAgents.OPERA_MINI);
   assertBrowser(Browser.OPERA);
-  assertVersion('15.0.1147.100');
-  assertVersionBetween('15.00', '16.00');
+  assertVersion('11.10');
+  assertVersionBetween('11.00', '12.00');
 }
 
 function testIE6() {
@@ -242,6 +251,16 @@ function testChromeIphone() {
   assertVersionBetween('22.0', '22.10');
 }
 
+function testChromeIpad() {
+  goog.labs.userAgent.util.setUserAgent(
+      goog.labs.userAgent.testAgents.CHROME_IPAD);
+  assertBrowser(Browser.CHROME);
+  assertTrue(goog.labs.userAgent.browser.isChrome());
+  assertVersion('32.0.1700.20');
+  assertVersionBetween('32.0', '33.0');
+  assertVersionBetween('32.0', '32.10');
+}
+
 function testChromeMac() {
   goog.labs.userAgent.util.setUserAgent(
       goog.labs.userAgent.testAgents.CHROME_MAC);
@@ -279,8 +298,7 @@ function testSafariIphone() {
 }
 
 function testCoast() {
-  goog.labs.userAgent.util.setUserAgent(
-      goog.labs.userAgent.testAgents.COAST);
+  goog.labs.userAgent.util.setUserAgent(goog.labs.userAgent.testAgents.COAST);
   assertBrowser(Browser.COAST);
 }
 

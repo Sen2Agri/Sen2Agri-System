@@ -39,11 +39,13 @@ function testElementOffset() {
 
   var recovered = nodeOffset.findTargetNode(test2);
   assertNotNull('Should recover a node.', recovered);
-  assertEquals('Should recover an I node.', goog.dom.TagName.I,
+  assertEquals(
+      'Should recover an I node.', String(goog.dom.TagName.I),
       recovered.tagName);
-  assertTrue('Should recover a child of test2',
-      goog.dom.contains(test2, recovered));
-  assertFalse('Should not recover a child of test1',
+  assertTrue(
+      'Should recover a child of test2', goog.dom.contains(test2, recovered));
+  assertFalse(
+      'Should not recover a child of test1',
       goog.dom.contains(test1, recovered));
 
   nodeOffset.dispose();
@@ -54,13 +56,14 @@ function testNodeOffset() {
 
   var recovered = nodeOffset.findTargetNode(test2);
   assertNotNull('Should recover a node.', recovered);
-  assertEquals('Should recover a text node.', goog.dom.NodeType.TEXT,
+  assertEquals(
+      'Should recover a text node.', goog.dom.NodeType.TEXT,
       recovered.nodeType);
-  assertEquals('Should  have correct contents.', 'text.',
-      recovered.nodeValue);
-  assertTrue('Should recover a child of test2',
-      goog.dom.contains(test2, recovered));
-  assertFalse('Should not recover a child of test1',
+  assertEquals('Should  have correct contents.', 'text.', recovered.nodeValue);
+  assertTrue(
+      'Should recover a child of test2', goog.dom.contains(test2, recovered));
+  assertFalse(
+      'Should not recover a child of test1',
       goog.dom.contains(test1, recovered));
 
   nodeOffset.dispose();
@@ -69,8 +72,9 @@ function testNodeOffset() {
 function testToString() {
   var nodeOffset = new goog.dom.NodeOffset(i.firstChild, test1);
 
-  assertEquals('Should have correct string representation',
-      '3,B\n1,I\n0,#text', nodeOffset.toString());
+  assertEquals(
+      'Should have correct string representation', '3,B\n1,I\n0,#text',
+      nodeOffset.toString());
 
   nodeOffset.dispose();
 }

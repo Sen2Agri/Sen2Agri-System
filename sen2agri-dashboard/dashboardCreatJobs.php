@@ -24,7 +24,7 @@ function get_scheduled_jobs_header($processorId) {
 		<span>Job name</span>
 		<span>Site name</span>
 		<span>Season name</span>
-		<?php if ($processorId == 3) { ?>
+		<?php if (ConfigParams::isSen2Agri() && $processorId == 3) { ?>
 		<span>Product</span>
 		<?php } ?>
 		<span>Schedule type</span>
@@ -37,7 +37,7 @@ function get_scheduled_jobs_header($processorId) {
 function add_new_scheduled_jobs_layout($processorId) {
 	$action = getAction($processorId);
 
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	$db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 	// get distinct sites with seasons
 	
 	if($_SESSION['isAdmin'] ||  sizeof($_SESSION['siteId'])>0){
@@ -77,7 +77,7 @@ function add_new_scheduled_jobs_layout($processorId) {
 				<?= $option_season ?>
 			</select>
 		</span>
-		<?php if ($processorId == 3) { ?>
+		<?php if (ConfigParams::isSen2Agri() && $processorId == 3) { ?>
 		<span class="schedule_format">
 			<select id="product_add<?= $processorId ?>" name="product_add" required="true">
 				<option value="" selected>Select a product</option>
@@ -130,7 +130,7 @@ function add_new_scheduled_jobs_layout($processorId) {
 function update_scheduled_jobs_layout($processorId) {
 	$action = getAction($processorId);
 
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	$db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
 	$sql = "SELECT * from sp_get_dashboard_processor_scheduled_task('$processorId')";
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 
@@ -164,7 +164,7 @@ function update_scheduled_jobs_layout($processorId) {
 			<span class="schedule_format"><?= $jobName ?></span>
 			<span class="schedule_format"><?= $siteName ?></span>
 			<span class="schedule_format"><?= $seasonName ?></span>
-			<?php if ($processorId == 3) { $product = json_decode($row[8],true)['general_params']['product_type']; ?>
+			<?php if (ConfigParams::isSen2Agri() && $processorId == 3) { $product = json_decode($task[9],true)['general_params']['product_type']; ?>
 			<span class="schedule_format">
 				<select id="product<?= $jobId ?>" name="product" onchange="activateButton(<?= $jobId ?>)">
 					<option value="L3B"<?= $product == "L3B" ? " selected" : "" ?>>L3B</option>

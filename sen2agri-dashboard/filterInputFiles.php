@@ -15,25 +15,37 @@
     
     					<div class="row">
     						 <div class="col-md-1 form-group form-group-sm sensor">        												
-    							<input class="form-control chkS2" id="<?php echo $prefix?>_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
-    							<label class="control-label" for="<?php echo $prefix?>_chkS2">S2</label>
+    							<input class="form-control chkS2" id="<?php echo $prefix?>form_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+    							<label class="control-label" for="<?php echo $prefix?>form_chkS2">S2</label>
     						</div> 
     						<div class="col-md-10 form-group form-group-sm sensor">
-    							<label class=" control-label" for="<?php echo $prefix?>_S2Tiles" style="display: block">Tiles</label>                         
-    							<textarea class='form-control' style="resize: vertical;" rows="2" name="S2Tiles" id="<?php echo $prefix?>_S2Tiles"></textarea>
+    							<label class=" control-label" for="<?php echo $prefix?>form_S2Tiles" style="display: block">Tiles</label>                         
+    							<textarea class='form-control' style="resize: vertical;" rows="2" name="S2Tiles" id="<?php echo $prefix?>form_S2Tiles"></textarea>
     							<span class="invalidTilesS2"></span>
     						</div>                            					
     					</div>
-    					
+    					<?php if(!ConfigParams::isSen2Agri()){?>
+						<div class="row">
+    						 <div class="col-md-1 form-group form-group-sm sensor">
+    							<input class="form-control chkS1" id="<?php echo $prefix?>form_chkS1" type="checkbox" name="sensor" value="S1" checked="checked" >
+    							<label class="control-label" for="<?php echo $prefix?>_chkS1">S1</label>
+    						</div> 
+    						<div class="col-md-10 form-group form-group-sm sensor">
+    							<label class=" control-label" for="<?php echo $prefix?>_S1Tiles" style="display: block">Tiles</label>
+    							<textarea class='form-control' style="resize: vertical;" rows="2" name="S1Tiles" id="<?php echo $prefix?>form_S1Tiles"></textarea>
+    							<span class="invalidTilesS1"></span>
+    						</div>
+    					</div>
+    					<?php }?>
     					<div class="row">
     						 <div class="col-md-1 form-group form-group-sm sensor">        												
-    							<input class="form-control chkL8" id="<?php echo $prefix?>_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
-    							<label class="control-label" for="<?php echo $prefix?>_chkL8">L8</label>
+    							<input class="form-control chkL8" id="<?php echo $prefix?>form_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
+    							<label class="control-label" for="<?php echo $prefix?>form_chkL8">L8</label>
     						</div>   
     						
                      		<div class="col-md-10 form-group form-group-sm sensor">
-    							<label class=" control-label" for="<?php echo $prefix?>_L8Tiles" >Tiles</label>                   							
-    							<textarea class='form-control' style="resize: vertical;" rows="2" name="L8Tiles" id="<?php echo $prefix?>_L8Tiles"></textarea>
+    							<label class=" control-label" for="<?php echo $prefix?>form_L8Tiles" >Tiles</label>                   							
+    							<textarea class='form-control' style="resize: vertical;" rows="2" name="L8Tiles" id="<?php echo $prefix?>form_L8Tiles"></textarea>
     							<span class="invalidTilesL8"></span>
     						</div>          					
     					</div>

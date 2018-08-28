@@ -84,7 +84,7 @@ def main():
             run_command(['gdaladdo', '-r', args.resampler, args.input] + levels, env)
 
     parts = os.path.splitext(args.input)
-    temp = "".join([parts[0], ".tmpcog", parts[1]])
+    temp = parts[0] + ".tmpcog.tif"
 
     if args.compress:
         command += ['-co', 'COMPRESS=' + args.compress, '-co', 'PREDICTOR=2']
@@ -96,7 +96,12 @@ def main():
     command += [args.input, temp]
     run_command(command, env)
 
-    os.rename(temp, args.input)
+    if parts[1] == ".tif":
+        os.rename(temp, args.input)
+    elif parts[1] == ".vrt":
+        os.rename(temp, parts[0] + ".tif")
+        os.remove(args.input)
+        os.remove(args.input + ".ovr")
 
 
 if __name__ == '__main__':

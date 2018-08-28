@@ -1,10 +1,10 @@
 <?php
-require_once('ConfigParams.php');
+//require_once('ConfigParams.php');
 
 include 'master.php';
 
 function getTiles($siteId,$satelliteId){
-    $dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+    $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
     $rows = pg_query_params($dbconn, "select * from sp_get_site_tiles($1,$2)",array($siteId,$satelliteId)) or die(pg_last_error());
     return (pg_numrows($rows) > 0 ? pg_fetch_all_columns($rows): array());
 }
@@ -61,7 +61,7 @@ function endsWith($str, $sub) {
 }
 
 function getInsituFolder($siteId, $isStrata) {
-    $dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $dbconn = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
     if (is_numeric($siteId)) {
         $rows = pg_query($dbconn, "SELECT short_name FROM sp_get_sites() WHERE id = ".$siteId) or die(pg_last_error());
         $siteId = pg_fetch_array($rows, 0)[0];
@@ -164,7 +164,7 @@ function get_product_types_from_db() {
 
 function createCustomUploadFolder($siteId, $timestamp, $subDir) {
     // create custom upload path like: /mnt/upload/siteName/userName_timeStamp/
-    $dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+    $dbconn = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
     $rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL") or die(pg_last_error());
     $result = pg_fetch_array($rows, 0)[1];
 
@@ -305,7 +305,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
     }
 
     function insertSite($site, $coord, $enbl) {
-        $db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+        $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
         $sql = "SELECT sp_dashboard_add_site($1,$2,$3)";
         $res = pg_prepare ( $db, "my_query", $sql );
         $res = pg_execute ( $db, "my_query", array (
@@ -411,7 +411,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
     }
 
     function updateSite($id, $enbl) {
-        $db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+        $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
         $res = pg_query_params ( $db, "SELECT sp_dashboard_update_site($1,$2)", array (
                 $id,
                 $enbl

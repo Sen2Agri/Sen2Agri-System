@@ -1,8 +1,8 @@
 var wmsSource = new ol.source.ImageWMS({
-  url: 'http://demo.boundlessgeo.com/geoserver/wms',
+  url: 'https://ahocevar.com/geoserver/wms',
   params: {'LAYERS': 'ne:ne'},
   serverType: 'geoserver',
-  crossOrigin: ''
+  crossOrigin: 'anonymous'
 });
 
 var wmsLayer = new ol.layer.Image({
@@ -15,7 +15,6 @@ var view = new ol.View({
 });
 
 var map = new ol.Map({
-  renderer: common.getRendererFromQueryString(),
   layers: [wmsLayer],
   target: 'map',
   view: view
@@ -38,7 +37,7 @@ map.on('pointermove', function(evt) {
     return;
   }
   var pixel = map.getEventPixel(evt.originalEvent);
-  var hit = map.forEachLayerAtPixel(pixel, function(layer) {
+  var hit = map.forEachLayerAtPixel(pixel, function() {
     return true;
   });
   map.getTargetElement().style.cursor = hit ? 'pointer' : '';

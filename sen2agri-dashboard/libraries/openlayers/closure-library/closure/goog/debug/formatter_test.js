@@ -24,7 +24,7 @@ goog.require('goog.testing.jsunit');
 
 var EXPECTED_RECORD_HTML_RE =
     '^prefix \\[.*?\\] \\[ &#160;.*?s\\] \\[loggerName\\] ' +
-        '<span class="dbg-f">mess<br> &#160;age<br>Message:';
+    '<span class="dbg-f">mess<br> &#160;age<br>Message:';
 var logRecord;
 
 
@@ -34,6 +34,26 @@ function setUp() {
   // Exception needs to be present for exception text to get printed
   // by HtmlFormatter.
   logRecord.setException(new Error('exc\n  eption'));
+}
+
+
+function testExposeException() {
+  var expected = 'Message: message&quot;<br>' +
+      'Url: <a href="view-source:http://fileName&quot;" ' +
+      'target="_new">http://fileName&quot;</a><br>' +
+      'Line: lineNumber&quot;<br><br>' +
+      'Browser stack:<br>' +
+      'stack&quot;-&gt; [end]';
+  var error = {
+    message: 'message"',
+    fileName: 'http://fileName"',
+    lineNumber: 'lineNumber"',
+    stack: 'stack"'
+  };
+  var actualHtml = goog.debug.HtmlFormatter.exposeExceptionAsHtml(error);
+  var actual = goog.html.SafeHtml.unwrap(actualHtml);
+  actual = actual.substring(0, expected.length);
+  assertEquals(expected, actual);
 }
 
 

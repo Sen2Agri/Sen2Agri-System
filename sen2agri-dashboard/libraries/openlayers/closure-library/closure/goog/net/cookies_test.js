@@ -169,24 +169,24 @@ function testStrangeValue() {
 }
 
 function testSetCookiePath() {
-  assertEquals('foo=bar;path=/xyz',
-      mockSetCookie('foo', 'bar', -1, '/xyz'));
+  assertEquals('foo=bar;path=/xyz', mockSetCookie('foo', 'bar', -1, '/xyz'));
 }
 
 function testSetCookieDomain() {
-  assertEquals('foo=bar;domain=google.com',
+  assertEquals(
+      'foo=bar;domain=google.com',
       mockSetCookie('foo', 'bar', -1, null, 'google.com'));
 }
 
 function testSetCookieSecure() {
-  assertEquals('foo=bar;secure',
-      mockSetCookie('foo', 'bar', -1, null, null, true));
+  assertEquals(
+      'foo=bar;secure', mockSetCookie('foo', 'bar', -1, null, null, true));
 }
 
 function testSetCookieMaxAgeZero() {
   var result = mockSetCookie('foo', 'bar', 0);
-  var pattern = new RegExp(
-      'foo=bar;expires=' + new Date(1970, 1, 1).toUTCString());
+  var pattern =
+      new RegExp('foo=bar;expires=' + new Date(1970, 1, 1).toUTCString());
   if (!result.match(pattern)) {
     fail('expected match against ' + pattern + ' got ' + result);
   }
@@ -201,13 +201,23 @@ function testGetEmptyCookie() {
 }
 
 function testGetEmptyCookieIE() {
-  stubs.set(cookies, 'getCookie_', function() {
-    return 'test1; test2; test3';
-  });
+  stubs.set(
+      cookies, 'getCookie_', function() { return 'test1; test2; test3'; });
 
   assertEquals('', cookies.get('test1'));
   assertEquals('', cookies.get('test2'));
   assertEquals('', cookies.get('test3'));
+}
+
+function testGetReallyEmptyCookieIE() {
+  stubs.set(cookies, 'getCookie_', function() {
+    return 'test1; ; test3';
+  });
+
+  assertEquals('', cookies.get('test1'));
+  assertEquals('', cookies.get(''));
+  assertEquals('', cookies.get('test3'));
+  assertEquals(3, cookies.getCount());
 }
 
 // TODO(chrisn): Testing max age > 0 requires a mock clock.
@@ -216,9 +226,7 @@ function mockSetCookie(var_args) {
   var setCookie = cookies.setCookie_;
   try {
     var result;
-    cookies.setCookie_ = function(arg) {
-      result = arg;
-    };
+    cookies.setCookie_ = function(arg) { result = arg; };
     cookies.set.apply(cookies, arguments);
     return result;
   } finally {
@@ -232,9 +240,7 @@ function assertValidName(name) {
 
 function assertInvalidName(name) {
   assertFalse(name + ' should be invalid', cookies.isValidName(name));
-  assertThrows(function() {
-    cookies.set(name, 'value');
-  });
+  assertThrows(function() { cookies.set(name, 'value'); });
 }
 
 function assertValidValue(val) {
@@ -243,9 +249,7 @@ function assertValidValue(val) {
 
 function assertInvalidValue(val) {
   assertFalse(val + ' should be invalid', cookies.isValidValue(val));
-  assertThrows(function() {
-    cookies.set('name', val);
-  });
+  assertThrows(function() { cookies.set('name', val); });
 }
 
 function testValidName() {

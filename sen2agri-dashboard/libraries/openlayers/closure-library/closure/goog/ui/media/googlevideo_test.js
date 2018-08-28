@@ -24,7 +24,7 @@ goog.require('goog.ui.media.GoogleVideoModel');
 goog.require('goog.ui.media.Media');
 var video;
 var control;
-var VIDEO_URL_PREFIX = 'http://video.google.com/videoplay?docid=';
+var VIDEO_URL_PREFIX = 'https://video.google.com/videoplay?docid=';
 var VIDEO_ID = '7582902000166025817';
 var VIDEO_URL = VIDEO_URL_PREFIX + VIDEO_ID;
 var parent = goog.dom.createElement(goog.dom.TagName.DIV);
@@ -61,7 +61,8 @@ function testParsingUrl() {
   var e = assertThrows('parser expects a well formed URL', function() {
     goog.ui.media.GoogleVideoModel.newInstance(invalidUrl);
   });
-  assertEquals('failed to parse video id from GoogleVideo url: ' + invalidUrl,
+  assertEquals(
+      'failed to parse video id from GoogleVideo url: ' + invalidUrl,
       e.message);
 }
 
@@ -79,8 +80,7 @@ function testCreatingModel() {
 function testCreatingDomOnInitialState() {
   control.render(parent);
   var caption = goog.dom.getElementsByTagNameAndClass(
-      goog.dom.TagName.DIV,
-      goog.ui.media.GoogleVideo.CSS_CLASS + '-caption',
+      goog.dom.TagName.DIV, goog.ui.media.GoogleVideo.CSS_CLASS + '-caption',
       parent);
   assertEquals(1, caption.length);
 

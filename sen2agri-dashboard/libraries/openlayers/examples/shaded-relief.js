@@ -89,12 +89,13 @@ function shade(inputs, data) {
     }
   }
 
-  return new ImageData(shadeData, width, height);
+  return {data: shadeData, width: width, height: height};
 }
 
 var elevation = new ol.source.XYZ({
   url: 'https://{a-d}.tiles.mapbox.com/v3/aj.sf-dem/{z}/{x}/{y}.png',
-  crossOrigin: 'anonymous'
+  crossOrigin: 'anonymous',
+  transition: 0
 });
 
 var raster = new ol.source.Raster({
@@ -107,9 +108,7 @@ var map = new ol.Map({
   target: 'map',
   layers: [
     new ol.layer.Tile({
-      source: new ol.source.TileJSON({
-        url: 'http://api.tiles.mapbox.com/v3/tschaub.miapgppd.jsonp'
-      })
+      source: new ol.source.OSM()
     }),
     new ol.layer.Image({
       opacity: 0.3,

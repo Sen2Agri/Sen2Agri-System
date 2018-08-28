@@ -1,5 +1,5 @@
 var raster = new ol.layer.Tile({
-  source: new ol.source.MapQuest({layer: 'sat'})
+  source: new ol.source.OSM()
 });
 
 var vector = new ol.layer.Vector({
@@ -61,9 +61,10 @@ var changeInteraction = function() {
   if (select !== null) {
     map.addInteraction(select);
     select.on('select', function(e) {
-      $('#status').html('&nbsp;' + e.target.getFeatures().getLength() +
+      document.getElementById('status').innerHTML = '&nbsp;' +
+          e.target.getFeatures().getLength() +
           ' selected features (last operation selected ' + e.selected.length +
-          ' and deselected ' + e.deselected.length + ' features)');
+          ' and deselected ' + e.deselected.length + ' features)';
     });
   }
 };
