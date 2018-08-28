@@ -32,9 +32,11 @@ from multiprocessing import Pool
 from sen2agri_common_db import *
 from threading import Thread
 import threading
+from bs4 import BeautifulSoup as Soup
+
 general_log_path = "/tmp/"
 general_log_filename = "demmaccs.log"
-
+maccs_text_to_stop_retries = ["The number of cloudy pixel is too high", "algorithm processing is stopped", "The dark surface reflectance associated to the value of AOT index min is lower than the dark surface reflectance threshold", "The number of NoData pixel in the output L2 composite product is too high", "PersistentStreamingConditionalStatisticsImageFilter::Synthetize.No pixel is valid. Return null statistics"]
 
 def get_envelope(footprints):
     geomCol = ogr.Geometry(ogr.wkbGeometryCollection)
@@ -311,6 +313,72 @@ def launch_demmaccs(l1c_context, l1c_db_thread):
             log(output_path, "Only set the state as processed in downloader_history (no l2a tiles found after maccs) for product {}".format(output_path), general_log_filename)
         l1c_db.set_processed_product(1, site_id, l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, l1c[5])
 
+def get_maccs_error(maccs_report_file):
+    log_message = ""
+    should_retry = True
+    try:
+        xml_handler = open(maccs_report_file).read()
+        soup = Soup(xml_handler)
+        for message in soup.find_all('message'):
+            msg_type = message.find('type').get_text()
+            if msg_type == 'W' or msg_type == 'E':
+                log_message += message.find('text').get_text()
+                log_message += "\n"
+            if msg_type == 'I' and re.search("code return: 0", message.find('text').get_text(), re.IGNORECASE):
+                should_retry = False
+    except Exception, e:
+        print("Exception received when trying to read the MACCS error text from file {}: {}".format(maccs_report_file, e))
+        pass
+    return should_retry, log_message
+
+def get_error_reason(path, tile_id):
+    reason = ""
+    path_to_use = path[:len(path) - 1] if not path.endswith("/") else path
+    maccs_report_file = "{}/MACCS_L2REPT_{}.EEF".format(path_to_use, tile_id)
+    should_retry, maccs_error_message = get_maccs_error(maccs_report_file)
+#    should_retry = True
+    if len(maccs_error_message) > 0:
+        reason = "MACCS: \n"
+        reason += maccs_error_message
+        print("MACCS error text found. should retry: {}".format(should_retry))
+#        for string_to_search in maccs_text_to_stop_retries:
+#            if re.search(string_to_search, maccs_error_message, re.IGNORECASE) is not None:
+#                should_retry = False
+#                break
+
+    tile_log_filename = "{}/demmaccs_{}.log".format(path_to_use, tile_id)
+    try:
+        with open(tile_log_filename) as in_file:
+            contents = in_file.readlines()
+            for line in contents:
+                index = line.find("Tile failure: ")
+                if index != -1:
+                    reason += "DEMMACCS: \n"
+                    reason += line[index + 14:]
+                    break
+    except IOError as e:
+        print("No log file {} to get the reason".format(tile_log_filename))
+    return should_retry, reason
+
+def set_l1_tile_status(l1c_db_thread, product_id, tile_id, reason = None, should_retry = None):
+    retries = 0
+    max_number_of_retries = 3
+    while True:
+        if reason is not None and should_retry is not None:
+            is_product_finished = l1c_db_thread.mark_l1_tile_failed(product_id, tile_id, reason, should_retry)
+        else:
+            is_product_finished = l1c_db_thread.mark_l1_tile_done(product_id, tile_id)
+        if is_product_finished == False:
+            serialization_failure, commit_result = l1c_db_thread.sql_commit()
+            if commit_result == False:
+                l1c_db_thread.sql_rollback()
+            if serialization_failure and retries < max_number_of_retries:
+                time.sleep(2)
+                retries += 1
+                continue
+            l1c_db_thread.database_disconnect()
+        return is_product_finished
+
 def new_launch_demmaccs(l1c_db_thread):
     global general_log_path
     global general_log_filename
@@ -353,10 +421,27 @@ def new_launch_demmaccs(l1c_db_thread):
         print("{}: dh_id = {}".format(threading.currentThread().getName(), product_id))
         print("{}: path = {}".format(threading.currentThread().getName(), full_path))
         print("{}: prev_path = {}".format(threading.currentThread().getName(), previous_l2a_path))
+#        if set_l1_tile_status(l1c_db_thread, product_id, tile_id):
+#            while True:
+#                result = l1c_db_thread.set_l2a_product(1, site_id, product_id, [], None, None, None, None, None, orbit_id)
+#                if result == False:
+#                    l1c_db_thread.sql_rollback()
+#                    l1c_db_thread.database_disconnect()
+#                serialization_failure, commit_result = l1c_db_thread.sql_commit()
+#                if commit_result == False:                    
+#                    l1c_db_thread.sql_rollback()
+#                if serialization_failure == True and retries < max_number_of_retries and set_l1_tile_status(l1c_db_thread, product_id, tile_id, reason, should_retry):
+#                    time.sleep(2)
+#                    retries += 1
+#                    continue
+#                l1c_db_thread.database_disconnect()
+#                break
+
 #        l1c_queue.task_done()
-#        thread_finished_queue.get()
-#        continue
+ #       thread_finished_queue.get()
+ #       continue
         print("{}: Starting the process for tile {}".format(threading.currentThread().getName(), tile_id))
+        tile_log_filename = "demmaccs_{}.log".format(tile_id)
         # processing the tile
         tiles_dir_list = []
         #get site short name
@@ -369,19 +454,19 @@ def new_launch_demmaccs(l1c_db_thread):
             site_output_path += "/"
 
         if not l1c_db_thread.is_site_enabled(site_id):
-            log(general_log_path, "Aborting processing for site {} because it's disabled".format(site_id), general_log_filename)
+            log(general_log_path, "{}: Aborting processing for site {} because it's disabled".format(threading.currentThread().getName(), site_id), general_log_filename)
             thread_finished_queue.get()
             l1c_queue.task_done()
             continue
 
         if not l1c_db_thread.is_sensor_enabled(site_id, satellite_id):
-            log(general_log_path, "Aborting processing for site {} because sensor downloading for {} is disabled".format(site_id, satellite_id), general_log_filename)
+            log(general_log_path, "{}: Aborting processing for site {} because sensor downloading for {} is disabled".format(threading.currentThread().getName(), site_id, satellite_id), general_log_filename)
             thread_finished_queue.get()
             l1c_queue.task_done()
             continue
 
         if not validate_L1C_product_dir(full_path):
-            log(general_log_path, "The product {} is not valid or temporary unavailable!!!".format(full_path), general_log_filename)
+            log(general_log_path, "{}: The product {} is not valid or temporary unavailable!!!".format(threading.currentThread().getName(), full_path), general_log_filename)
             thread_finished_queue.get()
             l1c_queue.task_done()
             continue
@@ -390,7 +475,7 @@ def new_launch_demmaccs(l1c_db_thread):
         satellite_id = int(satellite_id)
         orbit_id = int(orbit_id)
         if satellite_id != SENTINEL2_SATELLITE_ID and satellite_id != LANDSAT8_SATELLITE_ID:
-            log(general_log_path, "Unkown satellite id :{}".format(satellite_id), general_log_filename)
+            log(general_log_path, "{}: Unkown satellite id :{}".format(threading.currentThread().getName(), satellite_id), general_log_filename)
             thread_finished_queue.get()
             l1c_queue.task_done()            
             continue
@@ -406,12 +491,12 @@ def new_launch_demmaccs(l1c_db_thread):
             elif l2a_basename.find("_L1GT_") > 0 :
                 l2a_basename = l2a_basename.replace("_L1GT_", "_L2A_")
             else:
-                log(general_log_path, "The L1C product name is bad - L2A cannot be filled: {}".format(l2a_basename), general_log_filename)
+                log(general_log_path, "{}: The L1C product name is wrong - L2A cannot be filled: {}".format(threading.currentThread().getName(), l2a_basename), general_log_filename)
                 thread_finished_queue.get()
                 l1c_queue.task_done()
                 continue
         else:
-            log(general_log_path, "The L1C product name is bad: {}".format(l2a_basename), general_log_filename)
+            log(general_log_path, "{}: The L1C product name is wrong: {}".format(threading.currentThread().getName(), l2a_basename), general_log_filename)
             thread_finished_queue.get()
             l1c_queue.task_done()            
             continue
@@ -419,7 +504,7 @@ def new_launch_demmaccs(l1c_db_thread):
         output_path = site_output_path + l2a_basename + "/"
         # the output_path should be created by the demmaccs.py script itself, but for log reason it will be created here
         if not create_recursive_dirs(output_path):
-            log(general_log_path, "Could not create the output directory", general_log_filename)
+            log(general_log_path, "{}: Could not create the output directory".format(threading.currentThread().getName()), general_log_filename)
             thread_finished_queue.get()
             l1c_queue.task_done()
             continue            
@@ -451,30 +536,33 @@ def new_launch_demmaccs(l1c_db_thread):
             demmaccs_command.append("--prev-l2a-products-paths")
             demmaccs_command += l2a_tiles_paths
         create_footprint = False
-        log(output_path, "Starting demmaccs", general_log_filename)
-        if run_command(demmaccs_command, output_path, general_log_filename) == 0 and os.path.exists(output_path) and os.path.isdir(output_path):
+        reason = None
+        should_retry = None
+        log(output_path, "{}: Starting demmaccs".format(threading.currentThread().getName()), tile_log_filename)
+        if run_command(demmaccs_command, output_path, tile_log_filename) == 0 and os.path.exists(output_path) and os.path.isdir(output_path):
             # mark the tile as done
             # if there are still tiles to be processed within this product, the commit call for database will be performed 
             # inside mark_l1_tile_done or mark_l1_tile_failed. If this was the last tile within this product (the mark_l1_tile_done or 
             # mark_l1_tile_failed functions will return the product id) the footprint of the product as well as the mosaic have to be performed 
-            # before calling set_processed_product function. The set_processed_product function will also close the transaction by calling commit 
-            # for database. In this case the mark_l1_tile_done or mark_l1_tile_failed functions will not call the commit for database
-            db_result_tile_processed = l1c_db_thread.mark_l1_tile_done(satellite_id, orbit_id, tile_id, product_id)
-            log(output_path, "{}: Tile {} marked as DONE, with db_result_tile_processed = {}".format(threading.currentThread().getName(), tile_id, db_result_tile_processed), general_log_filename)
+            # before calling set_l2a_product function. The set_l2a_product function will also close the transaction by calling commit 
+            # for database. In this case the mark_l1_tile_done or mark_l1_tile_failed functions will not call the commit for database            
+            db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, tile_id)
+            log(output_path, "{}: Tile {} marked as DONE, with db_result_tile_processed = {}".format(threading.currentThread().getName(), tile_id, db_result_tile_processed), tile_log_filename)
         else:
-            log(output_path, "demmaccs.py script didn't work!", general_log_filename)
-            db_result_tile_processed = l1c_db_thread.mark_l1_tile_failed(satellite_id, orbit_id, tile_id, "Unknown", product_id)
-            log(output_path, "{}: Tile {} marked as FAILED, with db_result_tile_processed = {}".format(threading.currentThread().getName(), tile_id, db_result_tile_processed), general_log_filename)
-        if db_result_tile_processed != None and int(db_result_tile_processed) == int(product_id):
+            log(output_path, "{}: demmaccs.py script failed!".format(threading.currentThread().getName()), tile_log_filename)
+            should_retry, reason = get_error_reason(output_path, tile_id)
+            db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, tile_id, reason, should_retry)
+            log(output_path, "{}: Tile {} marked as FAILED (should the process be retried: {}). The L1C product {} finished: {}. Reason for failure: {}".format(threading.currentThread().getName(), tile_id, should_retry, l2a_basename, db_result_tile_processed, reason), tile_log_filename)
+        if db_result_tile_processed:
             # to end the transaction started in mark_l1_tile_done or mark_l1_tile_failed functions,
-            # the sql commit for database has to be called within set_processed_product function below
+            # the sql commit for database has to be called within set_l2a_product function below
             tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(output_path)))
-            log(output_path, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)            
+            log(output_path, "{}: Creating common footprint for tiles: DBL.DIR List: {}".format(threading.currentThread().getName(), tiles_dir_list), tile_log_filename)            
             # create the footprint for the whole product
             wkt = get_product_footprint(tiles_dir_list, satellite_id)
 
             if len(wkt) == 0:
-                log(output_path, "Could not create the footprint", general_log_filename)
+                log(output_path, "{}: Could not create the footprint".format(threading.currentThread().getName()), tile_log_filename)
             else:
                 sat_id, acquisition_date = get_product_info(os.path.basename(output_path[:len(output_path) - 1]))
                 if sat_id > 0 and acquisition_date != None:
@@ -489,18 +577,35 @@ def new_launch_demmaccs(l1c_db_thread):
                             tile = re.search(r"_L2VALD_([\d]{6})_[\w\.]+$", tile_dbl_dir)
                         if tile is not None and not tile.group(1) in l2a_processed_tiles:
                             l2a_processed_tiles.append(tile.group(1))
-                    log(output_path, "Processed tiles: {}  to path: {}".format(l2a_processed_tiles, output_path), general_log_filename)
+                    log(output_path, "{}: Processed tiles: {}  to path: {}".format(threading.currentThread().getName(), l2a_processed_tiles, output_path), tile_log_filename)
                 else:
-                    log(output_path,"Could not get the acquisition date from the product name {}".format(output_path), general_log_filename)
+                    log(output_path,"{}: Could not get the acquisition date from the product name {}".format(threading.currentThread().getName(), output_path), tile_log_filename)
             if len(l2a_processed_tiles) > 0:
                 # post process the valid maccs products
                 post_process_maccs_product(demmaccs_config, output_path);
-                log(output_path, "Insert info in product table and set state as processed in downloader_history table for product {}".format(output_path), general_log_filename)
+                log(output_path, "{}: Insert info in product table for {}. Also, set state as processed in downloader_history table ".format(threading.currentThread().getName(), output_path), tile_log_filename)
             else:
-                log(output_path, "Only set the state as processed in downloader_history (no l2a tiles found after maccs) for product {}".format(output_path), general_log_filename)
-            l1c_db_thread.set_processed_product(1, site_id, product_id, l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, orbit_id)
-            if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", output_path, "-w", demmaccs_config.working_dir], output_path, general_log_filename) != 0:
-                log(general_log_path, "Mosaic didn't work", general_log_filename)
+                log(output_path, "{}: Set the state as processed in downloader_history (no l2a tiles found after maccs finished) for product {}".format(threading.currentThread().getName(), output_path), tile_log_filename)
+            retries = 0
+            max_number_of_retries = 3
+            while True:
+                result = l1c_db_thread.set_l2a_product(1, site_id, product_id, l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, orbit_id)
+                if result == False:
+                    l1c_db_thread.sql_rollback()
+                    l1c_db_thread.database_disconnect()
+                    break
+                serialization_failure, commit_result = l1c_db_thread.sql_commit()
+                if commit_result == False:                    
+                    l1c_db_thread.sql_rollback()
+                if serialization_failure == True and retries < max_number_of_retries and set_l1_tile_status(l1c_db_thread, product_id, tile_id, reason, should_retry):
+                    log(output_path, "{}: Exception when inserting to product table: SERIALIZATION_FAILURE, rolling back and will retry".format(threading.currentThread().getName()), tile_log_filename)
+                    time.sleep(2)
+                    retries += 1
+                    continue
+                l1c_db_thread.database_disconnect()
+                break
+            if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", output_path, "-w", demmaccs_config.working_dir], output_path, tile_log_filename) != 0:
+                log(output_path, "{}: Mosaic didn't work".format(threading.currentThread().getName()), tile_log_filename)
         # end of tile processing
         # remove the tile from queue
         thread_finished_queue.get()
@@ -529,38 +634,40 @@ if demmaccs_config is None:
     log(general_log_path, "Could not load the config from database", general_log_filename)
     sys.exit(-1)
 
-print("{}".format(int(args.processes_number)))
 l1c_queue = Queue.Queue(maxsize=int(args.processes_number))
 thread_finished_queue = Queue.Queue(maxsize=int(args.processes_number))
 
 for i in range(int(args.processes_number)):
-     t = Thread(name="demmaccs_wthread_{}".format(i), target=new_launch_demmaccs, args=(L1CInfo(config.host, config.database, config.user, config.password), ))
-     t.daemon = False
-     t.start()
+    t = Thread(name="dmworker_{}".format(i), target=new_launch_demmaccs, args=(L1CInfo(config.host, config.database, config.user, config.password), ))
+    t.daemon = False
+    t.start()
 
 #by convention, the processor ID for demmaccs will always be 1 within the DB
 processor_short_name = l1c_db.get_short_name("processor", 1)
 base_output_path = demmaccs_config.output_path.replace("{processor}", processor_short_name)
 l1c_db.clear_pending_l1_tiles()
 l1c_tile_to_process = l1c_db.get_unprocessed_l1c_tile()
+if(l1c_tile_to_process == None):
+    sys.exit(1)
 while True:
-    print("l1c_tile_to_process = {}".format(l1c_tile_to_process))
     if len(l1c_tile_to_process) > 0:
         prev_queue_size = thread_finished_queue.qsize()
-        print("{}: Feeding the queue ...")
+        #print("{}: Feeding the queue ...")
         l1c_queue.put(L1CContext(l1c_tile_to_process, processor_short_name, base_output_path, args.skip_dem))
+        print("Demmaccs main thread: feeding the queue for workers with: {}".format(l1c_tile_to_process))
         l1c_tile_to_process = []
-        print("{}: Queue feeded")
+        #print("{}: Queue feeded")
     else:
-        print("Main thread is sleeping....")
+        #print("Main thread is sleeping....")
         time.sleep(5)
     l1c_tile_to_process = l1c_db.get_unprocessed_l1c_tile()
-    if len(l1c_tile_to_process) == 0 and thread_finished_queue.qsize() == 0:
+    
+    if (l1c_tile_to_process == None) or (len(l1c_tile_to_process) == 0 and thread_finished_queue.qsize() == 0):
         for i in range(int(args.processes_number)):
             l1c_queue.put(L1CContext(None, processor_short_name, base_output_path, args.skip_dem))
         print("Waiting for queue to join...")
         l1c_queue.join()
-        print("All threads finished their job. Exiting...")
+        print("All the workers finished their job. Exiting...")
         break
 
 # following code applies to the old function launch_demmaccs. This launches in paralel products instead of tiles 

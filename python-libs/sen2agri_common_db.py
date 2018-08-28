@@ -146,7 +146,7 @@ def manage_log_file(location, log_filename):
 def run_command(cmd_array, log_path = "", log_filename = ""):
     start = time.time()
     cmd_str = " ".join(map(pipes.quote, cmd_array))
-    log(log_path, "Starting command: {}".format(cmd_str), log_filename)
+    log(log_path, "Running command: {}".format(cmd_str), log_filename)
     res = 0
     if not FAKE_COMMAND:
         res = subprocess.call(cmd_array, shell=False)
@@ -220,13 +220,13 @@ def create_recursive_dirs(dir_name):
     #check if it already exists.... otherwise the makedirs function will raise an exception
     if os.path.exists(dir_name):
         if not os.path.isdir(dir_name):
-            print("Can't create the directory because there is a file with the same name: {}".format(dir_name))
+            print("The directory couldn't be created. Reason: file with the same name exists: {}".format(dir_name))
             print("Remove: {}".format(dir_name))
             sys.stdout.flush()
             return False
     else:
         #for sure, the problem is with access rights
-        print("Can't create the directory due to access rights {}".format(dir_name))
+        print("The directory couldn't be created due to the access rights {}".format(dir_name))
         return False
     return True
 
@@ -1219,12 +1219,14 @@ class L1CInfo(object):
             print("Database connection failed!\n ->{}".format(exceptionValue))
             self.is_connected = False
             return False
+        #print("{}: Database connected...".format(threading.currentThread().getName()))
         return True
 
     def database_disconnect(self):
         if self.conn:
             self.conn.close()
             self.is_connected = False
+            #print("{}: Database disconnected...".format(threading.currentThread().getName()))
 
     def get_demmaccs_config(self):
         if not self.database_connect():
@@ -1400,9 +1402,35 @@ class L1CInfo(object):
         self.database_disconnect()
         return retArray
 
+    def sql_commit(self):
+        if not self.is_connected:
+            print("Postgres commit: There is no transaction in progress...")
+            return False, False
+        serialization_failure = False
+        ret_val = True
+        try:
+            self.conn.commit()
+        except psycopg2.Error as e:
+            ret_val = False
+            if e.pgcode in (SERIALIZATION_FAILURE, DEADLOCK_DETECTED):
+                print("{}:{}: Exception: SERIALIZATION_FAILURE when trying to commit ".format(threading.currentThread().getName(), id(self)))
+                serialization_failure = True
+            else:
+                print("{}:{}: Exception {} when trying to commit ".format(threading.currentThread().getName(), id(self), e.pgcode))                
+        return serialization_failure, ret_val
+
+    def sql_rollback(self):
+        if not self.is_connected:
+            print("Postgres rollback: There is no transaction in progress...")
+            return False
+        self.conn.rollback()
+        self.database_disconnect()                
+        return True
+
     # general function for sql queries. it supports retrying when postgres serialization failure / deadlock occur
     def general_sql_query(self, strings, separated=False, disconnect_db_when_finish=True):
         if len(strings) == 0:
+            print("general_sql_query: Now sql query to perform")
             return []
         if not self.database_connect():
             print("Database connection failed...")
@@ -1424,111 +1452,102 @@ class L1CInfo(object):
                     rows = self.cursor.fetchall()
                     if len(rows) > 0:
                         ret_array.append(rows)
-                    print("{}:{}: ret_array = {}".format(threading.currentThread().getName(), id(self), ret_array))
+                    #print("{}:{}: ret_array = {}".format(threading.currentThread().getName(), id(self), ret_array))
                 if disconnect_db_when_finish:
-                    print("{}:{}: commit....".format(threading.currentThread().getName(), id(self)))
+                    #print("{}:{}: commit....".format(threading.currentThread().getName(), id(self)))
                     self.conn.commit()
-                    print("{}:{}: commit performed!".format(threading.currentThread().getName(), id(self)))
+                    #print("{}:{}: commit performed!".format(threading.currentThread().getName(), id(self)))
             except psycopg2.Error as e:
-                print("{}:{}: EXCEPTION!!!".format(threading.currentThread().getName(), id(self)))
-                print("{}:{}: retries = {} | max_number_of_retries = {}".format(threading.currentThread().getName(), id(self), retries, max_number_of_retries))
+                #print("{}:{}: EXCEPTION!!!".format(threading.currentThread().getName(), id(self)))
+                #print("{}:{}: retries = {} | max_number_of_retries = {}".format(threading.currentThread().getName(), id(self), retries, max_number_of_retries))
                 if e.pgcode in (SERIALIZATION_FAILURE, DEADLOCK_DETECTED) and retries < max_number_of_retries:
                     self.conn.rollback()
+                    print("{}:{}: Exception: SERALIZATION_FAILURE, rolling back and will retry for query: {}".format(threading.currentThread().getName(), id(self), query))
                     time.sleep(2)
                     retries += 1
                     ret_array = []
-                    print("{}:{}: Retrying the sql query...".format(threading.currentThread().getName(), id(self)))
+                    print("{}:{}: Retrying query {}".format(threading.currentThread().getName(), id(self), query))
                     continue
                 else:
                     print("{}:{}: Exception {} received when trying to execute sql queries: {}. Number of retries = {} ".format(threading.currentThread().getName(), id(self), e.pgcode, query, retries))
-                    self.conn.rollback()
-                    self.database_disconnect()
+                    if disconnect_db_when_finish:
+                        self.conn.rollback()
+                        self.database_disconnect()
                     return None
             if disconnect_db_when_finish:
-                print("{}:{}: Disconnecting DB....".format(threading.currentThread().getName(), id(self)))
+                #print("{}:{}: Disconnecting DB....".format(threading.currentThread().getName(), id(self)))
                 self.database_disconnect()
             return ret_array        
 
     # will return the next tile to process. The returned format is [satellite_id, orbit_id, tile_id, downloader_history_id, l1c_path, previous_l2a_path]
     def get_unprocessed_l1c_tile(self):
-        print("get_unprocessed_l1c_tile !!!")
         strings = []
         strings.append("set transaction isolation level serializable;")
         strings.append("select * from sp_start_l1_tile_processing();")
         return self.general_sql_query(strings)
         
     def clear_pending_l1_tiles(self):
-        print("clear_pending_l1_tiles !!!")
         strings = []
-#        strings.append("set transaction isolation level serializable;")
         strings.append("select * from sp_clear_pending_l1_tiles();")
         return self.general_sql_query(strings)
 
-    def mark_l1_tile_done(self, satellite_id, l1c_orbit_id, tile_id, product_id):
+    def mark_l1_tile_done(self, downloader_product_id, tile_id):
         strings = []
         if not self.database_connect():
             print("Database connection failed...")
-            return None
+            return False
         strings.append("set transaction isolation level serializable;")
-        strings.append(self.cursor.mogrify("""SELECT * FROM sp_mark_l1_tile_done(%(satellite_id)s :: smallint,
-                                                             %(l1c_orbit_id)s :: integer,
-                                                             %(tile_id)s)""",
+        strings.append(self.cursor.mogrify("""SELECT * FROM sp_mark_l1_tile_done(%(downloader_history_id)s :: integer,
+                                                             %(tile_id)s);""",
                                 {
-                                    "satellite_id" : satellite_id,
-                                    "l1c_orbit_id" : l1c_orbit_id,
+                                    "downloader_history_id" : downloader_product_id,
                                     "tile_id" : tile_id
                                 }))
-        print("{}:{}: mark_l1_tile_done: strings = {}".format(threading.currentThread().getName(), id(self), strings))
+        #print("{}:{}: mark_l1_tile_done: strings = {}".format(threading.currentThread().getName(), id(self), strings))
         ret_array = self.general_sql_query(strings, False, False)
-        print("{}:{}: mark_l1_tile_done: ret_array = {}".format(threading.currentThread().getName(), id(self), ret_array))
-        try:
-            if ret_array != None and ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and int(ret_array[0][0][0]) == int(product_id):
-                return product_id
-            else:
-                self.conn.commit()
-                self.database_disconnect()
-        except psycopg2.Error as e:
-            print("{}:{}: Exception {} received when trying to execute sql queries: {} ".format(e.pgcode, strings))
-            self.conn.rollback()
-            self.database_disconnect()
-            return None
-        return None
+        if ret_array == None:
+            # an unhandled exception came from db
+            print("mark_l1_tile_done: Unhandled exception from general_sql_query")
+        else:
+            if ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and ret_array[0][0][0] == True:
+                # commit to database will be perfomed later within set_processed_product function
+                print("The query to mark as done the tile {} will be commited later when insertion in product will be performed".format(tile_id))
+                return True
 
-    def mark_l1_tile_failed(self, satellite_id, l1c_orbit_id, tile_id, reason, product_id):        
+        return False
+
+    def mark_l1_tile_failed(self, downloader_product_id, tile_id, reason, should_retry):        
         strings = []
+        pg_should_retry = False
+        product_finished = False
         if not self.database_connect():
             print("Database connection failed...")
-            return None
-        print("{} | {}".format(tile_id, reason))
+            return pg_should_retry, product_finished
+        #print("error on tile id {} | reason: {}".format(tile_id, reason))
         strings.append("set transaction isolation level serializable;")
-        strings.append(self.cursor.mogrify("""SELECT * FROM sp_mark_l1_tile_failed(%(satellite_id)s :: smallint, 
-                                                                                  %(l1c_orbit_id)s :: integer, 
+        strings.append(self.cursor.mogrify("""SELECT * FROM sp_mark_l1_tile_failed(%(downloader_history_id)s :: integer,
                                                                                   %(tile_id)s, 
-                                                                                  %(reason)s)""",
+                                                                                  %(reason)s, 
+                                                                                  %(should_retry)s :: boolean);""",
                                 {
-                                    "satellite_id" : satellite_id,
-                                    "l1c_orbit_id" : l1c_orbit_id,
+                                    "downloader_history_id" : downloader_product_id,
                                     "tile_id" : tile_id,
-                                    "reason" : reason
+                                    "reason" : reason,
+                                    "should_retry" : should_retry
                                 }))
         
-        print("{}:{}: mark_l1_tile_failed: strings = {}".format(threading.currentThread().getName(), id(self), strings))
+        #print("{}:{}: mark_l1_tile_failed: strings = {}".format(threading.currentThread().getName(), id(self), strings))
         ret_array = self.general_sql_query(strings, False, False)
-        print("{}:{}: mark_l1_tile_failed: ret_array = {}".format(threading.currentThread().getName(), id(self), ret_array))        
-        try:
-            if ret_array != None and ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and int(ret_array[0][0][0]) == int(product_id):
-                return product_id
-            else:
-                print("{}:{}: commit !".format(threading.currentThread().getName(), id(self) ))
-                self.conn.commit()
-                print("{}:{}: commit performed in mark_l1_tile_failed".format(threading.currentThread().getName(), id(self) ))
-                self.database_disconnect()
-        except psycopg2.Error as e:
-            print("{}:{}: Exception {} received when trying to execute sql queries: {} ".format(threading.currentThread().getName(), id(self), e.pgcode, strings))
-            self.conn.rollback()
-            self.database_disconnect()
-            return None
-        return None
+        if ret_array == None:
+            # an unhandled exception came from db
+            print("mark_l1_tile_failed: Unhandled exception from general_sql_query")
+        else:
+            if ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and ret_array[0][0][0] == True:
+                # commit to database will be perfomed later within set_processed_product function
+                print("The query to mark as failed the tile {} will be commited later when insertion in product will be performed".format(tile_id))
+                return True
+
+        return False
 
 
     def get_previous_l2a_tile_path(self, satellite_id, tile_id, l1c_date, l1c_orbit_id, site_id):
@@ -1577,6 +1596,7 @@ class L1CInfo(object):
             processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSING_ERR_VALUE
             if len(l2a_processed_tiles) > 0:
                 processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE
+            print("Update downloader history product {} with status: {}".format(l1c_id, processingStatusValue))
             self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: integer """,
                                 {
                                     "status_id": processingStatusValue,
@@ -1620,4 +1640,62 @@ class L1CInfo(object):
         self.database_disconnect()
         return True
 
+    def set_l2a_product(self, processor_id, site_id, l1c_id, l2a_processed_tiles, full_path, product_name, footprint, sat_id, acquisition_date, orbit_id):
+        #input params:
+        #l1c_id is the id for the found L1C product in the downloader_history table. It shall be marked as being processed
+        #product type by default is 1
+        #processor id
+        #site id
+        #job id has to be NULL
+        #full path is the whole path to the product including the name
+        #created timestamp NULL
+        #name product (basename from the full path)
+        #quicklook image has to be NULL
+        #footprint
+        if not self.database_connect():
+            return True
+        try:
+            processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSING_ERR_VALUE
+            if len(l2a_processed_tiles) > 0:
+                processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE
+            print("Update downloader history product {} with status: {}".format(l1c_id, processingStatusValue))
+            self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: integer """,
+                                {
+                                    "status_id": processingStatusValue,
+                                    "l1c_id": l1c_id
+                                })
+            #self.conn.commit()
+            if len(l2a_processed_tiles) > 0:
+                #normally , sp_insert_product should upsert the record
+                self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
+                               %(processor_id)s :: smallint,
+                               %(satellite_id)s :: smallint,
+                               %(site_id)s :: smallint,
+                               %(job_id)s :: smallint,
+                               %(full_path)s :: character varying,
+                               %(created_timestamp)s :: timestamp,
+                               %(name)s :: character varying,
+                               %(quicklook_image)s :: character varying,
+                               %(footprint)s,
+                               %(orbit_id)s :: integer,
+                               %(tiles)s :: json)""",
+                                {
+                                    "product_type_id" : 1,
+                                    "processor_id" : processor_id,
+                                    "satellite_id" : sat_id,
+                                    "site_id" : site_id,
+                                    "job_id" : None,
+                                    "full_path" : full_path,
+                                    "created_timestamp" : acquisition_date,
+                                    "name" : product_name,
+                                    "quicklook_image" : "mosaic.jpg",
+                                    "footprint" : footprint,
+                                    "orbit_id" : orbit_id,
+                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']'
+                                })
+            #self.conn.commit()
+        except Exception, e:
+            print("Database update query failed with exception: {}".format(e))
+            return False
+        return True
 

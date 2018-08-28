@@ -27,6 +27,8 @@ import pipes
 import shutil
 from multiprocessing import Pool
 from sen2agri_common_db import *
+from threading import Thread
+import threading
 
 general_log_path = "/tmp/"
 general_log_filename = "demmaccs.log"
@@ -42,7 +44,7 @@ def create_sym_links(filenames, target_directory, log_path, log_filename):
         target = target_directory+"/" + basename
         #does it already exist?
         if os.path.isfile(target) or os.path.isdir(target):
-            log(log_path, "Path exists", log_filename)
+            log(log_path, "Path exists already", log_filename)
             #skip it
             continue
         #create it
@@ -128,10 +130,9 @@ class DEMMACCSContext(object):
         self.input = l1c_input
         self.output = l2a_output
 
-
 def maccs_launcher(demmaccs_context):
     if not os.path.isfile(demmaccs_context.dem_hdr_file):
-        log(demmaccs_context.output, "There is no such DEM file {}".format(demmaccs_context.dem_hdr_file), "demmaccs.log")
+        log(demmaccs_context.output, "General failure: There is no such DEM file {}".format(demmaccs_context.dem_hdr_file), log_filename)
         return ""
     product_name = os.path.basename(demmaccs_context.input[:len(demmaccs_context.input) - 1]) if demmaccs_context.input.endswith("/") else os.path.basename(demmaccs_context.input)
     sat_id, acquistion_date = get_product_info(product_name)
@@ -140,7 +141,7 @@ def maccs_launcher(demmaccs_context):
     dem_dir_list = glob.glob("{0}/{1}.DBL.DIR".format(dem_output_dir, basename[0:len(basename) - 4]))
 
     if len(dem_dir_list) != 1 or not os.path.isdir(dem_dir_list[0]):
-        log(demmaccs_context.output, "No {}.DBL.DIR found for DEM ".format(demmaccs_context.dem_hdr_file[0:len(demmaccs_context.dem_hdr_file) - 4]), "demmaccs.log")
+        log(demmaccs_context.output, "General failure: No {}.DBL.DIR found for DEM ".format(demmaccs_context.dem_hdr_file[0:len(demmaccs_context.dem_hdr_file) - 4]), log_filename)
         return ""
     dem_dir = dem_dir_list[0]
     tile_id = ""
@@ -175,27 +176,28 @@ def maccs_launcher(demmaccs_context):
         if tile is not None:
             tile_id = tile.group(1)
     else:
-        log(demmaccs_context.output, "Unknown satellite id {} found for {}".format(sat_id, demmaccs_context.input), "demmaccs.log")
+        log(demmaccs_context.output, "General failure: Unknown satellite id {} found for {}".format(sat_id, demmaccs_context.input), log_filename)
         return ""
 
     if len(tile_id) == 0:
-        log(demmaccs_context.output, "Could not get the tile id from DEM file {}".format(demmaccs_context.dem_hdr_file), "demmaccs.log")
+        log(demmaccs_context.output, "General failure: Could not get the tile id from DEM file {}".format(demmaccs_context.dem_hdr_file), log_filename)
         return ""
 
     tile_log_filename = "demmaccs_{}.log".format(tile_id)
+    if suffix_log_name is not None:
+        tile_log_filename = "demmaccs_{}_{}.log".format(tile_id, suffix_log_name)
     working_dir = "{}/{}".format(demmaccs_context.base_working_dir, tile_id)
-    maccs_working_dir = "{}/maccs_{}".format(demmaccs_context.output, tile_id)
-
+    maccs_working_dir = "{}/maccs_{}".format(demmaccs_context.output[:len(demmaccs_context.output) - 1] if demmaccs_context.output.endswith("/") else demmaccs_context.output, tile_id)
     if not create_recursive_dirs(working_dir):
-        log(demmaccs_context.output, "Could not create the working directory {}".format(working_dir), tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: Could not create the working directory {}".format(working_dir), tile_log_filename)
         return ""
 
     if not create_recursive_dirs(maccs_working_dir):
-        log(demmaccs_context.output, "Could not create the MACCS working directory {}".format(maccs_working_dir), tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: Could not create the MACCS working directory {}".format(maccs_working_dir), tile_log_filename)
         return ""
 
     if not create_sym_links([demmaccs_context.input], working_dir, demmaccs_context.output, tile_log_filename):
-        log(demmaccs_context.output, "Could not create sym links for {}".format(demmaccs_context.input), tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: Could not create sym links for {}".format(demmaccs_context.input), tile_log_filename)
         return ""
 
     common_gipps = glob.glob("{}/{}/{}*_L_*.*".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, full_gipp_sat_prefix))
@@ -204,7 +206,7 @@ def maccs_launcher(demmaccs_context):
     
     print ("common_gipps is {}".format(common_gipps))
     if not create_sym_links(common_gipps, working_dir, demmaccs_context.output, tile_log_filename):
-        log(demmaccs_context.output, "Symbolic links for GIPP files could not be created in the output directory", tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: Symbolic links for GIPP files could not be created in the output directory", tile_log_filename)
         return ""
 
     gipp_tile_types = ["L2SITE", "CKEXTL", "CKQLTL"]
@@ -218,7 +220,7 @@ def maccs_launcher(demmaccs_context):
         print ("tmp_tile_gipp is {}".format(tmp_tile_gipp))
         if len(tmp_tile_gipp) > 0:
             if not create_sym_links(tmp_tile_gipp, working_dir, demmaccs_context.output, tile_log_filename):
-                log(demmaccs_context.output, "Symbolic links for tile id {} GIPP files could not be created in the output directory".format(tile_id), tile_log_filename)
+                log(demmaccs_context.output, "Tile failure: Symbolic links for tile id {} GIPP files could not be created in the output directory".format(tile_id), tile_log_filename)
                 return ""
         else:
             #search for the gipp common tile file
@@ -227,10 +229,11 @@ def maccs_launcher(demmaccs_context):
             if len(log_gipp) > 0:
                 log(demmaccs_context.output, log_gipp, tile_log_filename)
             if not ret:
+                log(demmaccs_context.output, "Tile failure: {}".format(log_gipp), tile_log_filename)
                 return ""
 
     if not create_sym_links([demmaccs_context.dem_hdr_file, dem_dir], working_dir, demmaccs_context.output, tile_log_filename):
-        log(demmaccs_context.output, "Could not create sym links for {0} and {1}".format(dem_hdr_file, dem_dir), tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: Could not create symbolic links for {0} and {1}".format(dem_hdr_file, dem_dir), tile_log_filename)
         return ""
     start = time.time()
     maccs_mode = "L2INIT"
@@ -252,15 +255,15 @@ def maccs_launcher(demmaccs_context):
         else:
             # something went wrong. shall this be an exit point?
             # shall the mode remain to L2INIT? This behavior may as well hide a bug in a previous demmaccs run (it's possible)...
-            log(demmaccs_context.output, "Could not create sym links for NOMINAL MACCS mode for {}. Exit".format(prev_l2a_tile_path), tile_log_filename)
+            log(demmaccs_context.output, "Tile failure: Could not create sym links for NOMINAL MACCS mode for {}. Exit".format(prev_l2a_tile_path), tile_log_filename)
             return ""
     except SystemExit:
-        log(demmaccs_context.output, "SystemExit caught when trying to create sym links for NOMINAL MACCS mode, product {}. Exit!".format(demmaccs_context.input), tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: SystemExit caught when trying to create sym links for NOMINAL MACCS mode, product {}. Exit!".format(demmaccs_context.input), tile_log_filename)
         return ""
     except:
         log(demmaccs_context.output, "No previous processed l2a tile found for {} in product {}. Running MACCS in L2INIT mode".format(tile_id, product_name), tile_log_filename)
         pass
-    #MACCS bug. In case of setting the file status from VALD to NOTV, MACCS will try to create a diretory LTC in the current running directory
+    #MACCS bug. In case of setting the file status from VALD to NOTV, MACCS will try to create a directory LTC in the current running directory
     #which is / Of course, it will fail. That's why we have to move the current running directory to the MACCS temporary directory
     os.chdir(maccs_working_dir)
     cmd_array = []
@@ -288,26 +291,31 @@ def maccs_launcher(demmaccs_context):
     # only the valid files should be moved
     maccs_dbl_dir = glob.glob("{}/*_L2VALD_*.DBL.DIR".format(maccs_working_dir))
     maccs_hdr_file = glob.glob("{}/*_L2VALD_*.HDR".format(maccs_working_dir))
-    maccs_report_file = glob.glob("{}/*_L2REPT_*.*".format(maccs_working_dir))
+    maccs_report_file = glob.glob("{}/*_L*REPT*.EEF".format(maccs_working_dir))
+    new_maccs_report_file = ""
     return_tile_id = ""
     try:
-        # first, move all the report maccs files
-        # these will be saved even if the maccs haven't processed any valid tiles
-        log(demmaccs_context.output, "Searching for report maccs files (REPT) in: {}".format(maccs_working_dir), tile_log_filename)
+        # First, move the report log that maccs created it. Take care, first maccs creates a report file named PMC_LxREPT.EEF.
+        # When it finishes, maccs will rename this file to something like S2A_OPER_PMC_L2REPT_{tile_id}____{dateofl1cproduct}.EEF
+        # Sometimes (usually when it crashses or for different reasons stops at the beginning), this renaming does not take place,
+        # so the report file will remain PMC_LxREPT.EEF
+        # This report file (doesn't matter the name) will be kept and save to the working_dir with the name MACCS_L2REPT_{tile_id}.EEF
+        log(demmaccs_context.output, "Searching for report maccs file (REPT) in: {}".format(maccs_working_dir), tile_log_filename)
         if len(maccs_report_file) >= 1:
-            log(demmaccs_context.output, "Report maccs files (REPT) found in: {} : {}".format(maccs_working_dir, maccs_report_file), tile_log_filename)
-            for maccs_out in maccs_report_file:
-                new_file = "{}/{}".format(demmaccs_context.output, os.path.basename(maccs_out))
-                if os.path.isdir(new_file):
-                    log(demmaccs_context.output, "The directory {} already exists. Trying to delete it in order to move the new created directory by MACCS".format(new_file), tile_log_filename)
-                    shutil.rmtree(new_file)
-                elif os.path.isfile(new_file):
-                    log(demmaccs_context.output, "The file {} already exists. Trying to delete it in order to move the new created file by MACCS".format(new_file), tile_log_filename)
-                    os.remove(new_file)
-                else: #the dest does not exist, so will move it without problems
-                    pass
-                log(demmaccs_context.output, "Moving {} to {}".format(maccs_out, demmaccs_context.output + "/" + os.path.basename(maccs_out)), tile_log_filename)
-                shutil.move(maccs_out, new_file)
+            if len(maccs_report_file) > 1:
+                log(demmaccs_context.output, "WARNING: More than one report maccs file (REPT) found in {}. Only the first one will be kept. Report files list: {}.".format(maccs_working_dir, maccs_report_file), tile_log_filename)
+            log(demmaccs_context.output, "Report maccs file (REPT) found in: {} : {}".format(maccs_working_dir, maccs_report_file[0]), tile_log_filename)
+            new_maccs_report_file = "{}/MACCS_L2REPT_{}.EEF".format(demmaccs_context.output[:len(demmaccs_context.output) - 1] if demmaccs_context.output.endswith("/") else demmaccs_context.output, tile_id)
+            if os.path.isdir(new_maccs_report_file):
+                log(demmaccs_context.output, "The directory {} already exists. Trying to delete it in order to move the new created directory by MACCS".format(new_maccs_report_file), tile_log_filename)
+                shutil.rmtree(new_maccs_report_file)
+            elif os.path.isfile(new_maccs_report_file):
+                log(demmaccs_context.output, "The file {} already exists. Trying to delete it in order to move the new created file by MACCS".format(new_maccs_report_file), tile_log_filename)
+                os.remove(new_maccs_report_file)
+            else: #the dest does not exist, so will move it without problems
+                pass
+            log(demmaccs_context.output, "Moving {} to {}".format(maccs_report_file[0], new_maccs_report_file), tile_log_filename)
+            shutil.move(maccs_report_file[0], new_maccs_report_file)
         else:
             log(demmaccs_context.output, "No report maccs files (REPT) found in: {}.".format(maccs_working_dir), tile_log_filename)
 
@@ -317,7 +325,7 @@ def maccs_launcher(demmaccs_context):
             return_tile_id = "{}".format(tile_id)
             log(demmaccs_context.output, "Found valid tile id {} in {}. Move all files to destination".format(tile_id, maccs_working_dir), tile_log_filename)
             for maccs_out in maccs_working_dir_content:
-                new_file = "{}/{}".format(demmaccs_context.output, os.path.basename(maccs_out))
+                new_file = "{}/{}".format(demmaccs_context.output[:len(demmaccs_context.output) - 1] if demmaccs_context.output.endswith("/") else demmaccs_context.output, os.path.basename(maccs_out))
                 if os.path.isdir(new_file):
                     log(demmaccs_context.output, "The directory {} already exists. Trying to delete it in order to move the new created directory by MACCS".format(new_file), tile_log_filename)
                     shutil.rmtree(new_file)
@@ -330,11 +338,12 @@ def maccs_launcher(demmaccs_context):
                 shutil.move(maccs_out, new_file)
         else:
             log(demmaccs_context.output, "No valid products (VALD status) found in: {}.".format(maccs_working_dir), tile_log_filename)
-        log(demmaccs_context.output, "Deleting MACCS working directory: rmtree: {}".format(maccs_working_dir), tile_log_filename)
+        log(demmaccs_context.output, "Erasing the MACCS working directory: rmtree: {}".format(maccs_working_dir), tile_log_filename)
         shutil.rmtree(maccs_working_dir)
     except Exception, e:
         return_tile_id = ""
-        log(demmaccs_context.output, "Exception caught when moving maccs files for tile {} to the output directory :( {}".format(tile_id, e), tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: Exception caught when moving maccs files for tile {} to the output directory {}".format(tile_id, e), tile_log_filename)
+ 
     return return_tile_id
 
 
@@ -361,10 +370,17 @@ parser.add_argument('--prev-l2a-products-paths', required=False,
                         help="Path of the previous processed tiles from L2A product", default=[], nargs="+")
 parser.add_argument('--delete-temp', required=False,
                         help="if set to True, it will delete all the temporary files and directories. Default: True", default="True")
+parser.add_argument('--suffix-log-name', required=False,
+                        help="if set, the string will be part of the log filename . Default: null", default=None)
 parser.add_argument('output', help="output location")
 
 args = parser.parse_args()
 log_filename = "demmaccs.log"
+suffix_log_name = None
+print("args.suffix_log_name = {}".format(args.suffix_log_name))
+if args.suffix_log_name is not None:
+    suffix_log_name = args.suffix_log_name
+    log_filename = "demmaccs_{}.log".format(args.suffix_log_name)
 if not create_recursive_dirs(args.output):
     log(general_log_path, "Could not create the output directory", log_filename)
     sys.exit(-1)
@@ -465,6 +481,7 @@ for dem_hdr in dem_hdrs:
     demmaccs_contexts.append(DEMMACCSContext(working_dir, dem_hdr, args.gipp_dir, args.prev_l2a_tiles, args.prev_l2a_products_paths, args.maccs_address, args.maccs_launcher, args.input, args.output))
 
 #RELEASE mode, parallel launching
+# LE (august 2018): keeping parallel launching for compatibility. Now, demmaccs is launched for one tile only
 pool = Pool(int(args.processes_number_maccs))
 pool_outputs = pool.map(maccs_launcher, demmaccs_contexts)
 pool.close()
