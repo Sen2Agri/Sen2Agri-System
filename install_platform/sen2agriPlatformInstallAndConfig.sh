@@ -347,6 +347,19 @@ function install_and_config_postgresql()
    echo "POSTGRESQL SERVICE: $(systemctl status postgresql-9.4 | grep "Active")"
 
    #------------DATABASE CREATION------------#
+    DB_NAME=$(head -q -n 1 ./config/db_name.conf 2>/dev/null)
+    if [ -z "$DB_NAME" ]; then
+        DB_NAME="sen2agri"
+    fi
+
+    if ! [[ "$DB_NAME" == "sen2agri" ]] ; then
+        echo "Using database '$DB_NAME'"
+        sed -i -- "s/-- DataBase Create: sen2agri/-- DataBase Create: $DB_NAME/g" ./database/00-database/sen2agri.sql
+        sed -i -- "s/CREATE DATABASE sen2agri/CREATE DATABASE $DB_NAME/g" ./database/00-database/sen2agri.sql
+        sed -i -- "s/-- Privileges: sen2agri/-- Privileges: $DB_NAME/g" ./database/09-privileges/privileges.sql
+        sed -i -- "s/GRANT ALL PRIVILEGES ON DATABASE sen2agri/GRANT ALL PRIVILEGES ON DATABASE $DB_NAME/g" ./database/09-privileges/privileges.sql
+    fi
+   
    # first, the database is created. the privileges will be set after all
    # the tables, data and other stuff is created (see down, privileges.sql
    cat "$(find ./ -name "database")/00-database"/sen2agri.sql | su - postgres -c 'psql'
@@ -658,6 +671,18 @@ function install_maccs()
     done
 }
 
+function updateWebRestPort()
+{
+    REST_SERVER_PORT=$(sed -n 's/^server.port =//p' /usr/share/sen2agri/sen2agri-services/config/services.properties)
+    # Strip leading space.
+    REST_SERVER_PORT="${REST_SERVER_PORT## }"
+    # Strip trailing space.
+    REST_SERVER_PORT="${REST_SERVER_PORT%% }"
+     if [[ !  -z  $REST_SERVER_PORT  ]] ; then
+        sed -i -e "s|static \$REST_SERVICES_URL = \x27http:\/\/localhost:8080|static \$REST_SERVICES_URL = \x27http:\/\/localhost:$REST_SERVER_PORT|g" /var/www/html/ConfigParams.php
+     fi
+}
+
 function install_sen2agri_services()
 {
     if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
@@ -682,7 +707,6 @@ function install_sen2agri_services()
         echo "Exiting now"
         exit 1
     fi
-
 }
 
 function disable_selinux()
@@ -748,6 +772,7 @@ install_and_config_postgresql
 ####  WEBSERVER                 INSTALL   & CONFIG      #####
 #-----------------------------------------------------------#
 install_and_config_webserver
+updateWebRestPort
 
 #-----------------------------------------------------------#
 ####  DOWNLOADERS AND DEMMACS  INSTALL                  #####

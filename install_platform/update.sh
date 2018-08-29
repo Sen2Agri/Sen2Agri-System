@@ -32,9 +32,14 @@ function install_sen2agri_services()
             if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
                 zipArchive=$(ls -at ../sen2agri-services/sen2agri-services*.zip| head -n 1)
                 echo "Updating /usr/share/sen2agri/sen2agri-services/lib folder ..."
-                mkdir -p /usr/share/sen2agri/sen2agri-services/lib && unzip -o ${zipArchive} 'lib/*' -d /usr/share/sen2agri/sen2agri-services
+                mkdir -p /usr/share/sen2agri/sen2agri-services/lib && rm -f /usr/share/sen2agri/sen2agri-services/lib/*.jar && unzip -o ${zipArchive} 'lib/*' -d /usr/share/sen2agri/sen2agri-services
                 echo "Updating /usr/share/sen2agri/sen2agri-services/modules folder ..."
-                mkdir -p /usr/share/sen2agri/sen2agri-services/modules && unzip -o ${zipArchive} 'modules/*' -d /usr/share/sen2agri/sen2agri-services
+                mkdir -p /usr/share/sen2agri/sen2agri-services/modules && rm -f /usr/share/sen2agri/sen2agri-services/modules/*.jar && unzip -o ${zipArchive} 'modules/*' -d /usr/share/sen2agri/sen2agri-services
+                
+                if [ -f /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties ] ; then 
+                    mv /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties /usr/share/sen2agri/sen2agri-services/config/services.properties
+                    unzip -o ${zipArchive} 'config/application.properties' -d /usr/share/sen2agri/sen2agri-services/
+                fi
             else
                 echo "No archive sen2agri-services-YYY.zip was found in the installation package. sen2agri-services will not be updated!!!"
             fi
@@ -66,12 +71,47 @@ function saveOldDownloadCredentials()
 function updateDownloadCredentials()
 {
     if [ "$HAS_S2AGRI_SERVICES" = false ] ; then
-        sed -i '/SciHubDataSource.username=/c\SciHubDataSource.username='"$SCIHUB_USER" /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties
-        sed -i '/SciHubDataSource.password=/c\SciHubDataSource.password='"$SCIHUB_PASS" /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties
-        sed -i '/USGSDataSource.username=/c\USGSDataSource.username='"$USGS_USER" /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties
-        sed -i '/USGSDataSource.password=/c\USGSDataSource.password='"$USGS_PASS" /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties
+        sed -i '/SciHubDataSource.username=/c\SciHubDataSource.username='"$SCIHUB_USER" /usr/share/sen2agri/sen2agri-services/config/services.properties
+        sed -i '/SciHubDataSource.password=/c\SciHubDataSource.password='"$SCIHUB_PASS" /usr/share/sen2agri/sen2agri-services/config/services.properties
+        sed -i '/USGSDataSource.username=/c\USGSDataSource.username='"$USGS_USER" /usr/share/sen2agri/sen2agri-services/config/services.properties
+        sed -i '/USGSDataSource.password=/c\USGSDataSource.password='"$USGS_PASS" /usr/share/sen2agri/sen2agri-services/config/services.properties
     fi
 }
+
+function enableSciHubDwnDS()
+{
+    sed -i '/SciHubDataSource.Sentinel2.scope=1/c\SciHubDataSource.Sentinel2.scope=3' /usr/share/sen2agri/sen2agri-services/config/services.properties
+    sed -i '/AWSDataSource.Sentinel2.enabled=true/c\AWSDataSource.Sentinel2.enabled=false' /usr/share/sen2agri/sen2agri-services/config/services.properties
+    
+    sed -i 's/AWSDataSource.Sentinel2.local_archive_path=/SciHubDataSource.Sentinel2.local_archive_path=/g' /usr/share/sen2agri/sen2agri-services/config/services.properties
+    sed -i 's/AWSDataSource.Sentinel2.fetch_mode=/SciHubDataSource.Sentinel2.fetch_mode=/g' /usr/share/sen2agri/sen2agri-services/config/services.properties
+    
+    sudo -u postgres psql sen2agri -c "update datasource set scope = 3 where satellite_id = 1 and name = 'Scientific Data Hub';"
+    sudo -u postgres psql sen2agri -c "update datasource set enabled = 'false' where satellite_id = 1 and name = 'Amazon Web Services';"
+    
+#    sudo -u postgres psql sen2agri -c "update datasource set local_root = (select local_root from datasource where satellite_id = 1 and name = 'Amazon Web Services') where satellite_id = 1 and name = 'Scientific Data Hub';"
+#    sudo -u postgres psql sen2agri -c "update datasource set fetch_mode = (select fetch_mode from datasource where satellite_id = 1 and name = 'Amazon Web Services') where satellite_id = 1 and name = 'Scientific Data Hub';"
+}
+
+function updateWebRestPort()
+{
+    REST_SERVER_PORT=$(sed -n 's/^server.port =//p' /usr/share/sen2agri/sen2agri-services/config/services.properties)
+    # Strip leading space.
+    REST_SERVER_PORT="${REST_SERVER_PORT## }"
+    # Strip trailing space.
+    REST_SERVER_PORT="${REST_SERVER_PORT%% }"
+     if [[ !  -z  $REST_SERVER_PORT  ]] ; then
+        sed -i -e "s|static \$REST_SERVICES_URL = \x27http:\/\/localhost:8080|static \$REST_SERVICES_URL = \x27http:\/\/localhost:$REST_SERVER_PORT|g" /var/www/html/ConfigParams.php
+     fi
+}
+
+function resetDownloadFailedProducts()
+{
+    sudo -u postgres psql sen2agri -c "update downloader_history set no_of_retries = '0' where status_id = '3' "
+    sudo -u postgres psql sen2agri -c "update downloader_history set no_of_retries = '0' where status_id = '4' "
+    sudo -u postgres psql sen2agri -c "update downloader_history set status_id = '3' where status_id = '4' "
+}
+
 
 systemctl stop sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent sen2agri-services
 
@@ -85,14 +125,21 @@ install_sen2agri_services
 
 ldconfig
 
-cat migrations/migration-1.3-1.3.1.sql | su -l postgres -c "psql sen2agri"
-cat migrations/migration-1.3.1-1.4.sql | su -l postgres -c "psql sen2agri"
-cat migrations/migration-1.4-1.5.sql | su -l postgres -c "psql sen2agri"
-cat migrations/migration-1.5-1.6.sql | su -l postgres -c "psql sen2agri"
-cat migrations/migration-1.6-1.6.2.sql | su -l postgres -c "psql sen2agri"
-cat migrations/migration-1.6.2-1.7.sql | su -l postgres -c "psql sen2agri"
-cat migrations/migration-1.7-1.8.sql | su -l postgres -c "psql sen2agri"
-cat migrations/migration-1.8-1.8.1.sql | su -l postgres -c "psql sen2agri"
+DB_NAME=$(head -q -n 1 ./config/db_name.conf 2>/dev/null)
+if [ -z "$DB_NAME" ]; then
+    DB_NAME="sen2agri"
+fi
+
+cat migrations/migration-1.3-1.3.1.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.3.1-1.4.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.4-1.5.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.5-1.6.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.6-1.6.2.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.6.2-1.7.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.7-1.8.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.8-1.8.1.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.8.1-1.8.2.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.8.2-1.8.3.sql | su -l postgres -c "psql $DB_NAME"
 
 systemctl daemon-reload
 
@@ -103,6 +150,15 @@ if [ -d ../reference_data/ ]; then
 fi
 
 updateDownloadCredentials
+
+# Update the port in /var/www/html/ConfigParams.php as version 1.8 had 8080 instead of 8081
+updateWebRestPort
+
+# Enable SciHub as the download datasource 
+enableSciHubDwnDS
+
+# Reset the download failed products
+resetDownloadFailedProducts
 
 #systemctl start sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent sen2agri-scheduler
 

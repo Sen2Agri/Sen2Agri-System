@@ -27,3 +27,13 @@ INSERT INTO processor
 (id, name, short_name)
 VALUES
 (6, 'L4B Crop Type','l4b');
+
+INSERT INTO processor
+(id, name, short_name)
+VALUES
+(7, 'L2 SAR Amplitude','l2-amp');
+
+INSERT INTO processor
+(id, name, short_name)
+VALUES
+(8, 'L2 SAR Coherence','l2-cohe');

@@ -354,16 +354,30 @@ class LaiMonoDate(object):
         """ Constructor """
         self.init = 1
     
+    def setUseInraVersion(self, useInraVersion) :
+        self.useInraVersion = useInraVersion
+        
+    def setGenFapar(self, genFapar) :
+        self.genFapar = genFapar
+        
+    def setGenFCover(self, genFCover) :
+        self.genFCover = genFapar
+    
     def generateLaiMonoDates(self, xml, index, resolution, paramsLaiModelFilenameXML, outDir):  
         counterString = str(idx)
         
         outSingleNdvi = "{}/#_Single_NDVI.tif".format(outDir)        
         outNdviRvi = "{}/#_NDVI_RVI.tif".format(outDir)
         outLaiImg = "{}/#_LAI_img.tif".format(outDir)
+        outFaparImg = "{}/#_FAPAR_img.tif".format(outDir)
+        outFCoverImg = "{}/#_FCOVER_img.tif".format(outDir)
+        
         outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir)
         outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
         # LAI images encoded as short. These are used only by ProductFormatter
         outLaiShortImg = "{}/#_LAI_img_16.tif".format(outDir)
+        outFaparShortImg = "{}/#_FAPAR_img_16.tif".format(outDir)
+        outFCoverShortImg = "{}/#_FCOVER_img_16.tif".format(outDir)
         outLaiErrShortImg = "{}/#_LAI_err_img_16.tif".format(outDir)
         
         lastPoint = xml.rfind('.')
@@ -374,10 +388,16 @@ class LaiMonoDate(object):
         curOutSingleNDVIImg = outSingleNdvi.replace("#", counterString)
         curOutNDVIRVIImg = outNdviRvi.replace("#", counterString)
         curOutLaiImg = outLaiImg.replace("#", counterString)
+        
+        curOutFaparImg = outFaparImg.replace("#", counterString)
+        curOutFCoverImg = outFCoverImg.replace("#", counterString)
+        
         curOutLaiErrImg = outLaiErrImg.replace("#", counterString)
         curOutLaiMonoMskFlgsImg = outLaiMonoMskFlgsImg.replace("#", counterString)
         # LAI images encoded as short. These are used only by ProductFormatter
         curOutLaiShortImg = outLaiShortImg.replace("#", counterString)
+        curOutFaparShortImg = outFaparShortImg.replace("#", counterString)
+        curOutFCoverShortImg = outFCoverShortImg.replace("#", counterString)
         curOutLaiErrShortImg = outLaiErrShortImg.replace("#", counterString)
 
         runCmd(["otbcli", "GenerateLaiMonoDateMaskFlags", appLocation,
@@ -385,62 +405,117 @@ class LaiMonoDate(object):
                 "-out", curOutLaiMonoMskFlgsImg])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         
-        #Compute NDVI and RVI
-        if resolution == 0:
+        if self.useInraVersion == True :
             runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
             "-xml", xml,
             "-msks", curOutLaiMonoMskFlgsImg,
             "-ndvi", curOutSingleNDVIImg,
-            "-fts", curOutNDVIRVIImg,
             "-laicfgs", args.laiBandsCfg])
-        else:
-            runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
-            "-xml", xml,
-            "-msks", curOutLaiMonoMskFlgsImg,
-            "-ndvi", curOutSingleNDVIImg,
-            "-fts", curOutNDVIRVIImg,
-            "-outres", resolution,
-            "-laicfgs", args.laiBandsCfg])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+        
+            # Execute LAI processor
+            runCmd(["otbcli", "BVLaiNewProcessor", appLocation,
+                    "-xml", xml,
+                    "-outlai", curOutLaiImg,
+                    "-laicfgs", args.laiBandsCfg])
+            print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+            if self.genFapar == True :
+                # Execute fAPAR processor
+                runCmd(["otbcli", "BVLaiNewProcessor", appLocation,
+                        "-xml", xml,
+                        "-outfapar", curOutFaparImg,
+                        "-laicfgs", args.laiBandsCfg])
+                print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+            if self.genFCover == True :
+                # Execute fAPAR processor
+                runCmd(["otbcli", "BVLaiNewProcessor", appLocation,
+                        "-xml", xml,
+                        "-outfcover", curOutFCoverImg,
+                        "-laicfgs", args.laiBandsCfg])
+                print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-        # Retrieve the LAI model
-        runCmd(["otbcli", "BVImageInversion", appLocation,
-                "-in", curOutNDVIRVIImg,
-                "-msks", curOutLaiMonoMskFlgsImg,
-                "-out", curOutLaiImg,
+            runCmd(["otbcli", "QuantifyImage", appLocation,
+                    "-in", curOutLaiImg,
+                    "-out", curOutLaiShortImg])
+            print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+            runCmd(["otbcli", "QuantifyImage", appLocation,
+                    "-in", curOutFaparImg,
+                    "-out", curOutFaparShortImg])
+            print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+            runCmd(["otbcli", "QuantifyImage", appLocation,
+                    "-in", curOutFCoverImg,
+                    "-out", curOutFCoverShortImg])
+            print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+                
+            # Generate the product for the monodate
+            runCmd(["otbcli", "ProductFormatter", appLocation,
+                    "-destroot", outDir,
+                    "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-siteid", siteId,
+                    "-processor", "vegetation",
+                    "-processor.vegetation.laindvi", tileID, curOutSingleNDVIImg,
+                    "-processor.vegetation.laimonodate", tileID, curOutLaiShortImg,
+                    "-processor.vegetation.faparmonodate", tileID, curOutFaparShortImg,
+                    "-processor.vegetation.fcovermonodate", tileID, curOutFCoverShortImg,
+                    "-processor.vegetation.laimdateflgs", tileID, curOutLaiMonoMskFlgsImg,
+                    "-il", xml, 
+                    "-gipp", paramsLaiModelFilenameXML])        
+                
+        else :
+            #Compute NDVI and RVI
+            if resolution == 0:
+                runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
                 "-xml", xml,
-                "-modelsfolder", modelsFolder,
-                "-modelprefix", "Model_"])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-        runCmd(["otbcli", "BVImageInversion", appLocation,
-                "-in", curOutNDVIRVIImg,
                 "-msks", curOutLaiMonoMskFlgsImg,
-                "-out", curOutLaiErrImg,
+                "-ndvi", curOutSingleNDVIImg,
+                "-fts", curOutNDVIRVIImg,
+                "-laicfgs", args.laiBandsCfg])
+            else:
+                runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
                 "-xml", xml,
-                "-modelsfolder", modelsFolder,
-                "-modelprefix", "Err_Est_Model_"])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+                "-msks", curOutLaiMonoMskFlgsImg,
+                "-ndvi", curOutSingleNDVIImg,
+                "-fts", curOutNDVIRVIImg,
+                "-outres", resolution,
+                "-laicfgs", args.laiBandsCfg])
+            print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+        
+            # Retrieve the LAI model
+            runCmd(["otbcli", "BVImageInversion", appLocation,
+                    "-in", curOutNDVIRVIImg,
+                    "-msks", curOutLaiMonoMskFlgsImg,
+                    "-out", curOutLaiImg,
+                    "-xml", xml,
+                    "-modelsfolder", modelsFolder,
+                    "-modelprefix", "Model_"])
+            print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+            runCmd(["otbcli", "BVImageInversion", appLocation,
+                    "-in", curOutNDVIRVIImg,
+                    "-msks", curOutLaiMonoMskFlgsImg,
+                    "-out", curOutLaiErrImg,
+                    "-xml", xml,
+                    "-modelsfolder", modelsFolder,
+                    "-modelprefix", "Err_Est_Model_"])
+            print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-        runCmd(["otbcli", "QuantifyImage", appLocation,
-                "-in", curOutLaiImg,
-                "-out", curOutLaiShortImg])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-        runCmd(["otbcli", "QuantifyImage", appLocation,
-                "-in", curOutLaiErrImg,
-                "-out", curOutLaiErrShortImg])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+            runCmd(["otbcli", "QuantifyImage", appLocation,
+                    "-in", curOutLaiImg,
+                    "-out", curOutLaiShortImg])
+            print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+            runCmd(["otbcli", "QuantifyImage", appLocation,
+                    "-in", curOutLaiErrImg,
+                    "-out", curOutLaiErrShortImg])
+            print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-        # Generate the product for the monodate
-        runCmd(["otbcli", "ProductFormatter", appLocation,
-                "-destroot", outDir,
-                "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-siteid", siteId,
-                "-processor", "vegetation",
-                "-processor.vegetation.laindvi", tileID, curOutSingleNDVIImg,
-                "-processor.vegetation.laimonodate", tileID, curOutLaiShortImg,
-                "-processor.vegetation.laimonodateerr", tileID, curOutLaiErrShortImg,
-                "-processor.vegetation.laimdateflgs", tileID, curOutLaiMonoMskFlgsImg,
-                "-il", xml, 
-                "-gipp", paramsLaiModelFilenameXML])        
+            # Generate the product for the monodate
+            runCmd(["otbcli", "ProductFormatter", appLocation,
+                    "-destroot", outDir,
+                    "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-siteid", siteId,
+                    "-processor", "vegetation",
+                    "-processor.vegetation.laindvi", tileID, curOutSingleNDVIImg,
+                    "-processor.vegetation.laimonodate", tileID, curOutLaiShortImg,
+                    "-processor.vegetation.laimonodateerr", tileID, curOutLaiErrShortImg,
+                    "-processor.vegetation.laimdateflgs", tileID, curOutLaiMonoMskFlgsImg,
+                    "-il", xml, 
+                    "-gipp", paramsLaiModelFilenameXML])        
         
 if __name__ == '__main__':
 
@@ -471,6 +546,10 @@ if __name__ == '__main__':
     parser.add_argument('--modala', help='Mode value for ALA', required=False, default="40.0")
     parser.add_argument('--stdala', help='Standard deviation for ALA', required=False, default="20.0")
     
+    parser.add_argument('--useinra', help='Generate LAI using INRA version (YES/NO)', required=False, default="NO")
+    parser.add_argument('--fcover', help='Generate fCover (YES/NO)', required=False, default="YES")
+    parser.add_argument('--fapar', help='Generate fAPAR (YES/NO)', required=False, default="YES")
+    
     parser.add_argument('--laiBandsCfg', help='LAI bands to be used configuration file', required=False, default="/usr/share/sen2agri/Lai_Bands_Cfgs.cfg")
     parser.add_argument('--useSystemBVDistFile', help='Specifies if the system BV distribution file should be used or it should be generated at each execution', required=False, default=False)
     
@@ -487,7 +566,7 @@ if __name__ == '__main__':
     if not rsrFile and not rsrCfg :
         rsrCfg = "/usr/share/sen2agri/rsr_cfg.txt"
         
-    generatemonodate = False
+    generatemonodate = True
     if (args.generatemonodate == "YES"):
         generatemonodate = True
     genreprocessedlai = False
@@ -503,12 +582,21 @@ if __name__ == '__main__':
     siteId = "nn"
     if args.siteid:
         siteId = args.siteid
-
+        
+    GENERATE_MODEL = False
     if (args.generatemodel == "YES"):
         GENERATE_MODEL = True
-    else:
-        GENERATE_MODEL = False
 
+    useInraVersion = False
+    if (args.useinra == "YES"):
+        useInraVersion = True
+    genFCover = False
+    if (args.fcover == "YES"):
+        genFCover = True
+    genFapar = False
+    if (args.fapar == "YES"):
+        genFapar = True
+        
     simpleTileId = "none"
     tileID="TILE_none"
     if args.tileid:
@@ -528,20 +616,21 @@ if __name__ == '__main__':
     
     # By default, if not specified, models folder is the given out dir.
     modelsFolder = outDir
-    if args.modelsfolder:
-        if os.path.exists(args.modelsfolder):
-            if not os.path.isdir(args.modelsfolder):
-                print("Error: The specified models folder is not a folder but a file.")
-                exit(1)
+    if useInraVersion == False :
+        if args.modelsfolder:
+            if os.path.exists(args.modelsfolder):
+                if not os.path.isdir(args.modelsfolder):
+                    print("Error: The specified models folder is not a folder but a file.")
+                    exit(1)
+                else:
+                    modelsFolder = args.modelsfolder
             else:
-                modelsFolder = args.modelsfolder
-        else:
-            if GENERATE_MODEL:
-                os.makedirs(args.modelsfolder)
-                modelsFolder = args.modelsfolder
-            else:
-                print("Error: The specified models folder does not exist.")
-                exit(1)
+                if GENERATE_MODEL:
+                    os.makedirs(args.modelsfolder)
+                    modelsFolder = args.modelsfolder
+                else:
+                    print("Error: The specified models folder does not exist.")
+                    exit(1)
 
     if os.path.exists(outDir):
         if not os.path.isdir(outDir):
@@ -569,6 +658,9 @@ if __name__ == '__main__':
         
         if  generatemonodate:
             laiMonoDate = LaiMonoDate()
+            laiMonoDate.setUseInraVersion(useInraVersion)
+            laiMonoDate.setGenFapar(genFapar)
+            laiMonoDate.setGenFCover(genFCover)
             laiMonoDate.generateLaiMonoDates(xml, idx, resolution, paramsLaiModelFilenameXML, outDir)
             
     laiTimeSeriesFile = "{}/LAI_time_series.tif".format(outDir)

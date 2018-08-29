@@ -213,6 +213,9 @@ INSERT INTO config_metadata VALUES ('l8.enabled', 'L8 is enabled', 'bool', false
 INSERT INTO config_metadata VALUES ('scheduled.lookup.enabled', 'Scheduled lookup is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('scheduled.retry.enabled', 'Scheduled retry is enabled', 'bool', false, 15);
 
+INSERT INTO config_metadata VALUES ('s1.preprocessing.path', 'The path where the S1 L2 products will be created', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('s1.preprocessing.enabled', 'S1 preprocessing is enabled', 'bool', false, 15);
+
 INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.enabled', 'Scheduled object storage move enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.product.types', 'Product types to move to object storage (separated by ;)', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.deleteAfter', 'Delete the products after they were uploaded to object storage', 'bool', false, 15);

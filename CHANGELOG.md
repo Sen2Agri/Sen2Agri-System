@@ -18,6 +18,17 @@
 
 # Change Log
 
+## [Patch for 1.8 & 1.8.1 version]
+### Fixed
+ - Handling of multi-polygons site extent geometry
+ - Decimal precision in geometry
+ - Handling of the time lag between the Sci-Hub and AWS acquisition availability (normally, this can be tuned by changing values in datasource table for max_retries and retry_interval).
+### Added
+ - A new configuration key was added in order to force queries from the start of the season instead of the last successfuly download date. The config key (that can be set only for passing again all seasons of the site and not for a nominal functionning) can be set to "config" table as "scheduled.lookup.all_products.enabled = true". After a complete pass of the season is made, this key should be removed or set to false (and sen2agri-services restared) as it does not functions correctly with the near-realtime downloading mode.
+ - Support for local repositories that have paths in the format 2018/1/2 (and not 2018/01/02) by setting in the sen2agri-services.properties file the following keys:
+ AWSDataSource.Sentinel2.usePadding=false
+ AWSDataSource.Landsat8.usePadding=false
+
 ## [1.8.1]
 ### Fixed
  - LAI Multi-Date processors are now functionning also for products obtained using the new L3B monodate implementing INRA algorithm.
