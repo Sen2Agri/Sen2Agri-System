@@ -17,7 +17,7 @@
 ### CONFIG PATHS FOR SCRIPT
 : ${DEFAULT_DIR:=$(pwd)}
 : ${PLATFORM_NAME_DIR:="Sen2AgriApp"}
-  VERSION="1.8.1"
+  VERSION="1.8.3"
 : ${INSTALL_DIR:="install"}
 : ${RPM_DIR:="rpm_binaries"}
 : ${BUILD_DIR:="build"}
