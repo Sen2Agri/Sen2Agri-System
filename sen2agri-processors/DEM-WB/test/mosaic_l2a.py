@@ -26,7 +26,7 @@ import pipes
 import subprocess
 import itertools
 import uuid
-
+import shutil
 
 def get_projection(file):
     dataset = gdal.Open(file, GA_ReadOnly)
@@ -148,4 +148,5 @@ run_command(['gdal_translate', '-scale', '-ot', 'Byte', '-of', 'JPEG',
              mosaic_16bit, mosaic])
 
 remove_files(temp_files)
-os.rmdir(temp_dir)
+#os.rmdir(temp_dir)
+shutil.rmtree(temp_dir)

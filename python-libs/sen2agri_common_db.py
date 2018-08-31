@@ -1653,8 +1653,10 @@ class L1CInfo(object):
         #quicklook image has to be NULL
         #footprint
         if not self.database_connect():
-            return True
+            return False, False
         try:
+            serialization_failure = False
+            ret_val = True
             processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSING_ERR_VALUE
             if len(l2a_processed_tiles) > 0:
                 processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE
@@ -1694,8 +1696,13 @@ class L1CInfo(object):
                                     "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']'
                                 })
             #self.conn.commit()
-        except Exception, e:
-            print("Database update query failed with exception: {}".format(e))
-            return False
-        return True
+        except psycopg2.Error as e:
+            ret_val = False
+            if e.pgcode in (SERIALIZATION_FAILURE, DEADLOCK_DETECTED):
+                print("{}:{}: Exception when setting l2a product: SERIALIZATION_FAILURE when trying to execute sql queries".format(threading.currentThread().getName(), id(self)))
+                serialization_failure = True
+            else:
+                print("{}:{}: Exception {} when trying to set l2a product".format(threading.currentThread().getName(), id(self), e.pgcode))                
+        return serialization_failure, ret_val
+            
 

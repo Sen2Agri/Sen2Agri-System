@@ -29,6 +29,7 @@ from multiprocessing import Pool
 from sen2agri_common_db import *
 from threading import Thread
 import threading
+import tempfile
 
 general_log_path = "/tmp/"
 general_log_filename = "demmaccs.log"
@@ -390,8 +391,8 @@ if len(args.prev_l2a_tiles) != len(args.prev_l2a_products_paths):
     sys.exit(-1)
 
 general_log_path = args.output
-
-working_dir = "{}/{}".format(args.working_dir[:len(args.working_dir) - 1] if args.working_dir.endswith("/") else args.working_dir, os.getpid())
+working_dir = tempfile.mkdtemp(dir = args.working_dir)
+#working_dir = "{}/{}".format(args.working_dir[:len(args.working_dir) - 1] if args.working_dir.endswith("/") else args.working_dir, os.getpid())
 if args.skip_dem is not None:
     working_dir = "{}".format(args.skip_dem[:len(args.skip_dem) - 1]) if args.skip_dem.endswith("/") else "{}".format(args.skip_dem)
 dem_working_dir = "{}_DEM_TMP".format(working_dir)
@@ -480,20 +481,26 @@ for dem_hdr in dem_hdrs:
     print("DEM_HDR: {}".format(dem_hdr))
     demmaccs_contexts.append(DEMMACCSContext(working_dir, dem_hdr, args.gipp_dir, args.prev_l2a_tiles, args.prev_l2a_products_paths, args.maccs_address, args.maccs_launcher, args.input, args.output))
 
-#RELEASE mode, parallel launching
-# LE (august 2018): keeping parallel launching for compatibility. Now, demmaccs is launched for one tile only
-pool = Pool(int(args.processes_number_maccs))
-pool_outputs = pool.map(maccs_launcher, demmaccs_contexts)
-pool.close()
-pool.join()
-
-#DEBUG mode only, sequentially launching
-#pool_outputs = map(maccs_launcher, demmaccs_contexts)
-
 processed_tiles = []
-for out in pool_outputs:
-    if len(out) >=5:
-        processed_tiles.append(out)
+if len(demmaccs_contexts) == 1:
+    print("One process will be started for this demmaccs")
+    processed_tiles.append(maccs_launcher(demmaccs_contexts[0]))
+else:
+    #RELEASE mode, parallel launching
+    # LE (august 2018): keeping parallel launching for compatibility. Now, demmaccs is launched for one tile only
+    print("Parallel launching")
+    pool = Pool(int(args.processes_number_maccs))
+    pool_outputs = pool.map(maccs_launcher, demmaccs_contexts)
+    pool.close()
+    pool.join()
+
+    #DEBUG mode only, sequentially launching
+    #pool_outputs = map(maccs_launcher, demmaccs_contexts)
+
+
+    for out in pool_outputs:
+        if len(out) >=5:
+            processed_tiles.append(out)
 
 sys_exit = int(0)
 if len(processed_tiles) == 0:

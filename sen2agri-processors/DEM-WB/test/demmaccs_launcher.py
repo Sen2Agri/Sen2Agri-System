@@ -543,7 +543,7 @@ def new_launch_demmaccs(l1c_db_thread):
             # mark the tile as done
             # if there are still tiles to be processed within this product, the commit call for database will be performed 
             # inside mark_l1_tile_done or mark_l1_tile_failed. If this was the last tile within this product (the mark_l1_tile_done or 
-            # mark_l1_tile_failed functions will return the product id) the footprint of the product as well as the mosaic have to be performed 
+            # mark_l1_tile_failed functions return the true) the footprint of the product has to be processed 
             # before calling set_l2a_product function. The set_l2a_product function will also close the transaction by calling commit 
             # for database. In this case the mark_l1_tile_done or mark_l1_tile_failed functions will not call the commit for database            
             db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, tile_id)
@@ -589,14 +589,25 @@ def new_launch_demmaccs(l1c_db_thread):
             retries = 0
             max_number_of_retries = 3
             while True:
-                result = l1c_db_thread.set_l2a_product(1, site_id, product_id, l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, orbit_id)
-                if result == False:
+                serialization_failure, commit_result = l1c_db_thread.set_l2a_product(1, site_id, product_id, l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, orbit_id)
+                if commit_result == False:                    
                     l1c_db_thread.sql_rollback()
+                    log(output_path, "{}: Rolling back for {}".format(threading.currentThread().getName(), output_path), tile_log_filename)
+                    if serialization_failure == True and retries < max_number_of_retries and set_l1_tile_status(l1c_db_thread, product_id, tile_id, reason, should_retry):
+                        log(output_path, "{}: Exception when inserting to product table: SERIALIZATION_FAILURE, rolling back and will retry".format(threading.currentThread().getName()), tile_log_filename)
+                        time.sleep(2)
+                        retries += 1
+                        continue                
+                    log(output_path, "{}: Couldn't insert the product {}".format(threading.currentThread().getName(), output_path), tile_log_filename)
                     l1c_db_thread.database_disconnect()
                     break
+                retries = 0
                 serialization_failure, commit_result = l1c_db_thread.sql_commit()
                 if commit_result == False:                    
                     l1c_db_thread.sql_rollback()
+                    log(output_path, "{}: Commit returned false, rolling back for {}".format(threading.currentThread().getName(), output_path), tile_log_filename)
+                else:
+                    log(output_path, "{}: Product {} inserted".format(threading.currentThread().getName(), output_path), tile_log_filename)
                 if serialization_failure == True and retries < max_number_of_retries and set_l1_tile_status(l1c_db_thread, product_id, tile_id, reason, should_retry):
                     log(output_path, "{}: Exception when inserting to product table: SERIALIZATION_FAILURE, rolling back and will retry".format(threading.currentThread().getName()), tile_log_filename)
                     time.sleep(2)
