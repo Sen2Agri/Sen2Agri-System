@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 from osgeo import gdal
+from gdal import gdalconst
 
 
 def run_command(args, env=None):
@@ -43,11 +44,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_image_size(image):
-    ds = gdal.Open(image, gdal.gdalconst.GA_ReadOnly)
-    return (ds.RasterXSize, ds.RasterYSize)
-
-
 def get_overview_levels(size, min_size):
     levels = []
     f = 1
@@ -56,6 +52,14 @@ def get_overview_levels(size, min_size):
         f = f * 2
         levels.append(f)
     return levels
+
+
+def get_predictor(dataset):
+    band = dataset.GetRasterBand(1)
+    if band is not None and band.DataType in (gdalconst.GDT_Float32, gdalconst.GDT_Float64):
+        return 3
+    else:
+        return 2
 
 
 def main():
@@ -72,13 +76,15 @@ def main():
     if args.threaded:
         env['GDAL_NUM_THREADS'] = 'ALL_CPUS'
 
+    dataset = gdal.Open(args.input, gdal.gdalconst.GA_ReadOnly)
+
     # why?!
     # command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave, '-a_nodata', args.no_data]
     command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave]
     if args.overviews:
         command += ['-co', 'COPY_SRC_OVERVIEWS=YES']
 
-        size = get_image_size(args.input)
+        size = (dataset.RasterXSize, dataset.RasterYSize)
         levels = get_overview_levels(max(size[0], size[1]), args.min_size)
         if levels:
             run_command(['gdaladdo', '-r', args.resampler, args.input] + levels, env)
@@ -87,7 +93,8 @@ def main():
     temp = parts[0] + ".tmpcog.tif"
 
     if args.compress:
-        command += ['-co', 'COMPRESS=' + args.compress, '-co', 'PREDICTOR=2']
+        predictor = get_predictor(dataset)
+        command += ['-co', 'COMPRESS=' + args.compress, '-co', 'PREDICTOR=' + str(predictor)]
 
     if args.tiled:
         command += ['-co', 'TILED=YES', '-co', 'BLOCKXSIZE=' + str(args.block_size), '-co', 'BLOCKYSIZE=' + str(args.block_size)]
