@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import argparse
 import os
 import pipes
@@ -10,7 +12,7 @@ from gdal import gdalconst
 
 
 def run_command(args, env=None):
-    args = map(str, args)
+    args = list(map(str, args))
     cmd_line = " ".join(map(pipes.quote, args))
     print(cmd_line)
     subprocess.call(args, env=env)
