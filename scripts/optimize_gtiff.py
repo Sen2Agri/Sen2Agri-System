@@ -102,6 +102,8 @@ def main():
         command += ['-co', 'TILED=YES', '-co', 'BLOCKXSIZE=' + str(args.block_size), '-co', 'BLOCKYSIZE=' + str(args.block_size)]
         env['GDAL_TIFF_OVR_BLOCKSIZE'] = str(args.block_size)
 
+    del dataset
+
     command += [args.input, temp]
     run_command(command, env)
 
