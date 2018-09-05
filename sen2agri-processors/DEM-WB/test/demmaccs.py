@@ -484,7 +484,9 @@ for dem_hdr in dem_hdrs:
 processed_tiles = []
 if len(demmaccs_contexts) == 1:
     print("One process will be started for this demmaccs")
-    processed_tiles.append(maccs_launcher(demmaccs_contexts[0]))
+    out = maccs_launcher(demmaccs_contexts[0])
+    if len(out) >=5:
+        processed_tiles.append(out)
 else:
     #RELEASE mode, parallel launching
     # LE (august 2018): keeping parallel launching for compatibility. Now, demmaccs is launched for one tile only
@@ -496,7 +498,6 @@ else:
 
     #DEBUG mode only, sequentially launching
     #pool_outputs = map(maccs_launcher, demmaccs_contexts)
-
 
     for out in pool_outputs:
         if len(out) >=5:

@@ -243,7 +243,7 @@ def launch_demmaccs(l1c_context, l1c_db_thread):
             continue
 
         output_path = site_output_path + l2a_basename + "/"
-        # normally, the output_path should be created by the demmaccs.py script itself, but for log reason it will be created here
+        # normally, the output_path should be created by the demmaccs.py script itself, but for log reason it has to be created here
         if not create_recursive_dirs(output_path):
             log(general_log_path, "Could not create the output directory", general_log_filename)
             continue
@@ -421,25 +421,9 @@ def new_launch_demmaccs(l1c_db_thread):
         print("{}: dh_id = {}".format(threading.currentThread().getName(), product_id))
         print("{}: path = {}".format(threading.currentThread().getName(), full_path))
         print("{}: prev_path = {}".format(threading.currentThread().getName(), previous_l2a_path))
-#        if set_l1_tile_status(l1c_db_thread, product_id, tile_id):
-#            while True:
-#                result = l1c_db_thread.set_l2a_product(1, site_id, product_id, [], None, None, None, None, None, orbit_id)
-#                if result == False:
-#                    l1c_db_thread.sql_rollback()
-#                    l1c_db_thread.database_disconnect()
-#                serialization_failure, commit_result = l1c_db_thread.sql_commit()
-#                if commit_result == False:                    
-#                    l1c_db_thread.sql_rollback()
-#                if serialization_failure == True and retries < max_number_of_retries and set_l1_tile_status(l1c_db_thread, product_id, tile_id, reason, should_retry):
-#                    time.sleep(2)
-#                    retries += 1
-#                    continue
-#                l1c_db_thread.database_disconnect()
-#                break
-
 #        l1c_queue.task_done()
- #       thread_finished_queue.get()
- #       continue
+#        thread_finished_queue.get()
+#        continue
         print("{}: Starting the process for tile {}".format(threading.currentThread().getName(), tile_id))
         tile_log_filename = "demmaccs_{}.log".format(tile_id)
         # processing the tile
@@ -615,7 +599,7 @@ def new_launch_demmaccs(l1c_db_thread):
                     continue
                 l1c_db_thread.database_disconnect()
                 break
-            if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", output_path, "-w", demmaccs_config.working_dir], output_path, tile_log_filename) != 0:
+            if len(l2a_processed_tiles) > 0 and run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", output_path, "-w", demmaccs_config.working_dir], output_path, tile_log_filename) != 0:
                 log(output_path, "{}: Mosaic didn't work".format(threading.currentThread().getName()), tile_log_filename)
         # end of tile processing
         # remove the tile from queue
