@@ -37,9 +37,9 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
             handlersMap.emplace(procDescr.processorId, std::make_unique<CropTypeHandler>());
         } else {
             bAdded = false;
-            throw std::runtime_error(
-                QStringLiteral("Invalid processor configuration found in database: %1, exiting.")
-                    .arg(procDescr.shortName).toStdString());
+            Logger::error(QStringLiteral("Invalid processor configuration found in database: %1, "
+                                         "igoring it as no handler is available for it!")
+                          .arg(procDescr.shortName));
         }
         if(bAdded) {
             auto it = handlersMap.find(procDescr.processorId);
