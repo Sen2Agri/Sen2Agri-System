@@ -171,6 +171,56 @@ begin
             execute _statement;
 
             _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_set_user_password(
+                    IN user_name character varying,
+                    IN email character varying,
+                    IN pwd text	
+                    )RETURNS character varying AS
+                    $BODY$
+                    DECLARE user_id smallint;
+
+                    BEGIN 
+                        SELECT id into user_id FROM "user" WHERE "user".login = $1 AND "user".email = $2;
+
+                        IF user_id IS NOT NULL THEN
+                            IF char_length(trim(pwd))>0 THEN
+
+                                UPDATE "user"
+                                     SET password = crypt($3, gen_salt('md5'))
+                                     WHERE id = user_id ;--AND password = crypt(user_pwd, password);
+                                RETURN 1;
+                            ELSE 
+                                RETURN 0;
+                            END IF;
+                        ELSE RETURN 2;
+                        END IF;
+                END;
+                $BODY$
+                LANGUAGE plpgsql VOLATILE;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+            
+            _statement := $str$
+                drop function sp_authenticate(character varying, text);
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_authenticate(IN usr character varying, IN pwd text)
+                  RETURNS TABLE(user_id smallint, site_id integer[], role_id smallint, role_name character varying) AS
+                $BODY$SELECT u.id, u.site_id, r.id, r.name
+                  FROM "user" u
+                  INNER JOIN role r ON u.role_id=r.id
+                  WHERE login = $1 AND crypt($2, password) = password
+                $BODY$
+                  LANGUAGE sql VOLATILE;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+            
+            _statement := $str$
                 drop function sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[]);
             $str$;
             raise notice '%', _statement;
@@ -436,23 +486,6 @@ begin
                     retry_count int not null default 0,
                     failed_reason text,
                     primary key (downloader_history_id, tile_id)
-                );
-            $str$;
-            raise notice '%', _statement;
-            execute _statement;
-
-            _statement := $str$
-                with values(id, description) as (
-                    values (1, 'processing'),
-                           (2, 'failed'),
-                           (3, 'done')
-                )
-                insert into l1_tile_status_test
-                select *
-                from values
-                where id not in (
-                    select id
-                    from l1_tile_status_test
                 );
             $str$;
             raise notice '%', _statement;
@@ -971,7 +1004,7 @@ begin
 				and not attisdropped
 			) then  
 				_statement := $str$
-					alter table 'product_type' is_raster boolean NOT NULL DEFAULT TRUE;
+					alter table product_type add column is_raster boolean NOT NULL DEFAULT TRUE;
 					$str$;
 				raise notice '%', _statement;
 				execute _statement;
