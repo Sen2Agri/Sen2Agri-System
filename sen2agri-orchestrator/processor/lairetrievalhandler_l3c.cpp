@@ -168,17 +168,17 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(
     QString allErrTimeSeriesFileName = errTimeSeriesBuilderTask.GetFilePath("Err_time_series.tif");
     const auto & allMskFlagsTimeSeriesFileName = mskFlagsTimeSeriesBuilderTask.GetFilePath("Mask_Flags_time_series.tif");
 
-    const QStringList &timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, quantifiedLaiFileNames2, allLaiTimeSeriesFileName, mainLaiImg);
+    const QStringList &timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(quantifiedLaiFileNames2, allLaiTimeSeriesFileName, mainLaiImg);
     QStringList errTimeSeriesBuilderArgs;
     if (errFilesUsed) {
-        errTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, quantifiedErrLaiFileNames2, allErrTimeSeriesFileName, mainLaiErrImg);
+        errTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(quantifiedErrLaiFileNames2, allErrTimeSeriesFileName, mainLaiErrImg);
     } else {
         // do nothing in this case by executing the "true" command on linux that does nothing and will return success after the execution
         allErrTimeSeriesFileName = "";
         errTimeSeriesBuilderArgs.append("true");
     }
 
-    const QStringList &mskFlagsTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(configParameters, monoDateMskFlagsLaiFileNames2,
+    const QStringList &mskFlagsTimeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(monoDateMskFlagsLaiFileNames2,
                                                                                  allMskFlagsTimeSeriesFileName, mainMsksImg, true);
 
     steps.append(imgTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", timeSeriesBuilderArgs));
@@ -322,7 +322,7 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing_New(std::ma
                                                               quantifiedErrLaiFileNames2, monoDateMskFlagsLaiFileNames2, mainLaiImg,
                                                               reprocTimeSeriesFileName, listDates);
     } else {
-        profileReprocessingArgs = GetFittedProfileReprocArgs_New(configParameters, quantifiedLaiFileNames2,
+        profileReprocessingArgs = GetFittedProfileReprocArgs_New(quantifiedLaiFileNames2,
                                                              quantifiedErrLaiFileNames2, monoDateMskFlagsLaiFileNames2, mainLaiImg,
                                                              reprocTimeSeriesFileName, listDates);
     }
@@ -989,12 +989,11 @@ void LaiRetrievalHandlerL3C::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     }
 }
 
-QStringList LaiRetrievalHandlerL3C::GetTimeSeriesBuilderArgs(const std::map<QString, QString> &configParameters,
-                                                             const QStringList &monoDateFileNames,
+QStringList LaiRetrievalHandlerL3C::GetTimeSeriesBuilderArgs(const QStringList &monoDateFileNames,
                                                              const QString &allTimeSeriesFileName, const QString &mainImg,
                                                              bool bIsFlg) {
     QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
-      "-out", BuildProcessorOutputFileName(configParameters, allTimeSeriesFileName, true, !bIsFlg),
+      "-out", (bIsFlg ? allTimeSeriesFileName : (allTimeSeriesFileName + "&gdal:co:BIGTIFF=YES")),
       "-main", mainImg,
       "-il"
     };
@@ -1017,7 +1016,7 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(const std::map<QS
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
                             "-lai", allLaiTimeSeriesFileName,
                             "-msks", allMsksTimeSeriesFileName,
-                            "-opf", BuildProcessorOutputFileName(configParameters, reprocTimeSeriesFileName, true, true),
+                            "-opf", (reprocTimeSeriesFileName + "&gdal:co:BIGTIFF=YES"),
                             "-algo", "local",
                             "-algo.local.bwr", localWindowBwr,
                             "-algo.local.fwr", localWindowFwr,
@@ -1039,7 +1038,7 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs_New(const std::ma
 
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
           "-main", mainImg,
-          "-opf", BuildProcessorOutputFileName(configParameters, reprocTimeSeriesFileName, true, true),
+          "-opf", (reprocTimeSeriesFileName + "&gdal:co:BIGTIFF=YES"),
           "-algo", "local",
           "-algo.local.bwr", localWindowBwr,
           "-algo.local.fwr", localWindowFwr
@@ -1053,12 +1052,12 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs_New(const std::ma
     return profileReprocessingArgs;
 }
 
-QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocArgs_New(const std::map<QString, QString> &configParameters,
-        QStringList &monoDateLaiFileNames, QStringList &errFileNames, QStringList &flgsFileNames,
+QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocArgs_New(const QStringList &monoDateLaiFileNames,
+        const QStringList &errFileNames, const QStringList &flgsFileNames,
         const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
           "-main", mainImg,
-          "-opf", BuildProcessorOutputFileName(configParameters, reprocTimeSeriesFileName, true, true),
+          "-opf", (reprocTimeSeriesFileName + "&gdal:co:BIGTIFF=YES"),
           "-genall", "1",
           "-algo", "fit"
     };
@@ -1125,6 +1124,7 @@ QStringList LaiRetrievalHandlerL3C::GetReprocProductFormatterArgs(TaskToSubmit &
                             "-siteid", QString::number(event.siteId),
                             "-processor", "vegetation",
                             "-gipp", executionInfosPath,
+                            "-compress", "1",
                             "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs += listProducts;

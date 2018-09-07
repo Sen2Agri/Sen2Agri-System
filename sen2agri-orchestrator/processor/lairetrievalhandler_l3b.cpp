@@ -282,7 +282,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
         const auto & quantifiedErrFileName = quantifyErrImageTask.GetFilePath("LAI_mono_date_ERR_img_16.tif");
 
         QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                     BuildProcessorOutputFileName(configParameters, monoDateMskFlgsResFileName),
+                                                                     monoDateMskFlgsResFileName,
                                                                      resolutionStr);
 
         // add these steps to the steps list to be submitted
@@ -290,7 +290,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
 
         const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionNewArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
                                                                      ftsFile,
-                                                                     BuildProcessorOutputFileName(configParameters, singleNdviFile),
+                                                                     singleNdviFile,
                                                                      resolutionStr, laiCfgFile);
         steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtractionNew", ndviRviExtractionArgs));
 
@@ -579,7 +579,7 @@ QStringList LaiRetrievalHandlerL3B::GetQuantifyImageArgs(const std::map<QString,
     ;
     return { "QuantifyImage",
         "-in", inFileName,
-        "-out", BuildProcessorOutputFileName(configParams, outFileName)
+        "-out", outFileName
     };
 }
 

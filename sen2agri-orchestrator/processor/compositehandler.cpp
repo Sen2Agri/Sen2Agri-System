@@ -249,16 +249,16 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
         bool isLastProduct = (i == (listProducts.size() - 1));
         QStringList compositeSplitterArgs = { "CompositeSplitter2",
                                               "-in", outL3AResultFile, "-xml", inputProduct, "-bmap", bandsMapping,
-                                              "-outweights", (isLastProduct ? (BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultWeightsFile)) : outL3AResultWeightsFile),
-                                              "-outdates", (isLastProduct ? (BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultDatesFile)) : outL3AResultDatesFile),
-                                              "-outrefls", (isLastProduct ? (BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultReflsFile)) : outL3AResultReflsFile),
-                                              "-outflags", (isLastProduct ? (BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultFlagsFile)) : outL3AResultFlagsFile),
+                                              "-outweights", outL3AResultWeightsFile,
+                                              "-outdates", outL3AResultDatesFile,
+                                              "-outrefls", outL3AResultReflsFile,
+                                              "-outflags", outL3AResultFlagsFile,
                                               "-isfinal", (isLastProduct ? "1" : "0")
                                             };
         // we need to create the rgb file only if the last product
         if(isLastProduct) {
             compositeSplitterArgs.append("-outrgb");
-            compositeSplitterArgs.append(BuildProcessorOutputFileName(cfg.allCfgMap, outL3AResultRgbFile));
+            compositeSplitterArgs.append(outL3AResultRgbFile);
         }
         steps.append(compositeSplitter.CreateStep("CompositeSplitter", compositeSplitterArgs));
 

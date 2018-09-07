@@ -478,37 +478,6 @@ ProcessorHandlerHelper::SatelliteIdType ProcessorHandler::GetSatIdForTile(const 
     return ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN;
 }
 
-QString ProcessorHandler::BuildProcessorOutputFileName(const std::map<QString, QString> &configParameters,
-                                                       const QString &fileName, bool compress, bool bigTiff)
-{
-    //bool bIsCog = IsCloudOptimizedGeotiff(configParameters);
-    // TODO: This flag could be removed as the mechanism was moved to product formatter
-    // We leave for now the compression and bigtiff
-    bool bIsCog = false;
-    if (bIsCog || compress || bigTiff) {
-        QString ret = "\"" + fileName+"?";
-        bool appendAmp = false;
-        if(bIsCog) {
-            ret += "gdal:co:TILED=YES&gdal:co:COPY_SRC_OVERVIEWS=YES&gdal:co:COMPRESS=DEFLATE";
-            appendAmp = true;
-        } else {
-            if(compress) {
-                ret += "gdal:co:COMPRESS=DEFLATE";
-                appendAmp = true;
-            }
-        }
-        if (bigTiff) {
-            if (appendAmp) {
-                ret += "&";
-            }
-            ret += "gdal:co:BIGTIFF=YES";
-        }
-        ret += "\"";
-        return ret;
-    }
-    return fileName;
-}
-
 bool ProcessorHandler::IsCloudOptimizedGeotiff(const std::map<QString, QString> &configParameters) {
     const QStringList &tokens = processorDescr.shortName.split('_');
     const QString &strKey = "processor." + tokens[0] + ".cloud_optimized_geotiff_output";

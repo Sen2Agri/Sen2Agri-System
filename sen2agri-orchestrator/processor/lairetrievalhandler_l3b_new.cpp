@@ -28,18 +28,29 @@ void LaiRetrievalHandlerL3BNew::CreateTasksForNewProduct(EventProcessingContext 
         if (bGenNdvi) {
             outAllTasksList.append(TaskToSubmit{"lai-processor-ndvi-extractor", {}});
         }
-        if (bGenLai) {
-            outAllTasksList.append(TaskToSubmit{"lai-processor", {}});
-            outAllTasksList.append(TaskToSubmit{"lai-quantify-image", {}});
+        if (bGenLai || bGenFapar || bGenFCover) {
+            outAllTasksList.append(TaskToSubmit{"lai-create-angles", {}});
+            outAllTasksList.append(TaskToSubmit{"gdal_translate", {}});
+            outAllTasksList.append(TaskToSubmit{"gdalbuildvrt", {}});
+            outAllTasksList.append(TaskToSubmit{"gdal_translate", {}});
+            if (bGenLai) {
+                outAllTasksList.append(TaskToSubmit{"lai-processor", {}});
+                outAllTasksList.append(TaskToSubmit{"lai-quantify-image", {}});
+                outAllTasksList.append(TaskToSubmit{"gen-domain-flags", {}});
+            }
+            if (bGenFapar) {
+                outAllTasksList.append(TaskToSubmit{"fapar-processor", {}});
+                outAllTasksList.append(TaskToSubmit{"fapar-quantify-image", {}});
+                outAllTasksList.append(TaskToSubmit{"gen-domain-flags", {}});
+            }
+            if (bGenFCover) {
+                outAllTasksList.append(TaskToSubmit{"fcover-processor", {}});
+                outAllTasksList.append(TaskToSubmit{"fcover-quantify-image", {}});
+                outAllTasksList.append(TaskToSubmit{"gen-domain-flags", {}});
+            }
         }
-        if (bGenFapar) {
-            outAllTasksList.append(TaskToSubmit{"fapar-processor", {}});
-            outAllTasksList.append(TaskToSubmit{"fapar-quantify-image", {}});
-        }
-        if (bGenFCover) {
-            outAllTasksList.append(TaskToSubmit{"fcover-processor", {}});
-            outAllTasksList.append(TaskToSubmit{"fcover-quantify-image", {}});
-        }
+        // add the task for generating domain input flags
+        outAllTasksList.append(TaskToSubmit{"gen-domain-flags", {}});
     }
     outAllTasksList.append({"lai-processor-product-formatter", {}});
     if(bRemoveTempFiles) {
@@ -80,36 +91,26 @@ void LaiRetrievalHandlerL3BNew::CreateTasksForNewProduct(EventProcessingContext 
             // add the ndvi task to the list of the product formatter corresponding to this product
             productFormatterParentsRefs.append(outAllTasksList[ndviRviExtrIdx]);
         }
-        if (bGenLai) {
-            int nLaiProcessorIdx = nCurTaskIdx++;
-            outAllTasksList[nLaiProcessorIdx].parentTasks.append(outAllTasksList[flagsTaskIdx]);
-            // lai-quantify-image -> lai-processor
-            int nLaiQuantifyImageIdx = nCurTaskIdx++;
-            outAllTasksList[nLaiQuantifyImageIdx].parentTasks.append(outAllTasksList[nLaiProcessorIdx]);
-            // add the quantified task to the list of the product formatter corresponding to this product
-            productFormatterParentsRefs.append(outAllTasksList[nLaiQuantifyImageIdx]);
-        }
+        int nAnglesTaskId = flagsTaskIdx;
+        if (bGenLai || bGenFapar || bGenFCover) {
+            nCurTaskIdx = CreateAnglesTasks(flagsTaskIdx, outAllTasksList, nCurTaskIdx, nAnglesTaskId);
 
-        if (bGenFapar) {
-            int nFaparProcessorIdx = nCurTaskIdx++;
-            outAllTasksList[nFaparProcessorIdx].parentTasks.append(outAllTasksList[flagsTaskIdx]);
-            // fapar-quantify-image -> fapar-processor
-            int nFaparQuantifyImageIdx = nCurTaskIdx++;
-            outAllTasksList[nFaparQuantifyImageIdx].parentTasks.append(outAllTasksList[nFaparProcessorIdx]);
-            // add the quantified task to the list of the product formatter corresponding to this product
-            productFormatterParentsRefs.append(outAllTasksList[nFaparQuantifyImageIdx]);
+            if (bGenLai) {
+                nCurTaskIdx = CreateBiophysicalIndicatorTasks(nAnglesTaskId, outAllTasksList, productFormatterParentsRefs, nCurTaskIdx);
+            }
 
-        }
+            if (bGenFapar) {
+                nCurTaskIdx = CreateBiophysicalIndicatorTasks(nAnglesTaskId, outAllTasksList, productFormatterParentsRefs, nCurTaskIdx);
+            }
 
-        if (bGenFCover) {
-            int nFcoverProcessorIdx = nCurTaskIdx++;
-            outAllTasksList[nFcoverProcessorIdx].parentTasks.append(outAllTasksList[flagsTaskIdx]);
-            // fcover-quantify-image -> fcover-processor
-            int nFCoverQuantifyImageIdx = nCurTaskIdx++;
-            outAllTasksList[nFCoverQuantifyImageIdx].parentTasks.append(outAllTasksList[nFcoverProcessorIdx]);
-            // add the quantified task to the list of the product formatter corresponding to this product
-            productFormatterParentsRefs.append(outAllTasksList[nFCoverQuantifyImageIdx]);
+            if (bGenFCover) {
+                nCurTaskIdx = CreateBiophysicalIndicatorTasks(nAnglesTaskId, outAllTasksList, productFormatterParentsRefs, nCurTaskIdx);
+            }
         }
+        int nInputDomainIdx = nCurTaskIdx++;
+        outAllTasksList[nInputDomainIdx].parentTasks.append(outAllTasksList[flagsTaskIdx]);
+        // add the input domain task to the list of the product formatter corresponding to this product
+        productFormatterParentsRefs.append(outAllTasksList[nInputDomainIdx]);
     }
     int productFormatterIdx = nCurTaskIdx++;
     outAllTasksList[productFormatterIdx].parentTasks.append(productFormatterParentsRefs);
@@ -117,7 +118,42 @@ void LaiRetrievalHandlerL3BNew::CreateTasksForNewProduct(EventProcessingContext 
         // cleanup-intermediate-files -> product formatter
         outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
     }
+}
 
+int LaiRetrievalHandlerL3BNew::CreateAnglesTasks(int parentTaskId, QList<TaskToSubmit> &outAllTasksList,
+                                     int nCurTaskIdx, int & nAnglesTaskId)
+{
+    int createAnglesIdx = nCurTaskIdx++;
+    outAllTasksList[createAnglesIdx].parentTasks.append(outAllTasksList[parentTaskId]);
+    int anglesGdalTranslateNoDataIdx = nCurTaskIdx++;
+    outAllTasksList[anglesGdalTranslateNoDataIdx].parentTasks.append(outAllTasksList[createAnglesIdx]);
+    int gdalBuildVrtIdx = nCurTaskIdx++;
+    outAllTasksList[gdalBuildVrtIdx].parentTasks.append(outAllTasksList[anglesGdalTranslateNoDataIdx]);
+    int anglesResamleIdx = nCurTaskIdx++;
+    outAllTasksList[anglesResamleIdx].parentTasks.append(outAllTasksList[gdalBuildVrtIdx]);
+    nAnglesTaskId = anglesResamleIdx;
+
+    return nCurTaskIdx;
+}
+
+int LaiRetrievalHandlerL3BNew::CreateBiophysicalIndicatorTasks(int parentTaskId, QList<TaskToSubmit> &outAllTasksList,
+                                     QList<std::reference_wrapper<const TaskToSubmit>> &productFormatterParentsRefs,
+                                     int nCurTaskIdx)
+{
+    int nBIProcessorIdx = nCurTaskIdx++;
+    outAllTasksList[nBIProcessorIdx].parentTasks.append(outAllTasksList[parentTaskId]);
+
+    // domain-flags-image -> BI-processor
+    int nBIDomainFlagsImageIdx = nCurTaskIdx++;
+    outAllTasksList[nBIDomainFlagsImageIdx].parentTasks.append(outAllTasksList[nBIProcessorIdx]);
+
+    // BI-quantify-image -> domain-flags-image
+    int nBIQuantifyImageIdx = nCurTaskIdx++;
+    outAllTasksList[nBIQuantifyImageIdx].parentTasks.append(outAllTasksList[nBIDomainFlagsImageIdx]);
+    // add the quantified task to the list of the product formatter corresponding to this product
+    productFormatterParentsRefs.append(outAllTasksList[nBIQuantifyImageIdx]);
+
+    return nCurTaskIdx;
 }
 
 NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event,
@@ -144,87 +180,41 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
     int curTaskIdx = tasksStartIdx;
 
-    QStringList ndviList;
-    QStringList laiList;
-    QStringList faparList;
-    QStringList fcoverList;
-    QStringList laiFlgsList;
+    QList<TileResultFiles> tileResultFileInfos;
     QStringList cleanupTemporaryFilesList;
-    for (int i = 0; i<prdTilesInfosList.size(); i++) {
-        const auto &prdTileInfo = prdTilesInfosList[i];
-        TaskToSubmit &genMonoDateMskFagsTask = allTasksList[curTaskIdx++];
-        const auto & monoDateMskFlgsFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
-        auto monoDateMskFlgsResFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img_resampled.tif");
-        QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                     BuildProcessorOutputFileName(configParameters, monoDateMskFlgsResFileName),
-                                                                     resolutionStr);
-        // add these steps to the steps list to be submitted
-        steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
-        laiFlgsList.append(monoDateMskFlgsResFileName);
-        cleanupTemporaryFilesList.append(monoDateMskFlgsFileName);
-        cleanupTemporaryFilesList.append(monoDateMskFlgsResFileName);
 
+    for (int i = 0; i<prdTilesInfosList.size(); i++) {
+        TileResultFiles tileResultFileInfo;
+        const auto &prdTileInfo = prdTilesInfosList[i];
+        InitTileResultFiles(bGenNdvi, bGenLai, bGenFapar, bGenFCover, resolutionStr, prdTileInfo.tileFile, tileResultFileInfo);
+
+        curTaskIdx = GetStepsForStatusFlags(allTasksList, curTaskIdx, tileResultFileInfo, steps,
+                                            cleanupTemporaryFilesList);
         if (bGenNdvi) {
-            TaskToSubmit &ndviRviExtractorTask = allTasksList[curTaskIdx++];
-            auto singleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
-            const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionNewArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                         BuildProcessorOutputFileName(configParameters, singleNdviFile),
-                                                                         resolutionStr, laiCfgFile);
-            steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtractionNew", ndviRviExtractionArgs));
-            // save the file to be sent to product formatter
-            ndviList.append(singleNdviFile);
-            cleanupTemporaryFilesList.append(singleNdviFile);
+            curTaskIdx = GetStepsForNdvi(allTasksList, curTaskIdx, tileResultFileInfo, laiCfgFile,
+                                         steps, cleanupTemporaryFilesList);
         }
-        if (bGenLai) {
-            TaskToSubmit &laiProcessorTask = allTasksList[curTaskIdx++];
-            TaskToSubmit &quantifyLaiImageTask = allTasksList[curTaskIdx++];
-            const auto & monoDateLaiFileName = laiProcessorTask.GetFilePath("LAI_mono_date_img.tif");
-            const auto & quantifiedLaiFileName = quantifyLaiImageTask.GetFilePath("LAI_mono_date_img_16.tif");
-            const QStringList &laiProcessorArgs = GetLaiProcessorArgs(prdTileInfo.tileFile, resolutionStr, laiCfgFile,
-                                                                      monoDateLaiFileName, "lai");
-            steps.append(laiProcessorTask.CreateStep("BVLaiNewProcessor", laiProcessorArgs));
-            const QStringList &quantifyLaiImageArgs = GetQuantifyImageArgs(configParameters, monoDateLaiFileName, quantifiedLaiFileName);
-            steps.append(quantifyLaiImageTask.CreateStep("QuantifyImage", quantifyLaiImageArgs));
-            // save the file to be sent to product formatter
-            laiList.append(quantifiedLaiFileName);
-            cleanupTemporaryFilesList.append(monoDateLaiFileName);
-            cleanupTemporaryFilesList.append(quantifiedLaiFileName);
+        if (bGenLai || bGenFapar || bGenFCover) {
+            curTaskIdx = GetStepsForAnglesCreation(allTasksList, curTaskIdx, tileResultFileInfo, steps, cleanupTemporaryFilesList);
+            if (bGenLai) {
+                curTaskIdx = GetStepsForMonoDateBI(allTasksList, "lai", curTaskIdx, laiCfgFile,
+                                                   tileResultFileInfo, steps, cleanupTemporaryFilesList);
+            }
+            if (bGenFapar) {
+                curTaskIdx = GetStepsForMonoDateBI(allTasksList, "fapar", curTaskIdx, laiCfgFile,
+                                                   tileResultFileInfo, steps, cleanupTemporaryFilesList);
+            }
+            if (bGenFCover) {
+                curTaskIdx = GetStepsForMonoDateBI(allTasksList, "fcover", curTaskIdx, laiCfgFile,
+                                                   tileResultFileInfo, steps, cleanupTemporaryFilesList);
+            }
         }
-        if (bGenFapar) {
-            TaskToSubmit &faparProcessorTask = allTasksList[curTaskIdx++];
-            TaskToSubmit &quantifyFaparImageTask = allTasksList[curTaskIdx++];
-            const auto & faparFileName = faparProcessorTask.GetFilePath("FAPAR_mono_date_img.tif");
-            const auto & quantifiedFaparFileName = quantifyFaparImageTask.GetFilePath("FAPAR_mono_date_img_16.tif");
-            const QStringList &faparProcessorArgs = GetLaiProcessorArgs(prdTileInfo.tileFile, resolutionStr, laiCfgFile,
-                                                                      faparFileName, "fapar");
-            steps.append(faparProcessorTask.CreateStep("BVLaiNewProcessor", faparProcessorArgs));
-            const QStringList &quantifyFaparImageArgs = GetQuantifyImageArgs(configParameters, faparFileName, quantifiedFaparFileName);
-            steps.append(quantifyFaparImageTask.CreateStep("QuantifyImage", quantifyFaparImageArgs));
-            // save the file to be sent to product formatter
-            faparList.append(quantifiedFaparFileName);
-            cleanupTemporaryFilesList.append(faparFileName);
-            cleanupTemporaryFilesList.append(quantifiedFaparFileName);
-        }
-        if (bGenFCover) {
-            TaskToSubmit &fcoverProcessorTask = allTasksList[curTaskIdx++];
-            TaskToSubmit &quantifyFcoverImageTask = allTasksList[curTaskIdx++];
-            const auto & fcoverFileName = fcoverProcessorTask.GetFilePath("FCOVER_mono_date_img.tif");
-            const auto & quantifiedFcoverFileName = quantifyFcoverImageTask.GetFilePath("FCOVER_mono_date_img_16.tif");
-            const QStringList &fcoverlaiProcessorArgs = GetLaiProcessorArgs(prdTileInfo.tileFile, resolutionStr, laiCfgFile,
-                                                                      fcoverFileName, "fcover");
-            steps.append(fcoverProcessorTask.CreateStep("BVLaiNewProcessor", fcoverlaiProcessorArgs));
-            const QStringList &quantifyFcoverImageArgs = GetQuantifyImageArgs(configParameters, fcoverFileName, quantifiedFcoverFileName);
-            steps.append(quantifyFcoverImageTask.CreateStep("QuantifyImage", quantifyFcoverImageArgs));
-            // save the file to be sent to product formatter
-            fcoverList.append(quantifiedFcoverFileName);
-            cleanupTemporaryFilesList.append(fcoverFileName);
-            cleanupTemporaryFilesList.append(quantifiedFcoverFileName);
-        }
+        curTaskIdx = GetStepsForInDomainFlags(allTasksList, curTaskIdx, laiCfgFile, tileResultFileInfo, steps, cleanupTemporaryFilesList);
+
+        tileResultFileInfos.append(tileResultFileInfo);
     }
     TaskToSubmit &laiMonoProductFormatterTask = allTasksList[curTaskIdx++];
-    QStringList productFormatterArgs = GetLaiMonoProductFormatterArgs(
-                laiMonoProductFormatterTask, ctx, event, prdTilesInfosList,
-                ndviList, laiList, laiFlgsList, faparList, fcoverList);
+    QStringList productFormatterArgs = GetLaiMonoProductFormatterArgs(laiMonoProductFormatterTask, ctx, event, tileResultFileInfos);
     steps.append(laiMonoProductFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
 
     if(bRemoveTempFiles) {
@@ -235,8 +225,131 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
 
     return steps;
 }
+
+int LaiRetrievalHandlerL3BNew::GetStepsForStatusFlags(QList<TaskToSubmit> &allTasksList, int curTaskIdx,
+                            TileResultFiles &tileResultFileInfo, NewStepList &steps, QStringList &cleanupTemporaryFilesList) {
+
+    TaskToSubmit &genMonoDateMskFagsTask = allTasksList[curTaskIdx++];
+    tileResultFileInfo.statusFlagsFile = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
+    tileResultFileInfo.statusFlagsFileResampled = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img_resampled.tif");
+    QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(tileResultFileInfo.tileFile,
+                                                                 tileResultFileInfo.statusFlagsFile,
+                                                                 tileResultFileInfo.statusFlagsFileResampled,
+                                                                 tileResultFileInfo.resolutionStr);
+    // add these steps to the steps list to be submitted
+    steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
+    cleanupTemporaryFilesList.append(tileResultFileInfo.statusFlagsFile);
+    cleanupTemporaryFilesList.append(tileResultFileInfo.statusFlagsFileResampled);
+
+    return curTaskIdx;
+}
+
+int LaiRetrievalHandlerL3BNew::GetStepsForNdvi(QList<TaskToSubmit> &allTasksList, int curTaskIdx,
+                            TileResultFiles &tileResultFileInfo, const QString &laiCfgFile,
+                            NewStepList &steps, QStringList &cleanupTemporaryFilesList) {
+
+    TaskToSubmit &ndviRviExtractorTask = allTasksList[curTaskIdx++];
+    tileResultFileInfo.ndviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
+    const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionNewArgs(tileResultFileInfo.tileFile,
+                                                                 tileResultFileInfo.statusFlagsFile,
+                                                                 tileResultFileInfo.ndviFile,
+                                                                 tileResultFileInfo.resolutionStr, laiCfgFile);
+    steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtractionNew", ndviRviExtractionArgs));
+    // save the file to be sent to product formatter
+    cleanupTemporaryFilesList.append(tileResultFileInfo.ndviFile);
+
+    return curTaskIdx;
+}
+
+int LaiRetrievalHandlerL3BNew::GetStepsForAnglesCreation(QList<TaskToSubmit> &allTasksList, int curTaskIdx,
+                            TileResultFiles &tileResultFileInfo, NewStepList &steps, QStringList &cleanupTemporaryFilesList) {
+    TaskToSubmit &createAnglesTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &gdalTranslateNoDataTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &anglesCreateVrtTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &anglesResampleTask = allTasksList[curTaskIdx++];
+
+    const auto & anglesSmallResFileName = createAnglesTask.GetFilePath("angles_small_res.tif");
+    const auto & anglesSmallResNoDataFileName = gdalTranslateNoDataTask.GetFilePath("angles_small_res_no_data.tif");
+    const auto & anglesVrtFileName = anglesCreateVrtTask.GetFilePath("angles.vrt");
+    tileResultFileInfo.anglesFile = anglesResampleTask.GetFilePath("angles_resampled.tif");
+
+    const QStringList &createAnglesArgs = GetCreateAnglesArgs(tileResultFileInfo.tileFile, anglesSmallResFileName);
+    const QStringList &gdalSetAnglesNoDataArgs = GetGdalTranslateAnglesNoDataArgs(anglesSmallResFileName, anglesSmallResNoDataFileName);
+    const QStringList &gdalBuildAnglesVrtArgs = GetGdalBuildAnglesVrtArgs(anglesSmallResNoDataFileName, anglesVrtFileName);
+    const QStringList &gdalResampleAnglesArgs = GetGdalTranslateResampleAnglesArgs(anglesVrtFileName, tileResultFileInfo.anglesFile);
+
+    steps.append(createAnglesTask.CreateStep("CreateAnglesRaster", createAnglesArgs));
+    steps.append(gdalTranslateNoDataTask.CreateStep("gdal_translate", gdalSetAnglesNoDataArgs));
+    steps.append(anglesCreateVrtTask.CreateStep("gdalbuildvrt", gdalBuildAnglesVrtArgs));
+    steps.append(anglesResampleTask.CreateStep("gdal_translate", gdalResampleAnglesArgs));
+    cleanupTemporaryFilesList.append(anglesSmallResFileName);
+    cleanupTemporaryFilesList.append(anglesSmallResNoDataFileName);
+    cleanupTemporaryFilesList.append(anglesVrtFileName);
+    cleanupTemporaryFilesList.append(tileResultFileInfo.anglesFile);
+
+    return curTaskIdx;
+}
+
+int LaiRetrievalHandlerL3BNew::GetStepsForMonoDateBI(QList<TaskToSubmit> &allTasksList,
+                           const QString &indexName, int curTaskIdx, const QString &laiCfgFile, TileResultFiles &tileResultFileInfo, NewStepList &steps,
+                           QStringList &cleanupTemporaryFilesList) {
+    const QString &indexNameCaps = indexName.toUpper();
+    TaskToSubmit &biProcessorTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &biDomainFlagsTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &quantifyBIImageTask = allTasksList[curTaskIdx++];
+    const auto & BIFileName = biProcessorTask.GetFilePath(indexNameCaps + "_mono_date_img.tif");
+    const auto & quantifiedBIFileName = quantifyBIImageTask.GetFilePath(indexNameCaps + "_mono_date_img_16.tif");
+    const QStringList &BIProcessorArgs = GetLaiProcessorArgs(tileResultFileInfo.tileFile, tileResultFileInfo.anglesFile,
+                                                                    tileResultFileInfo.resolutionStr, laiCfgFile,
+                                                                    BIFileName, indexName);
+    steps.append(biProcessorTask.CreateStep("BVLaiNewProcessor" + indexNameCaps, BIProcessorArgs));
+
+    const auto & domainFlagsFileName = biDomainFlagsTask.GetFilePath(indexNameCaps + "_out_domain_flags.tif");
+    const auto & correctedBIFileName = biDomainFlagsTask.GetFilePath(indexNameCaps + "_corrected_mono_date.tif");
+    const QStringList &outDomainFlagsArgs = GetGenerateOutputDomainFlagsArgs(tileResultFileInfo.tileFile, BIFileName,
+                                                                laiCfgFile, indexName,
+                                                                domainFlagsFileName,  correctedBIFileName,
+                                                                tileResultFileInfo.resolutionStr);
+    steps.append(biDomainFlagsTask.CreateStep("Generate" + indexNameCaps + "InDomainQualityFlags", outDomainFlagsArgs));
+
+    const QStringList &quantifyFcoverImageArgs = GetQuantifyImageArgs(correctedBIFileName, quantifiedBIFileName);
+    steps.append(quantifyBIImageTask.CreateStep("Quantify"+indexNameCaps + "Image", quantifyFcoverImageArgs));
+    // save the file to be sent to product formatter
+    if (indexName == "fapar") {
+        tileResultFileInfo.faparDomainFlagsFile = domainFlagsFileName;
+        tileResultFileInfo.faparFile = quantifiedBIFileName;
+    } else if (indexName == "fcover") {
+        tileResultFileInfo.fcoverDomainFlagsFile = domainFlagsFileName;
+        tileResultFileInfo.fcoverFile = quantifiedBIFileName;
+    } else {
+        tileResultFileInfo.laiDomainFlagsFile = domainFlagsFileName;
+        tileResultFileInfo.laiFile = quantifiedBIFileName;
+    }
+
+    cleanupTemporaryFilesList.append(BIFileName);
+    cleanupTemporaryFilesList.append(correctedBIFileName);
+    cleanupTemporaryFilesList.append(quantifiedBIFileName);
+
+    return curTaskIdx;
+}
+
+int LaiRetrievalHandlerL3BNew::GetStepsForInDomainFlags(QList<TaskToSubmit> &allTasksList, int curTaskIdx,
+                            const QString &laiCfgFile, TileResultFiles &tileResultFileInfo, NewStepList &steps,
+                            QStringList &cleanupTemporaryFilesList) {
+
+    TaskToSubmit &inputDomainTask = allTasksList[curTaskIdx++];
+    tileResultFileInfo.inDomainFlagsFile = inputDomainTask.GetFilePath("Input_domain_flags.tif");
+    const QStringList &inDomainFlagsArgs = GetGenerateInputDomainFlagsArgs(tileResultFileInfo.tileFile,
+                                                                laiCfgFile, tileResultFileInfo.inDomainFlagsFile,
+                                                                tileResultFileInfo.resolutionStr);
+    steps.append(inputDomainTask.CreateStep("GenerateInDomainQualityFlags", inDomainFlagsArgs));
+
+    return curTaskIdx;
+}
+
+
 void LaiRetrievalHandlerL3BNew::WriteExecutionInfosFile(const QString &executionInfosPath,
-                                               const QList<TileInfos> &tilesInfosList) {
+                                               const QList<TileResultFiles> &tileResultFilesList) {
     std::ofstream executionInfosFile;
     try
     {
@@ -247,8 +360,8 @@ void LaiRetrievalHandlerL3BNew::WriteExecutionInfosFile(const QString &execution
         executionInfosFile << "  </General>" << std::endl;
 
         executionInfosFile << "  <XML_files>" << std::endl;
-        for (int i = 0; i<tilesInfosList.size(); i++) {
-            executionInfosFile << "    <XML_" << std::to_string(i) << ">" << tilesInfosList[i].tileFile.toStdString()
+        for (int i = 0; i<tileResultFilesList.size(); i++) {
+            executionInfosFile << "    <XML_" << std::to_string(i) << ">" << tileResultFilesList[i].tileFile.toStdString()
                                << "</XML_" << std::to_string(i) << ">" << std::endl;
         }
         executionInfosFile << "  </XML_files>" << std::endl;
@@ -425,6 +538,39 @@ void LaiRetrievalHandlerL3BNew::HandleTaskFinishedImpl(EventProcessingContext &c
     }
 }
 
+QStringList LaiRetrievalHandlerL3BNew::GetCreateAnglesArgs(const QString &inputProduct, const QString &anglesFile) {
+    return { "CreateAnglesRaster",
+           "-xml", inputProduct,
+           "-out", anglesFile
+    };
+}
+
+QStringList LaiRetrievalHandlerL3BNew::GetGdalTranslateAnglesNoDataArgs(const QString &anglesFile,
+                                                                        const QString &resultAnglesFile) {
+    return {
+            "-of", "GTiff", "-a_nodata", "-10000",
+            anglesFile,
+            resultAnglesFile
+    };
+}
+
+QStringList LaiRetrievalHandlerL3BNew::GetGdalBuildAnglesVrtArgs(const QString &anglesFile,
+                                                                 const QString &resultVrtFile) {
+    return {
+             "-tr", "10", "10", "-r", "bilinear", "-srcnodata", "-10000", "-vrtnodata", "-10000",
+            resultVrtFile,
+            anglesFile
+    };
+}
+
+QStringList LaiRetrievalHandlerL3BNew::GetGdalTranslateResampleAnglesArgs(const QString &vrtFile,
+                                                                        const QString &resultResampledAnglesFile) {
+    return {
+            vrtFile,
+            resultResampledAnglesFile
+    };
+}
+
 QStringList LaiRetrievalHandlerL3BNew::GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile,
                                                           const QString &ndviFile, const QString &resolution, const QString &laiBandsCfg) {
     return { "NdviRviExtractionNew",
@@ -436,22 +582,48 @@ QStringList LaiRetrievalHandlerL3BNew::GetNdviRviExtractionNewArgs(const QString
     };
 }
 
-QStringList LaiRetrievalHandlerL3BNew::GetLaiProcessorArgs(const QString &xmlFile, const QString &resolution, const QString &laiBandsCfg,
-                                                   const QString &monoDateLaiFileName, const QString &indexName) {
+QStringList LaiRetrievalHandlerL3BNew::GetLaiProcessorArgs(const QString &xmlFile, const QString &anglesFileName,
+                                                           const QString &resolution, const QString &laiBandsCfg,
+                                                           const QString &monoDateLaiFileName, const QString &indexName) {
     QString outParamName = QString("-out") + indexName;
     return { "BVLaiNewProcessor",
         "-xml", xmlFile,
+        "-angles", anglesFileName,
         outParamName, monoDateLaiFileName,
         "-outres", resolution,
         "-laicfgs", laiBandsCfg
     };
 }
 
-QStringList LaiRetrievalHandlerL3BNew::GetQuantifyImageArgs(const std::map<QString, QString> &configParameters,
-                                                            const QString &inFileName, const QString &outFileName)  {
+QStringList LaiRetrievalHandlerL3BNew::GetGenerateInputDomainFlagsArgs(const QString &xmlFile,  const QString &laiBandsCfg,
+                                                            const QString &outFlagsFileName, const QString &outRes) {
+    return { "GenerateDomainQualityFlags",
+        "-xml", xmlFile,
+        "-laicfgs", laiBandsCfg,
+        "-outf", outFlagsFileName,
+        "-outres", outRes
+    };
+}
+
+QStringList LaiRetrievalHandlerL3BNew::GetGenerateOutputDomainFlagsArgs(const QString &xmlFile, const QString &laiRasterFile,
+                                                            const QString &laiBandsCfg, const QString &indexName,
+                                                            const QString &outFlagsFileName,  const QString &outCorrectedLaiFile,
+                                                            const QString &outRes)  {
+    return { "GenerateDomainQualityFlags",
+        "-xml", xmlFile,
+        "-in", laiRasterFile,
+        "-laicfgs", laiBandsCfg,
+        "-indextype", indexName,
+        "-outf", outFlagsFileName,
+        "-out", outCorrectedLaiFile,
+        "-outres", outRes,
+    };
+}
+
+QStringList LaiRetrievalHandlerL3BNew::GetQuantifyImageArgs(const QString &inFileName, const QString &outFileName)  {
     return { "QuantifyImage",
         "-in", inFileName,
-        "-out", BuildProcessorOutputFileName(configParameters, outFileName)
+        "-out", outFileName
     };
 }
 
@@ -466,17 +638,9 @@ QStringList LaiRetrievalHandlerL3BNew::GetMonoDateMskFlagsArgs(const QString &in
 }
 
 QStringList LaiRetrievalHandlerL3BNew::GetLaiMonoProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                                                const QList<TileInfos> &prdTilesInfosList, const QStringList &ndviList,
-                                                                const QStringList &laiList, const QStringList &laiFlgsList,
-                                                                const QStringList &faparList,  const QStringList &fcoverList) {
+                                                                const QList<TileResultFiles> &tileResultFilesList) {
 
     const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
-    QStringList tileIdsList;
-    for(const TileInfos &tileInfo: prdTilesInfosList) {
-        ProcessorHandlerHelper::SatelliteIdType satId;
-        QString tileId = ProcessorHandlerHelper::GetTileId(tileInfo.tileFile, satId);
-        tileIdsList.append(tileId);
-    }
 
     //const auto &targetFolder = productFormatterTask.GetFilePath("");
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
@@ -485,7 +649,7 @@ QStringList LaiRetrievalHandlerL3BNew::GetLaiMonoProductFormatterArgs(TaskToSubm
 
     const auto &lutFile = GetMapValue(configParameters, "processor.l3b.lai.lut_path");
 
-    WriteExecutionInfosFile(executionInfosPath, prdTilesInfosList);
+    WriteExecutionInfosFile(executionInfosPath, tileResultFilesList);
 
     QStringList productFormatterArgs = { "ProductFormatter",
                             "-destroot", targetFolder,
@@ -498,7 +662,7 @@ QStringList LaiRetrievalHandlerL3BNew::GetLaiMonoProductFormatterArgs(TaskToSubm
                             "-gipp", executionInfosPath,
                             "-outprops", outPropsPath};
     productFormatterArgs += "-il";
-    for(const TileInfos &tileInfo: prdTilesInfosList) {
+    for(const TileResultFiles &tileInfo: tileResultFilesList) {
         productFormatterArgs.append(tileInfo.tileFile);
     }
 
@@ -507,38 +671,61 @@ QStringList LaiRetrievalHandlerL3BNew::GetLaiMonoProductFormatterArgs(TaskToSubm
         productFormatterArgs += lutFile;
     }
 
-    productFormatterArgs += "-processor.vegetation.laimdateflgs";
-    for(int i = 0; i<tileIdsList.size(); i++) {
-        productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
-        productFormatterArgs += laiFlgsList[i];
+    productFormatterArgs += "-processor.vegetation.laistatusflgs";
+    for(int i = 0; i<tileResultFilesList.size(); i++) {
+        productFormatterArgs += GetProductFormatterTile(tileResultFilesList[i].tileId);
+        productFormatterArgs += tileResultFilesList[i].statusFlagsFileResampled;
     }
 
-    if (ndviList.size() == tileIdsList.size()) {
+    productFormatterArgs += "-processor.vegetation.indomainflgs";
+    for(int i = 0; i<tileResultFilesList.size(); i++) {
+        productFormatterArgs += GetProductFormatterTile(tileResultFilesList[i].tileId);
+        productFormatterArgs += tileResultFilesList[i].inDomainFlagsFile;
+    }
+
+    if (tileResultFilesList[0].bHasNdvi) {
         productFormatterArgs += "-processor.vegetation.laindvi";
-        for(int i = 0; i<tileIdsList.size(); i++) {
-            productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
-            productFormatterArgs += ndviList[i];
+        for(int i = 0; i<tileResultFilesList.size(); i++) {
+            productFormatterArgs += GetProductFormatterTile(tileResultFilesList[i].tileId);
+            productFormatterArgs += tileResultFilesList[i].ndviFile;
         }
     }
-    if (laiList.size() == tileIdsList.size()) {
+    if (tileResultFilesList[0].bHasLai) {
         productFormatterArgs += "-processor.vegetation.laimonodate";
-        for(int i = 0; i<tileIdsList.size(); i++) {
-            productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
-            productFormatterArgs += laiList[i];
+        for(int i = 0; i<tileResultFilesList.size(); i++) {
+            productFormatterArgs += GetProductFormatterTile(tileResultFilesList[i].tileId);
+            productFormatterArgs += tileResultFilesList[i].laiFile;
+        }
+        productFormatterArgs += "-processor.vegetation.laidomainflgs";
+        for(int i = 0; i<tileResultFilesList.size(); i++) {
+            productFormatterArgs += GetProductFormatterTile(tileResultFilesList[i].tileId);
+            productFormatterArgs += tileResultFilesList[i].laiDomainFlagsFile;
         }
     }
-    if (faparList.size() == tileIdsList.size()) {
+
+    if (tileResultFilesList[0].bHasFapar) {
         productFormatterArgs += "-processor.vegetation.faparmonodate";
-        for(int i = 0; i<tileIdsList.size(); i++) {
-            productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
-            productFormatterArgs += faparList[i];
+        for(int i = 0; i<tileResultFilesList.size(); i++) {
+            productFormatterArgs += GetProductFormatterTile(tileResultFilesList[i].tileId);
+            productFormatterArgs += tileResultFilesList[i].faparFile;
+        }
+        productFormatterArgs += "-processor.vegetation.fapardomainflgs";
+        for(int i = 0; i<tileResultFilesList.size(); i++) {
+            productFormatterArgs += GetProductFormatterTile(tileResultFilesList[i].tileId);
+            productFormatterArgs += tileResultFilesList[i].faparDomainFlagsFile;
         }
     }
-    if (fcoverList.size() == tileIdsList.size()) {
+
+    if (tileResultFilesList[0].bHasFCover) {
         productFormatterArgs += "-processor.vegetation.fcovermonodate";
-        for(int i = 0; i<tileIdsList.size(); i++) {
-            productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
-            productFormatterArgs += fcoverList[i];
+        for(int i = 0; i<tileResultFilesList.size(); i++) {
+            productFormatterArgs += GetProductFormatterTile(tileResultFilesList[i].tileId);
+            productFormatterArgs += tileResultFilesList[i].fcoverFile;
+        }
+        productFormatterArgs += "-processor.vegetation.fcoverdomaniflgs";
+        for(int i = 0; i<tileResultFilesList.size(); i++) {
+            productFormatterArgs += GetProductFormatterTile(tileResultFilesList[i].tileId);
+            productFormatterArgs += tileResultFilesList[i].fcoverDomainFlagsFile;
         }
     }
 
@@ -608,6 +795,17 @@ bool LaiRetrievalHandlerL3BNew::FilterTile(const QSet<QString> &tilesSet, const 
     return (tilesSet.empty() || tilesSet.contains(tileId));
 }
 
+void LaiRetrievalHandlerL3BNew::InitTileResultFiles(bool bGenNdvi, bool bGenLai, bool bGenFapar, bool bGenFCover, const QString &resolutionStr,
+                         const QString tileFileName, TileResultFiles &tileResultFileInfo) {
+    tileResultFileInfo.bHasNdvi = bGenNdvi;
+    tileResultFileInfo.bHasLai = bGenLai;
+    tileResultFileInfo.bHasFapar = bGenFapar;
+    tileResultFileInfo.bHasFCover = bGenFCover;
+    tileResultFileInfo.resolutionStr = resolutionStr;
+    tileResultFileInfo.tileFile = tileFileName;
+    ProcessorHandlerHelper::SatelliteIdType satId;
+    tileResultFileInfo.tileId = ProcessorHandlerHelper::GetTileId(tileFileName, satId);
+}
 
 ProcessorJobDefinitionParams LaiRetrievalHandlerL3BNew::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                           const ConfigurationParameterValueMap &requestOverrideCfgValues)

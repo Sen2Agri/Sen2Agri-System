@@ -52,21 +52,43 @@ public:
     MaskingFunctor() {}
     ~MaskingFunctor() {}
 
-  bool operator!=( const MaskingFunctor &a) const
-  {
-      return false;
-  }
-  bool operator==( const MaskingFunctor & other ) const
-  {
-    return !(*this != other);
-  }
-  inline TOutput operator()( const TInput & A, const TInput2 & B ) const
-  {
+    void SetValidationLimits(double min, double max, double tolerance)
+    {
+        minVal = min;
+        maxVal = max;
+        toleranceVal = tolerance;
+        minToleranceVal = min-tolerance;
+        maxToleranceVal = max + tolerance;
+    }
+
+    MaskingFunctor& operator =(const MaskingFunctor& copy)
+    {
+        minVal = copy.minVal;
+        maxVal = copy.maxVal;
+        toleranceVal = copy.toleranceVal;
+        minToleranceVal = copy.minToleranceVal;
+        maxToleranceVal = copy.maxToleranceVal;
+    }
+
+    bool operator!=( const MaskingFunctor &a) const
+    {
+        UNUSED(a);
+        return true;
+    }
+    bool operator==( const MaskingFunctor & other ) const
+    {
+        return !(*this != other);
+    }
+
+    inline TOutput operator()( const TInput & A, const TInput2 & B ) const
+    {
         TOutput ret(1);
         ret[0] = A[0];
 
-        if (ret[0] < 0) {
-            ret[0] = 0;
+        if (ret[0] < minToleranceVal) {
+            ret[0] = minVal;
+        } else if (ret[0] > maxToleranceVal) {
+            ret[0] = maxVal;
         }
         switch (B) {
             case IMG_FLG_NO_DATA:
@@ -77,7 +99,14 @@ public:
             break;
         }
         return ret;
-  }
+    }
+
+private:
+    double minVal;
+    double maxVal;
+    double toleranceVal;
+    double minToleranceVal;
+    double maxToleranceVal;
 };
 
 namespace otb
@@ -119,6 +148,8 @@ private:
         SetDocSeeAlso(" ");
 
         AddParameter(ParameterType_String, "xml", "Product Metadata XML File");
+
+        AddParameter(ParameterType_InputImage, "angles", "Angles raster");
 
         AddParameter(ParameterType_String, "laimodel", "LAI Model file");
         SetParameterDescription( "laimodel", "The LAI model file. If not specified, the one from the lai config file is used." );
@@ -171,7 +202,6 @@ private:
         }
 
         auto factory = MetadataHelperFactory::New();
-        // we load first the default resolution where we have the RED and NIR
         auto pHelper = factory->GetMetadataHelper(inMetadataXml);
 
         // Read the spacing for the default image
@@ -215,7 +245,7 @@ private:
         std::string outparamName;
         std::string laiCfgEntry;
         BelcamNeuronFilter::Pointer filter;
-        MaskedOutputFilterType::Pointer maskingFunctor;
+        //MaskedOutputFilterType::Pointer maskingFunctor;
         switch (indexType) {
             case LAI:
                 modelParamName = "laimodel";
@@ -223,8 +253,9 @@ private:
                 laiCfgEntry = m_laiCfg.laiModelFilePath;
                 m_laiNeuronFilter = BelcamNeuronFilter::New();
                 filter = m_laiNeuronFilter;
-                m_LaiMaskedOutputFunctor = MaskedOutputFilterType::New();
-                maskingFunctor = m_LaiMaskedOutputFunctor;
+//                m_LaiMaskedOutputFunctor = MaskedOutputFilterType::New();
+//                m_LaiMaskedOutputFunctor->GetFunctor()->SetValidationLimits(0.0, 8.0, 0.2);
+//                maskingFunctor = m_LaiMaskedOutputFunctor;
                 break;
             case FAPAR:
                 modelParamName = "faparmodel";
@@ -232,8 +263,9 @@ private:
                 laiCfgEntry = m_laiCfg.faparModelFilePath;
                 m_faparNeuronFilter = BelcamNeuronFilter::New();
                 filter = m_faparNeuronFilter;
-                m_FaparMaskedOutputFunctor = MaskedOutputFilterType::New();
-                maskingFunctor = m_FaparMaskedOutputFunctor;
+//                m_FaparMaskedOutputFunctor = MaskedOutputFilterType::New();
+//                m_FaparMaskedOutputFunctor->GetFunctor()->SetValidationLimits(0.0, 0.94, 0.1);
+//                maskingFunctor = m_FaparMaskedOutputFunctor;
                 break;
             case FCOVER:
                 modelParamName = "fcovermodel";
@@ -241,8 +273,9 @@ private:
                 laiCfgEntry = m_laiCfg.fcoverModelFilePath;
                 m_fcoverNeuronFilter = BelcamNeuronFilter::New();
                 filter = m_fcoverNeuronFilter;
-                m_FcoverMaskedOutputFunctor = MaskedOutputFilterType::New();
-                maskingFunctor = m_FcoverMaskedOutputFunctor;
+//                m_FcoverMaskedOutputFunctor = MaskedOutputFilterType::New();
+//                m_FcoverMaskedOutputFunctor->GetFunctor()->SetValidationLimits(0.0, 1.0, 0.1);
+//                maskingFunctor = m_FcoverMaskedOutputFunctor;
                 break;
         }
         if (HasValue(modelParamName)) {
@@ -258,12 +291,15 @@ private:
         OutImageType::Pointer modelOutput = ExecuteModel(m_ftsConcat->GetOutput(), pHelper->GetReflectanceQuantificationValue(),
                                                          filter, modelTextFile);
 
+        // The masking is not made anymore here but in a distinct application that also extracts the domain
+        // quality flags
         // Mask the output according to the flags
-        OutImageType::Pointer maskedImg = MaskModelOutput(modelOutput, maskingFunctor, pHelper, nOutRes);
+        //OutImageType::Pointer maskedImg = MaskModelOutput(modelOutput, maskingFunctor, pHelper, nOutRes);
 
         const std::string &outImgFileName = GetParameterAsString(outparamName);
         // write the output
-        WriteOutput(maskedImg, outImgFileName);
+        //WriteOutput(maskedImg, outImgFileName);
+        WriteOutput(modelOutput, outImgFileName);
     }
 
     /**
@@ -328,8 +364,10 @@ private:
             allList->PushBack(getResampledImage(curBandRes, nOutRes, imgInputSplit->GetOutput()->GetNthElement(relBandIdx)));
         }
 
-        AnglesImageType::Pointer anglesImg = pHelper->HasDetailedAngles() ?
-                    createAnglesBands(pHelper) : createMeanAnglesBands(pHelper);
+        AnglesImageType::Pointer anglesImg = GetParameterInt16VectorImage("angles");
+
+//        AnglesImageType::Pointer anglesImg = pHelper->HasDetailedAngles() ?
+//                    createAnglesBands(pHelper) : createMeanAnglesBands(pHelper);
         anglesImg->UpdateOutputInformation();
         m_anglesSplit = VectorImageToImageListType::New();
         m_anglesSplit->SetInput(anglesImg);
@@ -404,6 +442,46 @@ private:
         paramOut->Write();
     }
 
+    OutImageType::Pointer MaskModelOutput(OutImageType::Pointer img, MaskedOutputFilterType::Pointer maskingFunctor,
+                                          const std::unique_ptr<MetadataHelper> &pHelper, int nOutRes) {
+        MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
+
+        imgMsk->UpdateOutputInformation();
+
+        maskingFunctor->SetInput1(img);
+        maskingFunctor->SetInput2(getResampledImage2(imgMsk->GetSpacing()[0], nOutRes, imgMsk));
+        return maskingFunctor->GetOutput();
+    }
+
+    void loadLaiConfiguration(const std::unique_ptr<MetadataHelper> &pHelper) {
+        // Load the LAI bands configuration file
+        bool bHasLaiCfgs = HasValue("laicfgs");
+        std::string laiCfgFile;
+        if(bHasLaiCfgs) {
+            const std::string &laiCfgsFile = GetParameterString("laicfgs");
+            laiCfgFile = getValueFromMissionsCfgFile(laiCfgsFile, pHelper->GetMissionName(), pHelper->GetInstrumentName());
+        } else {
+            bool bHasLaiCfg = HasValue("laicfg");
+            if (!bHasLaiCfg) {
+                itkExceptionMacro("Either laicfgs or laicfg should be configured when fts is present");
+            }
+            laiCfgFile = GetParameterString("laicfg");
+        }
+        m_laiCfg = loadLaiBandsConfigFile(laiCfgFile);
+
+        std::cout << "=================================" << std::endl;
+        std::cout << "addndvi : " << m_laiCfg.bUseNdvi           << std::endl;
+        std::cout << "addrvi : " << m_laiCfg.bUseRvi             << std::endl;
+        std::cout << "Bands used : ";
+        for (std::vector<int>::const_iterator i = m_laiCfg.bandsIdxs.begin(); i != m_laiCfg.bandsIdxs.end(); ++i) {
+            std::cout << *i << ' ';
+        }
+        std::cout << std::endl;
+        std::cout << "=================================" << std::endl;
+    }
+
+/*
+    THE CODE BELOW WAS MOVED TO otbCreateAnglesRaster
     AnglesImageType::Pointer createMeanAnglesBands(const std::unique_ptr<MetadataHelper> &pHelper) {
         auto sz = m_defImgReader->GetOutput()->GetLargestPossibleRegion().GetSize();
         auto spacing = m_defImgReader->GetOutput()->GetSpacing();
@@ -491,8 +569,9 @@ private:
         const MetadataHelperAngles &solarAngles = pHelper->GetDetailedSolarAngles();
         const std::vector<MetadataHelperViewingAnglesGrid> &viewingAngles = pHelper->GetAllDetectorsDetailedViewingAngles();
         const std::vector<std::vector<double>> &sensorZenithMeanMatrix = getMeanViewingAngles(viewingAngles, true);
-        const std::vector<std::vector<double>> &sensorZenithCosMatrix = computeCosValues(sensorZenithMeanMatrix);
         const std::vector<std::vector<double>> &sensorAzimuthMeanMatrix = getMeanViewingAngles(viewingAngles, false);
+
+        const std::vector<std::vector<double>> &sensorZenithCosMatrix = computeCosValues(sensorZenithMeanMatrix);
         const std::vector<std::vector<double>> &sunZenithCosMatrix = computeCosValues(solarAngles.Zenith.Values);
         const std::vector<std::vector<double>> &relAzimuthMatrix = computeRelativeAzimuth(solarAngles.Azimuth.Values, sensorAzimuthMeanMatrix);
         for(unsigned int i = 0; i < ANGLES_GRID_SIZE; i++) {
@@ -518,44 +597,6 @@ private:
         return retImg;
     }
 
-
-    OutImageType::Pointer MaskModelOutput(OutImageType::Pointer img, MaskedOutputFilterType::Pointer maskingFunctor,
-                                          const std::unique_ptr<MetadataHelper> &pHelper, int nOutRes) {
-        MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
-
-        imgMsk->UpdateOutputInformation();
-
-        maskingFunctor->SetInput1(img);
-        maskingFunctor->SetInput2(getResampledImage2(imgMsk->GetSpacing()[0], nOutRes, imgMsk));
-        return maskingFunctor->GetOutput();
-    }
-
-    void loadLaiConfiguration(const std::unique_ptr<MetadataHelper> &pHelper) {
-        // Load the LAI bands configuration file
-        bool bHasLaiCfgs = HasValue("laicfgs");
-        std::string laiCfgFile;
-        if(bHasLaiCfgs) {
-            const std::string &laiCfgsFile = GetParameterString("laicfgs");
-            laiCfgFile = getValueFromMissionsCfgFile(laiCfgsFile, pHelper->GetMissionName(), pHelper->GetInstrumentName());
-        } else {
-            bool bHasLaiCfg = HasValue("laicfg");
-            if (!bHasLaiCfg) {
-                itkExceptionMacro("Either laicfgs or laicfg should be configured when fts is present");
-            }
-            laiCfgFile = GetParameterString("laicfg");
-        }
-        m_laiCfg = loadLaiBandsConfigFile(laiCfgFile);
-
-        std::cout << "=================================" << std::endl;
-        std::cout << "addndvi : " << m_laiCfg.bUseNdvi           << std::endl;
-        std::cout << "addrvi : " << m_laiCfg.bUseRvi             << std::endl;
-        std::cout << "Bands used : ";
-        for (std::vector<int>::const_iterator i = m_laiCfg.bandsIdxs.begin(); i != m_laiCfg.bandsIdxs.end(); ++i) {
-            std::cout << *i << ' ';
-        }
-        std::cout << std::endl;
-        std::cout << "=================================" << std::endl;
-    }
 
     std::vector<std::vector<double>> getMeanViewingAngles(const std::vector<MetadataHelperViewingAnglesGrid> &viewingAngles,
                                                           bool useZenith) {
@@ -640,7 +681,7 @@ private:
             std::vector<double> cosValsVect;
             for (double val : meanValsVect) {
                 if (std::isnan(val)) {
-                    cosValsVect.push_back(0);
+                    cosValsVect.push_back(NO_DATA_VALUE);
                 } else {
                     cosValsVect.push_back(10000 * cos((val * M_PI ) / 180));
                 }
@@ -660,7 +701,7 @@ private:
             std::vector<double> relAzimuthValsVect;
             for (size_t j = 0; j<solarAzimuthVect.size(); j++) {
                 if (std::isnan(solarAzimuthVect[j]) || std::isnan(sensorAzimuthVect[j])) {
-                    relAzimuthValsVect.push_back(0);
+                    relAzimuthValsVect.push_back(NO_DATA_VALUE);
                 } else {
                     double val = solarAzimuthVect[j] - sensorAzimuthVect[j];
                     relAzimuthValsVect.push_back(10000 * cos((val * M_PI ) / 180));
@@ -690,7 +731,7 @@ private:
         }
         std::cout << "]" << std::endl;
     }
-
+*/
 
 
     ImageListToVectorImageFilterType::Pointer m_ftsConcat;
@@ -711,13 +752,13 @@ private:
     BelcamNeuronFilter::Pointer m_faparNeuronFilter;
     BelcamNeuronFilter::Pointer m_fcoverNeuronFilter;
 
-    AnglesImageType::Pointer            m_AnglesRaster;
-    ImageResampler<AnglesImageType, AnglesImageType> m_AnglesResampler;
+    //AnglesImageType::Pointer            m_AnglesRaster;
+    //ImageResampler<AnglesImageType, AnglesImageType> m_AnglesResampler;
     VectorImageToImageListType::Pointer m_anglesSplit;
 
-    MaskedOutputFilterType::Pointer m_LaiMaskedOutputFunctor;
-    MaskedOutputFilterType::Pointer m_FaparMaskedOutputFunctor;
-    MaskedOutputFilterType::Pointer m_FcoverMaskedOutputFunctor;
+//    MaskedOutputFilterType::Pointer m_LaiMaskedOutputFunctor;
+//    MaskedOutputFilterType::Pointer m_FaparMaskedOutputFunctor;
+//    MaskedOutputFilterType::Pointer m_FcoverMaskedOutputFunctor;
 
     LAIBandsConfigInfos m_laiCfg;
 };
