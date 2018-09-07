@@ -208,56 +208,6 @@ begin
             execute _statement;
 
             _statement := $str$
-                CREATE OR REPLACE FUNCTION sp_set_user_password(
-                    IN user_name character varying,
-                    IN email character varying,
-                    IN pwd text	
-                    )RETURNS character varying AS
-                    $BODY$
-                    DECLARE user_id smallint;
-
-                    BEGIN 
-                        SELECT id into user_id FROM "user" WHERE "user".login = $1 AND "user".email = $2;
-
-                        IF user_id IS NOT NULL THEN
-                            IF char_length(trim(pwd))>0 THEN
-
-                                UPDATE "user"
-                                     SET password = crypt($3, gen_salt('md5'))
-                                     WHERE id = user_id ;--AND password = crypt(user_pwd, password);
-                                RETURN 1;
-                            ELSE 
-                                RETURN 0;
-                            END IF;
-                        ELSE RETURN 2;
-                        END IF;
-                END;
-                $BODY$
-                LANGUAGE plpgsql VOLATILE;
-            $str$;
-            raise notice '%', _statement;
-            execute _statement;
-            
-            _statement := $str$
-                drop function sp_authenticate(character varying, text);
-            $str$;
-            raise notice '%', _statement;
-            execute _statement;
-
-            _statement := $str$
-                CREATE OR REPLACE FUNCTION sp_authenticate(IN usr character varying, IN pwd text)
-                  RETURNS TABLE(user_id smallint, site_id integer[], role_id smallint, role_name character varying) AS
-                $BODY$SELECT u.id, u.site_id, r.id, r.name
-                  FROM "user" u
-                  INNER JOIN role r ON u.role_id=r.id
-                  WHERE login = $1 AND crypt($2, password) = password
-                $BODY$
-                  LANGUAGE sql VOLATILE;
-            $str$;
-            raise notice '%', _statement;
-            execute _statement;
-            
-            _statement := $str$
                 drop function sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[]);
             $str$;
             raise notice '%', _statement;
@@ -1032,6 +982,56 @@ begin
 			UPDATE config_metadata SET values ='{"name":"cropMask"}', is_site_visible = true, is_advanced = false, label ='Crop masks'  WHERE key ='processor.l4b.crop-mask';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, is_site_visible = true, is_advanced = false, label ='Ratio'  WHERE key ='processor.l4b.sample-ratio';
 			
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_set_user_password(
+                    IN user_name character varying,
+                    IN email character varying,
+                    IN pwd text	
+                    )RETURNS character varying AS
+                    $BODY$
+                    DECLARE user_id smallint;
+
+                    BEGIN 
+                        SELECT id into user_id FROM "user" WHERE "user".login = $1 AND "user".email = $2;
+
+                        IF user_id IS NOT NULL THEN
+                            IF char_length(trim(pwd))>0 THEN
+
+                                UPDATE "user"
+                                     SET password = crypt($3, gen_salt('md5'))
+                                     WHERE id = user_id ;--AND password = crypt(user_pwd, password);
+                                RETURN 1;
+                            ELSE 
+                                RETURN 0;
+                            END IF;
+                        ELSE RETURN 2;
+                        END IF;
+                END;
+                $BODY$
+                LANGUAGE plpgsql VOLATILE;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+            
+            _statement := $str$
+                drop function sp_authenticate(character varying, text);
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_authenticate(IN usr character varying, IN pwd text)
+                  RETURNS TABLE(user_id smallint, site_id integer[], role_id smallint, role_name character varying) AS
+                $BODY$SELECT u.id, u.site_id, r.id, r.name
+                  FROM "user" u
+                  INNER JOIN role r ON u.role_id=r.id
+                  WHERE login = $1 AND crypt($2, password) = password
+                $BODY$
+                  LANGUAGE sql VOLATILE;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+            
 			if not exists (
 				select *
 				from pg_attribute
