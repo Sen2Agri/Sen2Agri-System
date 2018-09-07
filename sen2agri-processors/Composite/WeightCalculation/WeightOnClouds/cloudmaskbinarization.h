@@ -21,7 +21,7 @@
 #include "otbImageFileReader.h"
 #include "otbImageFileWriter.h"
 #include "itkImageSource.h"
-#include "../../Common/GlobalDefs.h"
+#include "GlobalDefs.h"
 
 namespace Functor
 {

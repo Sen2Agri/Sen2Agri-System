@@ -34,8 +34,8 @@
 //#include "itkIdentityTransform.h"
 #include "itkScaleTransform.h"
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
+#include "../../ProductReaders/MACCSMetadata/include/MACCSMetadataReader.hpp"
+#include "../../ProductReaders/MACCSMetadata/include/SPOT4MetadataReader.hpp"
 
 // Filters
 #include "itkVectorIndexSelectionCastImageFilter.h"

@@ -43,7 +43,7 @@
 #include "otbRandomForestsMachineLearningModel.h"
 #include "otbMultiLinearRegressionModel.h"
 #include "itkListSample.h"
-#include "../../../../Composite/Common/GlobalDefs.h"
+#include "GlobalDefs.h"
 #include "MetadataHelperFactory.h"
 #include "dirent.h"
 #include "itkBinaryFunctorImageFilter.h"

@@ -31,7 +31,7 @@
 
 #include <vector>
 #include <phenoFunctions.h>
-#include "../../../../Composite/Common/GlobalDefs.h"
+#include "../../../../Common/Utils/include/GlobalDefs.h"
 
 using PrecisionType = double;
 using VectorType = std::vector<PrecisionType>;

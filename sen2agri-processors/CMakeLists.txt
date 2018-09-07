@@ -15,7 +15,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_definitions(-DVCL_CAN_STATIC_CONST_INIT_FLOAT=0)
 
-add_subdirectory(MACCSMetadata)
 add_subdirectory(Composite)
 add_subdirectory(CropType)
 add_subdirectory(CropMask)
@@ -24,6 +23,9 @@ add_subdirectory(DEM-WB)
 add_subdirectory(CreateFootprint)
 add_subdirectory(Common)
 add_subdirectory(ContinuousColorMapping)
+add_subdirectory(ProductFormatters)
+add_subdirectory(ProductReaders)
+add_subdirectory(AgriculturalPractices)
 #add_subdirectory(AppDimensionalityReduction)
 
 install(FILES ../scripts/sen2agri_common.py

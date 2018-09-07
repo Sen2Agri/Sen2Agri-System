@@ -7,7 +7,7 @@ otb_create_application(
                  paddingimagehandler.h
                  cuttingimagehandler.h
                  weightoncloudsapp.cpp
-  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
+  LINK_LIBRARIES Sen2AgriProductReaders Sen2AgriCommonUtils ${OTB_LIBRARIES})
 
 if(BUILD_TESTING)
   add_subdirectory(test)

@@ -29,18 +29,6 @@ file(COPY
     DESTINATION
     ${CMAKE_CURRENT_BINARY_DIR})
 
-add_executable(TestTileMetadataWriter TestTileMetadataWriter.cpp)
-target_link_libraries(TestTileMetadataWriter
-    MACCSMetadata
-    "${Boost_LIBRARIES}")
-add_test(TestTileMetadataWriter TestTileMetadataWriter)
-
-add_executable(TestProductMetadataWriter TestProductMetadataWriter.cpp)
-target_link_libraries(TestProductMetadataWriter
-    MACCSMetadata
-    "${Boost_LIBRARIES}")
-add_test(TestProductMetadataWriter TestProductMetadataWriter)
-
 add_executable(TestMACCSReader TestMACCSReader.cpp)
 target_link_libraries(TestMACCSReader
     MACCSMetadata
