@@ -14,8 +14,8 @@
 	<link href="http://fonts.googleapis.com/css?family=Roboto+Condensed&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
 	<link rel="stylesheet" href="libraries/bootstrap-3.3.6/css/bootstrap.min.css" />
 	<link rel="stylesheet" href="libraries/bootstrap-3.3.6/css/bootstrap-theme.min.css" />
-	<link rel="stylesheet" href="styles/styles.css" />
-	<link rel="stylesheet" href="styles/theme.css" />
+	<link rel="stylesheet" href="styles/styles.css?<?php echo date('l jS \of F Y h:i:s A');?>" />
+	<link rel="stylesheet" href="styles/theme.css?<?php echo date('l jS \of F Y h:i:s A');?>" />
 	<link rel="stylesheet" href="libraries/openlayers/css/ol.css" />
 	<link rel="stylesheet" href="libraries/bootstrap-treeview/bootstrap-treeview.css" />
 	
