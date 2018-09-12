@@ -7,5 +7,7 @@ create table l1_tile_history(
     status_timestamp timestamp with time zone not null default now(),
     retry_count int not null default 0,
     failed_reason text,
+    cloud_coverage int,
+    snow_coverage int,
     primary key (downloader_history_id, tile_id)
 );

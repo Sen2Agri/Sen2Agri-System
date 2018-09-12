@@ -16,7 +16,7 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             if exists (SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'downloader_history' AND column_name = 'tiles' and data_type = 'character varying') then
                 _statement := $str$
                     ALTER TABLE downloader_history ADD COLUMN tmp text[];
@@ -29,7 +29,7 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             if not exists (select * from config where key = 'executor.module.path.gdal_translate' and site_id is null) then
                 _statement := $str$
                 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.gdal_translate', NULL, '/usr/bin/gdal_translate', '2018-08-30 14:56:57.501918+02');
@@ -45,7 +45,7 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             _statement := $str$
                 CREATE OR REPLACE FUNCTION sp_update_datasource(
                     _id smallint,
@@ -472,6 +472,8 @@ begin
                     status_timestamp timestamp with time zone not null default now(),
                     retry_count int not null default 0,
                     failed_reason text,
+                    cloud_coverage int,
+                    snow_coverage int,
                     primary key (downloader_history_id, tile_id)
                 );
             $str$;
@@ -524,7 +526,9 @@ begin
             _statement := $str$
                 create or replace function sp_mark_l1_tile_done(
                     _downloader_history_id int,
-                    _tile_id text
+                    _tile_id text,
+                    _cloud_coverage int,
+                    _snow_coverage int
                 )
                 returns boolean
                 as
@@ -537,7 +541,9 @@ begin
                     update l1_tile_history
                     set status_id = 3, -- done
                         status_timestamp = now(),
-                        failed_reason = null
+                        failed_reason = null,
+                        cloud_coverage = _cloud_coverage,
+                        snow_coverage = _snow_coverage
                     where (downloader_history_id, tile_id) = (_downloader_history_id, _tile_id);
 
                     return sp_update_l1_tile_status(_downloader_history_id);
@@ -569,7 +575,9 @@ begin
                             when true then retry_count + 1
                             else 3
                         end,
-                        failed_reason = _reason
+                        failed_reason = _reason,
+                        cloud_coverage = _cloud_coverage,
+                        snow_coverage = _snow_coverage
                     where (downloader_history_id, tile_id) = (_downloader_history_id, _tile_id);
 
                     return sp_update_l1_tile_status(_downloader_history_id);
@@ -768,10 +776,10 @@ begin
 				and attnum > 0
 				and attname = 'site_id'
 				and not attisdropped
-			) then  
+			) then
 				_statement := $str$
 					alter table 'user' add column site_id integer[];
-					$str$;                     
+					$str$;
                 raise notice '%', _statement;
                 execute _statement;
 			elsif (
@@ -782,31 +790,31 @@ begin
 				and attname = 'site_id'
 				and not attisdropped
 			) in ('smallint','integer') then
-				_statement := $str$			
+				_statement := $str$
 					alter table "user" drop constraint user_fk1;
 					alter table "user" alter column site_id drop default;
-					alter table "user" alter column site_id type integer[] 
+					alter table "user" alter column site_id type integer[]
 					using case when site_id is null then null else array[site_id]::integer[] end;
 					alter table "user" alter column password drop not null;
 				$str$;
                 raise notice '%', _statement;
                 execute _statement;
 			end if;
-			
-			_statement := $str$		
+
+			_statement := $str$
 				CREATE OR REPLACE FUNCTION sp_get_all_users()
 				RETURNS TABLE(user_id smallint, user_name character varying, email character varying, role_id smallint, role_name character varying, site_id integer[], site_name text) AS
 				$BODY$
 				BEGIN
-				RETURN QUERY 
-					SELECT u.id as user_id, 
+				RETURN QUERY
+					SELECT u.id as user_id,
 						u.login as user_name,
 						u. email,
 						u.role_id,
-						r.name as role_name, 
+						r.name as role_name,
 						u.site_id,
 						(SELECT array_to_string(array_agg(name),', ') from site where id = ANY(u.site_id::int[]) ) as site_name
-					FROM "user" u 
+					FROM "user" u
 					INNER JOIN role r ON u.role_id = r.id;
 
 				END;
@@ -815,7 +823,7 @@ begin
 				$str$;
 			raise notice '%', _statement;
 			execute _statement;
-			   
+
             if not exists (
                 select *
                 from pg_attribute
@@ -830,8 +838,8 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-			
-			
+
+
 			if not exists (
 				select *
 				from pg_attribute
@@ -839,15 +847,15 @@ begin
 				and attnum > 0
 				and attname = 'is_site_visible'
 				and not attisdropped
-			) then  
+			) then
 				_statement := $str$
 					alter table config_metadata add column is_site_visible boolean NOT NULL DEFAULT false;
 					$str$;
 				raise notice '%', _statement;
 				execute _statement;
 			end if;
-			
-			
+
+
 			if not exists (
 				select *
 				from pg_attribute
@@ -855,14 +863,14 @@ begin
 				and attnum > 0
 				and attname = 'label'
 				and not attisdropped
-			) then  
+			) then
 				_statement := $str$
 					alter table config_metadata add column label character varying;
 					$str$;
 				raise notice '%', _statement;
 				execute _statement;
 			end if;
-			
+
 			if not exists (
 				select *
 				from pg_attribute
@@ -870,7 +878,7 @@ begin
 				and attnum > 0
 				and attname = 'values'
 				and not attisdropped
-			) then  
+			) then
 				_statement := $str$
 					alter table config_metadata add column values json;
 					$str$;
@@ -910,14 +918,14 @@ begin
 				$str$;
 				raise notice '%', _statement;
 				execute _statement;
-				
+
 			_statement := $str$
 				UPDATE config_metadata
 				SET is_advanced = true
 				WHERE
 					key in ('processor.l3a.weight.cloud.coarseresolution'
 					,'processor.l3a.weight.total.weightdatemin'
-					,'processor.l3a.weight.aot.maxaot' 
+					,'processor.l3a.weight.aot.maxaot'
 					,'processor.l3a.weight.aot.minweight'
 					,'processor.l3a.weight.aot.maxweight'
 					,'processor.l3a.weight.cloud.sigmasmall'
@@ -942,7 +950,7 @@ begin
 				$str$;
 				raise notice '%', _statement;
 				execute _statement;
-				
+
 			_statement := $str$
 				UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"1"}'::json, label ='Generate models' WHERE key ='processor.l3b.generate_models';
 				$str$;
@@ -958,9 +966,9 @@ begin
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Minimum weight at edge of the synthesis time window'  WHERE key ='processor.l3a.weight.total.weightdatemin';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Half synthesis'  WHERE key ='processor.l3a.half_synthesis';
 			UPDATE config_metadata SET values ='{}'::json,is_site_visible = false  WHERE key ='processor.l3a.synth_date_sched_offset';
-			
+
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"1"}'::json, label ='Generate models' WHERE key ='processor.l3b.generate_models';
-			
+
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Random seed' WHERE key ='processor.l4a.random_seed';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Window records' WHERE key ='processor.l4a.window';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Number of components' WHERE key ='processor.l4a.nbcomp';
@@ -974,24 +982,24 @@ begin
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Minimum number of samples'WHERE key ='processor.l4a.classifier.rf.min';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='The minium number of pixels' WHERE key ='processor.l4a.min-area';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json,is_advanced = false, is_site_visible = true, label ='Ratio' WHERE key ='processor.l4a.sample-ratio';
-			
+
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, label ='Random seed'  WHERE key ='processor.l4b.random_seed';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Training trees'  WHERE key ='processor.l4b.classifier.rf.nbtrees';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Random Forest classifier max depth'  WHERE key ='processor.l4b.classifier.rf.max';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":"","type":"classifier"}'::json, label ='Minimum number of samples'  WHERE key ='processor.l4b.classifier.rf.min';
 			UPDATE config_metadata SET values ='{"name":"cropMask"}', is_site_visible = true, is_advanced = false, label ='Crop masks'  WHERE key ='processor.l4b.crop-mask';
 			UPDATE config_metadata SET values ='{"min":"0","step":"1","max":""}'::json, is_site_visible = true, is_advanced = false, label ='Ratio'  WHERE key ='processor.l4b.sample-ratio';
-			
+
             _statement := $str$
                 CREATE OR REPLACE FUNCTION sp_set_user_password(
                     IN user_name character varying,
                     IN email character varying,
-                    IN pwd text	
+                    IN pwd text
                     )RETURNS character varying AS
                     $BODY$
                     DECLARE user_id smallint;
 
-                    BEGIN 
+                    BEGIN
                         SELECT id into user_id FROM "user" WHERE "user".login = $1 AND "user".email = $2;
 
                         IF user_id IS NOT NULL THEN
@@ -1001,7 +1009,7 @@ begin
                                      SET password = crypt($3, gen_salt('md5'))
                                      WHERE id = user_id ;--AND password = crypt(user_pwd, password);
                                 RETURN 1;
-                            ELSE 
+                            ELSE
                                 RETURN 0;
                             END IF;
                         ELSE RETURN 2;
@@ -1012,7 +1020,7 @@ begin
             $str$;
             raise notice '%', _statement;
             execute _statement;
-            
+
             _statement := $str$
                 drop function sp_authenticate(character varying, text);
             $str$;
@@ -1031,7 +1039,7 @@ begin
             $str$;
             raise notice '%', _statement;
             execute _statement;
-            
+
 			if not exists (
 				select *
 				from pg_attribute
@@ -1039,15 +1047,15 @@ begin
 				and attnum > 0
 				and attname = 'is_raster'
 				and not attisdropped
-			) then  
+			) then
 				_statement := $str$
 					alter table product_type add column is_raster boolean NOT NULL DEFAULT TRUE;
 					$str$;
 				raise notice '%', _statement;
 				execute _statement;
 			end if;
-            
-            
+
+
             _statement := 'update meta set version = ''1.8.3'';';
             raise notice '%', _statement;
             execute _statement;
