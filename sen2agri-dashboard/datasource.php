@@ -58,7 +58,7 @@ if(isset($_REQUEST['btnSave'])){
 
     $post = [
         'id'    =>  $_REQUEST['source_date'],
-        'satellite' => $satelliteArr[$_REQUEST['satellite']],
+        'satellite' => $_REQUEST['satellite'],
         'dataSourceName' => $_REQUEST['source_name'],
         'scope' => $scope[$_REQUEST['scope']],
         'user'  =>  $_REQUEST['user'],
@@ -82,7 +82,7 @@ if(isset($_REQUEST['btnSave'])){
     // Check if any error occurred
     if (!curl_errno($curl)) {
         $httpcode = curl_getinfo($curl,CURLINFO_HTTP_CODE);
-        $msg = ($httpcode>=200 && $httpcode<300) ? 'Successfully updated':'Something went wrong.Data source was not updated.';/*htmlentities($result, ENT_QUOTES, 'UTF-8');*/
+        $msg = ($httpcode>=200 && $httpcode<300) ? 'Successfully updated':'Something went wrong.Data source was not updated.';
         $feedback = "open_dialog('".$msg."')";
     }
     
