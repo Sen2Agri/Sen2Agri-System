@@ -2,7 +2,9 @@ create or replace function sp_mark_l1_tile_failed(
     _downloader_history_id int,
     _tile_id text,
     _reason text,
-    _should_retry boolean
+    _should_retry boolean,
+    _cloud_coverage int,
+    _snow_coverage int
 )
 returns boolean
 as
