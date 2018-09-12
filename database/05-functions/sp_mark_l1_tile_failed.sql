@@ -19,7 +19,9 @@ begin
             when true then retry_count + 1
             else 3
         end,
-        failed_reason = _reason
+        failed_reason = _reason,
+        cloud_coverage = _cloud_coverage,
+        snow_coverage = _snow_coverage
     where (downloader_history_id, tile_id) = (_downloader_history_id, _tile_id);
 
     return sp_update_l1_tile_status(_downloader_history_id);
