@@ -27,6 +27,10 @@ def parse_args():
     parser.add_argument('-i', '--interleave', help='Interleaving type', choices=['BAND', 'PIXEL'], default='BAND')
     parser.add_argument('--no-data', help='No data value', default=-10000)
 
+    bigtiff = parser.add_mutually_exclusive_group(required=False)
+    bigtiff.add_argument('--bigtiff', help="Save as BigTIFF", default=False, action='store_true')
+    bigtiff.add_argument('--no-bigtiff', help="Don't save as BigTIFF (default)", dest='bigtiff', action='store_false')
+
     overviews = parser.add_mutually_exclusive_group(required=False)
     overviews.add_argument('--overviews', help="Add overviews (default)", default=True, action='store_true')
     overviews.add_argument('--no-overviews', help="Don't add overviews", dest='overviews', action='store_false')
@@ -82,7 +86,10 @@ def main():
 
     # why?!
     # command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave, '-a_nodata', args.no_data]
-    command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave]
+    command = ['gdal_translate', '-co', 'INTERLEAVE=' + args.interleave]
+    if args.bigtiff:
+        command += ['-co', 'BIGTIFF=YES']
+
     if args.overviews:
         command += ['-co', 'COPY_SRC_OVERVIEWS=YES']
 
