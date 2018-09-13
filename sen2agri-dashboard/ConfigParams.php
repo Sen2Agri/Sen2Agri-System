@@ -36,8 +36,8 @@ class ConfigParams {
     }
     
     static function getServicePort(){
-    	if( file_exists("/usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties")){
-		    $lines = file("/usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties");
+    	if( file_exists("/usr/share/sen2agri/sen2agri-services/config/services.properties")){
+		    $lines = file("/usr/share/sen2agri/sen2agri-services/config/services.properties");
 		    $searchword = 'server.port';
 		    $matches = array();
 		    foreach($lines as $k=>$v) {
