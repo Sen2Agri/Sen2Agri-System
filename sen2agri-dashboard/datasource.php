@@ -66,7 +66,7 @@ if(isset($_REQUEST['btnSave'])){
         'scope' => $scope[$_REQUEST['scope']],
         'user'  =>  $_REQUEST['user'],
         'password' =>  $_REQUEST['pwd'],
-        'fetchMode' => $fetchMode[$_REQUEST['fetch_mode']],
+        'fetchMode' => strtoupper($_REQUEST['fetch_mode']),
         'maxRetries' => $_REQUEST['max_retries'],
         'retryInterval' => $_REQUEST['retry'],
         'maxConnections' => $_REQUEST['max_connections'],
@@ -172,10 +172,10 @@ curl_close($curl);
                 						<select class="form-control" id="fetch_mode_<?=$sourcedataId?>" name="fetch_mode">
                 						<?php 
                 						    foreach ($fetchMode as $key=>$value){
-                						        $selected = $data->fetchMode==$value ?'selected':'';
+                						        $selected = strtolower($data->fetchMode)==strtolower($key) ?'selected="selected"':'';
                 						        ?>
                 							<option id="<?=$value?>" <?=$selected?>><?=$key?></option>
-                						<?php }?>                							
+                						<?php }?>
                 						</select>        				
    									</div>
    									
