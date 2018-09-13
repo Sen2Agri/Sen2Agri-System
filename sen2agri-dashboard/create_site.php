@@ -597,7 +597,6 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                     </div>
                     <!---------------------------- end form add ---------------------------------->
 
-<!---------------------------  ############################################################################################### ------------------------>
                     <!---------------------------  form  delete site ------------------------>
                     <div class="add-edit-site" id="div_deletesite" style="display: none;">
                         <form enctype="multipart/form-data" id="siteform" action="create_site.php" method="post">
@@ -621,7 +620,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                         </form>
                     </div>
                     <!---------------------------- end form Delete ---------------------------------->
-<!---------------------------  ############################################################################################### ------------------------>
+
                     <!---------------------------- form edit sites ------------------------------->
                     <div class="add-edit-site" id="div_editsite" style="display: none;">
                         <form enctype="multipart/form-data" id="siteform_edit" action="create_site.php" method="post">
