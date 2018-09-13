@@ -40,6 +40,29 @@ function checkscope($satellite,$scope_id,$source_id){
      }
    
 }
+
+function getDatasourceSpecificParameters($satellite, $datasource){
+	$ch = curl_init();
+	$url =  ConfigParams::$REST_SERVICES_URL . "/downloader/sources/".$satellite."/".rawurlencode($datasource);
+	curl_setopt($ch, CURLOPT_URL,  $url );
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	
+	$result = curl_exec($ch);
+	$specificParameters = false;
+	// Check if any error occurred
+	if (!curl_errno($ch)) {
+		$httpcode = curl_getinfo($ch,CURLINFO_HTTP_CODE);
+		if($httpcode>=200 && $httpcode<300) {
+			$xml = simplexml_load_string($result);
+			$specificParameters = json_decode(json_encode($xml->specificParameters),TRUE);
+		}
+	}
+	
+	curl_close($ch);
+	
+	return $specificParameters;
+}
+
 if(isset($_REQUEST['action']) && $_REQUEST['action'] =='checkscope'){
     echo checkscope($_REQUEST['satellite'], $scope[$_REQUEST['scope']],$_REQUEST['source_date']);
     exit;
@@ -52,42 +75,48 @@ include 'ms_menu.php';
 
 $feedback ='';
 if(isset($_REQUEST['btnSave'])){
+	$specificParameters = getDatasourceSpecificParameters($satelliteArr[$_REQUEST['satellite']],$_REQUEST['source_name']);
 
-    $curl = curl_init();
-    $url =  ConfigParams::$REST_SERVICES_URL . "/downloader/sources/".$satelliteArr[$_REQUEST['satellite']]."/".rawurlencode($_REQUEST['source_name']);
-
-    $post = [
-        'id'    =>  $_REQUEST['source_date'],
-        'satellite' => $_REQUEST['satellite'],
-        'dataSourceName' => $_REQUEST['source_name'],
-        'scope' => $scope[$_REQUEST['scope']],
-        'user'  =>  $_REQUEST['user'],
-        'password' =>  $_REQUEST['pwd'],
-        'fetchMode' => $fetchMode[$_REQUEST['fetch_mode']],
-        'maxRetries' => $_REQUEST['max_retries'],
-        'retryInterval' => $_REQUEST['retry'],
-        'maxConnections' => $_REQUEST['max_connections'],
-        'downloadPath' => $_REQUEST['download_path'],
-        'localArchivePath' => empty($_REQUEST['local_root'])? null:$_REQUEST['local_root'],
-        'enabled' => !isset($_REQUEST ['edit_enabled']) ? false : true
-    ];
-
-    curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen(json_encode( $post))));
-    curl_setopt($curl, CURLOPT_POST, 1);
-    curl_setopt($curl, CURLOPT_POSTFIELDS,json_encode( $post));
-    curl_setopt($curl, CURLOPT_URL, $url);
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    $result = curl_exec($curl);
-    
-    // Check if any error occurred
-    if (!curl_errno($curl)) {
-        $httpcode = curl_getinfo($curl,CURLINFO_HTTP_CODE);
-        $msg = ($httpcode>=200 && $httpcode<300) ? 'Successfully updated':'Something went wrong.Data source was not updated.';
-        $feedback = "open_dialog('".$msg."')";
-    }
-    
-    curl_close($curl);
-    
+	if($specificParameters!='false'){
+	    $curl = curl_init();
+	    $url =  ConfigParams::$REST_SERVICES_URL . "/downloader/sources/".$satelliteArr[$_REQUEST['satellite']]."/".rawurlencode($_REQUEST['source_name']);
+	
+	    $post = [
+	        'id'    =>  $_REQUEST['source_date'],
+	        'satellite' => $_REQUEST['satellite'],
+	        'dataSourceName' => $_REQUEST['source_name'],
+	        'scope' => $scope[$_REQUEST['scope']],
+	        'user'  =>  $_REQUEST['user'],
+	        'password' =>  $_REQUEST['pwd'],
+	        'fetchMode' => $fetchMode[$_REQUEST['fetch_mode']],
+	        'maxRetries' => $_REQUEST['max_retries'],
+	        'retryInterval' => $_REQUEST['retry'],
+	        'maxConnections' => $_REQUEST['max_connections'],
+	        'downloadPath' => $_REQUEST['download_path'],
+	        'localArchivePath' => empty($_REQUEST['local_root'])? null:$_REQUEST['local_root'],
+	        'enabled' => !isset($_REQUEST ['edit_enabled']) ? false : true,
+	    	'specificParameters'=>$specificParameters['dsParameter']
+	    ];
+	
+	    curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen(json_encode( $post))));
+	    curl_setopt($curl, CURLOPT_POST, 1);
+	    curl_setopt($curl, CURLOPT_POSTFIELDS,json_encode( $post));
+	    curl_setopt($curl, CURLOPT_URL, $url);
+	    curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+	    $result = curl_exec($curl);
+	    
+	    // Check if any error occurred
+	    if (!curl_errno($curl)) {
+	        $httpcode = curl_getinfo($curl,CURLINFO_HTTP_CODE);
+	        $msg = ($httpcode>=200 && $httpcode<300) ? 'Successfully updated':'Something went wrong.Data source was not updated.';
+	        $feedback = "open_dialog('".$msg."')";
+	    }
+	    
+	    curl_close($curl);
+	}else{
+		$msg = 'Data source was not updated.';
+		$feedback = "open_dialog('".$msg."')";
+	}
 }
 
 
