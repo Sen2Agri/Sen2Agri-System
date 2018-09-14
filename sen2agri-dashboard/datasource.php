@@ -40,6 +40,8 @@ function checkscope($satellite,$scope_id,$source_id){
      }
    
 }
+
+
 if(isset($_REQUEST['action']) && $_REQUEST['action'] =='checkscope'){
     echo checkscope($_REQUEST['satellite'], $scope[$_REQUEST['scope']],$_REQUEST['source_date']);
     exit;
@@ -52,24 +54,26 @@ include 'ms_menu.php';
 
 $feedback ='';
 if(isset($_REQUEST['btnSave'])){
+	$specificParameters = unserialize($_REQUEST["specific_parameters"]);
 
     $curl = curl_init();
     $url =  ConfigParams::$REST_SERVICES_URL . "/downloader/sources/".$satelliteArr[$_REQUEST['satellite']]."/".rawurlencode($_REQUEST['source_name']);
 
     $post = [
         'id'    =>  $_REQUEST['source_date'],
-        'satellite' => $satelliteArr[$_REQUEST['satellite']],
+        'satellite' => $_REQUEST['satellite'],
         'dataSourceName' => $_REQUEST['source_name'],
         'scope' => $scope[$_REQUEST['scope']],
         'user'  =>  $_REQUEST['user'],
         'password' =>  $_REQUEST['pwd'],
-        'fetchMode' => $fetchMode[$_REQUEST['fetch_mode']],
+        'fetchMode' => strtoupper($_REQUEST['fetch_mode']),
         'maxRetries' => $_REQUEST['max_retries'],
         'retryInterval' => $_REQUEST['retry'],
         'maxConnections' => $_REQUEST['max_connections'],
         'downloadPath' => $_REQUEST['download_path'],
         'localArchivePath' => empty($_REQUEST['local_root'])? null:$_REQUEST['local_root'],
-        'enabled' => !isset($_REQUEST ['edit_enabled']) ? false : true
+        'enabled' => !isset($_REQUEST ['edit_enabled']) ? false : true,
+    	'specificParameters'=>$specificParameters
     ];
 
     curl_setopt($curl, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen(json_encode( $post))));
@@ -82,12 +86,12 @@ if(isset($_REQUEST['btnSave'])){
     // Check if any error occurred
     if (!curl_errno($curl)) {
         $httpcode = curl_getinfo($curl,CURLINFO_HTTP_CODE);
-        $msg = ($httpcode>=200 && $httpcode<300) ? 'Successfully updated':'Something went wrong.Data source was not updated.';/*htmlentities($result, ENT_QUOTES, 'UTF-8');*/
+        $msg = ($httpcode>=200 && $httpcode<300) ? 'Successfully updated':'Something went wrong.Data source was not updated.';
         $feedback = "open_dialog('".$msg."')";
     }
     
     curl_close($curl);
-    
+	
 }
 
 
@@ -140,6 +144,7 @@ curl_close($curl);
 								<input type="hidden" name="source_date" value="<?=$sourcedataId?>">
 								<input type="hidden" name="satellite" value="<?=$data->satellite?>">
 								<input type="hidden" name="source_name" value="<?=$data->dataSourceName?>">
+								<input type="hidden" name="specific_parameters" value="<?= htmlspecialchars(serialize($data->specificParameters))?>">
 								
 								<div class="row form-group form-group-sm">    									
    									<div class="col-md-6">						
@@ -167,10 +172,10 @@ curl_close($curl);
                 						<select class="form-control" id="fetch_mode_<?=$sourcedataId?>" name="fetch_mode">
                 						<?php 
                 						    foreach ($fetchMode as $key=>$value){
-                						        $selected = $data->fetchMode==$value ?'selected':'';
+                						        $selected = strtolower($data->fetchMode)==strtolower($key) ?'selected="selected"':'';
                 						        ?>
                 							<option id="<?=$value?>" <?=$selected?>><?=$key?></option>
-                						<?php }?>                							
+                						<?php }?>
                 						</select>        				
    									</div>
    									

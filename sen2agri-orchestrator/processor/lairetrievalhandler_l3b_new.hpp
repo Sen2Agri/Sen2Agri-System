@@ -16,6 +16,32 @@ public:
         QString tileFile;
     } TileInfos;
 
+    typedef struct {
+        QString tileId;
+        QString tileFile;
+
+        QString ndviFile;
+        QString laiFile;
+        QString faparFile;
+        QString fcoverFile;
+
+        QString statusFlagsFile;
+        QString statusFlagsFileResampled;
+        QString inDomainFlagsFile;
+        QString laiDomainFlagsFile;
+        QString faparDomainFlagsFile;
+        QString fcoverDomainFlagsFile;
+
+        bool bHasNdvi;
+        bool bHasLai;
+        bool bHasFapar;
+        bool bHasFCover;
+
+        QString resolutionStr;
+        QString anglesFile;
+    } TileResultFiles;
+
+
 private:
 
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -25,22 +51,46 @@ private:
 
     void CreateTasksForNewProduct(EventProcessingContext &ctx, const JobSubmittedEvent &event, QList<TaskToSubmit> &outAllTasksList,
                                    const QList<TileInfos> &tileInfosList, bool bRemoveTempFiles);
+    int CreateAnglesTasks(int parentTaskId, QList<TaskToSubmit> &outAllTasksList, int nCurTaskIdx, int & nAnglesTaskId);
+    int CreateBiophysicalIndicatorTasks(int parentTaskId, QList<TaskToSubmit> &outAllTasksList,
+                                         QList<std::reference_wrapper<const TaskToSubmit>> &productFormatterParentsRefs,
+                                         int nCurTaskIdx);
 
     void GetModelFileList(const QString &folderName, const QString &modelPrefix, QStringList &outModelsList);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
-                                const QList<TileInfos> &tilesInfosList);
+                                const QList<TileResultFiles> &tileResultFilesList);
 
-    // Arguments getters
+    QStringList GetCreateAnglesArgs(const QString &inputProduct, const QString &anglesFile);
+    QStringList GetGdalTranslateAnglesNoDataArgs(const QString &anglesFile, const QString &resultAnglesFile);
+    QStringList GetGdalBuildAnglesVrtArgs(const QString &anglesFile, const QString &resultVrtFile);
+    QStringList GetGdalTranslateResampleAnglesArgs(const QString &vrtFile, const QString &resultResampledAnglesFile);
+    QStringList GetGenerateInputDomainFlagsArgs(const QString &xmlFile,  const QString &laiBandsCfg,
+                                                const QString &outFlagsFileName, const QString &outRes);
+    QStringList GetGenerateOutputDomainFlagsArgs(const QString &xmlFile, const QString &laiRasterFile,
+                                                const QString &laiBandsCfg, const QString &indexName,
+                                                const QString &outFlagsFileName,  const QString &outCorrectedLaiFile, const QString &outRes);
+
     QStringList GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile,
                                             const QString &ndviFile, const QString &resolution, const QString &laiBandsCfg);
-    QStringList GetLaiProcessorArgs(const QString &xmlFile, const QString &resolution, const QString &laiBandsCfg, const QString &monoDateLaiFileName, const QString &indexName);
-    QStringList GetQuantifyImageArgs(const std::map<QString, QString> &configParameters, const QString &inFileName, const QString &outFileName);
+    QStringList GetLaiProcessorArgs(const QString &xmlFile, const QString &anglesFileName, const QString &resolution,
+                                    const QString &laiBandsCfg, const QString &monoDateLaiFileName, const QString &indexName);
+    QStringList GetQuantifyImageArgs(const QString &inFileName, const QString &outFileName);
     QStringList GetMonoDateMskFlagsArgs(const QString &inputProduct, const QString &monoDateMskFlgsFileName, const QString &monoDateMskFlgsResFileName, const QString &resStr);
-    QStringList GetLaiMonoProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                               const QList<TileInfos> &products, const QStringList &ndviList,
-                                               const QStringList &laiList, const QStringList &laiFlgsList, const QStringList &faparList, const QStringList &fcoverList);
+    QStringList GetLaiMonoProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event, const QList<TileResultFiles> &tileResultFilesList);
     NewStepList GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                        const QList<TileInfos> &prdTilesList, QList<TaskToSubmit> &allTasksList, bool bRemoveTempFiles, int tasksStartIdx);
+    int GetStepsForStatusFlags(QList<TaskToSubmit> &allTasksList, int curTaskIdx,
+                                TileResultFiles &tileResultFileInfo, NewStepList &steps, QStringList &cleanupTemporaryFilesList);
+    int GetStepsForNdvi(QList<TaskToSubmit> &allTasksList, int curTaskIdx,
+                                TileResultFiles &tileResultFileInfo, const QString &laiCfgFile, NewStepList &steps, QStringList &cleanupTemporaryFilesList);
+    int GetStepsForAnglesCreation(QList<TaskToSubmit> &allTasksList, int curTaskIdx, TileResultFiles &tileResultFileInfo, NewStepList &steps, QStringList &cleanupTemporaryFilesList);
+    int GetStepsForMonoDateBI(QList<TaskToSubmit> &allTasksList,
+                               const QString &indexName, int curTaskIdx, const QString &laiCfgFile, TileResultFiles &tileResultFileInfo,
+                              NewStepList &steps, QStringList &cleanupTemporaryFilesList);
+    int GetStepsForInDomainFlags(QList<TaskToSubmit> &allTasksList, int curTaskIdx,
+                                const QString &laiCfgFile, TileResultFiles &tileResultFileInfo, NewStepList &steps,
+                                QStringList &cleanupTemporaryFilesList);
+
     const QString& GetDefaultCfgVal(std::map<QString, QString> &configParameters, const QString &key, const QString &defVal);
 
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
@@ -49,6 +99,9 @@ private:
                                                     const QString &cmdLineParamName, const QString &cfgParamKey, bool defVal = true);
     QSet<QString> GetTilesFilter(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool FilterTile(const QSet<QString> &tilesSet, const QString &prdTileFile);
+    void InitTileResultFiles(bool bGenNdvi, bool bGenLai, bool bGenFapar, bool bGenFCover, const QString &resolutionStr,
+                             const QString tileFileName, TileResultFiles &tileResultFileInfo);
+
     void HandleProduct(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QList<TileInfos> &prdTilesList,
                        QList<TaskToSubmit> &allTasksList);
     void SubmitEndOfLaiTask(EventProcessingContext &ctx, const JobSubmittedEvent &event,

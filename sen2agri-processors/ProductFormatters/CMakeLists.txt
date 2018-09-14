@@ -1,0 +1,3 @@
+#add_subdirectory(Extensions)
+add_subdirectory(ProductFormatter)
+add_subdirectory(ProductMetaWriters)

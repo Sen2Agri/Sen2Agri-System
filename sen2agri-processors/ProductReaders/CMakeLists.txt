@@ -1,0 +1,2 @@
+add_subdirectory(MetadataHelpers)
+add_subdirectory(MACCSMetadata)

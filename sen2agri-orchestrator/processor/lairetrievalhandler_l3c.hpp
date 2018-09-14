@@ -54,7 +54,7 @@ private:
                                 const QStringList &listProducts, bool bIsReproc);
 
     // Arguments getters
-    QStringList GetTimeSeriesBuilderArgs(const std::map<QString, QString> &configParameters, const QStringList &monoDateLaiFileNames,
+    QStringList GetTimeSeriesBuilderArgs(const QStringList &monoDateLaiFileNames,
                                          const QString &allLaiTimeSeriesFileName, const QString &mainImg, bool bIsFlg = false);
     QStringList GetProfileReprocessingArgs(const std::map<QString, QString> &configParameters, const QString &allLaiTimeSeriesFileName,
                                            const QString &allErrTimeSeriesFileName, const QString &allMsksTimeSeriesFileName,
@@ -114,9 +114,9 @@ private:
 
     QStringList GetProfileReprocessingArgs_New(const std::map<QString, QString> &configParameters, QStringList &monoDateLaiFileNames, QStringList &errFileNames, QStringList &flgsFileNames,
                                            const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates);
-    QStringList GetFittedProfileReprocArgs_New(const std::map<QString, QString> &configParameters,
-                                               QStringList &monoDateLaiFileNames, QStringList &errFileNames,
-                                           QStringList &flgsFileNames, const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates);
+    QStringList GetFittedProfileReprocArgs_New(const QStringList &monoDateLaiFileNames, const QStringList &errFileNames,
+                                           const QStringList &flgsFileNames, const QString &mainImg, const QString &reprocTimeSeriesFileName,
+                                               const QStringList &listDates);
     QMap<QString, TileTemporalFilesInfo> FilterSecondaryProductTiles(const QMap<QString, TileTemporalFilesInfo> &mapTiles,
                                  const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles);
     QStringList GetL3BProductRasterFiles(const TileTemporalFilesInfo &tileTemporalFilesInfo, LAI_RASTER_ADDITIONAL_INFO_IDX idx);

@@ -110,6 +110,7 @@ public:
     virtual std::string GetBandName(unsigned int nIdx, bool bRelativeIdx=true);
     // for Spot we have only one resolution
     virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx) { return nAbsBandIdx; }
+    virtual int GetBandsNoForResolution(int nRes) { UNUSED(nRes); return 4; }
 
     virtual MetadataHelper::SingleBandShortImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult);
     virtual int GetResolutionForAbsoluteBandIndex(int nAbsBandIdx);

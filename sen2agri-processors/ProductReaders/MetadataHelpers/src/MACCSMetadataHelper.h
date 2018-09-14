@@ -189,6 +189,7 @@ public:
     virtual float GetAotNoDataValue();
     virtual int GetAotBandIndex();
     virtual int GetResolutionForAbsoluteBandIndex(int nAbsBandIdx);
+    virtual int GetBandsNoForResolution(int nRes) {return (m_missionType == S2) ? ((nRes == 10) ? 4 : 6) : m_nBandsNoForCurRes; }
 
 protected:
     virtual bool DoLoadMetadata();

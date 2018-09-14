@@ -1,7 +1,7 @@
 otb_create_application(
   NAME           QualityFlagsExtractor
   SOURCES        QualityFlagsExtractor.cpp
-  LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata MetadataHelper)
+  LINK_LIBRARIES ${OTB_LIBRARIES} Sen2AgriProductReaders)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

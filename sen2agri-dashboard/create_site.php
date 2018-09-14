@@ -597,7 +597,6 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                     </div>
                     <!---------------------------- end form add ---------------------------------->
 
-<!---------------------------  ############################################################################################### ------------------------>
                     <!---------------------------  form  delete site ------------------------>
                     <div class="add-edit-site" id="div_deletesite" style="display: none;">
                         <form enctype="multipart/form-data" id="siteform" action="create_site.php" method="post">
@@ -615,13 +614,13 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                 <?php get_product_types_from_db(); ?>
                             </div>
                             <div class="submit-buttons">
-                                <input class="delete-btn" name="delete_site_confirm" type="submit" value="Confirm Delete Site"<!-- onclick="onDeleteSiteBtn() -->">
+                                <input class="delete-btn" name="delete_site_confirm" type="submit" value="Confirm Delete Site">
                                 <input class="add-edit-btn" name="abort_add" type="button" value="Abort" onclick="abortEditAdd('delete_site')">
                             </div>
                         </form>
                     </div>
                     <!---------------------------- end form Delete ---------------------------------->
-<!---------------------------  ############################################################################################### ------------------------>
+
                     <!---------------------------- form edit sites ------------------------------->
                     <div class="add-edit-site" id="div_editsite" style="display: none;">
                         <form enctype="multipart/form-data" id="siteform_edit" action="create_site.php" method="post">
@@ -785,16 +784,17 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                         } else {
                             $jsonArr = json_decode($restResult, true);
                             $userSites = (isset($_SESSION['siteId']) && sizeof($_SESSION['siteId'])>0)? $_SESSION['siteId']:array();
-                            foreach($jsonArr as $site) {                              
-                                if((sizeof($userSites)>0 && in_array($site['id'], $userSites)) || (sizeof($userSites) == 0 && $_SESSION['isAdmin'])){
-                                    $siteId        = $site['id'];
-                                    $siteName      = $site['name'];
-                                    $shortName     = $site['shortName'];
-                                    $site_enabled  = $site['enabled'];
-                                    $siteInsituFile = getInsituFileName($shortName, false);
-                                    $siteStrataFile = getInsituFileName($shortName, true);
-                                    $siteL8Enabled = (getSatelliteEnableStatus($siteId, 2) == "false" ? "" : "checked");  // only L8 for now
-                               
+                            if(is_array($jsonArr)){
+	                            foreach($jsonArr as $site) {                              
+	                                if((sizeof($userSites)>0 && in_array($site['id'], $userSites)) || (sizeof($userSites) == 0 && $_SESSION['isAdmin'])){
+	                                    $siteId        = $site['id'];
+	                                    $siteName      = $site['name'];
+	                                    $shortName     = $site['shortName'];
+	                                    $site_enabled  = $site['enabled'];
+	                                    $siteInsituFile = getInsituFileName($shortName, false);
+	                                    $siteStrataFile = getInsituFileName($shortName, true);
+	                                    $siteL8Enabled = (getSatelliteEnableStatus($siteId, 2) == "false" ? "" : "checked");  // only L8 for now
+	                               
 
                             //}
                             //
@@ -824,7 +824,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                     "<?= $siteL8Enabled ?>")'>Edit</a></td>
                                     <td><input type="checkbox" name="enabled-checkbox"<?= $site_enabled ? "checked" : "" ?>></td>
                                 </tr>
-                        <?php  } } } ?>
+                        <?php  } } } } ?>
                         </tbody>
                     </table>
                     <!------------------------------ end list sites ------------------------------>

@@ -55,6 +55,12 @@
 #define PHENO_SUFFIX                    "SPHENO"
 #define PHENO_FLAGS_SUFFIX              "MPHENOFLG"
 #define LAI_MONO_DATE_FLAGS_SUFFIX      "MMONODFLG"
+
+#define LAI_IN_DOMAIN_FLAGS_SUFFIX      "MINDOMFLG"
+#define LAI_DOMAIN_FLAGS_SUFFIX         "MLAIDOMFLG"
+#define FAPAR_DOMAIN_FLAGS_SUFFIX       "MFAPARDOMFLG"
+#define FCOVER_DOMAIN_FLAGS_SUFFIX      "MFCOVERDOMFLG"
+
 #define LAI_REPROC_FLAGS_SUFFIX         "MLAIRFLG"
 #define LAI_FITTED_FLAGS_SUFFIX         "MLAIFFLG"
 #define CROP_MASK_IMG_SUFFIX            "CM"
@@ -138,7 +144,11 @@ typedef enum{
     LAI_NDVI_RASTER,
     LAI_MONO_DATE_RASTER,
     LAI_MONO_DATE_ERR_RASTER,
-    LAI_MONO_DATE_FLAGS,
+    LAI_MONO_DATE_STATUS_FLAGS,
+    LAI_MONO_DATE_IN_DOMAIN_FLAGS,
+    LAI_MONO_DATE_DOMAIN_FLAGS,
+    FAPAR_DOMAIN_FLAGS,
+    FCOVER_DOMAIN_FLAGS,
     FAPAR_MONO_DATE_RASTER,
     FCOVER_MONO_DATE_RASTER,
     LAI_REPROC_FLAGS,
@@ -300,8 +310,20 @@ private:
         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.fcovermonodate", "LAI FCOVER Mono-date raster files list for vegetation  separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.vegetation.fcovermonodate");
 
-        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laimdateflgs", "LAI Mono date flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-        MandatoryOff("processor.vegetation.laimdateflgs");
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laistatusflgs", "LAI Mono date flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laistatusflgs");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.indomainflgs", "LAI input domain flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.indomainflgs");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laidomainflgs", "LAI output domain flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laidomainflgs");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.fapardomainflgs", "FAPAR output domain flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.fapardomainflgs");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.fcoverdomaniflgs", "FCOVER output domain flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.fcoverdomaniflgs");
 
         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.filelaireproc", "File containing the LAI REPR raster files list for vegetation "
                                                                                             "separated by TILE_{tile_id} delimiter");
@@ -508,8 +530,20 @@ private:
 
           rastersList = this->GetParameterStringList("processor.vegetation.laimonodateerr");
           UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, true, false);
-          rastersList = this->GetParameterStringList("processor.vegetation.laimdateflgs");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_FLAGS, true);
+          rastersList = this->GetParameterStringList("processor.vegetation.laistatusflgs");
+          UnpackRastersList(rastersList, LAI_MONO_DATE_STATUS_FLAGS, true);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.indomainflgs");
+          UnpackRastersList(rastersList, LAI_MONO_DATE_IN_DOMAIN_FLAGS, true);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.laidomainflgs");
+          UnpackRastersList(rastersList, LAI_MONO_DATE_DOMAIN_FLAGS, true);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.fapardomainflgs");
+          UnpackRastersList(rastersList, FAPAR_DOMAIN_FLAGS, true);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.fcoverdomaniflgs");
+          UnpackRastersList(rastersList, FCOVER_DOMAIN_FLAGS, true);
       }
 
       // read LAIREPR raster files list
@@ -1545,9 +1579,23 @@ private:
                     rasterCateg = COMPOSITE_FLAGS_SUFFIX;
                     bAddResolutionToSuffix = true;
                     break;
-                case LAI_MONO_DATE_FLAGS:
+                case LAI_MONO_DATE_STATUS_FLAGS:
                     rasterCateg = LAI_MONO_DATE_FLAGS_SUFFIX;
                     break;
+
+                case LAI_MONO_DATE_IN_DOMAIN_FLAGS:
+                    rasterCateg = LAI_IN_DOMAIN_FLAGS_SUFFIX;
+                    break;
+                case LAI_MONO_DATE_DOMAIN_FLAGS:
+                    rasterCateg = LAI_DOMAIN_FLAGS_SUFFIX;
+                    break;
+                case FAPAR_DOMAIN_FLAGS:
+                    rasterCateg = FAPAR_DOMAIN_FLAGS_SUFFIX;
+                    break;
+                case FCOVER_DOMAIN_FLAGS:
+                    rasterCateg = FCOVER_DOMAIN_FLAGS_SUFFIX;
+                    break;
+
                 case LAI_REPROC_FLAGS:
                     rasterCateg = LAI_REPROC_FLAGS_SUFFIX;
                     break;

@@ -67,6 +67,7 @@ public:
     // GENETAL FIELDS API
     virtual std::string GetMissionName() { return m_Mission; }
     virtual std::string GetInstrumentName() { return m_Instrument; }
+    virtual int GetCurrentResolution() { return m_nResolution; }
 
     // MAIN RASTER API
     virtual std::string GetImageFileName() { return m_ImageFileName; }
@@ -125,6 +126,7 @@ public:
 
     // BANDS HANDLING API
     virtual int GetTotalBandsNo() { return m_nTotalBandsNo; }
+    virtual int GetBandsNoForResolution(int nRes) = 0;
     virtual int GetBandsNoForCurrentResolution() { return m_nBandsNoForCurRes; }
     virtual std::string GetBandName(unsigned int nRelBandIdx, bool bRelativeIdx=true) = 0;
     // In the case of multiple resolutions in multiple files, we need to know the

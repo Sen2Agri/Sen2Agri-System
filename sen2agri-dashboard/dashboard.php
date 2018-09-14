@@ -142,33 +142,6 @@ $all_processors =  pg_fetch_all($rows);
 		<div id="main3">
 			<div id="content" style="width: 100%;">
 				<div id="tab_control" class="tabControl">
-					<!-- L2A Processor ----------------------------------------------------------------------------------------------------------------------- -->
-					<!-- <div id="tab_l2a">
-						<a href=""<?= $active_proc ==  1 ? " class='active'" : "" ?>>L2A Processor</a>
-						<div class="panel">
-							<div class="panel_resources_and_output_container dash_panel" id="pnl_l2a_resources_and_output_container">
-								<div class="panel_resources_container" id="pnl_l2a_resources_container">
-									<div class="panel panel-default panel_resources" id="pnl_l2a_resources">
-										<div class="panel-heading">Resource Utilization</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-								<div class="panel_output_container" id="pnl_l2a_output_container">
-									<div class="panel panel-default panel_output" id="pnl_l2a_output">
-										<div class="panel-heading">Output</div>
-										<table class="table full_width default_panel_style"></table>
-									</div>
-								</div>
-							</div>
-							<div class="panel_configuration_container dash_panel" id="pnl_l2a_configuration_container">
-								<div class="panel panel-default panel_configuration" id="pnl_l2a_configuration">
-									<div class="panel-heading">Default Configuration</div>
-									<table class="table full_width default_panel_style"></table>
-								</div>
-							</div>
-
-						</div>
-					</div> -->
 					<!-- L3A Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<?php 
 					$processorList = array();

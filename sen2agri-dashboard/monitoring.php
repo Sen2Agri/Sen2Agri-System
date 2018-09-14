@@ -2,7 +2,7 @@
 require_once("ConfigParams.php");
 if(isset($_REQUEST['ajax']) && $_REQUEST['ajax'] =='ajaxCall'){
 	
-    $site_id = (isset($_REQUEST['site_id']) && $_REQUEST['site_id']!='0')?$_REQUEST['site_id'].'::smallint':'null::smallint';
+    $site_id = (isset($_REQUEST['site_id']) && $_REQUEST['site_id']!='0')?$_REQUEST['site_id'].'::smallint':'null';
     $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
     $sql = 'select * from sp_get_estimated_number_of_products('. $site_id;
     if(!ConfigParams::isSen2Agri()){

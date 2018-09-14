@@ -106,14 +106,14 @@ NewStepList NdviHandler::GetSteps(EventProcessingContext &ctx, const JobSubmitte
         auto monoDateMskFlgsResFileName = genMonoDateMskFagsTask.GetFilePath("msk_flgs_img_resampled.tif");
         auto singleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
         QStringList genMonoDateMskFagsArgs = GetMskFlagsArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                     BuildProcessorOutputFileName(configParameters, monoDateMskFlgsResFileName),
+                                                                     monoDateMskFlgsResFileName,
                                                                      resolutionStr);
 
         // add these steps to the steps list to be submitted
         steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
 
         const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionNewArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                     BuildProcessorOutputFileName(configParameters, singleNdviFile),
+                                                                     singleNdviFile,
                                                                      resolutionStr, laiCfgFile);
         steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtractionNew", ndviRviExtractionArgs));
 

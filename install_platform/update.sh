@@ -38,8 +38,9 @@ function install_sen2agri_services()
                 
                 if [ -f /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties ] ; then 
                     mv /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties /usr/share/sen2agri/sen2agri-services/config/services.properties
-                    unzip -o ${zipArchive} 'config/application.properties' -d /usr/share/sen2agri/sen2agri-services/
                 fi
+                # update the application.properties file even if some user changes might be lost
+                unzip -o ${zipArchive} 'config/application.properties' -d /usr/share/sen2agri/sen2agri-services/
             else
                 echo "No archive sen2agri-services-YYY.zip was found in the installation package. sen2agri-services will not be updated!!!"
             fi

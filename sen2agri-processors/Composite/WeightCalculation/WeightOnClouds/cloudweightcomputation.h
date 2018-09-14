@@ -20,7 +20,7 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbImageFileReader.h"
 #include "otbImageFileWriter.h"
-#include "../../Common/GlobalDefs.h"
+#include "GlobalDefs.h"
 
 namespace Functor
 {

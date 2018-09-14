@@ -35,15 +35,15 @@ target_link_libraries(explore-sg ${OTB_LIBRARIES} OTBPheno)
 
 otb_create_application(NAME           PhenologicalNDVIMetrics
   SOURCES        PhenologicalNDVIMetrics.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno;MetadataHelper)
+  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno;Sen2AgriProductReaders;Sen2AgriCommonUtils)
 
 otb_create_application(NAME           PhenoMetricsSplitter
   SOURCES        otbPhenoMetricsSplitter.cpp
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno;MetadataHelper)
+  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno;Sen2AgriProductReaders;Sen2AgriCommonUtils)
 
 otb_create_application(NAME           NdviMaskSeriesExtractor
   SOURCES        NdviMaskSeriesExtractor.cpp
-  LINK_LIBRARIES ${OTB_LIBRARIES};MetadataHelper)
+  LINK_LIBRARIES ${OTB_LIBRARIES};Sen2AgriProductReaders;Sen2AgriCommonUtils)
 
 add_executable(test-sigmo test-sigmo.cxx)
 target_link_libraries(test-sigmo ${OTB_LIBRARIES} OTBPheno)
