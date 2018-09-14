@@ -26,6 +26,7 @@ add_subdirectory(ContinuousColorMapping)
 add_subdirectory(ProductFormatters)
 add_subdirectory(ProductReaders)
 add_subdirectory(AgriculturalPractices)
+add_subdirectory(Sen4CAP)
 #add_subdirectory(AppDimensionalityReduction)
 
 install(FILES ../scripts/sen2agri_common.py
