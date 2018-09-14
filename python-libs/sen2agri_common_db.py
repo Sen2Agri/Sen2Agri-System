@@ -1491,17 +1491,21 @@ class L1CInfo(object):
         strings.append("select * from sp_clear_pending_l1_tiles();")
         return self.general_sql_query(strings)
 
-    def mark_l1_tile_done(self, downloader_product_id, tile_id):
+    def mark_l1_tile_done(self, downloader_product_id, tile_id, cloud_coverage, snow_coverage):
         strings = []
         if not self.database_connect():
             print("Database connection failed...")
             return False
         strings.append("set transaction isolation level serializable;")
         strings.append(self.cursor.mogrify("""SELECT * FROM sp_mark_l1_tile_done(%(downloader_history_id)s :: integer,
-                                                             %(tile_id)s);""",
+                                                                                %(tile_id)s,
+                                                                                %(cloud_coverage)s :: integer,
+                                                                                %(snow_coverage)s :: integer);""",
                                 {
                                     "downloader_history_id" : downloader_product_id,
-                                    "tile_id" : tile_id
+                                    "tile_id" : tile_id,
+                                    "cloud_coverage" : cloud_coverage,
+                                    "snow_coverage" : snow_coverage
                                 }))
         #print("{}:{}: mark_l1_tile_done: strings = {}".format(threading.currentThread().getName(), id(self), strings))
         ret_array = self.general_sql_query(strings, False, False)
@@ -1516,7 +1520,7 @@ class L1CInfo(object):
 
         return False
 
-    def mark_l1_tile_failed(self, downloader_product_id, tile_id, reason, should_retry):        
+    def mark_l1_tile_failed(self, downloader_product_id, tile_id, reason, should_retry, cloud_coverage, snow_coverage):        
         strings = []
         pg_should_retry = False
         product_finished = False
@@ -1528,12 +1532,16 @@ class L1CInfo(object):
         strings.append(self.cursor.mogrify("""SELECT * FROM sp_mark_l1_tile_failed(%(downloader_history_id)s :: integer,
                                                                                   %(tile_id)s, 
                                                                                   %(reason)s, 
-                                                                                  %(should_retry)s :: boolean);""",
+                                                                                  %(should_retry)s :: boolean,
+                                                                                  %(cloud_coverage)s :: integer,
+                                                                                  %(snow_coverage)s :: integer);""",
                                 {
                                     "downloader_history_id" : downloader_product_id,
                                     "tile_id" : tile_id,
                                     "reason" : reason,
-                                    "should_retry" : should_retry
+                                    "should_retry" : should_retry,
+                                    "cloud_coverage" : cloud_coverage,
+                                    "snow_coverage" : snow_coverage
                                 }))
         
         #print("{}:{}: mark_l1_tile_failed: strings = {}".format(threading.currentThread().getName(), id(self), strings))

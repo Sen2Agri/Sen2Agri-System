@@ -55,7 +55,6 @@ def get_envelope(footprints):
     hull = geomCol.ConvexHull()
     return hull.ExportToWkt()
 
-
 class L1CContext(object):
     def __init__(self, l1c_list, processor_short_name, base_output_path, skip_dem = None):
         self.l1c_list = l1c_list
@@ -63,6 +62,12 @@ class L1CContext(object):
         self.base_output_path = base_output_path
         self.skip_dem = skip_dem
 
+class DEMMACCSLogExtract(object):
+    def __init__(self):
+        self.should_retry = True
+        self.error_message = ""
+        self.cloud_coverage = -1
+        self.snow_coverage = -1
 
 def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_orbit_id, l1c_db, site_id):
     #get all the tiles for the input. they will be used to find if there is a previous L2A product
@@ -313,38 +318,42 @@ def launch_demmaccs(l1c_context, l1c_db_thread):
             log(output_path, "Only set the state as processed in downloader_history (no l2a tiles found after maccs) for product {}".format(output_path), general_log_filename)
         l1c_db.set_processed_product(1, site_id, l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, l1c[5])
 
-def get_maccs_error(maccs_report_file):
-    log_message = ""
-    should_retry = True
+def get_maccs_log_extract(maccs_report_file):
+    demmaccs_log_extract = DEMMACCSLogExtract()
     try:
         xml_handler = open(maccs_report_file).read()
         soup = Soup(xml_handler)
         for message in soup.find_all('message'):
             msg_type = message.find('type').get_text()
+            msg_text = message.find('text').get_text()
             if msg_type == 'W' or msg_type == 'E':
-                log_message += message.find('text').get_text()
-                log_message += "\n"
-            if msg_type == 'I' and re.search("code return: 0", message.find('text').get_text(), re.IGNORECASE):
-                should_retry = False
+                demmaccs_log_extract.error_message =  demmaccs_log_extract.error_message + msg_text + "\n"
+            if msg_type == 'I' and re.search("code return: 0", msg_text, re.IGNORECASE):
+                demmaccs_log_extract.should_retry = False 
+            if demmaccs_log_extract.cloud_coverage == -1 and re.search("cloud percentage computed is", msg_text, re.IGNORECASE):
+                numbers = [int(s) for s in re.findall(r'\d+', msg_text)]
+                print(msg_text)
+                print("{}".format(numbers))
+                if len(numbers) > 0:
+                    demmaccs_log_extract.cloud_coverage = numbers[0]
+            if demmaccs_log_extract.snow_coverage == -1 and re.search("snow percentage computed is", msg_text, re.IGNORECASE):
+                numbers = [int(s) for s in re.findall(r'\d+', msg_text)]
+                print("{}".format(numbers))
+                if len(numbers) > 0:
+                    demmaccs_log_extract.snow_coverage = numbers[0]
+            
     except Exception, e:
         print("Exception received when trying to read the MACCS error text from file {}: {}".format(maccs_report_file, e))
         pass
-    return should_retry, log_message
+    return demmaccs_log_extract
 
-def get_error_reason(path, tile_id):
-    reason = ""
-    path_to_use = path[:len(path) - 1] if not path.endswith("/") else path
+def get_log_info(path, tile_id):
+    path_to_use = path[:len(path) - 1] if path.endswith("/") else path
     maccs_report_file = "{}/MACCS_L2REPT_{}.EEF".format(path_to_use, tile_id)
-    should_retry, maccs_error_message = get_maccs_error(maccs_report_file)
-#    should_retry = True
-    if len(maccs_error_message) > 0:
-        reason = "MACCS: \n"
-        reason += maccs_error_message
-        print("MACCS error text found. should retry: {}".format(should_retry))
-#        for string_to_search in maccs_text_to_stop_retries:
-#            if re.search(string_to_search, maccs_error_message, re.IGNORECASE) is not None:
-#                should_retry = False
-#                break
+    demmaccs_log_extract = get_maccs_log_extract(maccs_report_file)
+    if len(demmaccs_log_extract.error_message) > 0:
+        demmaccs_log_extract.error_message = "MACCS: \n" + demmaccs_log_extract.error_message
+        print("MACCS error / warning text found. should retry: {}".format(demmaccs_log_extract.should_retry))
 
     tile_log_filename = "{}/demmaccs_{}.log".format(path_to_use, tile_id)
     try:
@@ -353,21 +362,22 @@ def get_error_reason(path, tile_id):
             for line in contents:
                 index = line.find("Tile failure: ")
                 if index != -1:
-                    reason += "DEMMACCS: \n"
-                    reason += line[index + 14:]
+                    demmaccs_log_extract.error_message = demmaccs_log_extract.error_message + "DEMMACCS: \n" + line[index + 14:]
                     break
     except IOError as e:
         print("No log file {} to get the reason".format(tile_log_filename))
-    return should_retry, reason
+    if len(demmaccs_log_extract.error_message) == 0:
+        demmaccs_log_extract.error_message = None
+    return demmaccs_log_extract
 
-def set_l1_tile_status(l1c_db_thread, product_id, tile_id, reason = None, should_retry = None):
+def set_l1_tile_status(l1c_db_thread, product_id, tile_id, cloud_coverage, snow_coverage, reason = None, should_retry = None):
     retries = 0
     max_number_of_retries = 3
     while True:
         if reason is not None and should_retry is not None:
-            is_product_finished = l1c_db_thread.mark_l1_tile_failed(product_id, tile_id, reason, should_retry)
+            is_product_finished = l1c_db_thread.mark_l1_tile_failed(product_id, tile_id, reason, should_retry, cloud_coverage, snow_coverage)
         else:
-            is_product_finished = l1c_db_thread.mark_l1_tile_done(product_id, tile_id)
+            is_product_finished = l1c_db_thread.mark_l1_tile_done(product_id, tile_id, cloud_coverage, snow_coverage)
         if is_product_finished == False:
             serialization_failure, commit_result = l1c_db_thread.sql_commit()
             if commit_result == False:
@@ -421,6 +431,11 @@ def new_launch_demmaccs(l1c_db_thread):
         print("{}: dh_id = {}".format(threading.currentThread().getName(), product_id))
         print("{}: path = {}".format(threading.currentThread().getName(), full_path))
         print("{}: prev_path = {}".format(threading.currentThread().getName(), previous_l2a_path))
+#        demmaccs_log_extract = get_log_info("/mnt/archive/maccs_def/belgium_test_alex/l2a/LC08_L2A_196025_20160620_20170323_01_T1", 196025)
+#        print("should_retry = {} \n error_message = {} \n cloud_coverage = {} \n snow_coverage = {} \n".format(demmaccs_log_extract.should_retry, demmaccs_log_extract.error_message, demmaccs_log_extract.cloud_coverage, demmaccs_log_extract.snow_coverage))
+#        db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, "196025", demmaccs_log_extract.cloud_coverage, demmaccs_log_extract.snow_coverage)
+#        l1c_db_thread.sql_rollback        
+#        print("!!!!{}".format(db_result_tile_processed))
 #        l1c_queue.task_done()
 #        thread_finished_queue.get()
 #        continue
@@ -520,8 +535,8 @@ def new_launch_demmaccs(l1c_db_thread):
             demmaccs_command.append("--prev-l2a-products-paths")
             demmaccs_command += l2a_tiles_paths
         create_footprint = False
-        reason = None
         should_retry = None
+        reason = None
         log(output_path, "{}: Starting demmaccs".format(threading.currentThread().getName()), tile_log_filename)
         if run_command(demmaccs_command, output_path, tile_log_filename) == 0 and os.path.exists(output_path) and os.path.isdir(output_path):
             # mark the tile as done
@@ -530,13 +545,16 @@ def new_launch_demmaccs(l1c_db_thread):
             # mark_l1_tile_failed functions return the true) the footprint of the product has to be processed 
             # before calling set_l2a_product function. The set_l2a_product function will also close the transaction by calling commit 
             # for database. In this case the mark_l1_tile_done or mark_l1_tile_failed functions will not call the commit for database            
-            db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, tile_id)
+            demmaccs_log_extract = get_log_info(output_path, tile_id)
+            db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, tile_id, demmaccs_log_extract.cloud_coverage, demmaccs_log_extract.snow_coverage)
             log(output_path, "{}: Tile {} marked as DONE, with db_result_tile_processed = {}".format(threading.currentThread().getName(), tile_id, db_result_tile_processed), tile_log_filename)
         else:
             log(output_path, "{}: demmaccs.py script failed!".format(threading.currentThread().getName()), tile_log_filename)
-            should_retry, reason = get_error_reason(output_path, tile_id)
-            db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, tile_id, reason, should_retry)
-            log(output_path, "{}: Tile {} marked as FAILED (should the process be retried: {}). The L1C product {} finished: {}. Reason for failure: {}".format(threading.currentThread().getName(), tile_id, should_retry, l2a_basename, db_result_tile_processed, reason), tile_log_filename)
+            demmaccs_log_extract = get_log_info(output_path, tile_id)
+            should_retry = demmaccs_log_extract.should_retry
+            reason = demmaccs_log_extract.error_message
+            db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, tile_id, demmaccs_log_extract.cloud_coverage, demmaccs_log_extract.snow_coverage, reason, should_retry)
+            log(output_path, "{}: Tile {} marked as FAILED (should the process be retried: {}). The L1C product {} finished: {}. Reason for failure: {}".format(threading.currentThread().getName(), tile_id, demmaccs_log_extract.should_retry, l2a_basename, db_result_tile_processed, reason), tile_log_filename)
         if db_result_tile_processed:
             # to end the transaction started in mark_l1_tile_done or mark_l1_tile_failed functions,
             # the sql commit for database has to be called within set_l2a_product function below
