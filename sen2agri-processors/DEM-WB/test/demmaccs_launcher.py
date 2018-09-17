@@ -66,8 +66,8 @@ class DEMMACCSLogExtract(object):
     def __init__(self):
         self.should_retry = True
         self.error_message = ""
-        self.cloud_coverage = -1
-        self.snow_coverage = -1
+        self.cloud_coverage = None
+        self.snow_coverage = None
 
 def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_orbit_id, l1c_db, site_id):
     #get all the tiles for the input. they will be used to find if there is a previous L2A product
@@ -330,13 +330,13 @@ def get_maccs_log_extract(maccs_report_file):
                 demmaccs_log_extract.error_message =  demmaccs_log_extract.error_message + msg_text + "\n"
             if msg_type == 'I' and re.search("code return: 0", msg_text, re.IGNORECASE):
                 demmaccs_log_extract.should_retry = False 
-            if demmaccs_log_extract.cloud_coverage == -1 and re.search("cloud percentage computed is", msg_text, re.IGNORECASE):
+            if demmaccs_log_extract.cloud_coverage == None and re.search("cloud percentage computed is", msg_text, re.IGNORECASE):
                 numbers = [int(s) for s in re.findall(r'\d+', msg_text)]
                 print(msg_text)
                 print("{}".format(numbers))
                 if len(numbers) > 0:
                     demmaccs_log_extract.cloud_coverage = numbers[0]
-            if demmaccs_log_extract.snow_coverage == -1 and re.search("snow percentage computed is", msg_text, re.IGNORECASE):
+            if demmaccs_log_extract.snow_coverage == None and re.search("snow percentage computed is", msg_text, re.IGNORECASE):
                 numbers = [int(s) for s in re.findall(r'\d+', msg_text)]
                 print("{}".format(numbers))
                 if len(numbers) > 0:

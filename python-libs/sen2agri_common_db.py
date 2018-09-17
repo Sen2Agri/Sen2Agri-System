@@ -1515,7 +1515,7 @@ class L1CInfo(object):
         else:
             if ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and ret_array[0][0][0] == True:
                 # commit to database will be perfomed later within set_processed_product function
-                print("The query to mark as done the tile {} will be commited later when insertion in product will be performed".format(tile_id))
+                print("The query to mark the tile {} as done will be commited later when insertion in product table will be performed".format(tile_id))
                 return True
 
         return False
@@ -1552,7 +1552,7 @@ class L1CInfo(object):
         else:
             if ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and ret_array[0][0][0] == True:
                 # commit to database will be perfomed later within set_processed_product function
-                print("The query to mark as failed the tile {} will be commited later when insertion in product will be performed".format(tile_id))
+                print("The query to mark the tile {} as failed will be commited later when insertion in product table will be performed".format(tile_id))
                 return True
 
         return False
