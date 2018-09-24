@@ -122,7 +122,6 @@ def main():
     parser = argparse.ArgumentParser(description="Fills in the tile list for the downloaded products")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
     parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
-    parser.add_argument('-p', '--pretend', action='store_true', help="don't apply any changes to the database")
     args = parser.parse_args()
 
     config = Config(args)
