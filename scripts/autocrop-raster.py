@@ -14,6 +14,7 @@ laurentiu.nicola@c-s.ro, 2018-09-24
   * enabled DEFLATE compression
   * enabled prediction
   * Python 3 compatibility
+  * don't crash on black images
 '''
 from __future__ import print_function
 import os
@@ -49,6 +50,8 @@ def crop(src_raster):
     data = np.array(raster.ReadAsArray())
     non_empty_columns = np.where(data.max(axis=0) > 0)[0]
     non_empty_rows = np.where(data.max(axis=1) > 0)[0]
+    if len(non_empty_columns) == 0 or len(non_empty_rows) == 0:
+        sys.exit(2)
     crop_box = {'xmin': min(non_empty_columns),
                 'xmax': max(non_empty_columns),
                 'ymin': min(non_empty_rows),
