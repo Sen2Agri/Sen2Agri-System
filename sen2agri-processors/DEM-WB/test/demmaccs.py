@@ -298,7 +298,7 @@ def maccs_launcher(demmaccs_context):
     try:
         # First, move the report log that maccs created it. Take care, first maccs creates a report file named PMC_LxREPT.EEF.
         # When it finishes, maccs will rename this file to something like S2A_OPER_PMC_L2REPT_{tile_id}____{dateofl1cproduct}.EEF
-        # Sometimes (usually when it crashses or for different reasons stops at the beginning), this renaming does not take place,
+        # Sometimes (usually when it crashes or for different reasons stops at the beginning), this renaming does not take place,
         # so the report file will remain PMC_LxREPT.EEF
         # This report file (doesn't matter the name) will be kept and save to the working_dir with the name MACCS_L2REPT_{tile_id}.EEF
         log(demmaccs_context.output, "Searching for report maccs file (REPT) in: {}".format(maccs_working_dir), tile_log_filename)
