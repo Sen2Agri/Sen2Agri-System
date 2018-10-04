@@ -15,6 +15,7 @@ laurentiu.nicola@c-s.ro, 2018-09-24
   * enabled prediction
   * Python 3 compatibility
   * don't crash on black images
+  * don't crash on missing or unreadable inputs
 '''
 from __future__ import print_function
 import os
@@ -33,6 +34,8 @@ out_raster = sys.argv[2]
 
 def crop(src_raster):
     raster = gdal.Open(src_raster)
+    if raster is None:
+        sys.exit(2)
 
     # Read georeferencing, oriented from top-left
     # ref:GDAL Tutorial, Getting Dataset Information
