@@ -33,10 +33,15 @@ from sen2agri_common_db import *
 from threading import Thread
 import threading
 from bs4 import BeautifulSoup as Soup
+import zipfile
+import tarfile
+import tempfile
+import ntpath
 
+ARCHIVES = "archives"
 general_log_path = "/tmp/"
 general_log_filename = "demmaccs.log"
-maccs_text_to_stop_retries = ["The number of cloudy pixel is too high", "algorithm processing is stopped", "The dark surface reflectance associated to the value of AOT index min is lower than the dark surface reflectance threshold", "The number of NoData pixel in the output L2 composite product is too high", "PersistentStreamingConditionalStatisticsImageFilter::Synthetize.No pixel is valid. Return null statistics"]
+maccs_text_to_stop_retrying = ["The number of cloudy pixel is too high", "algorithm processing is stopped", "The dark surface reflectance associated to the value of AOT index min is lower than the dark surface reflectance threshold", "The number of NoData pixel in the output L2 composite product is too high", "PersistentStreamingConditionalStatisticsImageFilter::Synthetize.No pixel is valid. Return null statistics"]
 
 def get_envelope(footprints):
     geomCol = ogr.Geometry(ogr.wkbGeometryCollection)
@@ -318,6 +323,82 @@ def launch_demmaccs(l1c_context, l1c_db_thread):
             log(output_path, "Only set the state as processed in downloader_history (no l2a tiles found after maccs) for product {}".format(output_path), general_log_filename)
         l1c_db.set_processed_product(1, site_id, l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, l1c[5])
 
+def path_filename(path):
+    head, filename = ntpath.split(path)
+    return filename or ntpath.basename(head)
+
+def check_if_flat_archive(output_dir, archive_filename):
+    dir_content = os.listdir(output_dir)
+    print("check_if_flat_archive dir_content = {} / len = {}".format(dir_content, len(dir_content)))
+    if len(dir_content) == 1 and os.path.isdir(os.path.join(output_dir, dir_content[0])):
+        return os.path.join(output_dir, dir_content[0])
+    if len(dir_content) > 1:
+        #use the archive filename, strip it from extension
+        product_name, file_ext = os.path.splitext(path_filename(archive_filename))
+        #handle .tar.gz case
+        if product_name.endswith(".tar"):
+            product_name, file_ext = os.path.splitext(product_name)        
+        product_path = os.path.join(output_dir, product_name)
+        if create_recursive_dirs(product_path):            
+            #move the list to this directory:
+            for name in dir_content:
+                shutil.move(os.path.join(output_dir, name), os.path.join(product_path, name))
+            return product_path
+    print("Checking if the archive is flat: returns None")
+    return None
+
+def unzip(output_dir, input_file):
+    global general_log_path
+    global general_log_filename
+    log(general_log_path, "Unzip archive = {} to {}".format(input_file, output_dir), general_log_filename)
+    try:
+        with zipfile.ZipFile(input_file) as zip_archive:
+            zip_archive.extractall(output_dir)
+            return check_if_flat_archive(output_dir, path_filename(input_file))
+    except Exception, e:
+        log(general_log_path, "Exception when trying to unzip file {}:  {} ".format(input_file, e), general_log_filename)
+    return None
+
+def untar(output_dir, input_file):
+    global general_log_path
+    global general_log_filename
+    log(general_log_path, "Untar archive = {} to {}".format(input_file, output_dir), general_log_filename)
+    try:
+        tar_archive = tarfile.open(input_file)
+        tar_archive.extractall(output_dir)
+        tar_archive.close()
+        return check_if_flat_archive(output_dir, path_filename(input_file))
+    except Exception, e:
+        log(general_log_path, "Exception when trying to untar file {}:  {} ".format(input_file, e), general_log_filename)
+    return None
+
+def extract_from_archive_if_needed(archive_file):
+    #create the temporary path where the archive will be extracted
+    extracted_archive_dir = tempfile.mkdtemp(dir = os.path.join(demmaccs_config.working_dir, ARCHIVES))
+    print("ARCHIVES DIRECTORY = {}".format(extracted_archive_dir))
+    extracted_file_path = None
+    # check if the file is indeed an archive
+    # exception raised only if the archive_file does not exist
+    try:
+        if zipfile.is_zipfile(archive_file):
+            extracted_file_path = unzip(extracted_archive_dir, archive_file)
+    except Exception, e:
+        print("is_zipfile: The object (directory or file) {} is not an archive: {} !".format(archive_file, e))
+        extracted_file_path = None            
+    try:
+        if tarfile.is_tarfile(archive_file):
+            extracted_file_path = untar(extracted_archive_dir, archive_file)
+    except Exception, e:
+        print("is_tarfile: The object (directory or file) {} is not an archive: {} !".format(archive_file, e))
+        extracted_file_path = None            
+    if extracted_file_path is not None:
+        print("Archive extracted to: {}".format(extracted_file_path))
+        return True, extracted_file_path
+    # this isn't and archive, so no need for the temporary directory
+    print("This wasn't an archive, so continue as is. Deleting {}".format(extracted_archive_dir))
+    remove_dir(extracted_archive_dir)
+    return False, archive_file
+    
 def get_maccs_log_extract(maccs_report_file):
     demmaccs_log_extract = DEMMACCSLogExtract()
     try:
@@ -421,8 +502,10 @@ def new_launch_demmaccs(l1c_db_thread):
         satellite_id = l1c[0][1]
         orbit_id = l1c[0][2]
         tile_id = l1c[0][3]
-        product_id = l1c[0][4]
-        full_path = l1c[0][5]
+        product_id = l1c[0][4]        
+        log(general_log_path, "{}: Starting extract_from_archive_if_needed".format(threading.currentThread().getName()), general_log_filename)
+        l1c_was_archived, full_path = extract_from_archive_if_needed(l1c[0][5])
+        log(general_log_path, "{}: Ended extract_from_archive_if_needed".format(threading.currentThread().getName()), general_log_filename)
         previous_l2a_path = l1c[0][6]
         print("{}: site_id = {}".format(threading.currentThread().getName(), site_id))
         print("{}: satellite_id = {}".format(threading.currentThread().getName(), satellite_id))
@@ -453,19 +536,25 @@ def new_launch_demmaccs(l1c_db_thread):
             site_output_path += "/"
 
         if not l1c_db_thread.is_site_enabled(site_id):
-            log(general_log_path, "{}: Aborting processing for site {} because it's disabled".format(threading.currentThread().getName(), site_id), general_log_filename)
+            log(general_log_path, "{}: Aborting processing for site {} because it is marked as being deactivated".format(threading.currentThread().getName(), site_id), general_log_filename)
+            if l1c_was_archived:
+                remove_dir(full_path)
             thread_finished_queue.get()
             l1c_queue.task_done()
             continue
 
         if not l1c_db_thread.is_sensor_enabled(site_id, satellite_id):
-            log(general_log_path, "{}: Aborting processing for site {} because sensor downloading for {} is disabled".format(threading.currentThread().getName(), site_id, satellite_id), general_log_filename)
+            log(general_log_path, "{}: Aborting processing for site {} because sensor downloading for {} is marked as being disabled".format(threading.currentThread().getName(), site_id, satellite_id), general_log_filename)
+            if l1c_was_archived:
+                remove_dir(full_path)
             thread_finished_queue.get()
             l1c_queue.task_done()
             continue
 
         if not validate_L1C_product_dir(full_path):
-            log(general_log_path, "{}: The product {} is not valid or temporary unavailable!!!".format(threading.currentThread().getName(), full_path), general_log_filename)
+            log(general_log_path, "{}: The product {} is not valid or temporary unavailable...".format(threading.currentThread().getName(), full_path), general_log_filename)
+            if l1c_was_archived:
+                remove_dir(full_path)
             thread_finished_queue.get()
             l1c_queue.task_done()
             continue
@@ -475,6 +564,8 @@ def new_launch_demmaccs(l1c_db_thread):
         orbit_id = int(orbit_id)
         if satellite_id != SENTINEL2_SATELLITE_ID and satellite_id != LANDSAT8_SATELLITE_ID:
             log(general_log_path, "{}: Unkown satellite id :{}".format(threading.currentThread().getName(), satellite_id), general_log_filename)
+            if l1c_was_archived:
+                remove_dir(full_path)
             thread_finished_queue.get()
             l1c_queue.task_done()            
             continue
@@ -491,11 +582,15 @@ def new_launch_demmaccs(l1c_db_thread):
                 l2a_basename = l2a_basename.replace("_L1GT_", "_L2A_")
             else:
                 log(general_log_path, "{}: The L1C product name is wrong - L2A cannot be filled: {}".format(threading.currentThread().getName(), l2a_basename), general_log_filename)
+                if l1c_was_archived:
+                    remove_dir(full_path)
                 thread_finished_queue.get()
                 l1c_queue.task_done()
                 continue
         else:
             log(general_log_path, "{}: The L1C product name is wrong: {}".format(threading.currentThread().getName(), l2a_basename), general_log_filename)
+            if l1c_was_archived:
+                remove_dir(full_path)
             thread_finished_queue.get()
             l1c_queue.task_done()            
             continue
@@ -504,6 +599,8 @@ def new_launch_demmaccs(l1c_db_thread):
         # the output_path should be created by the demmaccs.py script itself, but for log reason it will be created here
         if not create_recursive_dirs(output_path):
             log(general_log_path, "{}: Could not create the output directory".format(threading.currentThread().getName()), general_log_filename)
+            if l1c_was_archived:
+                remove_dir(full_path)
             thread_finished_queue.get()
             l1c_queue.task_done()
             continue            
@@ -590,6 +687,8 @@ def new_launch_demmaccs(l1c_db_thread):
                 log(output_path, "{}: Set the state as processed in downloader_history (no l2a tiles found after maccs finished) for product {}".format(threading.currentThread().getName(), output_path), tile_log_filename)
             retries = 0
             max_number_of_retries = 3
+            # the postgres SERIALIZATION_FAILURE exception has to be handled
+            # this has to be done somehow here at the higher level instead of the database level l1c_db_thread
             while True:
                 serialization_failure, commit_result = l1c_db_thread.set_l2a_product(1, site_id, product_id, l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, orbit_id)
                 if commit_result == False:                    
@@ -619,6 +718,8 @@ def new_launch_demmaccs(l1c_db_thread):
                 break
             if len(l2a_processed_tiles) > 0 and run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", output_path, "-w", demmaccs_config.working_dir], output_path, tile_log_filename) != 0:
                 log(output_path, "{}: Mosaic didn't work".format(threading.currentThread().getName()), tile_log_filename)
+            if l1c_was_archived:
+                remove_dir(full_path)
         # end of tile processing
         # remove the tile from queue
         thread_finished_queue.get()
@@ -646,7 +747,10 @@ demmaccs_config = l1c_db.get_demmaccs_config()
 if demmaccs_config is None:
     log(general_log_path, "Could not load the config from database", general_log_filename)
     sys.exit(-1)
-
+#delete all the temporary content from a previous run
+remove_dir_content("{}/".format(demmaccs_config.working_dir))
+#create directory for the eventual archives like l1c products
+create_recursive_dirs(os.path.join(demmaccs_config.working_dir, ARCHIVES))
 l1c_queue = Queue.Queue(maxsize=int(args.processes_number))
 thread_finished_queue = Queue.Queue(maxsize=int(args.processes_number))
 
@@ -682,7 +786,7 @@ while True:
         l1c_queue.join()
         print("All the workers finished their job. Exiting...")
         break
-
+remove_dir_content("{}/".format(demmaccs_config.working_dir))
 # following code applies to the old function launch_demmaccs. This launches in paralel products instead of tiles 
 #load the unprocessed l1c products from db
 #the products will come sorted by date in ascending

@@ -239,6 +239,20 @@ def remove_dir(directory):
     return True
 
 
+def remove_dir_content(directory):
+    for content in os.listdir(directory):
+        content_path = os.path.join(directory, content)
+        try:
+            if os.path.isfile(content_path):
+                os.unlink(file_path)
+            elif os.path.isdir(content_path): 
+                shutil.rmtree(content_path)
+        except Exception as e:
+            print(e)
+            return False
+    return True
+
+
 def copy_directory(src, dest):
     try:
         #print("Fake copy {} to {}".format(src, dest))
