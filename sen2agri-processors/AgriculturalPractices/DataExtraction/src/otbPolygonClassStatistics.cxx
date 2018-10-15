@@ -1,22 +1,17 @@
-/*
- * Copyright (C) 2005-2017 Centre National d'Etudes Spatiales (CNES)
- *
- * This file is part of Orfeo Toolbox
- *
- *     https://www.orfeo-toolbox.org/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+/*=========================================================================
+  *
+  * Program:      Sen2agri-Processors
+  * Language:     C++
+  * Copyright:    2015-2016, CS Romania, office@c-s.ro
+  * See COPYRIGHT file for details.
+  *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+
+ =========================================================================*/
 
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
@@ -30,6 +25,8 @@
 #include "otbBandMathImageFilter.h"
 #include "otbVectorImageToImageListFilter.h"
 #include <boost/filesystem.hpp>
+#include "otbAgricPractDataExtrFileWriter.h"
+#include "otbAgricPractDataExtrFileWriter2.h"
 
 namespace otb
 {
@@ -66,6 +63,8 @@ public:
     typedef otb::OGRDataToClassStatisticsFilter<ImageType,UInt8ImageType> FilterType;
 
     typedef otb::StatisticsXMLFileWriter<ImageType::PixelType> StatWriterType;
+    typedef otb::AgricPractDataExtrFileWriter<ImageType::PixelType> AgricPracticesWriterType;
+    typedef otb::AgricPractDataExtrFileWriter2<ImageType::PixelType> AgricPracticesWriterType2;
 
     typedef otb::GeometriesSet GeometriesType;
 
@@ -82,7 +81,7 @@ private:
     PolygonClassStatistics()
     {
         m_concatenateImagesFilter = ConcatenateImagesFilterType::New();
-        m_Readers = ReadersListType::New();
+        //m_Readers = ReadersListType::New();
     }
 
     void DoInit() override
@@ -113,7 +112,7 @@ private:
 //        AddParameter(ParameterType_InputImage,  "in",   "Input image");
 //        SetParameterDescription("in", "Support image that will be classified");
 
-        AddParameter(ParameterType_InputImageList, "il", "Input Images");
+        AddParameter(ParameterType_StringList, "il", "Input Images");
         SetParameterDescription("il", "Support images that will be classified");
 
         AddParameter(ParameterType_InputImage,  "mask",   "Input validity mask");
@@ -123,8 +122,8 @@ private:
         AddParameter(ParameterType_InputFilename, "vec", "Input vectors");
         SetParameterDescription("vec","Input geometries to analyze");
 
-        AddParameter(ParameterType_OutputFilename, "out", "Output XML statistics file");
-        SetParameterDescription("out","Output file to store statistics (XML format)");
+        AddParameter(ParameterType_String, "outdir", "Output directory for writing agricultural practices data extractin files");
+        SetParameterDescription("outdir","Output directory to store agricultural practices data extractin files (txt format)");
 
         AddParameter(ParameterType_ListView, "field", "Field Name");
         SetParameterDescription("field","Name of the field carrying the class name in the input vectors.");
@@ -135,9 +134,16 @@ private:
         MandatoryOff("layer");
         SetDefaultParameterInt("layer",0);
 
-        AddParameter(ParameterType_String, "exp", "Expression to apply for the pixels preprocessing");
-        SetParameterDescription("exp", "Expression to apply for the pixels preprocessing.");
-        MandatoryOff("exp");
+        AddParameter(ParameterType_Int, "convdb", "Convert pixel values to db before processing");
+        SetParameterDescription("convdb", "Convert pixel values to db before processing.");
+        SetDefaultParameterInt("convdb",0);
+        MandatoryOff("convdb");
+
+        AddParameter(ParameterType_Int, "oldnf", "Use old naming format");
+        SetParameterDescription("oldnf", "Use the 2017 naming format for COHE and AMP format instead of the 2018 format.");
+        MandatoryOff("oldnf");
+        SetDefaultParameterInt("oldnf",0);
+
 
         ElevationParametersHandler::AddElevationParameters(this, "elev");
 
@@ -147,7 +153,7 @@ private:
         SetDocExampleParameterValue("in", "support_image.tif");
         SetDocExampleParameterValue("vec", "variousVectors.sqlite");
         SetDocExampleParameterValue("field", "label");
-        SetDocExampleParameterValue("out","polygonStat.xml");
+        SetDocExampleParameterValue("outdir","/path/to/output/");
 
         //SetOfficialDocLink();
     }
@@ -180,27 +186,10 @@ private:
                 }
             }
         }
-
-        // Check that the extension of the output parameter is XML (mandatory for
-        // StatisticsXMLFileWriter)
-        // Check it here to trigger the error before polygons analysis
-
-        if ( HasValue("out") )
-        {
-            // Store filename extension
-            // Check that the right extension is given : expected .xml
-            const std::string extension = itksys::SystemTools::GetFilenameLastExtension(this->GetParameterString("out"));
-
-            if (itksys::SystemTools::LowerCase(extension) != ".xml")
-            {
-                otbAppLogFATAL( << extension << " is a wrong extension for parameter \"out\": Expected .xml" );
-            }
-        }
     }
 
     void DoExecute() override
     {
-        otb::ogr::DataSource::Pointer vectors = otb::ogr::DataSource::New(this->GetParameterString("vec"));
         // Retrieve the field name
         const std::vector<int> &selectedCFieldIdx = GetSelectedItems("field");
         if(selectedCFieldIdx.empty())
@@ -216,42 +205,9 @@ private:
         otb::Wrapper::ElevationParametersHandler::SetupDEMHandlerFromElevationParameters(this,"elev");
 
         // Reproject geometries
-        //FloatVectorImageType::Pointer inputImg = this->GetParameterImage("in");
-        FloatVectorImageType::Pointer inputImg = getInputImage(imagesPaths[0]);
-        const std::string &imageProjectionRef = inputImg->GetProjectionRef();
-        FloatVectorImageType::ImageKeywordlistType imageKwl = inputImg->GetImageKeywordlist();
-        const std::string &vectorProjectionRef = vectors->GetLayer(GetParameterInt("layer")).GetProjectionRef();
-
-        otb::ogr::DataSource::Pointer reprojVector = vectors;
-        const OGRSpatialReference imgOGRSref = OGRSpatialReference( imageProjectionRef.c_str() );
-        const OGRSpatialReference vectorOGRSref = OGRSpatialReference( vectorProjectionRef.c_str() );
-        bool doReproj = true;
-        // don't reproject for these cases
-        if (  vectorProjectionRef.empty() || imgOGRSref.IsSame( &vectorOGRSref )
-            || ( imageProjectionRef.empty() && imageKwl.GetSize() == 0) ) {
-            doReproj = false;
-        }
-
-        GeometriesType::Pointer inputGeomSet;
-        GeometriesType::Pointer outputGeomSet;
-        ProjectionFilterType::Pointer geometriesProjFilter;
-        if (doReproj)
-        {
-            inputGeomSet = GeometriesType::New(vectors);
-            reprojVector = otb::ogr::DataSource::New();
-            outputGeomSet = GeometriesType::New(reprojVector);
-            // Filter instantiation
-            geometriesProjFilter = ProjectionFilterType::New();
-            geometriesProjFilter->SetInput(inputGeomSet);
-            if (imageProjectionRef.empty())
-            {
-                geometriesProjFilter->SetOutputKeywordList(inputImg->GetImageKeywordlist()); // nec qd capteur
-            }
-            geometriesProjFilter->SetOutputProjectionRef(imageProjectionRef);
-            geometriesProjFilter->SetOutput(outputGeomSet);
-            otbAppLogINFO("Reprojecting input vectors...");
-            geometriesProjFilter->Update();
-        }
+        const std::string &vectFile = this->GetParameterString("vec");
+        otbAppLogINFO("Loading vectors from file " << vectFile);
+        otb::ogr::DataSource::Pointer vectors = otb::ogr::DataSource::New(vectFile);
 
         const std::vector<std::string> &cFieldNames = GetChoiceNames("field");
         const std::string &fieldName = cFieldNames[selectedCFieldIdx.front()];
@@ -259,32 +215,45 @@ private:
         std::vector<std::string>::const_iterator itImages;
         std::vector<std::string>::const_iterator itImagesEnd = imagesPaths.end();
 
-        StatWriterType::Pointer statWriter = StatWriterType::New();
-        statWriter->SetFileName(this->GetParameterString("out"));
+        const std::string &outDir = this->GetParameterString("outdir");
+        AgricPracticesWriterType2::Pointer agricPracticesDataWriter = AgricPracticesWriterType2::New();
+        agricPracticesDataWriter->SetTargetFileName(BuildUniqueFileName(outDir, imagesPaths[0]));
+        std::vector<std::string> header = {"KOD_PB", "date", "mean", "stdev"};
+        agricPracticesDataWriter->SetHeaderFields(header);
+        bool bUseLatestNamingFormat = (GetParameterInt("oldnf") == 0);
+        agricPracticesDataWriter->SetUseLatestFileNamingFormat(bUseLatestNamingFormat);
+
         int i = 1;
+        otb::ogr::DataSource::Pointer reprojVector = vectors;
         for (itImages = imagesPaths.begin(); itImages != itImagesEnd; ++itImages)
         {
-            FilterType::Pointer filter = getStatisticsFilter(*itImages, reprojVector, fieldName);
+            if ( !boost::filesystem::exists( *itImages) ) {
+                otbAppLogWARNING("File " << *itImages << " does not exist on disk!");
+                continue;
+            }
+            FloatVectorImageType::Pointer inputImage = getInputImage(*itImages);
+            otbAppLogINFO("Handling file " << *itImages);
 
-//            FilterType::ClassCountMapType &classCount = filter->GetClassCountOutput()->Get();
-//            FilterType::PolygonSizeMapType &polySize = filter->GetPolygonSizeOutput()->Get();
+            if (NeedsReprojection(reprojVector, inputImage)) {
+                otbAppLogINFO("Reprojecting vectors needed for file " << *itImages);
+                reprojVector = GetVector(vectors, inputImage);
+            } else {
+                otbAppLogINFO("No need to reproject vectors for " << *itImages);
+            }
+            FilterType::Pointer filter = getStatisticsFilter(inputImage, reprojVector, fieldName);
+            const FilterType::PixeMeanStdDevlValueMapType &meanStdValues = filter->GetMeanStdDevValueMap();
+            agricPracticesDataWriter->AddInputMap<FilterType::PixeMeanStdDevlValueMapType>(*itImages, meanStdValues);
 
-            FilterType::PixelValueMapType meanValues = filter->GetMeanValueMap();
-            FilterType::PixelValueMapType stdDevValues = filter->GetStandardDeviationValueMap();
-//            FilterType::PixelValueMapType minValues = filter->GetMinValueMap();
-//            FilterType::PixelValueMapType maxValues = filter->GetMaxValueMap();
+            otbAppLogINFO("Extracted a number of " << meanStdValues.size() << " values for file " << *itImages);
+            otbAppLogINFO("Processed " << i << " products. Remaining products = " << imagesPaths.size() - i <<
+                          ". Percent completed = " << (int)((((double)i) / imagesPaths.size()) * 100) << "%");
 
-//            statWriter->AddInputMap<FilterType::ClassCountMapType>(*itImages, "samplesPerClass",classCount);
-//            statWriter->AddInputMap<FilterType::PolygonSizeMapType>(*itImages, "samplesPerVector",polySize);
-
-            statWriter->AddInputMap<FilterType::PixelValueMapType>(*itImages, "meanValues",meanValues);
-            statWriter->AddInputMap<FilterType::PixelValueMapType>(*itImages, "stdDevValues",stdDevValues);
-//            statWriter->AddInputMap<FilterType::PixelValueMapType>(*itImages, "minValues",minValues);
-//            statWriter->AddInputMap<FilterType::PixelValueMapType>(*itImages, "maxValues",maxValues);
-
+            filter->GetFilter()->Reset();
             i++;
         }
-        statWriter->Update();
+        otbAppLogINFO("Writing outputs to folder " << outDir);
+        agricPracticesDataWriter->Update();
+        otbAppLogINFO("Writing outputs to folder done!");
 //        if (imagesPaths.size() > 1)
 //        {
 //            std::vector<std::string>::const_iterator itImages;
@@ -298,23 +267,22 @@ private:
 //        } else {
 //            filter->SetInput(getInputImage(imagesPaths[0]));
 //        }
-
     }
 
-    FilterType::Pointer getStatisticsFilter(const std::string &filePath,
-                                            otb::ogr::DataSource::Pointer reprojVector,
+    FilterType::Pointer getStatisticsFilter(const FloatVectorImageType::Pointer &inputImg,
+                                            const otb::ogr::DataSource::Pointer &reprojVector,
                                             const std::string &fieldName)
     {
         FilterType::Pointer filter = FilterType::New();
-        filter->SetInput(getInputImage(filePath));
+        filter->SetInput(inputImg);
 
         if (IsParameterEnabled("mask") && HasValue("mask"))
         {
             filter->SetMask(this->GetParameterImage<UInt8ImageType>("mask"));
         }
-        if (IsParameterEnabled("exp") && HasValue("exp"))
+        if (IsParameterEnabled("convdb") && HasValue("convdb"))
         {
-            filter->SetExpression(GetParameterString("exp"));
+            filter->SetConvertValuesToDecibels(GetParameterInt("convdb") != 0);
         }
 
         filter->SetOGRData(reprojVector);
@@ -330,7 +298,8 @@ private:
 
     FloatVectorImageType::Pointer getInputImage(const std::string &imgPath) {
         ImageReaderType::Pointer imageReader = ImageReaderType::New();
-        m_Readers->PushBack(imageReader);
+        //m_Readers->PushBack(imageReader);
+        m_ImageReader = imageReader;
         imageReader->SetFileName(imgPath);
         imageReader->UpdateOutputInformation();
         FloatVectorImageType::Pointer retImg = imageReader->GetOutput();
@@ -338,9 +307,75 @@ private:
         return retImg;
     }
 
+    otb::ogr::DataSource::Pointer GetVector(const otb::ogr::DataSource::Pointer &vectors, const FloatVectorImageType::Pointer &inputImg) {
+        const std::string &imageProjectionRef = inputImg->GetProjectionRef();
+        FloatVectorImageType::ImageKeywordlistType imageKwl = inputImg->GetImageKeywordlist();
+        const std::string &vectorProjectionRef = vectors->GetLayer(GetParameterInt("layer")).GetProjectionRef();
+
+        const OGRSpatialReference imgOGRSref = OGRSpatialReference( imageProjectionRef.c_str() );
+        const OGRSpatialReference vectorOGRSref = OGRSpatialReference( vectorProjectionRef.c_str() );
+        bool doReproj = true;
+        // don't reproject for these cases
+        if (  vectorProjectionRef.empty() || imgOGRSref.IsSame( &vectorOGRSref )
+            || ( imageProjectionRef.empty() && imageKwl.GetSize() == 0) ) {
+            doReproj = false;
+        }
+
+        GeometriesType::Pointer inputGeomSet;
+        GeometriesType::Pointer outputGeomSet;
+        ProjectionFilterType::Pointer geometriesProjFilter;
+        if (doReproj)
+        {
+            inputGeomSet = GeometriesType::New(vectors);
+            otb::ogr::DataSource::Pointer reprojVector = otb::ogr::DataSource::New();
+            outputGeomSet = GeometriesType::New(reprojVector);
+            // Filter instantiation
+            geometriesProjFilter = ProjectionFilterType::New();
+            geometriesProjFilter->SetInput(inputGeomSet);
+            if (imageProjectionRef.empty())
+            {
+                geometriesProjFilter->SetOutputKeywordList(inputImg->GetImageKeywordlist()); // nec qd capteur
+            }
+            geometriesProjFilter->SetOutputProjectionRef(imageProjectionRef);
+            geometriesProjFilter->SetOutput(outputGeomSet);
+            otbAppLogINFO("Reprojecting input vectors ...");
+            geometriesProjFilter->Update();
+            otbAppLogINFO("Reprojecting input vectors done!");
+            return reprojVector;
+        }
+
+        // if no reprojection, return the original vectors
+        return vectors;
+    }
+
+    bool NeedsReprojection(const otb::ogr::DataSource::Pointer &vectors, const FloatVectorImageType::Pointer &inputImg) {
+        const std::string &imageProjectionRef = inputImg->GetProjectionRef();
+        FloatVectorImageType::ImageKeywordlistType imageKwl = inputImg->GetImageKeywordlist();
+        const std::string &vectorProjectionRef = vectors->GetLayer(GetParameterInt("layer")).GetProjectionRef();
+
+        const OGRSpatialReference imgOGRSref = OGRSpatialReference( imageProjectionRef.c_str() );
+        const OGRSpatialReference vectorOGRSref = OGRSpatialReference( vectorProjectionRef.c_str() );
+        bool doReproj = true;
+        // don't reproject for these cases
+        if (  vectorProjectionRef.empty() || imgOGRSref.IsSame( &vectorOGRSref )
+            || ( imageProjectionRef.empty() && imageKwl.GetSize() == 0) ) {
+            doReproj = false;
+        }
+
+        return doReproj;
+    }
+
+    std::string BuildUniqueFileName(const std::string &targetDir, const std::string &refFileName) {
+        boost::filesystem::path rootFolder(targetDir);
+        boost::filesystem::path pRefFile(refFileName);
+        std::string fileName = pRefFile.stem().string() + ".xml";
+        return (rootFolder / fileName).string();
+    }
+
     private:
         ConcatenateImagesFilterType::Pointer m_concatenateImagesFilter;
-        ReadersListType::Pointer m_Readers;
+        //ReadersListType::Pointer m_Readers;
+        ImageReaderType::Pointer m_ImageReader;
         GenericMapContainer         m_GenericMapContainer;
 };
 

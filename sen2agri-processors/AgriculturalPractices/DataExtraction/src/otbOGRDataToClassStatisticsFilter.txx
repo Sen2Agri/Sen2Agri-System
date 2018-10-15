@@ -31,10 +31,11 @@ template<class TInputImage, class TMaskImage>
 PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
 ::PersistentOGRDataToClassStatisticsFilter()
 {
-  this->SetNumberOfRequiredOutputs(3);
+  this->SetNumberOfRequiredOutputs(2);
   this->SetNthOutput(0,TInputImage::New());
   this->SetNthOutput(1,ClassCountObjectType::New());
-  this->SetNthOutput(2,PolygonSizeObjectType::New());
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  this->SetNthOutput(2,PolygonSizeObjectType::New());
 }
 
 template<class TInputImage, class TMaskImage>
@@ -45,40 +46,41 @@ PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
   otb::ogr::DataSource* vectors = const_cast<otb::ogr::DataSource*>(this->GetOGRData());
   vectors->GetLayer(this->GetLayerIndex()).SetSpatialFilter(nullptr);
 
-  ClassCountMapType &classCount = this->GetClassCountOutput()->Get();
-  PolygonSizeMapType &polygonSize = this->GetPolygonSizeOutput()->Get();
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  ClassCountMapType &classCount = this->GetClassCountOutput()->Get();
+//  PolygonSizeMapType &polygonSize = this->GetPolygonSizeOutput()->Get();
   
-  // Reset outputs
-  classCount.clear();
-  polygonSize.clear();
-  // Copy temporary stats to outputs
-  for (unsigned int k=0 ; k < this->GetNumberOfThreads() ; k++)
-    {
-    ClassCountMapType::iterator itClass = m_ElmtsInClassThread[k].begin();
-    for (; itClass != m_ElmtsInClassThread[k].end() ; ++itClass)
-      {
-      if (classCount.count(itClass->first))
-        {
-        classCount[itClass->first] += itClass->second;
-        }
-      else
-        {
-        classCount[itClass->first] = itClass->second;
-        }
-      }
-    PolygonSizeMapType::iterator itPoly = m_PolygonThread[k].begin();
-    for (; itPoly != m_PolygonThread[k].end() ; ++itPoly)
-      {
-      if (polygonSize.count(itPoly->first))
-        {
-        polygonSize[itPoly->first] += itPoly->second;
-        }
-      else
-        {
-        polygonSize[itPoly->first] = itPoly->second;
-        }
-      }
-    }
+//  // Reset outputs
+//  classCount.clear();
+//  polygonSize.clear();
+//  // Copy temporary stats to outputs
+//  for (unsigned int k=0 ; k < this->GetNumberOfThreads() ; k++)
+//    {
+//    ClassCountMapType::iterator itClass = m_ElmtsInClassThread[k].begin();
+//    for (; itClass != m_ElmtsInClassThread[k].end() ; ++itClass)
+//      {
+//      if (classCount.count(itClass->first))
+//        {
+//        classCount[itClass->first] += itClass->second;
+//        }
+//      else
+//        {
+//        classCount[itClass->first] = itClass->second;
+//        }
+//      }
+//    PolygonSizeMapType::iterator itPoly = m_PolygonThread[k].begin();
+//    for (; itPoly != m_PolygonThread[k].end() ; ++itPoly)
+//      {
+//      if (polygonSize.count(itPoly->first))
+//        {
+//        polygonSize[itPoly->first] += itPoly->second;
+//        }
+//      else
+//        {
+//        polygonSize[itPoly->first] = itPoly->second;
+//        }
+//      }
+//    }
 
   // Update temporary accumulator
    AccumulatorMapType outputAcc;
@@ -124,13 +126,17 @@ PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
      bool noBandOk = true;
      for (unsigned int band = 0 ; band < mean.GetSize() ; band++)
      {
-         if ((count[band] > 0) && (count[band] > 0.1 * (count[band] + countInvalid[band]))) {
+         // TODO: If population standard deviation is computed, then use count[band] > 0
+         if ((count[band] > 1) && (count[band] > 0.1 * (count[band] + countInvalid[band]))) {
              noBandOk = false;
             // Mean
             mean[band] /= count[band];
 
             // Unbiased standard deviation (not sure unbiased is usefull here)
+            // Compute sample standard deviation
             const double variance = (sqSum[band] - (sum[band] * mean[band])) / (count[band] - 1);
+            // Compute population standard deviation
+            // const double variance = (sqSum[band] - (sum[band] * mean[band])) / (count[band]);
             std[band] = vcl_sqrt(variance);
          }
      }
@@ -138,28 +144,34 @@ PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
 //     std::cout << "Mean is: " << mean << std::endl;
      if (!noBandOk)
      {
-         std::cout << "======================" << std::endl;
-         std::cout << "Pixel values for label " << label << std::endl;
-         for(int i = 0; i<it.second.m_Pixels.size(); i++) {
-             const RealVectorPixelType &pixel = it.second.m_Pixels[i];
-             for (int j = 0; j<pixel.GetSize(); j++) {
-                 std::cout << pixel[j] << std::endl;
-             }
-         }
+//         std::cout << "======================" << std::endl;
+//         std::cout << "Pixel values for label " << label << std::endl;
+//         for(int i = 0; i<it.second.m_Pixels.size(); i++) {
+//             const RealVectorPixelType &pixel = it.second.m_Pixels[i];
+//             for (int j = 0; j<pixel.GetSize(); j++) {
+//                 std::cout << pixel[j] << std::endl;
+//             }
+//         }
 
-         m_MeanRadiometricValue[label] = mean;
-         m_StDevRadiometricValue[label] = std;
+         // USED m_MeanStdDevRadiometricValue INSTEAD
+//         m_MeanRadiometricValue[label] = mean;
+//         m_StDevRadiometricValue[label] = std;
+         m_MeanStdDevRadiometricValue[label].mean = mean;
+         m_MeanStdDevRadiometricValue[label].stdDev = std;
 
+  // NOT NEEDED FOR AGRICULTURAL PRACTICES
          // Min & max
-         m_MinRadiometricValue[label] = it.second.GetMin();
-         m_MaxRadiometricValue[label] = it.second.GetMax();
+//         m_MinRadiometricValue[label] = it.second.GetMin();
+//         m_MaxRadiometricValue[label] = it.second.GetMax();
      }
    }
 
   m_AccumulatorMaps.clear();
-  m_ElmtsInClassThread.clear();
-  m_PolygonThread.clear();
   m_NbPixelsThread.clear();
+
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  m_ElmtsInClassThread.clear();
+//  m_PolygonThread.clear();
 }
 
 template<class TInputImage, class TMaskImage>
@@ -167,18 +179,24 @@ void
 PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
 ::Reset(void)
 {
-  m_ElmtsInClassThread.clear();
-  m_PolygonThread.clear();
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  m_ElmtsInClassThread.clear();
+//  m_PolygonThread.clear();
   m_NbPixelsThread.clear();
 
   m_AccumulatorMaps.clear();
-  m_MeanRadiometricValue.clear();
-  m_StDevRadiometricValue.clear();
-  m_MinRadiometricValue.clear();
-  m_MaxRadiometricValue.clear();
+// USED m_MeanStdDevRadiometricValue INSTEAD
+//  m_MeanRadiometricValue.clear();
+//  m_StDevRadiometricValue.clear();
+  m_MeanStdDevRadiometricValue.clear();
 
-  m_ElmtsInClassThread.resize(this->GetNumberOfThreads());
-  m_PolygonThread.resize(this->GetNumberOfThreads());
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  m_MinRadiometricValue.clear();
+//  m_MaxRadiometricValue.clear();
+
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  m_ElmtsInClassThread.resize(this->GetNumberOfThreads());
+//  m_PolygonThread.resize(this->GetNumberOfThreads());
   m_NbPixelsThread.resize(this->GetNumberOfThreads());
   m_CurrentClass.resize(this->GetNumberOfThreads());
   m_CurrentFID.resize(this->GetNumberOfThreads());
@@ -210,61 +228,74 @@ PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
   return static_cast<ClassCountObjectType *>(this->itk::ProcessObject::GetOutput(1));
 }
 
-template<class TInputImage, class TMaskImage>
-const typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PolygonSizeObjectType*
-PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::GetPolygonSizeOutput() const
-{
-  if (this->GetNumberOfOutputs()<3)
-    {
-    return nullptr;
-    }
-  return static_cast<const PolygonSizeObjectType *>(this->itk::ProcessObject::GetOutput(2));
-}
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//template<class TInputImage, class TMaskImage>
+//const typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PolygonSizeObjectType*
+//PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
+//::GetPolygonSizeOutput() const
+//{
+//  if (this->GetNumberOfOutputs()<3)
+//    {
+//    return nullptr;
+//    }
+//  return static_cast<const PolygonSizeObjectType *>(this->itk::ProcessObject::GetOutput(2));
+//}
+
+//template<class TInputImage, class TMaskImage>
+//typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PolygonSizeObjectType*
+//PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
+//::GetPolygonSizeOutput()
+//{
+//    if (this->GetNumberOfOutputs()<3)
+//    {
+//    return nullptr;
+//    }
+//  return static_cast<PolygonSizeObjectType *>(this->itk::ProcessObject::GetOutput(2));
+//}
+
+  // USED GetMeanStdDevValueMap INSTEAD
+//template<class TInputImage, class TMaskImage>
+//typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PixelValueMapType
+//PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
+//::GetMeanValueMap() const
+//{
+//    return m_MeanRadiometricValue;
+//}
+
+//template<class TInputImage, class TMaskImage>
+//typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PixelValueMapType
+//PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
+//::GetStandardDeviationValueMap() const
+//{
+//    return m_StDevRadiometricValue;
+//}
 
 template<class TInputImage, class TMaskImage>
-typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PolygonSizeObjectType*
+typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PixeMeanStdDevlValueMapType
 PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::GetPolygonSizeOutput()
+::GetMeanStdDevValueMap() const
 {
-    if (this->GetNumberOfOutputs()<3)
-    {
-    return nullptr;
-    }
-  return static_cast<PolygonSizeObjectType *>(this->itk::ProcessObject::GetOutput(2));
+    return m_MeanStdDevRadiometricValue;
 }
 
-template<class TInputImage, class TMaskImage>
-typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PixelValueMapType
-PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::GetMeanValueMap() const
-{
-    return m_MeanRadiometricValue;
-}
 
-template<class TInputImage, class TMaskImage>
-typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PixelValueMapType
-PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::GetStandardDeviationValueMap() const
-{
-    return m_StDevRadiometricValue;
-}
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
 
-template<class TInputImage, class TMaskImage>
-typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PixelValueMapType
-PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::GetMinValueMap() const
-{
-    return m_MinRadiometricValue;
-}
+//template<class TInputImage, class TMaskImage>
+//typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PixelValueMapType
+//PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
+//::GetMinValueMap() const
+//{
+//    return m_MinRadiometricValue;
+//}
 
-template<class TInputImage, class TMaskImage>
-typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PixelValueMapType
-PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::GetMaxValueMap() const
-{
-    return m_MaxRadiometricValue;
-}
+//template<class TInputImage, class TMaskImage>
+//typename PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PixelValueMapType
+//PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
+//::GetMaxValueMap() const
+//{
+//    return m_MaxRadiometricValue;
+//}
 
 template<class TInputImage, class TMaskImage>
 itk::DataObject::Pointer
@@ -279,9 +310,10 @@ PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
     case 1:
       return static_cast<itk::DataObject*>(ClassCountObjectType::New().GetPointer());
       break;
-    case 2:
-      return static_cast<itk::DataObject*>(PolygonSizeObjectType::New().GetPointer());
-      break;
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//    case 2:
+//      return static_cast<itk::DataObject*>(PolygonSizeObjectType::New().GetPointer());
+//      break;
     default:
       // might as well make an image
       return static_cast<itk::DataObject*>(TInputImage::New().GetPointer());
@@ -299,16 +331,27 @@ PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
   itk::ThreadIdType& threadid)
 {
   std::string& className = m_CurrentClass[threadid];
-  unsigned long& fId = m_CurrentFID[threadid];
 
-  m_ElmtsInClassThread[threadid][className]++;
-  m_PolygonThread[threadid][fId]++;
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  unsigned long& fId = m_CurrentFID[threadid];
+//  m_ElmtsInClassThread[threadid][className]++;
+//  m_PolygonThread[threadid][fId]++;
+
   m_NbPixelsThread[threadid]++;
 
   typename TInputImage::PixelType newValue = value;
-  if (m_Expression.size() > 0) {
+  if (m_ConvertValuesToDecibels) {
+      int invalidValCnt = 0;
       for (unsigned int band = 0 ; band < value.GetSize() ; band++) {
-        newValue[band] = 10 * log10(value[band]);
+          if (value[band] <= 0) {
+              invalidValCnt++;
+          } else {
+            newValue[band] = 10 * log10(value[band]);
+          }
+      }
+      if (invalidValCnt == value.GetSize()) {
+          // do not add it if all values are invalid
+          return;
       }
   }
     // Update the accumulator
@@ -331,14 +374,15 @@ PersistentOGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
 {
   std::string className(feature.ogr().GetFieldAsString(this->GetFieldIndex()));
   unsigned long fId = feature.ogr().GetFID();
-  if (!m_ElmtsInClassThread[threadid].count(className))
-    {
-    m_ElmtsInClassThread[threadid][className] = 0;
-    }
-  if (!m_PolygonThread[threadid].count(fId))
-    {
-    m_PolygonThread[threadid][fId] = 0;
-    }
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  if (!m_ElmtsInClassThread[threadid].count(className))
+//    {
+//    m_ElmtsInClassThread[threadid][className] = 0;
+//    }
+//  if (!m_PolygonThread[threadid].count(fId))
+//    {
+//    m_PolygonThread[threadid][fId] = 0;
+//    }
   m_CurrentClass[threadid] = className;
   m_CurrentFID[threadid] = fId;
 }
@@ -412,17 +456,15 @@ OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
 template<class TInputImage, class TMaskImage>
 void
 OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::SetExpression(const std::string &exp)
+::SetConvertValuesToDecibels(bool exp)
 {
-  this->GetFilter()->SetExpression(exp);
+  this->GetFilter()->SetConvertValuesToDecibels(exp);
 }
 
 template<class TInputImage, class TMaskImage>
-std::string
-OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::GetExpression()
+bool OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>::GetConvertValuesToDecibels()
 {
-  return this->GetFilter()->GetExpression();
+  return this->GetFilter()->GetConvertValuesToDecibels();
 }
 
 
@@ -458,53 +500,64 @@ OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
   return this->GetFilter()->GetClassCountOutput();
 }
 
-template<class TInputImage, class TMaskImage>
-const typename OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PolygonSizeObjectType*
-OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::GetPolygonSizeOutput() const
-{
-  return this->GetFilter()->GetPolygonSizeOutput();
-}
+//template<class TInputImage, class TMaskImage>
+//const typename OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PolygonSizeObjectType*
+//OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
+//::GetPolygonSizeOutput() const
+//{
+//  return this->GetFilter()->GetPolygonSizeOutput();
+//}
 
-template<class TInputImage, class TMaskImage>
-typename OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PolygonSizeObjectType*
-OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
-::GetPolygonSizeOutput()
-{
-  return this->GetFilter()->GetPolygonSizeOutput();
-}
+//template<class TInputImage, class TMaskImage>
+//typename OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>::PolygonSizeObjectType*
+//OGRDataToClassStatisticsFilter<TInputImage,TMaskImage>
+//::GetPolygonSizeOutput()
+//{
+//  return this->GetFilter()->GetPolygonSizeOutput();
+//}
 
-template<class TInputImage, class TMaskImage>
-typename OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>::PixelValueMapType
-OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>
-::GetMeanValueMap() const
-{
-  return this->GetFilter()->GetMeanValueMap();
-}
+  // USED GetMeanStdDevValueMap INSTEAD
+//template<class TInputImage, class TMaskImage>
+//typename OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>::PixelValueMapType
+//OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>
+//::GetMeanValueMap() const
+//{
+//  return this->GetFilter()->GetMeanValueMap();
+//}
+
+//template<class TInputVectorImage, class TLabelImage>
+//typename OGRDataToClassStatisticsFilter<TInputVectorImage, TLabelImage>::PixelValueMapType
+//OGRDataToClassStatisticsFilter<TInputVectorImage, TLabelImage>
+//::GetStandardDeviationValueMap() const
+//{
+//  return this->GetFilter()->GetStandardDeviationValueMap();
+//}
 
 template<class TInputVectorImage, class TLabelImage>
-typename OGRDataToClassStatisticsFilter<TInputVectorImage, TLabelImage>::PixelValueMapType
+typename OGRDataToClassStatisticsFilter<TInputVectorImage, TLabelImage>::PixeMeanStdDevlValueMapType
 OGRDataToClassStatisticsFilter<TInputVectorImage, TLabelImage>
-::GetStandardDeviationValueMap() const
+::GetMeanStdDevValueMap() const
 {
-  return this->GetFilter()->GetStandardDeviationValueMap();
+  return this->GetFilter()->GetMeanStdDevValueMap();
 }
 
-template<class TInputImage, class TMaskImage>
-typename OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>::PixelValueMapType
-OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>
-::GetMinValueMap() const
-{
-  return this->GetFilter()->GetMinValueMap();
-}
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
 
-template<class TInputImage, class TMaskImage>
-typename OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>::PixelValueMapType
-OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>
-::GetMaxValueMap() const
-{
-  return this->GetFilter()->GetMaxValueMap();
-}
+//template<class TInputImage, class TMaskImage>
+//typename OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>::PixelValueMapType
+//OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>
+//::GetMinValueMap() const
+//{
+//  return this->GetFilter()->GetMinValueMap();
+//}
+
+//template<class TInputImage, class TMaskImage>
+//typename OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>::PixelValueMapType
+//OGRDataToClassStatisticsFilter<TInputImage, TMaskImage>
+//::GetMaxValueMap() const
+//{
+//  return this->GetFilter()->GetMaxValueMap();
+//}
 
 
 } // end of namespace otb

@@ -209,9 +209,10 @@ public:
 
   /** Wrap output type as DataObject */
   typedef std::map<std::string, unsigned long>      ClassCountMapType;
-  typedef std::map<unsigned long, unsigned long>    PolygonSizeMapType;
   typedef itk::SimpleDataObjectDecorator<ClassCountMapType>  ClassCountObjectType;
-  typedef itk::SimpleDataObjectDecorator<PolygonSizeMapType> PolygonSizeObjectType;
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  typedef std::map<unsigned long, unsigned long>    PolygonSizeMapType;
+//  typedef itk::SimpleDataObjectDecorator<PolygonSizeMapType> PolygonSizeObjectType;
 
   typedef itk::DataObject::DataObjectPointerArraySizeType DataObjectPointerArraySizeType;
 
@@ -219,7 +220,14 @@ public:
   typedef StatisticsAccumulator<RealVectorPixelType>                    AccumulatorType;
   typedef std::map<std::string, AccumulatorType >                       AccumulatorMapType;
   typedef std::vector<AccumulatorMapType>                               AccumulatorMapCollectionType;
+
+  typedef struct {
+      RealVectorPixelType mean;
+      RealVectorPixelType stdDev;
+  } MeanStdDevValueType;
+
   typedef std::map<std::string, RealVectorPixelType >                   PixelValueMapType;
+  typedef std::map<std::string, MeanStdDevValueType >                   PixeMeanStdDevlValueMapType;
 
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
@@ -236,21 +244,29 @@ public:
   const ClassCountObjectType* GetClassCountOutput() const;
   ClassCountObjectType* GetClassCountOutput();
 
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
   /** the polygon size map is stored as output #3 */
-  const PolygonSizeObjectType* GetPolygonSizeOutput() const;
-  PolygonSizeObjectType* GetPolygonSizeOutput();
+//  const PolygonSizeObjectType* GetPolygonSizeOutput() const;
+//  PolygonSizeObjectType* GetPolygonSizeOutput();
 
-  /** Return the computed Mean for each label in the input label image */
-   PixelValueMapType GetMeanValueMap() const;
+  // USED GetMeanStdDevValueMap INSTEAD
 
-   /** Return the computed Standard Deviation for each label in the input label image */
-   PixelValueMapType GetStandardDeviationValueMap() const;
+//  /** Return the computed Mean for each label in the input label image */
+//   PixelValueMapType GetMeanValueMap() const;
 
-   /** Return the computed Min for each label in the input label image */
-   PixelValueMapType GetMinValueMap() const;
+//   /** Return the computed Standard Deviation for each label in the input label image */
+//   PixelValueMapType GetStandardDeviationValueMap() const;
 
-   /** Return the computed Max for each label in the input label image */
-   PixelValueMapType GetMaxValueMap() const;
+   /** Return the computed Mean and Standard Deviation for each label in the input label image */
+   PixeMeanStdDevlValueMapType GetMeanStdDevValueMap() const;
+
+   // NOT NEEDED FOR AGRICULTURAL PRACTICES
+
+//   /** Return the computed Min for each label in the input label image */
+//   PixelValueMapType GetMinValueMap() const;
+
+//   /** Return the computed Max for each label in the input label image */
+//   PixelValueMapType GetMaxValueMap() const;
 
   /** Make a DataObject of the correct type to be used as the specified
    * output. */
@@ -258,12 +274,12 @@ public:
   using Superclass::MakeOutput;
 
   /** Set/Get macro for the layer index containing the sampling areas */
-  itkSetMacro(Expression, std::string);
-  itkGetMacro(Expression, std::string);
+  itkSetMacro(ConvertValuesToDecibels, bool);
+  itkGetMacro(ConvertValuesToDecibels, bool);
 
 protected:
-  /** Layer to use in the input vector file, default to 0 */
-  std::string m_Expression;
+  /** Convert values to decibels before processing, default to 0 */
+  bool m_ConvertValuesToDecibels;
 
 protected:
   /** Constructor */
@@ -288,20 +304,30 @@ private:
 
   /** Number of pixels in all the polygons (per thread) */
   std::vector<unsigned long> m_NbPixelsThread;
-  /** Number of pixels in each classes (per thread) */
-  std::vector<ClassCountMapType> m_ElmtsInClassThread;
-  /** Number of pixels in each polygons (per thread) */
-  std::vector<PolygonSizeMapType> m_PolygonThread;
+
+  // NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  /** Number of pixels in each classes (per thread) */
+//  std::vector<ClassCountMapType> m_ElmtsInClassThread;
+//  /** Number of pixels in each polygons (per thread) */
+//  std::vector<PolygonSizeMapType> m_PolygonThread;
+
   /** Class name of the current feature (per thread) */
   std::vector<std::string> m_CurrentClass;
   /** FID of the current feature (per thread) */
   std::vector<unsigned long> m_CurrentFID;
 
   AccumulatorMapCollectionType           m_AccumulatorMaps;
-  PixelValueMapType                      m_MeanRadiometricValue;
-  PixelValueMapType                      m_StDevRadiometricValue;
-  PixelValueMapType                      m_MinRadiometricValue;
-  PixelValueMapType                      m_MaxRadiometricValue;
+
+    // USED m_MeanStdDevRadiometricValue INSTEAD
+//  PixelValueMapType                      m_MeanRadiometricValue;
+//  PixelValueMapType                      m_StDevRadiometricValue;
+
+  PixeMeanStdDevlValueMapType                    m_MeanStdDevRadiometricValue;
+
+  // NOT NEEDED FOR AGRICULTURAL PRACTICES
+
+//  PixelValueMapType                      m_MinRadiometricValue;
+//  PixelValueMapType                      m_MaxRadiometricValue;
 
 
 };
@@ -334,11 +360,13 @@ public:
   
   typedef typename Superclass::FilterType             FilterType;
   typedef typename FilterType::ClassCountMapType      ClassCountMapType;
-  typedef typename FilterType::PolygonSizeMapType     PolygonSizeMapType;
   typedef typename FilterType::ClassCountObjectType   ClassCountObjectType;
-  typedef typename FilterType::PolygonSizeObjectType  PolygonSizeObjectType;
+  // NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  typedef typename FilterType::PolygonSizeMapType     PolygonSizeMapType;
+//  typedef typename FilterType::PolygonSizeObjectType  PolygonSizeObjectType;
 
   typedef typename FilterType::PixelValueMapType  PixelValueMapType;
+  typedef typename FilterType::PixeMeanStdDevlValueMapType PixeMeanStdDevlValueMapType;
 
 
   /** Type macro */
@@ -361,8 +389,8 @@ public:
   void SetFieldName(const std::string &key);
   std::string GetFieldName();
 
-  void SetExpression(const std::string &exp);
-  std::string GetExpression();
+  void SetConvertValuesToDecibels(bool exp);
+  bool GetConvertValuesToDecibels();
 
   void SetLayerIndex(int index);
   int GetLayerIndex();
@@ -370,20 +398,28 @@ public:
   const ClassCountObjectType* GetClassCountOutput() const;
   ClassCountObjectType* GetClassCountOutput();
 
-  const PolygonSizeObjectType* GetPolygonSizeOutput() const;
-  PolygonSizeObjectType* GetPolygonSizeOutput();
+// NOT NEEDED FOR AGRICULTURAL PRACTICES
+//  const PolygonSizeObjectType* GetPolygonSizeOutput() const;
+//  PolygonSizeObjectType* GetPolygonSizeOutput();
 
-  /** Return the computed Mean for each label in the input label image */
-   PixelValueMapType GetMeanValueMap() const;
+  // USED GetMeanStdDevValueMap INSTEAD
+//  /** Return the computed Mean for each label in the input label image */
+//   PixelValueMapType GetMeanValueMap() const;
 
-   /** Return the computed Standard Deviation for each label in the input label image */
-   PixelValueMapType GetStandardDeviationValueMap() const;
+//   /** Return the computed Standard Deviation for each label in the input label image */
+//   PixelValueMapType GetStandardDeviationValueMap() const;
 
-   /** Return the computed Min for each label in the input label image */
-   PixelValueMapType GetMinValueMap() const;
+   /** Return the computed Mean and Standard Deviation for each label in the input label image */
+   PixeMeanStdDevlValueMapType GetMeanStdDevValueMap() const;
 
-   /** Return the computed Max for each label in the input label image */
-   PixelValueMapType GetMaxValueMap() const;
+
+   // NOT NEEDED FOR AGRICULTURAL PRACTICES
+
+//   /** Return the computed Min for each label in the input label image */
+//   PixelValueMapType GetMinValueMap() const;
+
+//   /** Return the computed Max for each label in the input label image */
+//   PixelValueMapType GetMaxValueMap() const;
 
 
 protected:
