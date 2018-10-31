@@ -78,7 +78,7 @@ $processors = pg_fetch_all($res);
 						<div id="<?=$processor['short_name']?>" class="panel-collapse collapse">
 							<div class="panel-body">
 								<label class="control_advanced" for="<?=$processor['short_name']?>_advanced"><input type="checkbox" id="<?=$processor['short_name']?>_advanced">Show advanced parameters</label>
-								<form role="form" id="<?=$processor['short_name']?>form" name="<?=$processor['short_name']?>form" method="post" action="getProcessorNewConfig.php">
+								<form enctype="multipart/form-data" role="form" id="<?=$processor['short_name']?>form" name="<?=$processor['short_name']?>form" method="post" action="getProcessorNewConfig.php">
 									<div class="row">
 										<div class="col-md-11">
 											<div class="form-group form-group-sm required">
