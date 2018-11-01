@@ -37,21 +37,10 @@
 
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
-
-#include "itkFlatStructuringElement.h"
-
-#include "itkBinaryDilateImageFilter.h"
-#include "itkLabelErodeImageFilter.h"
-#include "itkBinaryMorphologicalOpeningImageFilter.h"
-#include "itkBinaryMorphologicalClosingImageFilter.h"
-#include "itkBinaryMorphologyImageFilter.h"
-#include "itkLabelErodeImageFilter.h"
-
-#include "otbMultiToMonoChannelExtractROI.h"
-#include "otbImageList.h"
-#include "otbImageListToVectorImageFilter.h"
-
 #include "otbStreamingHistogramImageFilter.h"
+
+#include <algorithm>
+#include <tuple>
 
 namespace otb
 {
@@ -84,18 +73,13 @@ private:
 void DoInit() override
 {
   SetName( "ComputeClassCounts" );
-  SetDescription( "Applies a 3x3 erosion filter and computes the class counts on a labelled image" );
+  SetDescription( "Computes the class counts on a labelled image" );
 
   AddParameter( ParameterType_InputImage , "in" ,  "Input Image" );
   SetParameterDescription( "in" , "The input image to be filtered." );
 
   AddParameter( ParameterType_OutputFilename, "out" ,  "Output File" );
   SetParameterDescription( "out" , "Output CSV file with class counts." );
-
-  AddParameter( ParameterType_Int , "bv" , "Background value" );
-  SetParameterDescription("bv", "Set the background value, default is 0." );
-  SetDefaultParameterInt("bv", 0);
-  MandatoryOff("bv");
 
   AddRAMParameter();
 
@@ -111,31 +95,26 @@ void DoExecute() override
 {
   Int32ImageType::Pointer inImage = GetParameterInt32Image("in");
 
-  RadiusType rad;
-  rad[0] = 1;
-  rad[1] = 1;
-  StructuringType se = StructuringType::Box(rad);
-
-  int bv = GetParameterInt("bv");
-  m_ErodeFilter = ErodeFilterType::New();
-  m_ErodeFilter->SetKernel(se);
-  m_ErodeFilter->SetInput(inImage);
-  m_ErodeFilter->SetBackgroundValue(bv);
-
   m_HistogramFilter = StreamingHistogramFilterType::New();
-  m_HistogramFilter->SetInput(m_ErodeFilter->GetOutput());
+  m_HistogramFilter->SetInput(inImage);
 
   m_HistogramFilter->Update();
 
-  StreamingHistogramFilterType::LabelPopulationMapType populationMap = m_HistogramFilter->GetLabelPopulationMap();
+  const auto &populationMap = m_HistogramFilter->GetLabelPopulationMap();
+
+  std::vector<std::tuple<int32_t, uint64_t>> counts;
+  counts.reserve(populationMap.size());
+
+  for (auto it = populationMap.begin(); it != populationMap.end(); ++it)
+    counts.emplace_back(std::make_tuple(it->first, it->second));
+
+  std::sort(counts.begin(), counts.end());
 
   std::ofstream fout(GetParameterString("out"));
-  for (auto it = populationMap.begin(); it != populationMap.end(); ++it)
-    if (it->first != bv)
-      fout << it->first << ',' << it->second << '\n';
+  for (const auto &p : counts)
+    fout << std::get<0>(p) << ',' << std::get<1>(p) << '\n';
 }
 
-ErodeFilterType::Pointer                           m_ErodeFilter;
 StreamingHistogramFilterType::Pointer              m_HistogramFilter;
 
 };
