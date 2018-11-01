@@ -353,7 +353,7 @@ UInt8ImageReaderType::Pointer TimeSeriesReader::getUInt8ImageReader(const std::s
     auto reader = UInt8ImageReaderType::New();
 
     // set the file name
-    reader->SetFileName(filePath);
+    reader->SetFileName(filePath + "?skipgeom=true");
 
     // add it to the list and return
     m_UInt8ImageReaderList->PushBack(reader);
@@ -364,7 +364,7 @@ Int16ImageReaderType::Pointer TimeSeriesReader::getInt16ImageReader(const std::s
     auto reader = Int16ImageReaderType::New();
 
     // set the file name
-    reader->SetFileName(filePath);
+    reader->SetFileName(filePath + "?skipgeom=true");
 
     // add it to the list and return
     m_Int16ImageReaderList->PushBack(reader);
@@ -375,7 +375,7 @@ UInt16ImageReaderType::Pointer TimeSeriesReader::getUInt16ImageReader(const std:
     auto reader = UInt16ImageReaderType::New();
 
     // set the file name
-    reader->SetFileName(filePath);
+    reader->SetFileName(filePath + "?skipgeom=true");
 
     // add it to the list and return
     m_UInt16ImageReaderList->PushBack(reader);
@@ -386,7 +386,7 @@ UInt8VectorImageReaderType::Pointer TimeSeriesReader::getUInt8VectorImageReader(
     auto reader = UInt8VectorImageReaderType::New();
 
     // set the file name
-    reader->SetFileName(filePath);
+    reader->SetFileName(filePath + "?skipgeom=true");
 
     // add it to the list and return
     m_UInt8VectorImageReaderList->PushBack(reader);
@@ -397,7 +397,7 @@ FloatVectorImageReaderType::Pointer TimeSeriesReader::getFloatVectorImageReader(
     auto reader = FloatVectorImageReaderType::New();
 
     // set the file name
-    reader->SetFileName(filePath);
+    reader->SetFileName(filePath + "?skipgeom=true");
 
     // add it to the list and return
     m_Filters->PushBack(reader);
