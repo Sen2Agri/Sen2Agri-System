@@ -6,7 +6,8 @@ int getDaysFromEpoch(const std::string &date)
     if (strptime(date.c_str(), "%Y%m%d", &tm) == NULL) {
         itkGenericExceptionMacro("Invalid value for a date: " + date);
     }
-    return mktime(&tm) / 86400;
+    int days = timegm(&tm) / 86400;
+    return days;
 }
 
 void writeOutputDays(const std::vector<MissionDays> &days, const std::string &file)
