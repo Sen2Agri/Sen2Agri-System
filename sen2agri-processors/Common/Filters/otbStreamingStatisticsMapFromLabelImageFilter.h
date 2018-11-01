@@ -28,6 +28,7 @@
 #include "itkSimpleDataObjectDecorator.h"
 #include "otbPersistentFilterStreamingDecorator.h"
 
+#include <limits>
 
 namespace otb
 {
@@ -69,22 +70,31 @@ public:
       m_Count(1),
       m_UseNoDataValue(useNoDataValue)
   {
-    m_Count = 1;
-    m_Sum = pixel;
-    m_Min = pixel;
-    m_Max = pixel;
-    m_SqSum = pixel;
-    m_BandCount.SetSize(pixel.GetSize());
-    for (unsigned int band = 0 ; band < m_SqSum.GetSize() ; band++)
+    auto nBands = pixel.GetSize();
+
+    m_Min.SetSize(nBands);
+    m_Max.SetSize(nBands);
+    m_Sum.SetSize(nBands);
+    m_SqSum.SetSize(nBands);
+    m_BandCount.SetSize(nBands);
+
+    for (unsigned int band = 0 ; band < nBands ; band++)
       {
       auto val = pixel[band];
       if (!m_UseNoDataValue || val != m_NoDataValue)
         {
+        m_Min[band] = val;
+        m_Max[band] = val;
+        m_Sum[band] = val;
+        m_SqSum[band] = val * val;
         m_BandCount[band] = 1;
-        m_SqSum[band] *= m_SqSum[band];
         }
       else
         {
+        m_Min[band] = std::numeric_limits<RealValueType>::infinity();
+        m_Max[band] = -std::numeric_limits<RealValueType>::infinity();
+        m_Sum[band] = 0;
+        m_SqSum[band] = 0;
         m_BandCount[band] = 0;
         }
     }
@@ -98,15 +108,24 @@ public:
     for (unsigned int band = 0 ; band < nBands ; band ++ )
       {
       const RealValueType value = pixel[band];
-      const RealValueType sqValue = value * value;
-      PixelCountType hasValue = !m_UseNoDataValue || value != m_NoDataValue;
-
-      UpdateValues(hasValue,
-                   value, sqValue,
-                   value, value,
-                   m_BandCount[band],
-                   m_Sum[band], m_SqSum[band],
-                   m_Min[band], m_Max[band]);
+      if (!m_UseNoDataValue || value != m_NoDataValue)
+        {
+        UpdateValues(1,
+                     value, value * value,
+                     value, value,
+                     m_BandCount[band],
+                     m_Sum[band], m_SqSum[band],
+                     m_Min[band], m_Max[band]);
+        }
+      else
+        {
+        UpdateValues(0,
+                     0, 0,
+                     std::numeric_limits<RealValueType>::infinity(), -std::numeric_limits<RealValueType>::infinity(),
+                     m_BandCount[band],
+                     m_Sum[band], m_SqSum[band],
+                     m_Min[band], m_Max[band]);
+        }
       }
   }
 
@@ -211,8 +230,10 @@ public:
   typedef StatisticsAccumulator<RealVectorPixelType>                    AccumulatorType;
   typedef std::map<LabelPixelType, AccumulatorType >                    AccumulatorMapType;
   typedef std::vector<AccumulatorMapType>                               AccumulatorMapCollectionType;
-  typedef std::map<LabelPixelType, RealVectorPixelType >  PixelValueMapType;
-  typedef std::map<LabelPixelType, double>                LabelPopulationMapType;
+  typedef itk::VariableLengthVector<int32_t>                            PixelCountVectorType;
+  typedef std::map<LabelPixelType, RealVectorPixelType >                PixelValueMapType;
+  typedef std::map<LabelPixelType, double>                              LabelPopulationMapType;
+  typedef std::map<LabelPixelType, PixelCountVectorType>                PixelCountMapType;
 
   itkStaticConstMacro(InputImageDimension, unsigned int,
                       TInputVectorImage::ImageDimension);
@@ -257,6 +278,9 @@ public:
   /** Return the computed number of labeled pixels for each label in the input label image */
   LabelPopulationMapType GetLabelPopulationMap() const;
 
+  /** Return the computed number of valid pixels for each label in the input label image */
+  PixelCountMapType GetPixelCountMap() const;
+
   /** Make a DataObject of the correct type to be used as the specified
    * output. */
   DataObjectPointer MakeOutput(DataObjectPointerArraySizeType idx) override;
@@ -299,6 +323,7 @@ private:
   PixelValueMapType                      m_MaxRadiometricValue;
 
   LabelPopulationMapType                 m_LabelPopulation;
+  PixelCountMapType                      m_PixelCount;
 
 }; // end of class PersistentStreamingStatisticsMapFromLabelImageFilter
 
@@ -375,6 +400,7 @@ public:
   typedef typename Superclass::FilterType::PixelValueMapObjectType   PixelValueMapObjectType;
 
   typedef typename Superclass::FilterType::LabelPopulationMapType    LabelPopulationMapType;
+  typedef typename Superclass::FilterType::PixelCountMapType    PixelCountMapType;
 
   /** Set input multispectral image */
   using Superclass::SetInput;
@@ -429,6 +455,12 @@ public:
   LabelPopulationMapType GetLabelPopulationMap() const
   {
     return this->GetFilter()->GetLabelPopulationMap();
+  }
+
+  /** Return the computed number of valid pixels for each label in the input label image */
+  PixelCountMapType GetPixelCountMap() const
+  {
+    return this->GetFilter()->GetPixelCountMap();
   }
 
   /** Set the no data value */

@@ -119,6 +119,14 @@ PersistentStreamingStatisticsMapFromLabelImageFilter<TInputVectorImage, TLabelIm
 }
 
 template<class TInputVectorImage, class TLabelImage>
+typename PersistentStreamingStatisticsMapFromLabelImageFilter<TInputVectorImage, TLabelImage>::PixelCountMapType
+PersistentStreamingStatisticsMapFromLabelImageFilter<TInputVectorImage, TLabelImage>
+::GetPixelCountMap() const
+{
+  return m_PixelCount;
+}
+
+template<class TInputVectorImage, class TLabelImage>
 void
 PersistentStreamingStatisticsMapFromLabelImageFilter<TInputVectorImage, TLabelImage>
 ::GenerateOutputInformation()
@@ -194,11 +202,18 @@ PersistentStreamingStatisticsMapFromLabelImageFilter<TInputVectorImage, TLabelIm
       // Number of valid pixels in band
       auto count = bandCount[band];
       // Mean
-      mean[band] /= count;
-
-      // Unbiased standard deviation (not sure unbiased is usefull here)
-      const double variance = (sqSum[band] - (sum[band] * mean[band])) / (count - 1);
-      std[band] = std::sqrt(variance);
+      if (count > 0)
+        {
+        mean[band] /= count;
+        // Unbiased standard deviation (not sure unbiased is usefull here)
+        const double variance = (sqSum[band] - (sum[band] * mean[band])) / (count - 1);
+        std[band] = std::sqrt(variance);
+        }
+        else
+        {
+        mean[band] = 0;
+        std[band] = 0;
+        }
       }
     m_MeanRadiometricValue[label] = mean;
     m_StDevRadiometricValue[label] = std;
@@ -206,6 +221,7 @@ PersistentStreamingStatisticsMapFromLabelImageFilter<TInputVectorImage, TLabelIm
     // Min & max
     m_MinRadiometricValue[label] = it.second.GetMin();
     m_MaxRadiometricValue[label] = it.second.GetMax();
+    m_PixelCount[label] = bandCount;
     }
 
  }
@@ -216,14 +232,14 @@ PersistentStreamingStatisticsMapFromLabelImageFilter<TInputVectorImage, TLabelIm
 ::Reset()
 {
   m_AccumulatorMaps.clear();
+  m_AccumulatorMaps.resize(this->GetNumberOfThreads());
 
   m_MeanRadiometricValue.clear();
   m_StDevRadiometricValue.clear();
   m_MinRadiometricValue.clear();
   m_MaxRadiometricValue.clear();
   m_LabelPopulation.clear();
-  m_AccumulatorMaps.resize(this->GetNumberOfThreads());
-
+  m_PixelCount.clear();
 }
 
 template<class TInputVectorImage, class TLabelImage>
