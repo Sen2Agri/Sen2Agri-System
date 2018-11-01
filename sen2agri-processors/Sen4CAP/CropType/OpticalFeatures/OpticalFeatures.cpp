@@ -88,10 +88,20 @@ private:
         AddParameter(ParameterType_InputImage, "ref", "Support image");
         SetParameterDescription("ref", "Support image for computing statistics.");
 
+        AddParameter(ParameterType_InputFilename, "dates", "Sampling dates");
+        SetParameterDescription("dates", "The list of days on which to sample the inputs");
+        MandatoryOff("dates");
+
+        AddParameter(ParameterType_OutputFilename, "outdates", "Sampling dates");
+        SetParameterDescription("outdates", "The list of days on which to sample the inputs");
+        MandatoryOff("outdates");
+
         AddParameter(ParameterType_OutputFilename, "outmean", "Class means");
         SetParameterDescription("outmean", "Per-class means output CSV");
         AddParameter(ParameterType_OutputFilename, "outdev", "Class stddev");
         SetParameterDescription("outdev", "Per-class standard deviation output CSV");
+        AddParameter(ParameterType_OutputFilename, "outcount", "Class counts");
+        SetParameterDescription("outcount", "Per-class pixel count output CSV");
 
         AddParameter(ParameterType_StringList, "sp", "Temporal sampling rate");
         MandatoryOff("sp");
@@ -177,7 +187,17 @@ private:
         auto preprocessors = CropTypePreprocessingList::New();
         preprocessors->PushBack(m_Preprocessor);
 
-        const auto &sensorOutDays = getOutputDays(preprocessors, resamplingMode, mission, sp);
+        std::vector<MissionDays> sensorOutDays;
+        if (HasValue("dates")) {
+            sensorOutDays = readOutputDays(GetParameterString("dates"));
+        } else {
+            sensorOutDays = getOutputDays(preprocessors, resamplingMode, mission, sp);
+        }
+
+        if (HasValue("outdates")) {
+            writeOutputDays(sensorOutDays, GetParameterString("outdates"));
+        }
+
         auto featureImage = m_Preprocessor->GetOutput(sensorOutDays);
         featureImage->UpdateOutputInformation();
 
@@ -195,9 +215,11 @@ private:
 
         const auto &meanValues = m_StatisticsFilter->GetMeanValueMap();
         const auto &stdDevValues = m_StatisticsFilter->GetStandardDeviationValueMap();
+        const auto &countValues = m_StatisticsFilter->GetPixelCountMap();
 
         std::ofstream fmean(GetParameterString("outmean"));
         std::ofstream fdev(GetParameterString("outdev"));
+        std::ofstream fcount(GetParameterString("outcount"));
         for (auto it = meanValues.begin(); it != meanValues.end(); ++it) {
             fmean << it->first;
             for (unsigned int i = 0; i < it->second.Size(); i++)
@@ -209,6 +231,12 @@ private:
             for (unsigned int i = 0; i < it->second.Size(); i++)
                 fdev << ',' << it->second[i];
             fdev << '\n';
+        }
+        for (auto it = countValues.begin(); it != countValues.end(); ++it) {
+            fcount << it->first;
+            for (unsigned int i = 0; i < it->second.Size(); i++)
+                fcount << ',' << it->second[i];
+            fcount << '\n';
         }
     }
 
