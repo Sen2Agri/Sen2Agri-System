@@ -62,10 +62,10 @@ public:
   }
 
   // Accessors
-  itkGetMacro(Count, double);
+  itkGetMacro(Count, uint64_t);
 
 protected:
-  double m_Count;
+  uint64_t m_Count;
 };
 
 template<class TLabelImage>
@@ -94,7 +94,7 @@ public:
   typedef StatisticsAccumulator                                         AccumulatorType;
   typedef std::unordered_map<LabelPixelType, AccumulatorType >          AccumulatorMapType;
   typedef std::vector<AccumulatorMapType>                               AccumulatorMapCollectionType;
-  typedef std::unordered_map<LabelPixelType, double>                    LabelPopulationMapType;
+  typedef std::unordered_map<LabelPixelType, uint64_t>                  LabelPopulationMapType;
 
   itkStaticConstMacro(InputImageDimension, unsigned int,
                       TLabelImage::ImageDimension);
