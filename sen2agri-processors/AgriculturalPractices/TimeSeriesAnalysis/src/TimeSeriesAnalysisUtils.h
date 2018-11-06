@@ -5,22 +5,69 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include <gsl/gsl_fit.h>
+#include <gsl/gsl_cdf.h>
+
 #define NOT_AVAILABLE               -10000
 #define NR                          -10001
 #define SEC_IN_DAY                   86400          // seconds in day = 24 * 3600
 #define SEC_IN_WEEK                  604800         // seconds in week = 7 * 24 * 3600
 
+#define DOUBLE_EPSILON                  0.00000001
+
 boost::gregorian::greg_weekday const FirstDayOfWeek = boost::gregorian::Sunday;
+
+inline std::vector<std::string> split (const std::string &s, char delim) {
+    std::vector<std::string> result;
+    std::stringstream ss (s);
+    std::string item;
+
+    while (std::getline (ss, item, delim)) {
+        result.push_back (item);
+    }
+
+    return result;
+}
+
+
+inline void NormalizeFieldId(std::string &fieldId) {
+    std::replace( fieldId.begin(), fieldId.end(), '/', '_');
+}
+
 
 template <typename T>
 inline bool IsNA(T val) {
-    return (val == NOT_AVAILABLE);
+    return (val == NOT_AVAILABLE || val == NR);
 }
 
-template <typename T>
-bool IsNR(T val) {
-    return (val == NR);
+inline bool IsLessOrEqual(const double &val1, const double &val2) {
+    if (std::fabs(val1-val2) < DOUBLE_EPSILON) {
+        return true;    // equal values
+    }
+    return (val1 < val2);
 }
+
+inline bool IsGreaterOrEqual(const double &val1, const double &val2) {
+    if (std::fabs(val1-val2) < DOUBLE_EPSILON) {
+        return true;    // equal values
+    }
+    return (val1 > val2);
+}
+
+inline bool IsLess(const double &val1, const double &val2) {
+    if (std::fabs(val1-val2) < DOUBLE_EPSILON) {
+        return false;    // equal values
+    }
+    return (val1 < val2);
+}
+
+inline bool IsGreater(const double &val1, const double &val2) {
+    if (std::fabs(val1-val2) < DOUBLE_EPSILON) {
+        return false;    // equal values
+    }
+    return (val1 > val2);
+}
+
 
 inline time_t to_time_t(const boost::gregorian::date& date ){
     if (date.is_not_a_date()) {
@@ -72,26 +119,110 @@ inline bool ComputeSlope(const std::vector<double>& x, const std::vector<double>
     return true;
 }
 
+//template <typename T>
+//inline std::vector<T> GetLinearFit(const std::vector<T>& xData, const std::vector<T>& yData)
+//{
+//    T xSum = 0, ySum = 0, xxSum = 0, xySum = 0, slope, intercept;
+//    for (long i = 0; i < yData.size(); i++)
+//    {
+//        xSum += xData[i];
+//        ySum += yData[i];
+//        xxSum += xData[i] * xData[i];
+//        xySum += xData[i] * yData[i];
+//    }
+//    slope = (yData.size() * xySum - xSum * ySum) / (yData.size() * xxSum - xSum * xSum);
+//    intercept = (ySum - slope * xSum) / yData.size();
+//    std::vector<T> res;
+//    res.push_back(slope);
+//    res.push_back(intercept);
+//    return res;
+//}
+
 template <typename T>
-inline std::vector<T> GetLinearFit(const std::vector<T>& xData, const std::vector<T>& yData)
-{
-    T xSum = 0, ySum = 0, xxSum = 0, xySum = 0, slope, intercept;
-    for (long i = 0; i < yData.size(); i++)
-    {
-        xSum += xData[i];
-        ySum += yData[i];
-        xxSum += xData[i] * xData[i];
-        xySum += xData[i] * yData[i];
+bool ComputePValue(const std::vector<T>& xData, const std::vector<T>& yData, double &pValue) {
+    if(xData.size() != yData.size() || xData.size() <= 2) {
+        return false;
     }
-    slope = (yData.size() * xySum - xSum * ySum) / (yData.size() * xxSum - xSum * xSum);
-    intercept = (ySum - slope * xSum) / yData.size();
-    std::vector<T> res;
-    res.push_back(slope);
-    res.push_back(intercept);
-    return res;
+//    int n = 4;
+//    double xData1[4] = { 1970, 1980, 1990, 2000};
+//    double yData1[4] = {1.23,   11.432,   14.653, 21.6534};
+//    double c0, c1, cov00, cov01, cov11, sumsq;
+//    gsl_fit_linear (xData1, 1, yData1, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+
+//    std::cout<<"Coefficients\tEstimate\tStd. Error\tt value\tPr(>|t|)"<<std::endl;
+
+//    double stdev0=sqrt(cov00);
+//    double t0=c0/stdev0;
+//    double pv0=t0<0?2*(1-gsl_cdf_tdist_P(-t0,n-2)):2*(1-gsl_cdf_tdist_P(t0,n-2));//This is the p-value of the constant term
+//    std::cout<<"Intercept\t"<<c0<<"\t"<<stdev0<<"\t"<<t0<<"\t"<<pv0<<std::endl;
+
+//    double stdev1=sqrt(cov11);
+//    double t1=c1/stdev1;
+//    double pv1=t1<0?2*(1-gsl_cdf_tdist_P(-t1,n-2)):2*(1-gsl_cdf_tdist_P(t1,n-2));//This is the p-value of the linear term
+//    std::cout<<"x\t"<<c1<<"\t"<<stdev1<<"\t"<<t1<<"\t"<<pv1<<std::endl;
+
+//    double dl=n-2;//degrees of liberty
+
+//    double ySum = 0;
+//    for (long i = 0; i < n; i++) {
+//        ySum += yData1[i];
+//    }
+//    double ym = ySum / n; //Average of vector y
+
+//    double sct = 0; // sct = sum of total squares
+//    for (long i = 0; i < n; i++) {
+//        sct += pow(yData1[i]-ym,2);
+//    }
+//    //double sct=pow(yData1[0]-ym,2)+pow(yData1[1]-ym,2)+pow(yData1[2]-ym,2)+pow(yData1[3]-ym,2); // sct = sum of total squares
+//    double R2=1-sumsq/sct;
+//    std::cout<<"Multiple R-squared: "<<R2<<",    Adjusted R-squared: "<<1-double(n-1)/dl*(1-R2)<<std::endl;
+//    double F=R2*dl/(1-R2);
+//    double p_value=1-gsl_cdf_fdist_P(F,1,dl);
+//    std::cout<<"F-statistic:  "<<F<<" on 1 and "<<n-2<<" DF,  p-value: "<<p_value<<std::endl;
+
+
+    const double* xData1 = &xData[0];
+    const double* yData1 = &yData[0];
+    int n = xData.size();
+    double c0, c1, cov00, cov01, cov11, sumsq;
+    gsl_fit_linear (xData1, 1, yData1, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
+
+    //std::cout<<"Coefficients\tEstimate\tStd. Error\tt value\tPr(>|t|)"<<std::endl;
+
+    //double stdev0=sqrt(cov00);
+    //double t0=c0/stdev0;
+    //double pv0=t0<0?2*(1-gsl_cdf_tdist_P(-t0,n-2)):2*(1-gsl_cdf_tdist_P(t0,n-2));//This is the p-value of the constant term
+    //std::cout<<"Intercept\t"<<c0<<"\t"<<stdev0<<"\t"<<t0<<"\t"<<pv0<<std::endl;
+
+    //double stdev1=sqrt(cov11);
+    //double t1=c1/stdev1;
+    //double pv1=t1<0?2*(1-gsl_cdf_tdist_P(-t1,n-2)):2*(1-gsl_cdf_tdist_P(t1,n-2));//This is the p-value of the linear term
+    //std::cout<<"x\t"<<c1<<"\t"<<stdev1<<"\t"<<t1<<"\t"<<pv1<<std::endl;
+
+    double dl=n-2;//degrees of liberty
+    double ySum = 0;
+    for (long i = 0; i < n; i++) {
+        ySum += yData1[i];
+    }
+    double ym = ySum / n; //Average of vector y
+    double sct = 0; // sct = sum of total squares
+    for (long i = 0; i < n; i++) {
+        sct += pow(yData1[i]-ym,2);
+    }
+    //double sct=pow(yData1[0]-ym,2)+pow(yData1[1]-ym,2)+pow(yData1[2]-ym,2)+pow(yData1[3]-ym,2); // sct = sum of total squares
+    double R2=1-sumsq/sct;
+    //std::cout<<"Multiple R-squared: "<<R2<<",    Adjusted R-squared: "<<1-double(n-1)/dl*(1-R2)<<std::endl;
+    double F=R2*dl/(1-R2);
+    double p_value=1-gsl_cdf_fdist_P(F,1,dl);
+    //std::cout<<"F-statistic:  "<<F<<" on 1 and "<<n-2<<" DF,  p-value: "<<p_value<<std::endl;
+    pValue = p_value;
+    return true;
 }
 
 inline time_t FloorDateToWeekStart(time_t ttTime) {
+    if (ttTime == 0) {
+        return 0;
+    }
     boost::gregorian::date bDate = boost::posix_time::from_time_t(ttTime).date();
     short dayOfTheWeek = bDate.day_of_week();
     int offsetSec;
@@ -149,6 +280,11 @@ inline int GetWeekFromDate(time_t ttTime) {
     int weekNo = ((resTm->tm_yday + 6)/7);
     if (resTm->tm_wday < resTm2->tm_wday) {
         ++weekNo;
+    }
+    if (FirstDayOfWeek == boost::gregorian::Sunday) {
+        if (resTm->tm_wday == 0) {
+            ++weekNo;
+        }
     }
     return weekNo;
 
@@ -210,7 +346,7 @@ inline std::string ValueToString(T value, bool isBool = false)
     }
     if (std::is_same<T, double>::value) {
         std::stringstream stream;
-        stream << std::fixed << std::setprecision(6) << value;
+        stream << std::fixed << std::setprecision(7) << value;
         return stream.str();
     }
     return std::to_string(value);

@@ -35,9 +35,11 @@
 #define INPUT_SHP_DATE_PATTERN      "%4d-%2d-%2d"
 
 #define CATCH_CROP_VAL                  "CatchCrop"
+#define CATCH_CROP_IS_MAIN_VAL          "CatchCropIsMain"
 #define FALLOW_LAND_VAL                 "Fallow"
 #define NITROGEN_FIXING_CROP_VAL        "NFC"
 
+#define MIN_REQUIRED_COHE_VALUES        20
 
 // TODO : re-analyse the usage of dates (start of week or exact date)
 
@@ -97,7 +99,7 @@ private:
         // TODO: Ask Gisat for CZE
         m_CatchPeriod = 56;               // in days (e.g. 8 weeks == 56 days)
         m_CatchProportion = 1/3;       // buffer threshold
-        m_CatchPeriodStart = "2017-08-01";
+        //m_CatchPeriodStart = "2017-08-01";
 
         m_EfaNdviThr = 400; // 325;
         m_EfaNdviUp = 600; // 400;
@@ -107,7 +109,7 @@ private:
         m_EfaCohValue = 0.7;
 
         // TODO: ask Gisat about this value
-        m_EfaNdviMin = 300;
+        m_EfaNdviMin = NOT_AVAILABLE;
         m_EfaAmpThr = NOT_AVAILABLE;
 
         m_UseStdDevInAmpThrValComp = false;
@@ -157,6 +159,11 @@ private:
                                           "If dir, the application expects a directory with txt files for each parcel");
         MandatoryOff("intype");
 
+        AddParameter(ParameterType_Int, "allowgaps", "Allow week gaps in time series");
+        SetParameterDescription("allowgaps", "Allow week gaps in  time series");
+        SetDefaultParameterInt("allowgaps", 0);
+        MandatoryOff("allowgaps");
+
         AddParameter(ParameterType_String, "country", "The country to be used in the output file name");
         SetParameterDescription("country", "The country to be used in the output file name");
         MandatoryOff("country");
@@ -173,50 +180,50 @@ private:
 // /////////////////////// CONFIGURABLE PARAMETERS PER SITE AND PRACTICE ////////////////////
         AddParameter(ParameterType_Float, "optthrvegcycle", "Optical threshold vegetation cycle");
         SetParameterDescription("optthrvegcycle", "Optical threshold vegetation cycle");
-        SetDefaultParameterFloat("optthrvegcycle", 550);                                        // TODO: changing
-        MandatoryOff("optthrvegcycle");
+//        SetDefaultParameterFloat("optthrvegcycle", 550);                                        // TODO: changing
+//        MandatoryOff("optthrvegcycle");
 
         // for MARKER 2 - NDVI loss
         // expected value of harvest/clearance
         AddParameter(ParameterType_Float, "ndvidw", "NDVI down");
         SetParameterDescription("ndvidw", "for MARKER 2 - NDVI loss - expected value of harvest/clearance");
-        SetDefaultParameterFloat("ndvidw", 350);                                        // TODO: changing
-        MandatoryOff("ndvidw");
+//        SetDefaultParameterFloat("ndvidw", 350);                                        // TODO: changing
+//        MandatoryOff("ndvidw");
 
         AddParameter(ParameterType_Float, "ndviup", "NDVI up");
         SetParameterDescription("ndviup", "buffer value (helps in case of sparse ndvi time-serie)");
-        SetDefaultParameterFloat("ndviup", 550);                                        // TODO: changing
-        MandatoryOff("ndviup");
+//        SetDefaultParameterFloat("ndviup", 550);                                        // TODO: changing
+//        MandatoryOff("ndviup");
 
         AddParameter(ParameterType_Float, "ndvistep", "NDVI step");
         SetParameterDescription("ndvistep", "opt.thr.value is round up to ndvi.step");
-        SetDefaultParameterFloat("ndvistep", 5);
-        MandatoryOff("ndvistep");
+//        SetDefaultParameterFloat("ndvistep", 5);
+//        MandatoryOff("ndvistep");
 
         AddParameter(ParameterType_Float, "optthrmin", "Optical threshold minimum");
         SetParameterDescription("optthrmin", "opt.thr.value is round up to ndvi.step");
-        SetDefaultParameterFloat("optthrmin", 100);
-        MandatoryOff("optthrmin");
+//        SetDefaultParameterFloat("optthrmin", 100);
+//        MandatoryOff("optthrmin");
 
         AddParameter(ParameterType_Float, "cohthrbase", "COHERENCE increase");
         SetParameterDescription("cohthrbase", "for MARKER 5 - COHERENCE increase");
-        SetDefaultParameterFloat("cohthrbase", 0.05);                                   // TODO: changing
-        MandatoryOff("cohthrbase");
+//        SetDefaultParameterFloat("cohthrbase", 0.05);                                   // TODO: changing
+//        MandatoryOff("cohthrbase");
 
         AddParameter(ParameterType_Float, "cohthrhigh", "Coherence threshold high");
         SetParameterDescription("cohthrhigh", "for MARKER 5 - COHERENCE increase");
-        SetDefaultParameterFloat("cohthrhigh", 0.15);                                   // TODO: changing
-        MandatoryOff("cohthrhigh");
+//        SetDefaultParameterFloat("cohthrhigh", 0.15);                                   // TODO: changing
+//        MandatoryOff("cohthrhigh");
 
         AddParameter(ParameterType_Float, "cohthrabs", "Coherence threshold absolute");
         SetParameterDescription("cohthrabs", "for MARKER 5 - COHERENCE increase");
-        SetDefaultParameterFloat("cohthrabs", 0.75);                                   // TODO: changing
-        MandatoryOff("cohthrabs");
+//        SetDefaultParameterFloat("cohthrabs", 0.75);                                   // TODO: changing
+//        MandatoryOff("cohthrabs");
 
         AddParameter(ParameterType_Float, "ampthrmin", "BACKSCATTER loss");
         SetParameterDescription("ampthrmin", "for MARKER 3 - BACKSCATTER loss");
-        SetDefaultParameterFloat("ampthrmin", 0.1);                                   // TODO: changing
-        MandatoryOff("ampthrmin");
+//        SetDefaultParameterFloat("ampthrmin", 0.1);                                   // TODO: changing
+//        MandatoryOff("ampthrmin");
 
         // INPUT THRESHOLDS - EFA PRACTICE evaluation
         AddParameter(ParameterType_String, "catchmain", "Catch main");
@@ -264,7 +271,7 @@ private:
 
         AddParameter(ParameterType_Float, "efandvimin", "Efa NDVI minimum");
         SetParameterDescription("efandvimin", "EFA practices NDVI minimum");
-        SetDefaultParameterInt("efandvimin", 300);
+        SetDefaultParameterInt("efandvimin", NOT_AVAILABLE);
         MandatoryOff("efandvimin");
 
         AddParameter(ParameterType_Float, "efaampthr", "Efa Amplitude threshold");
@@ -312,6 +319,11 @@ private:
         SetDefaultParameterInt("rescontprd", 0);
         MandatoryOff("rescontprd");
 
+        AddParameter(ParameterType_Int, "debug", "Print debug messages");
+        SetParameterDescription("debug", "Print debug messages");
+        SetDefaultParameterInt("debug", 1);
+        MandatoryOff("debug");
+
         // Doc example parameter settings
         //SetDocExampleParameterValue("in", "support_image.tif");
     }
@@ -322,6 +334,9 @@ private:
 
     void ExtractParameters() {
         m_outputDir = GetParameterAsString("outdir");
+        m_bAllowGaps = GetParameterInt("allowgaps") != 0;
+        m_bDebugMode = GetParameterInt("debug") != 0;
+
         if (HasValue("country")) {
             m_countryName = GetParameterAsString("country");
         }
@@ -455,12 +470,23 @@ private:
 
         auto factory = StatisticsInfosReaderFactory::New();
         m_pAmpReader = factory->GetInfosReader(inputType);
-        m_pAmpReader->SetSource(GetParameterAsString("diramp"));
+        m_pAmpReader->Initialize(GetParameterAsString("diramp"), {"VV", "VH"});
+        m_pAmpReader->SetUseDate2(false);
+        m_pAmpReader->SetSwitchDates(false);
+
         m_pNdviReader = factory->GetInfosReader(inputType);
-        m_pNdviReader->SetSource(GetParameterAsString("dirndvi"));
+        m_pNdviReader->Initialize(GetParameterAsString("dirndvi"), {});
+        m_pNdviReader->SetUseDate2(false);
+        m_pNdviReader->SetSwitchDates(false);
+
         m_pCoheReader = factory->GetInfosReader(inputType);
-        m_pCoheReader->SetSource(GetParameterAsString("dircohe"));
-        m_pCoheReader->SetMinRequiredEntries(26);
+        m_pCoheReader->Initialize(GetParameterAsString("dircohe"), {"VV", "VH"});
+
+        m_pCoheReader->SetMinRequiredEntries(MIN_REQUIRED_COHE_VALUES+1);
+
+        m_pCoheReader->SetUseDate2(true);
+        m_pCoheReader->SetSwitchDates(true);
+
 
         const std::string &practicesInfoFile = GetParameterAsString("harvestshp");
         boost::filesystem::path practicesInfoPath(practicesInfoFile);
@@ -479,12 +505,18 @@ private:
         // create the plots file
         CreatePlotsFile(m_practiceName, m_countryName, std::atoi(m_year.c_str()));
 
+        // create the continous products file
+        CreateContinousProductFile(m_practiceName, m_countryName, std::atoi(m_year.c_str()));
+
+        // start processing features
         using namespace std::placeholders;
         std::function<bool(const FeatureDescription&)> f = std::bind(&TimeSeriesAnalysis::HandleFeature, this, _1);
         m_pPracticeReader->ExtractFeatures(f);
 
         // close the plots file
         ClosePlotsFile();
+
+        otbAppLogINFO("Execution DONE!");
     }
 
     bool HandleFeature(const FeatureDescription& feature) {
@@ -502,11 +534,32 @@ private:
 //        {
 //            return false;
 //        }
-        if (fieldId != "613102006_21")
-        {
-            return false;
-        }
+//        if (fieldId != "613102006_21")
+//        {
+//            return false;
+//        }
 
+//        if (fieldId != "670104903") {
+//            return false;
+//        }
+//        if (fieldId != "663101501_6") {
+//            return false;
+//        }
+//        if (fieldId != "681105603") {
+//            return false;
+//        }
+
+//        if (fieldId != "636105803_2") {
+//            return false;
+//        }
+
+//        if (fieldId != "636102704_17") {
+//            return false;
+//        }
+
+//        if (fieldId != "655115201_1") {
+//            return false;
+//        }
 
         FieldInfoType fieldInfos(fieldId);
 
@@ -560,38 +613,37 @@ private:
         }
 
 //      DEBUG
-        std::cout << "Field ID: " << fieldId << std::endl;
-        std::cout << "Vegetation start: " << TimeToString(fieldInfos.ttVegStartTime) << std::endl;
-        std::cout << "Vegetation start floor time: " << TimeToString(fieldInfos.ttVegStartWeekFloorTime) << std::endl;
-        std::cout << "Vegetation start WEEK No: " <<  fieldInfos.vegStartWeekNo << std::endl;
-        std::cout << "Harvest start: " << TimeToString(fieldInfos.ttHarvestStartTime) << std::endl;
-        std::cout << "Harvest start floort time: " << TimeToString(fieldInfos.ttHarvestStartWeekFloorTime) << std::endl;
-        std::cout << "Harvest start WEEK No: " <<  fieldInfos.harvestStartWeekNo << std::endl;
-        std::cout << "Harvest end : " << TimeToString(fieldInfos.ttHarvestEndTime) << std::endl;
-        std::cout << "Harvest end floor time: " << TimeToString(fieldInfos.ttHarvestEndWeekFloorTime) << std::endl;
+        PrintFieldGeneralInfos(fieldInfos);
 //      DEBUG
 
+        bool bOK = true;
         otbAppLogINFO("Extracting amplitude file infos for field  " << fieldId);
         if (!ExtractAmplitudeFilesInfos(fieldInfos)) {
-            return false;
+            bOK = false;
         }
 
         otbAppLogINFO("Extracting coherence file infos for field  " << fieldId);
-        if (!ExtractCoherenceFilesInfos(fieldInfos)) {
-            return false;
+        if (bOK && !ExtractCoherenceFilesInfos(fieldInfos)) {
+            bOK = false;
         }
 
         otbAppLogINFO("Extracting NDVI file infos for field  " << fieldId);
-        if (!ExtractNdviFilesInfos(fieldInfos)) {
-            return false;
+        if (bOK && !ExtractNdviFilesInfos(fieldInfos)) {
+            bOK = false;
         }
 
         otbAppLogINFO("Processing infos for field  " << fieldId);
-        if (!ProcessFieldInformation(fieldInfos)) {
-            return false;
+        if (bOK && !ProcessFieldInformation(fieldInfos)) {
+            bOK = false;
+        }
+        if (!bOK) {
+            // in case an error occurred, write in the end the parcel but with invalid infos
+            HarvestInfoType harvestInfos;
+            harvestInfos.evaluation.Initialize(fieldInfos);
+            WriteHarvestInfoToCsv(fieldInfos, harvestInfos, harvestInfos);
         }
 
-        return true;
+        return bOK;
     }
 
     bool ExtractAmplitudeFilesInfos(FieldInfoType &fieldInfo)
@@ -610,15 +662,27 @@ private:
             otbAppLogWARNING("Didn't find entries for both VV and VH amplitude files for the field " << fieldInfo.fieldId);
             return false;
         }
-        fieldInfo.ampVVLines.insert(fieldInfo.ampVVLines.end(), itVV->second.begin(), itVV->second.end());
-        fieldInfo.ampVHLines.insert(fieldInfo.ampVHLines.end(), itVH->second.begin(), itVH->second.end());
 
-        if (!CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.ampVVLines) ||
-            !CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.ampVHLines)) {
-            otbAppLogWARNING("No valid amplitude lines were found for the field id " << fieldInfo.fieldId);
-            return false;
+        otbAppLogINFO("Amplitude : Extracted a number of " << itVV->second.size() <<
+                      " VV entries and a number of " << itVH->second.size() << " VH entries!");
+
+        std::vector<InputFileLineInfoType> commonVVInfos;
+        std::vector<InputFileLineInfoType> commonVHInfos;
+        KeepCommonDates(itVV->second, itVH->second, commonVVInfos, commonVHInfos);
+
+        fieldInfo.ampVVLines.insert(fieldInfo.ampVVLines.end(), commonVVInfos.begin(), commonVVInfos.end());
+        fieldInfo.ampVHLines.insert(fieldInfo.ampVHLines.end(), commonVHInfos.begin(), commonVHInfos.end());
+
+        otbAppLogINFO("Amplitude : Available " << fieldInfo.ampVVLines.size() <<
+                      " VV entries and a number of " << fieldInfo.ampVHLines.size() << " VH entries!");
+
+        if (!m_bAllowGaps) {
+            if (!CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.ampVVLines) ||
+                !CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.ampVHLines)) {
+                otbAppLogWARNING("No valid amplitude lines were found for the field id (gaps)" << fieldInfo.fieldId);
+                return false;
+            }
         }
-
 
         return true;
     }
@@ -626,40 +690,51 @@ private:
     bool ExtractCoherenceFilesInfos(FieldInfoType &fieldInfo)
     {
         std::map<std::string, std::vector<InputFileLineInfoType>> mapInfos;
-        if (!m_pCoheReader->GetEntriesForField(fieldInfo.fieldId, {"VV", "VH"}, mapInfos)) {
+        if (!m_pCoheReader->GetEntriesForField(fieldInfo.fieldId, /*{"VV", "VH"}*/{"VV"}, mapInfos)) {
             otbAppLogWARNING("Cannot extract coherence infos for the field " << fieldInfo.fieldId);
             return false;
         }
         std::map<std::string, std::vector<InputFileLineInfoType>>::const_iterator itVV;
-        std::map<std::string, std::vector<InputFileLineInfoType>>::const_iterator itVH;
+        //std::map<std::string, std::vector<InputFileLineInfoType>>::const_iterator itVH;
         itVV = mapInfos.find("VV");
-        itVH = mapInfos.find("VH");
-        if (itVV == mapInfos.end() || itVH == mapInfos.end() ||
-            itVV->second.size() == 0 || itVH->second.size() == 0) {
+        //itVH = mapInfos.find("VH");
+        if (itVV == mapInfos.end() /*|| itVH == mapInfos.end()*/ ||
+            itVV->second.size() == 0 /*|| itVH->second.size() == 0*/) {
             otbAppLogWARNING("Didn't find entries for both VV and VH coherence files for the field " << fieldInfo.fieldId);
             return false;
         }
+
+//        otbAppLogINFO("Coherence : Extracted a number of " << itVV->second.size() <<
+//                      " VV entries and a number of " << itVH->second.size() << " VH entries!");
+        otbAppLogINFO("Coherence : Extracted a number of VV entries of " << itVV->second.size());
+
         fieldInfo.coheVVLines.insert(fieldInfo.coheVVLines.end(), itVV->second.begin(), itVV->second.end());
-        fieldInfo.coheVHLines.insert(fieldInfo.coheVHLines.end(), itVH->second.begin(), itVH->second.end());
-        if (fieldInfo.coheVVLines.size() <= 25 || fieldInfo.coheVHLines.size() <= 25) {
+        //fieldInfo.coheVHLines.insert(fieldInfo.coheVHLines.end(), itVH->second.begin(), itVH->second.end());
+
+        if (fieldInfo.coheVVLines.size() <= MIN_REQUIRED_COHE_VALUES /*|| fieldInfo.coheVHLines.size() <= MIN_REQUIRED_COHE_VALUES*/) {
             otbAppLogWARNING("No/empty/short coherence input text files the field id " << fieldInfo.fieldId);
             return false;
         }
+
+        std::sort (fieldInfo.coheVVLines.begin(), fieldInfo.coheVVLines.end(), TimedValInfosComparator<InputFileLineInfoType>());
+
         for (std::vector<InputFileLineInfoType>::const_iterator it = fieldInfo.coheVVLines.begin() ;
              it != fieldInfo.coheVVLines.end(); ++it) {
-            if (fieldInfo.coheVVMaxValue == NOT_AVAILABLE) {
+            if (IsNA(fieldInfo.coheVVMaxValue)) {
                 fieldInfo.coheVVMaxValue = it->meanVal;
             } else {
-                if (fieldInfo.coheVVMaxValue < it->meanVal) {
+                if (IsLess(fieldInfo.coheVVMaxValue, it->meanVal)) {
                     fieldInfo.coheVVMaxValue = it->meanVal;
                 }
             }
         }
 
-        if (!CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.coheVVLines) ||
-            !CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.coheVHLines)) {
-            otbAppLogWARNING("No valid coherence lines were found for the field id " << fieldInfo.fieldId);
-            return false;
+        if (!m_bAllowGaps) {
+            if (!CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.coheVVLines) /*||
+                !CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.coheVHLines)*/) {
+                otbAppLogWARNING("No valid coherence lines were found for the field id (gaps) " << fieldInfo.fieldId);
+                return false;
+            }
         }
 
         return true;
@@ -677,11 +752,19 @@ private:
         return true;
     }
 
-    bool CheckWeekGaps(int &vegetationStartWeek, const std::vector<InputFileLineInfoType> &lineInfos)
+    bool CheckWeekGaps(int &vegetationStartWeek, const std::vector<InputFileLineInfoType> &inLineInfos)
     {
-        if (lineInfos.size() == 0) {
+        if (inLineInfos.size() == 0) {
             return false;
         }
+
+        // TODO: this is an workaround to have the same results as 2017 prototype
+        // TODO: See why if sorting the initial inputs give different results
+        std::vector<InputFileLineInfoType> lineInfos;
+        lineInfos.insert(lineInfos.end(), inLineInfos.begin(), inLineInfos.end());
+
+        // sort the read lines information
+        std::sort (lineInfos.begin(), lineInfos.end(), TimedValInfosComparator<InputFileLineInfoType>());
 
         bool gaps = false;
         int validLines = 0;
@@ -711,6 +794,117 @@ private:
 
         return true;
     }
+
+    void KeepCommonDates(const std::vector<InputFileLineInfoType> &lineInfos1, const std::vector<InputFileLineInfoType> &lineInfos2,
+                         std::vector<InputFileLineInfoType> &retLineInfos1, std::vector<InputFileLineInfoType> &retLineInfos2) {
+        if (lineInfos1.size() == 0 || lineInfos2.size() == 0) {
+            return;
+        }
+        for (size_t i = 0; i<lineInfos1.size(); i++) {
+            for (size_t j = 0; j<lineInfos2.size(); j++) {
+                if (lineInfos1[i].ttDate == lineInfos2[j].ttDate) {
+                    retLineInfos1.push_back(lineInfos1[i]);
+                    retLineInfos2.push_back(lineInfos2[j]);
+                }
+            }
+        }
+        otbAppLogINFO("Kept a number of " << retLineInfos1.size() << " common lines!");
+    }
+
+//    void SynchronizeAmpAndCoherence(FieldInfoType &fieldInfo)
+//    {
+//        if (fieldInfo.ampVVLines.size() != fieldInfo.ampVHLines.size() /*||
+//                fieldInfo.coheVVLines.size() != fieldInfo.coheVHLines.size()*/) {
+//            otbAppLogWARNING("The amplitude or coherence polarisations do not have same number of elements");
+//            return;
+//        }
+//        // it is assumed that the vv and vh are synchronized ... we need to synchronize both on amp VV
+//        std::vector<InputFileLineInfoType> ampVVLines;
+//        std::vector<InputFileLineInfoType> ampVHLines;
+//        std::vector<InputFileLineInfoType> cohVVLines;
+//        //std::vector<InputFileLineInfoType> cohVHLines;
+//        for(size_t i = 0; i<fieldInfo.ampVVLines.size(); i++) {
+//            for(size_t j = 0; j < fieldInfo.coheVVLines.size(); j++) {
+//                // keep the dates that are in the same week - we are not intereseted in the exact same day
+//                if (fieldInfo.ampVVLines[i].ttDateFloor == fieldInfo.coheVVLines[j].ttDateFloor) {
+//                    ampVVLines.push_back(fieldInfo.ampVVLines[i]);
+//                    ampVHLines.push_back(fieldInfo.ampVVLines[i]);
+//                    cohVVLines.push_back(fieldInfo.coheVVLines[j]);
+//                    //cohVHLines.push_back(fieldInfo.coheVHLines[j]);
+//                }
+//            }
+//        }
+//        fieldInfo.ampVVLines.clear();
+//        fieldInfo.ampVHLines.clear();
+//        fieldInfo.coheVVLines.clear();
+//        //fieldInfo.coheVHLines.clear();
+
+//        fieldInfo.ampVVLines.insert(fieldInfo.ampVVLines.end(), ampVVLines.begin(), ampVVLines.end());
+//        fieldInfo.ampVHLines.insert(fieldInfo.ampVHLines.end(), ampVHLines.begin(), ampVHLines.end());
+
+//        fieldInfo.coheVVLines.insert(fieldInfo.coheVVLines.end(), cohVVLines.begin(), cohVVLines.end());
+//        //fieldInfo.coheVHLines.insert(fieldInfo.coheVHLines.end(), cohVHLines.begin(), cohVHLines.end());
+//    }
+
+//    std::vector<InputFileLineInfoType> FillWeekGaps(const std::vector<InputFileLineInfoType> &lineInfos)
+//    {
+//        std::vector<InputFileLineInfoType> retVect;
+//        if (lineInfos.size() == 0) {
+//            return retVect;
+//        }
+
+//        int prevWeekNo = -1;
+//        typename std::vector<InputFileLineInfoType>::const_iterator infosIter;
+//        for (infosIter = lineInfos.begin(); infosIter != lineInfos.end(); ++infosIter)
+//        {
+//            // we found a valid line
+//            if (prevWeekNo == -1) {
+//                prevWeekNo = infosIter->weekNo;
+//                // fill also from the start of the year
+//                InputFileLineInfoType prevItem = *infosIter;
+//                for (int i = prevWeekNo - 1; i >= 2; i--) {
+//                    prevItem.ttDate -= SEC_IN_WEEK;
+//                    prevItem.ttDateFloor -= SEC_IN_WEEK;
+//                    prevItem.weekNo -= 1;
+//                    prevItem.strDate = TimeToString(prevItem.ttDate);
+//                    if (prevItem.ttDate2 != 0 && prevItem.ttDate2 > SEC_IN_WEEK) {
+//                        prevItem.ttDate2 -= SEC_IN_WEEK;
+//                        prevItem.ttDate2Floor -= SEC_IN_WEEK;
+//                        prevItem.weekNo2 -= 1;
+//                        prevItem.strDate2 = TimeToString(prevItem.ttDate2);
+//                    }
+//                    // insert the new element at the begining of the vector
+//                    retVect.insert(retVect.begin(), prevItem);
+//                }
+//                retVect.push_back(*infosIter);
+//                continue;
+//            }
+//            int diffWeeks = infosIter->weekNo - prevWeekNo;
+//            if (diffWeeks > 1) {
+//                // duplicate the last item
+//                InputFileLineInfoType lastItem = retVect[retVect.size()-1];
+//                // insert a number of diff weeks - 1 entries
+//                for(int i = 0; i<diffWeeks-1; i++) {
+//                    lastItem.ttDate += SEC_IN_WEEK;
+//                    lastItem.ttDateFloor += SEC_IN_WEEK;
+//                    lastItem.weekNo += 1;
+//                    lastItem.strDate = TimeToString(lastItem.ttDate);
+//                    if (lastItem.ttDate2 != 0) {
+//                        lastItem.ttDate2 += SEC_IN_WEEK;
+//                        lastItem.ttDate2Floor += SEC_IN_WEEK;
+//                        lastItem.weekNo2 += 1;
+//                        lastItem.strDate2 = TimeToString(lastItem.ttDate2);
+//                    }
+//                    // otbAppLogINFO("Filling gaps for week " << lastItem.weekNo);
+//                    retVect.push_back(lastItem);
+//                }
+//            }
+//            retVect.push_back(*infosIter);
+//            prevWeekNo = infosIter->weekNo;
+//        }
+
+//        return retVect;
+//    }
 
     bool ProcessFieldInformation(FieldInfoType &fieldInfos) {
         // Read VV and VH backscatter (grd) and compute backscatter ratio (VV-VH)
@@ -792,41 +986,15 @@ private:
             return false;
         }
 
-        // DEBUG
-//        PrintMergedValues(allMergedValues);
-        // DEBUG
-
         UpdateMarker1Infos(fieldInfos, allMergedValues);
-
-        // DEBUG
-//        PrintMergedValues(allMergedValues);
-        // DEBUG
-
         UpdateMarker2Infos(fieldInfos, allMergedValues);
-
-        // DEBUG
-//        PrintMergedValues(allMergedValues);
-        // DEBUG
-
         UpdateMarker5Infos(fieldInfos, allMergedValues);
-
-        // DEBUG
-//        PrintMergedValues(allMergedValues);
-        // DEBUG
-
         double ampThrValue;
         UpdateMarker3Infos(fieldInfos, allMergedValues, ampThrValue);
-
-        // DEBUG
-//        PrintMergedValues(allMergedValues);
-        // DEBUG
-
-        std::cout << "Amplitude threshold value is: " << ValueToString(ampThrValue) << std::endl;
-
         UpdateMarker4Infos(fieldInfos, allMergedValues, ampThrValue);
 
         // DEBUG
-        PrintMergedValues(allMergedValues);
+        PrintMergedValues(allMergedValues, ampThrValue);
         // DEBUG
 
         HarvestInfoType harvestInfos;
@@ -840,7 +1008,7 @@ private:
 
         // ### TIME SERIES ANALYSIS FOR EFA PRACTICES ###
         if (fieldInfos.practiceName != "NA" && fieldInfos.ttPracticeStartTime != 0) {
-            if (fieldInfos.practiceName == m_CatchCropVal) {
+            if (fieldInfos.practiceName.find(m_CatchCropVal) != std::string::npos) {
                 CatchCropPracticeAnalysis(fieldInfos, allMergedValues, harvestInfos, efaHarvestInfos);
             } else if (fieldInfos.practiceName == m_FallowLandVal) {
                 FallowLandPracticeAnalysis(fieldInfos, allMergedValues, harvestInfos, efaHarvestInfos);
@@ -851,18 +1019,13 @@ private:
             }
         }
 
-        if (m_bPlotOutputGraph) {
-            // write infos to be generated as plots (png graphs)
-            WritePlotEntry(fieldInfos, harvestInfos);
-        }
-        if (m_bResultContinuousProduct) {
-            // TODO:
-//            continuous.product <- subset(group.merge, select=c(Group.1,ndvi.presence,candidate.opt,candidate.grd,grd.presence,candidate.coh) )
-//            colnames(continuous.product) <- c("WEEK","M1","M2","M3","M4","M5")
-//            continuous.product$WEEK <- week(continuous.product$WEEK)
-//            write.table(continuous.product,file=paste(result.continuous.folder,result.continuous.file,strtrim(field,nchar(field)-1),".csv",sep=""),sep=";",append=FALSE,row.names=FALSE,col.names=TRUE,quote=FALSE)
-        }
+        // write infos to be generated as plots (png graphs)
+        WritePlotEntry(fieldInfos, harvestInfos);
 
+        // Write the continuous field infos into the file
+        WriteContinousToCsv(fieldInfos, allMergedValues);
+
+        // write the harvest information to the final file
         WriteHarvestInfoToCsv(fieldInfos, harvestInfos, efaHarvestInfos);
 
         return true;
@@ -910,7 +1073,7 @@ private:
             curMaxVal = mapGroups[ttTime].maxVal;
             curVal = info.GetValue();
             mapGroups[ttTime].ttDate = ttTime;
-            mapGroups[ttTime].maxVal = (curMaxVal < curVal) ? curVal : curMaxVal ;
+            mapGroups[ttTime].maxVal = IsLess(curMaxVal, curVal) ? curVal : curMaxVal ;
             mapGroups[ttTime].sum += curVal;
             mapGroups[ttTime].cnt++;
             mapGroups[ttTime].meanVal = (mapGroups[ttTime].sum / mapGroups[ttTime].cnt);
@@ -918,14 +1081,14 @@ private:
             // Get the change value, if supported
             if (info.GetChangeValue(curChangeVal)) {
                 curMaxChangeVal = mapGroups[ttTime].maxChangeVal;
-                mapGroups[ttTime].maxChangeVal = (curMaxChangeVal < curChangeVal) ? curChangeVal : curMaxChangeVal ;
+                mapGroups[ttTime].maxChangeVal = IsLess(curMaxChangeVal, curChangeVal) ? curChangeVal : curMaxChangeVal ;
             }
         }
 
         for( std::map<time_t, GroupedMeanValInfosType>::iterator it = mapGroups.begin(); it != mapGroups.end(); ++it ) {
                 retGroups.push_back( it->second );
         }
-        std::sort(retGroups.begin(), retGroups.end(), GroupedMeanValInfosComparator());
+        std::sort(retGroups.begin(), retGroups.end(), TimedValInfosComparator<GroupedMeanValInfosType>());
 
         return true;
     }
@@ -962,34 +1125,16 @@ private:
                             const std::vector<GroupedMeanValInfosType> &ndviGroups,
                             std::vector<MergedAllValInfosType> &retAllMergedValues)
     {
-        if (ampRatioGroups.size() != coherenceGroups.size()) {
-            otbAppLogWARNING("Amplitude and coherence groups sizes differ when merging for field " << fieldInfos.fieldId);
+        if (!MergeAmpCoheFieldInfos(fieldInfos, ampRatioGroups, coherenceGroups, retAllMergedValues)) {
+            return false;
         }
 
-        size_t retListSize = ampRatioGroups.size() > coherenceGroups.size() ? coherenceGroups.size() : ampRatioGroups.size();
-        retAllMergedValues.resize(retListSize);
-
-        // fill the amplitude fields and other fields to NA
-        for(size_t i = 0; i < retListSize; i++) {
-            retAllMergedValues[i].ttDate = ampRatioGroups[i].ttDate;
-
-            retAllMergedValues[i].ampMean = ampRatioGroups[i].meanVal;
-            retAllMergedValues[i].ampMax = ampRatioGroups[i].maxVal;
-            retAllMergedValues[i].ampChange = ampRatioGroups[i].ampChange;
-
-            // Fill the coherence fields
-            // gaps are not expected (after start of vegetation period) - tested in tables_check
-            retAllMergedValues[i].cohChange = coherenceGroups[i].maxChangeVal;
-            retAllMergedValues[i].cohMax = coherenceGroups[i].maxVal;
-
-            // Set all these values to NOT_AVAILABLE
-            retAllMergedValues[i].ndviMeanVal = NOT_AVAILABLE;
-            retAllMergedValues[i].ndviPrev = NOT_AVAILABLE;
-            retAllMergedValues[i].ndviNext = NOT_AVAILABLE;
-            retAllMergedValues[i].ndviPresence = NOT_AVAILABLE;
-            retAllMergedValues[i].ndviDrop = NOT_AVAILABLE;
-            retAllMergedValues[i].vegWeeks = NOT_AVAILABLE;
-            retAllMergedValues[i].candidateOptical = false;
+        // update the ret list size with the right value
+        size_t retListSize = retAllMergedValues.size();
+        otbAppLogINFO("Kept a common AMP-COHE values of " << retListSize);
+        if (retListSize == 0) {
+            otbAppLogWARNING("No common AMP-COHE values detected for the parcel with ID " << fieldInfos.fieldId);
+            return false;
         }
 
         // Fill the NDVI fields
@@ -1043,7 +1188,170 @@ private:
                 retAllMergedValues[i].ndviPrev = retAllMergedValues[i].ndviNext;
             }
         }
+
         return true;
+    }
+
+    bool MergeAmpCoheFieldInfos(const FieldInfoType &fieldInfos, const std::vector<GroupedMeanValInfosType> &ampRatioGroups,
+                            const std::vector<GroupedMeanValInfosType> &coherenceGroups,
+                            std::vector<MergedAllValInfosType> &retAllMergedValues)
+    {
+        if (ampRatioGroups.size() != coherenceGroups.size()) {
+            otbAppLogWARNING("Amplitude and coherence groups sizes differ when merging for field " << fieldInfos.fieldId <<
+                             " Amp size: " << ampRatioGroups.size() << " Cohe size: " << coherenceGroups.size());
+        }
+
+        bool refListIsAmp = ampRatioGroups.size() <= coherenceGroups.size();
+        size_t retListSize = refListIsAmp ? ampRatioGroups.size() : coherenceGroups.size();
+        const std::vector<GroupedMeanValInfosType> &refList1 = refListIsAmp ? ampRatioGroups : coherenceGroups;
+        const std::vector<GroupedMeanValInfosType> &refList2 = refListIsAmp ? coherenceGroups : ampRatioGroups;
+
+        // we keep the dates where we have both backscatter and coherence
+        for(size_t i = 0; i < retListSize; i++) {
+            const GroupedMeanValInfosType &refItem1 = refList1[i];
+            for (size_t j = 0; j<refList2.size(); j++) {
+                const GroupedMeanValInfosType &refItem2 = refList2[j];
+                if (refItem1.ttDate == refList2[j].ttDate) {
+                    MergedAllValInfosType mergedVal;
+                    const GroupedMeanValInfosType &ampItem = refListIsAmp ? refItem1 : refItem2;
+                    const GroupedMeanValInfosType &coheItem = refListIsAmp ? refItem2 : refItem1;
+
+                    mergedVal.ttDate = ampItem.ttDate;
+                    mergedVal.ampMean = ampItem.meanVal;
+                    mergedVal.ampMax = ampItem.maxVal;
+                    mergedVal.ampChange = ampItem.ampChange;
+
+                    mergedVal.cohChange = coheItem.maxChangeVal;
+                    mergedVal.cohMax = coheItem.maxVal;
+
+                    retAllMergedValues.push_back(mergedVal);
+                    break;
+                }
+            }
+        }
+
+        // fill the gaps if allowed
+        FillAmpCoheGroupsGaps(ampRatioGroups, coherenceGroups, retAllMergedValues);
+
+        //retAllMergedValues.resize(retListSize);
+
+        // fill the amplitude fields and other fields to NA
+//        for(size_t i = 0; i < retListSize; i++) {
+//            retAllMergedValues[i].ttDate = ampRatioGroups[i].ttDate;
+
+//            retAllMergedValues[i].ampMean = ampRatioGroups[i].meanVal;
+//            retAllMergedValues[i].ampMax = ampRatioGroups[i].maxVal;
+//            retAllMergedValues[i].ampChange = ampRatioGroups[i].ampChange;
+
+//            // Fill the coherence fields
+//            // gaps are not expected (after start of vegetation period) - tested in tables_check
+//            retAllMergedValues[i].cohChange = coherenceGroups[i].maxChangeVal;
+//            retAllMergedValues[i].cohMax = coherenceGroups[i].maxVal;
+//        }
+
+        return true;
+    }
+
+    bool FillAmpCoheGroupsGaps(const std::vector<GroupedMeanValInfosType> &ampRatioGroups,
+                               const std::vector<GroupedMeanValInfosType> &coherenceGroups,
+                               std::vector<MergedAllValInfosType> &retAllMergedValues) {
+        if(!m_bAllowGaps || retAllMergedValues.size() == 0) {
+            return false;
+        }
+        AddMissingGapEntries(ampRatioGroups, retAllMergedValues, true);
+        AddMissingGapEntries(coherenceGroups, retAllMergedValues, false);
+        FillNotAvailableGaps(retAllMergedValues);
+
+        return true;
+    }
+
+    void AddMissingGapEntries(const std::vector<GroupedMeanValInfosType> &groups,
+                           std::vector<MergedAllValInfosType> &retAllMergedValues, bool bIsAmp) {
+        for(size_t i = 0; i<groups.size(); i++) {
+            bool bFound = false;
+            for (size_t j = 0; j<retAllMergedValues.size(); j++) {
+                if (groups[i].ttDate == retAllMergedValues[j].ttDate) {
+                    bFound = true;
+                    break;
+                }
+            }
+            if (!bFound) {
+                MergedAllValInfosType mergedVal;
+                const GroupedMeanValInfosType &item = groups[i];
+
+                mergedVal.ttDate = item.ttDate;
+                mergedVal.ampMean = bIsAmp ? item.meanVal : NOT_AVAILABLE;
+                mergedVal.ampMax = bIsAmp ? item.maxVal : NOT_AVAILABLE;
+                mergedVal.ampChange = bIsAmp ? item.ampChange : NOT_AVAILABLE;
+
+                mergedVal.cohChange = bIsAmp ? NOT_AVAILABLE : item.maxChangeVal;
+                mergedVal.cohMax = bIsAmp ? NOT_AVAILABLE : item.maxVal;
+
+                // add it at the end, it will be sorted later
+                retAllMergedValues.push_back(mergedVal);
+            }
+        }
+        // Now sort by date retAllMergedValues
+        std::sort(retAllMergedValues.begin(), retAllMergedValues.end(),
+                  TimedValInfosComparator<MergedAllValInfosType>());
+    }
+
+    void FillNotAvailableGaps(std::vector<MergedAllValInfosType> &retAllMergedValues) {
+        int prevValidAmpIdx = -1;
+        int prevValidCoheIdx = -1;
+        for (size_t i = 0; i<retAllMergedValues.size(); i++) {
+            if (IsNA(retAllMergedValues[i].ampMean)) {
+                // we have a gap filled item for amplitude
+                if (prevValidAmpIdx != -1) {
+                    retAllMergedValues[i].ampMean = retAllMergedValues[prevValidAmpIdx].ampMean;
+                    retAllMergedValues[i].ampMax = retAllMergedValues[prevValidAmpIdx].ampMax;
+                    retAllMergedValues[i].ampChange = retAllMergedValues[prevValidAmpIdx].ampChange;
+                    prevValidAmpIdx = i;    // make it a valid one
+                }
+            } else {
+                // make it a valid one
+                prevValidAmpIdx = i;
+            }
+            if (IsNA(retAllMergedValues[i].cohChange)) {
+                if (prevValidCoheIdx != -1) {
+                    retAllMergedValues[i].cohChange = retAllMergedValues[prevValidCoheIdx].cohChange;
+                    retAllMergedValues[i].cohMax = retAllMergedValues[prevValidCoheIdx].cohMax;
+                    prevValidCoheIdx = i;    // make it a valid one
+                }
+            } else {
+                // make it a valid one
+                prevValidCoheIdx = i;
+            }
+        }
+
+        // second iteration to fill items that were not filled at the first iteration due to unavailable of prev
+        // now use next to fill the first ones
+        prevValidAmpIdx = -1;
+        prevValidCoheIdx = -1;
+        for (int i = (int)retAllMergedValues.size()-1; i >= 0; i--) {
+            if (IsNA(retAllMergedValues[i].ampMean)) {
+                if (prevValidAmpIdx != -1) {
+                    // normally, this should happen all the time
+                    retAllMergedValues[i].ampMean = retAllMergedValues[prevValidAmpIdx].ampMean;
+                    retAllMergedValues[i].ampMax = retAllMergedValues[prevValidAmpIdx].ampMax;
+                    retAllMergedValues[i].ampChange = retAllMergedValues[prevValidAmpIdx].ampChange;
+                    prevValidAmpIdx = i;    // make it a valid one
+                }
+            } else {
+                prevValidAmpIdx = i;    // make it a valid one
+            }
+            if (IsNA(retAllMergedValues[i].cohChange)) {
+                if (prevValidCoheIdx != -1) {
+                    // normally, this should happen all the time
+                    retAllMergedValues[i].cohChange = retAllMergedValues[prevValidCoheIdx].cohChange;
+                    retAllMergedValues[i].cohMax = retAllMergedValues[prevValidCoheIdx].cohMax;
+                    prevValidCoheIdx = i;    // make it a valid one
+                }
+            } else {
+                // make it a valid one
+                prevValidCoheIdx = i;
+            }
+        }
     }
 
     template <typename Value>
@@ -1096,9 +1404,9 @@ private:
                 retAllMergedValues[i].ttDate <= fieldInfos.ttHarvestEndWeekFloorTime) {
                 if (IsNA(retAllMergedValues[i].ndviMeanVal)) {
                     retAllMergedValues[i].ndviPresence = false;
-                } else if (retAllMergedValues[i].ndviMeanVal > m_OpticalThrVegCycle) {
+                } else if (IsGreater(retAllMergedValues[i].ndviMeanVal, m_OpticalThrVegCycle)) {
                     // here we must set all the values from i to the date of Harvest End to true
-                    for (int j = i; retAllMergedValues[j].ttDate <= fieldInfos.ttHarvestEndWeekFloorTime; j++) {
+                    for (size_t j = i; j < retAllMergedValues.size() && retAllMergedValues[j].ttDate <= fieldInfos.ttHarvestEndWeekFloorTime; j++) {
                         retAllMergedValues[j].ndviPresence = true;
                     }
                     break;  // exit now, all needed entries were processed
@@ -1130,22 +1438,22 @@ private:
 
                 if ((retAllMergedValues[i].ndviPresence == true) && !IsNA(prevValidNdviMeanVal)) {
                     // update the NDVI drop only to the ones that have NDVI presence true
-                    retAllMergedValues[i].ndviDrop = ((retAllMergedValues[i].ndviMeanVal < prevValidNdviMeanVal) &&
-                            (retAllMergedValues[i].ndviMeanVal < m_NdviUp));
+                    retAllMergedValues[i].ndviDrop = (IsLess(retAllMergedValues[i].ndviMeanVal, prevValidNdviMeanVal) &&
+                            IsLess(retAllMergedValues[i].ndviMeanVal, m_NdviUp));
 
                     // compute additional infos for computing opt.thr.value
                     if (retAllMergedValues[i].ndviDrop) {
                         bHasNdviDrop = true;
-                        if (retAllMergedValues[i].ndviMeanVal < m_NdviDown) {
+                        if (IsLess(retAllMergedValues[i].ndviMeanVal, m_NdviDown)) {
                             ndviDropMeanLessDw = true;
                         }
-                        if (retAllMergedValues[i].ndviMeanVal < m_NdviUp) {
+                        if (IsLess(retAllMergedValues[i].ndviMeanVal, m_NdviUp)) {
                             ndviDropMeanLessUp = true;
                         }
-                        if (minMeanNdviDropVal == NOT_AVAILABLE) {
+                        if (IsNA(minMeanNdviDropVal)) {
                             minMeanNdviDropVal = retAllMergedValues[i].ndviMeanVal;
                         } else {
-                            if (minMeanNdviDropVal > retAllMergedValues[i].ndviMeanVal) {
+                            if (IsGreater(minMeanNdviDropVal, retAllMergedValues[i].ndviMeanVal)) {
                                 minMeanNdviDropVal = retAllMergedValues[i].ndviMeanVal;
                             }
                         }
@@ -1155,13 +1463,13 @@ private:
                 prevValidNdviMeanVal = retAllMergedValues[i].ndviMeanVal;
 
                 // compute the maximum ndvi drop needed for opt.thr.value computation
-                if (retAllMergedValues[i].ndviMeanVal >= m_NdviDown) {
+                if (IsGreaterOrEqual(retAllMergedValues[i].ndviMeanVal, m_NdviDown)) {
                     allVwstNdviDw = false;
                 }
-                if (maxMeanNdviDropVal == NOT_AVAILABLE) {
+                if (IsNA(maxMeanNdviDropVal)) {
                     maxMeanNdviDropVal = retAllMergedValues[i].ndviMeanVal;
                 } else {
-                    if (maxMeanNdviDropVal < retAllMergedValues[i].ndviMeanVal) {
+                    if (IsLess(maxMeanNdviDropVal, retAllMergedValues[i].ndviMeanVal)) {
                         maxMeanNdviDropVal = retAllMergedValues[i].ndviMeanVal;
                     }
                 }
@@ -1188,10 +1496,10 @@ private:
         for(size_t i = 0; i<retAllMergedValues.size(); i++) {
             // TODO: Ask Gisat why condition :
             // group.merge$ndvi.next<opt.thr.value | group.merge$ndvi.next<opt.thr.value+opt.thr.buffer
-            if (((retAllMergedValues[i].ndviNext < OpticalThresholdValue) ||
-                 (retAllMergedValues[i].ndviNext < OpticalThresholdValue + OpticalThresholdBuffer)) &&
-                    (retAllMergedValues[i].ndviPrev > OpticalThresholdValue) &&
-                    (retAllMergedValues[i].ndviPrev > retAllMergedValues[i].ndviNext) &&
+            if ((IsLess(retAllMergedValues[i].ndviNext, OpticalThresholdValue) ||
+                 IsLess(retAllMergedValues[i].ndviNext, OpticalThresholdValue + OpticalThresholdBuffer)) &&
+                    IsGreater(retAllMergedValues[i].ndviPrev, OpticalThresholdValue) &&
+                    IsGreater(retAllMergedValues[i].ndviPrev, retAllMergedValues[i].ndviNext) &&
                     (retAllMergedValues[i].ttDate >= fieldInfos.ttHarvestStartWeekFloorTime)) {
                 harvestOpticalStart = retAllMergedValues[i].ttDate;
                 break;
@@ -1209,13 +1517,13 @@ private:
         if (bHasNdviDrop) {
             for(size_t i = 0; i<retAllMergedValues.size(); i++) {
                 if (!IsNA(retAllMergedValues[i].ndviNext) && !IsNA(retAllMergedValues[i].ndviPrev)) {
-                    if (((retAllMergedValues[i].ndviNext < OpticalThresholdValue) ||
-                         (retAllMergedValues[i].ndviNext < OpticalThresholdValue + OpticalThresholdBuffer) ||
-                         (retAllMergedValues[i].ndviPrev < OpticalThresholdValue) ||
-                         (retAllMergedValues[i].ndviPrev < OpticalThresholdValue + OpticalThresholdBuffer)) &&
-                            (retAllMergedValues[i].ndviPrev > m_OpticalThresholdMinimum) &&
+                    if ((IsLess(retAllMergedValues[i].ndviNext, OpticalThresholdValue) ||
+                         IsLess(retAllMergedValues[i].ndviNext, OpticalThresholdValue + OpticalThresholdBuffer) ||
+                         IsLess(retAllMergedValues[i].ndviPrev, OpticalThresholdValue) ||
+                         IsLess(retAllMergedValues[i].ndviPrev, OpticalThresholdValue + OpticalThresholdBuffer)) &&
+                            IsGreater(retAllMergedValues[i].ndviPrev, m_OpticalThresholdMinimum) &&
                             (retAllMergedValues[i].ttDate >= harvestOpticalStart) &&
-                            ((retAllMergedValues[i].ndviPrev + m_NdviDown) > retAllMergedValues[i].ndviNext)) {
+                            IsGreater((retAllMergedValues[i].ndviPrev + m_NdviDown), retAllMergedValues[i].ndviNext)) {
                         retAllMergedValues[i].candidateOptical = true;
                     }
                 }
@@ -1266,20 +1574,27 @@ private:
         double ampThrBreak = ComputeAmplitudeThresholdBreak(stdDevVal);
         ampThrValue = ComputeAmplitudeThresholdValue(meanVal, stdDevVal);
         for(size_t i = 0; i<retAllMergedValues.size(); i++) {
-            retAllMergedValues[i].candidateAmplitude = (retAllMergedValues[i].ampChange > ampThrBreak);
+            retAllMergedValues[i].candidateAmplitude = IsGreater(retAllMergedValues[i].ampChange, ampThrBreak);
 //          DEBUG
 //            std::cout << ValueToString(retAllMergedValues[i].candidateAmplitude, true) << std::endl;
 //          DEBUG
         }
 
         // we iterate from index 1 to index size - 2 but we access also these indexes
+        std::vector<int> indexesToUpdate;
         for(size_t i = 1; i<retAllMergedValues.size()-1; i++) {
-            if ((retAllMergedValues[i].cohChange > m_CohThrHigh) &&
+            if (IsGreater(retAllMergedValues[i].cohChange, m_CohThrHigh) &&
                     ((retAllMergedValues[i-1].candidateAmplitude) ||
                      (retAllMergedValues[i].candidateAmplitude) ||
                      (retAllMergedValues[i+1].candidateAmplitude))) {
-                retAllMergedValues[i].candidateAmplitude = true;
+                indexesToUpdate.push_back(i);
+                // Note: we do not set here as we change the value for the next item that might
+                // be incorrectly set to true. This is why we save the indexes and make the update later
+                //retAllMergedValues[i].candidateAmplitude = true;
             }
+        }
+        for (auto idx: indexesToUpdate) {
+            retAllMergedValues[idx].candidateAmplitude = true;
         }
     }
 
@@ -1289,8 +1604,8 @@ private:
         (void)fieldInfos;    // supress unused warning
         // MARKER 4  Presence of vegetation cycle (BACKSCATTER): M4 == $grd.presence
         for(size_t i = 0; i<retAllMergedValues.size(); i++) {
-            retAllMergedValues[i].amplitudePresence = (retAllMergedValues[i].ampMax > ampThrValue);
-            if (retAllMergedValues[i].cohChange > m_CohThrHigh &&
+            retAllMergedValues[i].amplitudePresence = IsGreater(retAllMergedValues[i].ampMax, ampThrValue);
+            if (IsGreater(retAllMergedValues[i].cohChange, m_CohThrHigh) &&
                     retAllMergedValues[i].ndviPresence &&
                     retAllMergedValues[i].candidateOptical &&
                     retAllMergedValues[i].candidateAmplitude &&
@@ -1304,14 +1619,14 @@ private:
     void UpdateMarker5Infos(const FieldInfoType &fieldInfos, std::vector<MergedAllValInfosType> &retAllMergedValues) {
          // Define candidate-weeks for harvest based on coherence data (M5)
         double CohThrAbs = m_CohThrAbs;
-        if (fieldInfos.coheVVMaxValue < m_CohThrAbs) {
+        if (IsLess(fieldInfos.coheVVMaxValue, m_CohThrAbs)) {
             CohThrAbs = fieldInfos.coheVVMaxValue - m_CohThrBase;
         }
 
         for(size_t i = 0; i<retAllMergedValues.size(); i++) {
-            retAllMergedValues[i].coherenceBase = (retAllMergedValues[i].cohChange >= m_CohThrBase);
-            retAllMergedValues[i].coherenceHigh = (retAllMergedValues[i].cohChange >= m_CohThrHigh);
-            retAllMergedValues[i].coherencePresence = (retAllMergedValues[i].cohMax >= CohThrAbs);
+            retAllMergedValues[i].coherenceBase = IsGreaterOrEqual(retAllMergedValues[i].cohChange, m_CohThrBase);
+            retAllMergedValues[i].coherenceHigh = IsGreaterOrEqual(retAllMergedValues[i].cohChange, m_CohThrHigh);
+            retAllMergedValues[i].coherencePresence = IsGreaterOrEqual(retAllMergedValues[i].cohMax, CohThrAbs);
             retAllMergedValues[i].candidateCoherence =
                     (retAllMergedValues[i].coherenceBase || retAllMergedValues[i].coherencePresence);
         }
@@ -1322,19 +1637,17 @@ private:
         // TODO: This can be done using a flag in a structure encapsulating also retAllMergedValues
         //      in order to avoid this iteration (can be done in an iteration previously made)
         harvestInfos.harvestConfirmed = NOT_AVAILABLE;
+        harvestInfos.evaluation.Initialize(fieldInfos);
 
         if (!HasValidNdviValues(retAllMergedValues, m_OpticalThrVegCycle)) {
+            harvestInfos.evaluation.ndviPresence = false;               // M1
+            harvestInfos.evaluation.candidateOptical = NR;           // M2
+            harvestInfos.evaluation.candidateAmplitude = NR;         // M3
+            harvestInfos.evaluation.amplitudePresence = NR;          // M4
+            harvestInfos.evaluation.candidateCoherence = NR;         // M5
+            harvestInfos.evaluation.harvestConfirmWeek = NR;
             return false;
         }
-        harvestInfos.evaluation.fieldId = fieldInfos.fieldId;
-        harvestInfos.evaluation.year = fieldInfos.year;
-        harvestInfos.evaluation.ttVegStartTime = fieldInfos.ttVegStartTime;
-        harvestInfos.evaluation.ttHarvestStartTime = fieldInfos.ttHarvestStartTime;
-        harvestInfos.evaluation.ttHarvestEndTime = fieldInfos.ttHarvestEndTime;
-        harvestInfos.evaluation.practiceName = fieldInfos.practiceName;
-        harvestInfos.evaluation.ttPracticeStartTime = fieldInfos.ttPracticeStartTime;
-        harvestInfos.evaluation.ttPracticeEndTime = fieldInfos.ttPracticeEndTime;
-
 
         int idxFirstHarvest = -1;
         for(size_t i = 0; i<retAllMergedValues.size(); i++) {
@@ -1351,21 +1664,21 @@ private:
         }
 
         // "HARVESTED CONDITIONS NOT DETECTED"
-        if (harvestInfos.harvestConfirmed == NOT_AVAILABLE) {
+        if (IsNA(harvestInfos.harvestConfirmed)) {
             // report results from last available week
             int lastAvailableIdx = retAllMergedValues.size() - 1;
-            harvestInfos.evaluation.ndviPresence = retAllMergedValues[lastAvailableIdx].ndviPresence;
-            harvestInfos.evaluation.candidateOptical = retAllMergedValues[lastAvailableIdx].candidateOptical;
-            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[lastAvailableIdx].candidateAmplitude;
-            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[lastAvailableIdx].amplitudePresence;
-            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;
-            harvestInfos.evaluation.harvestConfirmWeek = NOT_AVAILABLE;
+            harvestInfos.evaluation.ndviPresence = retAllMergedValues[lastAvailableIdx].ndviPresence;               // M1
+            harvestInfos.evaluation.candidateOptical = retAllMergedValues[lastAvailableIdx].candidateOptical;       // M2
+            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[lastAvailableIdx].candidateAmplitude;   // M3
+            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[lastAvailableIdx].amplitudePresence;     // M4
+            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;   // M5
+            harvestInfos.evaluation.harvestConfirmWeek = NR;
         } else if (idxFirstHarvest != -1) {
-            harvestInfos.evaluation.ndviPresence = retAllMergedValues[idxFirstHarvest].ndviPresence;
-            harvestInfos.evaluation.candidateOptical = retAllMergedValues[idxFirstHarvest].candidateOptical;
-            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[idxFirstHarvest].candidateAmplitude;
-            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[idxFirstHarvest].amplitudePresence;
-            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[idxFirstHarvest].candidateCoherence;
+            harvestInfos.evaluation.ndviPresence = retAllMergedValues[idxFirstHarvest].ndviPresence;                // M1
+            harvestInfos.evaluation.candidateOptical = retAllMergedValues[idxFirstHarvest].candidateOptical;        // M2
+            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[idxFirstHarvest].candidateAmplitude;    // M3
+            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[idxFirstHarvest].amplitudePresence;      // M4
+            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[idxFirstHarvest].candidateCoherence;    // M5
             harvestInfos.evaluation.harvestConfirmWeek = GetWeekFromDate(retAllMergedValues[idxFirstHarvest].ttDate);
         }
 
@@ -1378,7 +1691,7 @@ private:
         time_t ttDateA;     // last possible start of catch-crop period
         time_t ttDateB;     // last possible end of catch-crop period
         time_t ttDateC;
-        time_t ttDateD = NOT_AVAILABLE;
+        time_t ttDateD = 0;
 
         // TODO: Ask Gisat about catch.period - is not defined for CZE
 
@@ -1441,8 +1754,8 @@ private:
                 if (GetMinMaxNdviValues(filteredAllMergedValues, minVal, maxVal)) {
                     efaMax = maxVal;    // select the maximum NDVI
                     efaMin = minVal;    // select the minimum NDVI
-                    if( efaMin < m_EfaNdviDown ){ efaMin = m_EfaNdviDown; }                 // efa.min is >= efa.ndvi.dw
-                    if( efaMin > m_EfaNdviUp ){ efaMin = m_EfaNdviUp; }                 // efa.min is <= efa.ndvi.up if efa.min>ndvi.up !
+                    if( IsLess(efaMin, m_EfaNdviDown) ){ efaMin = m_EfaNdviDown; }                 // efa.min is >= efa.ndvi.dw
+                    if( IsGreater(efaMin, m_EfaNdviUp) ){ efaMin = m_EfaNdviUp; }                 // efa.min is <= efa.ndvi.up if efa.min>ndvi.up !
                 } else {
                     // else set it to efa.ndvi.dw
                     efaMax = m_EfaNdviDown;
@@ -1461,7 +1774,7 @@ private:
                             break;
                         }
                     }
-                    if (ttDateD == NOT_AVAILABLE) {
+                    if (ttDateD == 0) {
                         ttDateD = ttDateC;
                     }
                 }
@@ -1469,7 +1782,7 @@ private:
                 int lastCatchStartIdx = -1;
                 // Compute $candidate.efa and define the start of the catch-crop period
                 for (size_t i = 0; i<retAllMergedValues.size(); i++) {
-                    retAllMergedValues[i].candidateEfa = retAllMergedValues[i].ndviNext < (efaMin + efaChange);
+                    retAllMergedValues[i].candidateEfa = IsLess(retAllMergedValues[i].ndviNext, (efaMin + efaChange));
                     // potential bare-land conditions (based on NDVI)
                     if (retAllMergedValues[i].ttDate > weekA + 7) {
                         // after the last possible start of catch-crop period + 7 days all the weeks with
@@ -1551,7 +1864,7 @@ private:
         bool vegSeasonStatus = false;
         for (size_t i = 0; i<retAllMergedValues.size(); i++) {
             if (!IsNA(retAllMergedValues[i].vegWeeks) && retAllMergedValues[i].vegWeeks == true &&
-                    retAllMergedValues[i].ndviMeanVal > m_OpticalThrVegCycle) {
+                    IsGreater(retAllMergedValues[i].ndviMeanVal, m_OpticalThrVegCycle)) {
                 vegSeasonStatus = true;
                 break;
             }
@@ -1574,8 +1887,10 @@ private:
                 bool found = false;
                 for (size_t i = 0; i<retAllMergedValues.size(); i++) {
                     if (retAllMergedValues[i].ttDate >= ttVegSeasonStart && retAllMergedValues[i].ttDate <= weekA) {
-                        found = true;
-                        break;
+                        if (retAllMergedValues[i].ndviDrop == true) {
+                            found = true;
+                            break;
+                        }
                     }
                 }
                 if (found) {
@@ -1583,6 +1898,11 @@ private:
                     ccHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
                 } else {
                     ccHarvestInfos.evaluation.efaIndex = "POOR";
+                    ccHarvestInfos.evaluation.ndviPresence = NR;                        // M6
+                    ccHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
+                    ccHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
+                    ccHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
+                    ccHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
                     return true;
                 }
             }
@@ -1590,6 +1910,11 @@ private:
             ccHarvestInfos.harvestConfirmed = GetTimeOffsetFromStartOfYear(harvestInfos.evaluation.year, ccHarvestInfos.evaluation.harvestConfirmWeek);
             if (ccHarvestInfos.harvestConfirmed > weekA && !catchInMaincrop) {
                 ccHarvestInfos.evaluation.efaIndex = "POOR";
+                ccHarvestInfos.evaluation.ndviPresence = NR;                        // M6
+                ccHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
+                ccHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
+                ccHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
+                ccHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
                 return true;
             }
         }
@@ -1648,7 +1973,7 @@ private:
         }
 
         // ### MARKER 8 - efa.noloss.ndvi ###
-        if (efa.ndviPresence == NOT_AVAILABLE) {
+        if (IsNA(efa.ndviPresence)) {
             efa.ndviNoLoss = NOT_AVAILABLE;
         } else {
             bool allNoLossNA = true;
@@ -1721,7 +2046,7 @@ private:
         efaNotCompliant += (efa.cohNoLoss == false ? 1 : 0);
 
         // # no NDVI values in the catch-crop perid - evaluation is based only on SAR markers (M9,M10)
-        if (efaNdvi == NOT_AVAILABLE) {
+        if (IsNA(efaNdvi)) {
             if (efaNotCompliant == 0) {
                 ccHarvestInfos.evaluation.efaIndex = "MODERATE";
             } else {
@@ -1848,6 +2173,7 @@ private:
 
         flHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
         flHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
+        flHarvestInfos.evaluation.ndviNoLoss = efaNoLossNdvi;               // M8
         flHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
 
         return true;
@@ -1869,13 +2195,12 @@ private:
         if (!efaPeriodEnded) {
             // # EFA practice is not evaluated before the end of the EFA practice period - return "NR" evaluation
             ncHarvestInfos.evaluation.efaIndex = "NR";
-//            efa.index <- "NR"                                                       # EFA practice is not evaluated before the end of the EFA practice period - return "NR" evaluation
-//            efa.evaluation <- data.frame( "NR","NR","NR","NR","NR", efa.index )
-//            colnames(efa.evaluation) <- c("M6","M7","M8","M9","M10", "C_INDEX")
-//            harvest.evaluation <- data.frame(harvest.evaluation,efa.evaluation)
-//            return(harvest.evaluation)
-            // TODO: Handle this
-            return false;
+            ncHarvestInfos.evaluation.ndviPresence = NR;                        // M6
+            ncHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
+            ncHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
+            ncHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
+            ncHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
+            return true;
         }
 
         // ### EFA PRACTICE EVALUATION ###
@@ -1885,21 +2210,17 @@ private:
         ExtractEfaMarkers(vegSeasonStart, ttDateB, fieldInfos, efaMarkers);
 
         // ### MARKER 6 - efa.presence.ndvi ###
-        EfaMarkersInfoType efa;
         // # if there is evidence of vegetation (NDVI>efa.ndvi.thr) in the vegetation season - M6 is TRUE
-        efa.ndviPresence = IsNdviPresence(efaMarkers);
-        if (!efa.ndviPresence) {
+        ncHarvestInfos.evaluation.ndviPresence = IsNdviPresence(efaMarkers);
+        if (!ncHarvestInfos.evaluation.ndviPresence) {
             // # no evidence of the NFC vegetation in the vegetation season - return POOR evaluation
             ncHarvestInfos.evaluation.efaIndex = "POOR";
+            ncHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
+            ncHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
+            ncHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
+            ncHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
+            return true;
 
-            // TODO:
-
-//            efa.evaluation <- data.frame( efa.presence.ndvi,"NR","NR","NR","NR", efa.index )
-//            colnames(efa.evaluation) <- c("M6","M7","M8","M9","M10", "C_INDEX")
-//            harvest.evaluation <- data.frame(harvest.evaluation,efa.evaluation)
-//            return(harvest.evaluation)
-
-            return false;
         } else if (IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
             // # vegetation is present, harvest was not detected - NFC is considered ok - evaluate
             // TODO: see how harvestConfirmWeek is initialized - NOT_AVAILABLE or 0 ?
@@ -1910,11 +2231,11 @@ private:
             if (harvestConfirmed > weekA && harvestConfirmed <= weekB) {
                 // # harvest detected within the efa practice period - NFC is considered not ok - return WEAK evaluation
                 ncHarvestInfos.evaluation.efaIndex = "WEAK";
-                // TODO
-//                efa.evaluation <- data.frame( efa.presence.ndvi,"NR","NR","NR","NR", efa.index )
-//                colnames(efa.evaluation) <- c("M6","M7","M8","M9","M10", "C_INDEX")
-//                harvest.evaluation <- data.frame(harvest.evaluation,efa.evaluation)
-                return false;
+                ncHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
+                ncHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
+                ncHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
+                ncHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
+                return true;
             }
         }
 
@@ -1924,27 +2245,17 @@ private:
         ExtractEfaMarkers(ttDateA, ttDateB, fieldInfos, efaMarkers2);
 
         // #  if there is evidence of vegetation (NDVI>efa.ndvi.thr) in the EFA practice period - M6 is TRUE
-        bool ndviPresenceTrueFound = false;
-        for (size_t i = 0; i<efaMarkers2.size(); i++) {
-            if (IsNA(efaMarkers2[i].ndviPresence)) {
-                continue;
-            }
-            if (efaMarkers2[i].ndviPresence == true) {
-                ndviPresenceTrueFound = true;
-                break;
-            }
-        }
-        bool efaPresenceNdvi = ndviPresenceTrueFound;
-        if (efaPresenceNdvi) {
+        ncHarvestInfos.evaluation.ndviPresence = IsNdviPresence(efaMarkers2);
+        if (ncHarvestInfos.evaluation.ndviPresence) {
             ncHarvestInfos.evaluation.efaIndex = "STRONG";
         } else {
             ncHarvestInfos.evaluation.efaIndex = "MODERATE";
         }
 
-        // TODO:
-//        efa.evaluation <- data.frame( efa.presence.ndvi,"NR","NR","NR","NR", efa.index )
-//        colnames(efa.evaluation) <- c("M6","M7","M8","M9","M10", "C_INDEX")
-//        harvest.evaluation <- data.frame(harvest.evaluation,efa.evaluation)
+        ncHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
+        ncHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
+        ncHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
+        ncHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
 
         return true;
     }
@@ -1956,8 +2267,6 @@ private:
                     fieldInfos.ndviLines, ttStartTime, ttEndTime);
         const std::vector<InputFileLineInfoType> &coheVVFilteredValues = FilterValuesByDates(
                     fieldInfos.coheVVLines, ttStartTime, ttEndTime);
-//        const std::vector<InputFileLineInfoType> &coheVHFilteredValues = FilterValuesByDates(
-//                    fieldInfos.coheVHLines, ttStartTime, ttEndTime);
 
         // TODO: Ask Gisat why amplitude is taken for an interval > 1 week?
         const std::vector<InputFileLineInfoType> &ampVVFilteredValues = FilterValuesByDates(
@@ -2036,14 +2345,9 @@ private:
         // TODO: Check if duplicated code with UpdateMarker2Infos
         double minMeanNdviDropVal = NOT_AVAILABLE;
 
-        double efaNdviUp = m_EfaNdviUp;
-        double efaNdviDown = m_EfaNdviDown;
-        double efaNdviMin = m_EfaNdviMin;
-
-        // TODO: we can set 300 as default value and not setting it here
-        if (IsNA(efaNdviMin)) {
-            efaNdviMin = 300;
-        }
+        double efaNdviUp = IsNA(m_EfaNdviUp) ? m_NdviUp : m_EfaNdviUp;
+        double efaNdviDown = IsNA(m_EfaNdviDown) ? m_NdviDown : m_EfaNdviDown;
+        double efaNdviMin = IsNA(m_EfaNdviMin) ? DEFAULT_EFA_NDVI_MIN : m_EfaNdviMin;
 
         // TODO: in the code below we might have access violations due to ndviCoheFilteredValues and ampFilteredValues different sizes
         for (size_t i = 0; i<allMergedValues.size(); i++) {
@@ -2053,35 +2357,35 @@ private:
             efaMarkers[i].ndviGrowth = NOT_AVAILABLE;
             efaMarkers[i].ndviNoLoss = NOT_AVAILABLE;
             efaMarkers[i].ndviMean = allMergedValues[i].ndviMeanVal;
-            if (efaMarkers[i].ndviMean == NOT_AVAILABLE) {
+            if (IsNA(efaMarkers[i].ndviMean)) {
                 continue;
             }
-            efaMarkers[i].ndviPresence = allMergedValues[i].ndviMeanVal >= m_EfaNdviThr;
+            efaMarkers[i].ndviPresence = IsGreaterOrEqual(allMergedValues[i].ndviMeanVal, m_EfaNdviThr);
             if (!IsNA(efaNdviDown) && !IsNA(efaNdviUp)) {
                 if (!IsNA(allMergedValues[i].ndviMeanVal)) {
                     // skip the first line
                     if (prevNotNaNdviIdx >= 0) {
-                        efaMarkers[i].ndviDrop = ((allMergedValues[i].ndviMeanVal < allMergedValues[prevNotNaNdviIdx].ndviMeanVal) &&
-                                                  (allMergedValues[i].ndviMeanVal < efaNdviUp));
+                        efaMarkers[i].ndviDrop = (IsLess(allMergedValues[i].ndviMeanVal, allMergedValues[prevNotNaNdviIdx].ndviMeanVal) &&
+                                                  IsLess(allMergedValues[i].ndviMeanVal, efaNdviUp));
                     }
                     prevNotNaNdviIdx = i;
                     // not all ndvi are less than ndvi down
-                    if (allMergedValues[i].ndviMeanVal >= efaNdviDown) {
+                    if (IsGreaterOrEqual(allMergedValues[i].ndviMeanVal, efaNdviDown)) {
                         allNdviLessDw = false;
                     }
                     if (efaMarkers[i].ndviDrop == true) {
-                        if (allMergedValues[i].ndviMeanVal < efaNdviDown) {
+                        if (IsLess(allMergedValues[i].ndviMeanVal, efaNdviDown)) {
                             // at least one ndvi is less than ndvi down
                             ndviLessDwFound = true;
                         }
-                        if (allMergedValues[i].ndviMeanVal < efaNdviUp) {
+                        if (IsLess(allMergedValues[i].ndviMeanVal, efaNdviUp)) {
                             ndviLessUpFound = true;
                         }
 
                         if (IsNA(minMeanNdviDropVal)) {
                             minMeanNdviDropVal = allMergedValues[i].ndviMeanVal;
                         } else {
-                            if (minMeanNdviDropVal > allMergedValues[i].ndviMeanVal) {
+                            if (IsGreater(minMeanNdviDropVal, allMergedValues[i].ndviMeanVal)) {
                                 minMeanNdviDropVal = allMergedValues[i].ndviMeanVal;
                             }
                         }
@@ -2097,7 +2401,7 @@ private:
                 efaMarkers[i].ndviGrowth = false;
             }
             if (efaMarkers[i].ndviGrowth == true) {
-                efaMarkers[i].ndviGrowth = (allMergedValues[i].ndviMeanVal >= efaNdviMin);
+                efaMarkers[i].ndviGrowth = IsGreaterOrEqual(allMergedValues[i].ndviMeanVal, efaNdviMin);
             }
 
             double opticalThresholdValue;
@@ -2111,7 +2415,7 @@ private:
 
             // ### MARKER 8 - $ndvi.noloss ###
             efaMarkers[i].ndviNoLoss = !(efaMarkers[i].ndviDrop &&
-                                         (allMergedValues[i].ndviMeanVal <= opticalThresholdValue));
+                                         IsLessOrEqual(allMergedValues[i].ndviMeanVal, opticalThresholdValue));
             if (IsNA(efaMarkers[i].ndviDrop)) {
                 efaMarkers[i].ndviNoLoss = NOT_AVAILABLE;
             }
@@ -2162,7 +2466,7 @@ private:
         ampSlopeVec.resize(efaMarkers.size());
         std::fill (ampSlopeVec.begin(),ampSlopeVec.end(), NOT_AVAILABLE);
         ampPValueVec.resize(efaMarkers.size());
-        std::fill (ampSlopeVec.begin(),ampSlopeVec.end(), NOT_AVAILABLE);
+        std::fill (ampPValueVec.begin(),ampPValueVec.end(), NOT_AVAILABLE);
 
         if (allWeeksUniques.size() >= 3) {
             // linear fitting for +/- 2 weeks
@@ -2183,9 +2487,21 @@ private:
                     continue;
                 }
 
-                // TODO: Compute also the p-value
+//                std::cout << "DMR DATE" << std::endl;
+//                for (size_t k = 0; k < subsetAmpTimes.size(); k++) {
+//                    std::cout << TimeToString(subsetAmpTimes[k] * SEC_IN_DAY) << " ";
+//                }
+//                std::cout << std::endl;
+//                std::cout << "DMR VALUE" << std::endl;
+//                for (size_t k = 0; k < subsetAmpValues.size(); k++) {
+//                    std::cout << ValueToString(subsetAmpValues[k]) << " ";
+//                }
+//                std::cout << std::endl;
+
                 double slope;
-                if (ComputeSlope(subsetAmpTimes, subsetAmpValues, slope)) {
+                bool res = ComputeSlope(subsetAmpTimes, subsetAmpValues, slope);
+                //std::cout << "Slope: " << slope << std::endl;
+                if (res) {
                     // compute the marker to be updated
                     int idx = curWeek - minWeek + 1;
                     if (idx >= 0 && idx < (int)ampSlopeVec.size()) {
@@ -2193,26 +2509,37 @@ private:
                     }
                 }
 
+                double pValue;
+                res = ComputePValue(subsetAmpTimes, subsetAmpValues, pValue);
+                //std::cout << "p-Value: " << pValue << std::endl;
+                if (res) {
+                    // compute the marker to be updated
+                    int idx = curWeek - minWeek + 1;
+                    if (idx >= 0 && idx < (int)ampPValueVec.size()) {
+                        ampPValueVec[idx] = pValue;
+                    }
+                }
+
+
             }
         }
 
-        double slopeThreshold = (m_EfaAmpThr != NOT_AVAILABLE) ? m_EfaAmpThr : 0.01;
+        double slopeThreshold = (!IsNA(m_EfaAmpThr)) ? m_EfaAmpThr : 0.01;
         for(size_t i = 0; i<efaMarkers.size(); i++) {
-            // TODO: Uncomment this after implementation of p-Value
-            if (IsNA(ampSlopeVec[i]) /*|| IsNA(ampPValueVec[i])*/) {
+            if (IsNA(ampSlopeVec[i]) || IsNA(ampPValueVec[i])) {
                 efaMarkers[i].ampNoLoss = NOT_AVAILABLE;
             } else {
-                efaMarkers[i].ampNoLoss = !(ampSlopeVec[i] >= slopeThreshold &&
-                                            ampPValueVec[i] < 0.05);
+                efaMarkers[i].ampNoLoss = !(IsGreaterOrEqual(ampSlopeVec[i], slopeThreshold) &&
+                                            IsLess(ampPValueVec[i], 0.05));
             }
         }
 
         // ### MARKER 10 - $coh.noloss ###
-        double cohThrHigh = (m_EfaCohChange != NOT_AVAILABLE) ? m_EfaCohChange : m_CohThrHigh;
-        double cohThrAbs = (m_EfaCohValue != NOT_AVAILABLE) ? m_EfaCohValue : m_CohThrAbs;
+        double cohThrHigh = (!IsNA(m_EfaCohChange)) ? m_EfaCohChange : m_CohThrHigh;
+        double cohThrAbs = (!IsNA(m_EfaCohValue)) ? m_EfaCohValue : m_CohThrAbs;
         for(size_t i = 0; i<efaMarkers.size(); i++) {
-            bool cohHigh = allMergedValues[i].cohChange >= cohThrHigh;
-            bool cohPresence = allMergedValues[i].cohMax >= cohThrAbs;
+            bool cohHigh = IsGreaterOrEqual(allMergedValues[i].cohChange, cohThrHigh);
+            bool cohPresence = IsGreaterOrEqual(allMergedValues[i].cohMax, cohThrAbs);
             efaMarkers[i].cohNoLoss = !(cohHigh || cohPresence);
         }
 
@@ -2226,7 +2553,8 @@ private:
     bool IsNdviPresence(const std::vector<EfaMarkersInfoType> &efaMarkers) {
         bool ndviPresence = false;
         for(size_t i = 0; i<efaMarkers.size(); i++) {
-            if (!IsNA(efaMarkers[i].ndviPresence) && efaMarkers[i].ndviPresence == true) {
+            //if (!IsNA(efaMarkers[i].ndviPresence) && efaMarkers[i].ndviPresence == true) {
+            if (efaMarkers[i].ndviPresence == true) {
                 ndviPresence = true;
                 break;
             }
@@ -2239,18 +2567,18 @@ private:
         double curMinVal = NOT_AVAILABLE;
         double curMaxVal = NOT_AVAILABLE;
         for(size_t i = 0; i<values.size(); i++) {
-            if (values[i].ndviMeanVal == NOT_AVAILABLE) {
+            if (IsNA(values[i].ndviMeanVal)) {
                 continue;
             }
             hasValidNdvi = true;
-            if (curMinVal == NOT_AVAILABLE) {
+            if (IsNA(curMinVal)) {
                 curMinVal = values[i].ndviMeanVal;
                 curMaxVal = curMinVal;
             } else {
-                if (curMinVal > values[i].ndviMeanVal) {
+                if (IsGreater(curMinVal, values[i].ndviMeanVal)) {
                     curMinVal = values[i].ndviMeanVal;
                 }
-                if (curMaxVal < values[i].ndviMeanVal) {
+                if (IsLess(curMaxVal, values[i].ndviMeanVal)) {
                     curMaxVal = values[i].ndviMeanVal;
                 }
             }
@@ -2264,10 +2592,10 @@ private:
     bool HasValidNdviValues(const std::vector<MergedAllValInfosType> &values, double thrVal = NOT_AVAILABLE) {
         bool hasValidNdvi = false;
         for(size_t i = 0; i<values.size(); i++) {
-            if (values[i].ndviMeanVal == NOT_AVAILABLE) {
+            if (IsNA(values[i].ndviMeanVal)) {
                 continue;
             }
-            if (values[i].ndviMeanVal > thrVal) {
+            if (IsGreater(values[i].ndviMeanVal, thrVal)) {
                 hasValidNdvi = true;
                 break;
             }
@@ -2332,6 +2660,14 @@ private:
         return (rootFolder / fileName).string();
     }
 
+    std::string GetContinousProductCsvFilePath(const std::string &practiceName, const std::string &countryCode,
+                                      int year) {
+        const std::string &fileName = "Sen4CAP_L4C_" + practiceName + "_" +
+                countryCode + "_" + std::to_string(year) + "_CSV_ContinousProduct.csv";
+        boost::filesystem::path rootFolder(m_outputDir);
+        return (rootFolder / fileName).string();
+    }
+
     std::string GetPlotsFilePath(const std::string &practiceName, const std::string &countryCode,
                                       int year) {
         const std::string &fileName = "Sen4CAP_L4C_" + practiceName + "_" +
@@ -2375,17 +2711,63 @@ private:
                    ValueToString(efaHarvestInfo.evaluation.cohNoLoss, true) << ";" << efaHarvestInfo.evaluation.efaIndex << "\n";
     }
 
+    void CreateContinousProductFile(const std::string &practiceName, const std::string &countryCode, int year) {
+        if (!m_bResultContinuousProduct) {
+            return;
+        }
+        if (m_OutContinousPrdFileStream.is_open()) {
+            return;
+        }
+        const std::string &fullPath = GetContinousProductCsvFilePath(practiceName, countryCode, year);
+        m_OutContinousPrdFileStream.open(fullPath, std::ios_base::trunc | std::ios_base::out);
+
+        // # create continous product result csv file header
+        m_OutContinousPrdFileStream << "FIELD_ID;WEEK;M1;M2;M3;M4;M5\n";
+    }
+
+    void WriteContinousToCsv(const FieldInfoType &fieldInfo, const std::vector<MergedAllValInfosType> &allMergedVals) {
+        if (!m_bResultContinuousProduct) {
+            return;
+        }
+
+        std::vector<MergedAllValInfosType>::const_iterator it;
+        for (it = allMergedVals.begin(); it != allMergedVals.end(); ++it) {
+           //"FIELD_ID;Week
+            m_OutContinousPrdFileStream << fieldInfo.fieldId << ";" << ValueToString(GetWeekFromDate(it->ttDate)) << ";" <<
+                   // M1;M2;
+                   ValueToString(it->ndviPresence, true) << ";" << ValueToString(it->candidateOptical, true) << ";" <<
+                   // M3;M4;
+                   ValueToString(it->candidateAmplitude, true) << ";" << ValueToString(it->amplitudePresence, true) << ";" <<
+                   // M5
+                   ValueToString(it->candidateCoherence, true) << "\n";
+        }
+    }
+
     void CreatePlotsFile(const std::string &practiceName, const std::string &countryCode, int year) {
+        if (!m_bPlotOutputGraph) {
+            return;
+        }
         const std::string &fullPath = GetPlotsFilePath(practiceName, countryCode, year);
+        otbAppLogINFO("Creating plot file " << fullPath);
         m_OutPlotsFileStream.open(fullPath, std::ios_base::trunc | std::ios_base::out);
         m_OutPlotsFileStream << "<plots>\n";
     }
 
     void ClosePlotsFile() {
+        if (!m_bPlotOutputGraph) {
+            return;
+        }
+        otbAppLogINFO("Closing plot file");
         m_OutPlotsFileStream << "</plots>\n";
+        m_OutPlotsFileStream.flush();
+        m_OutPlotsFileStream.close();
     }
 
     void WritePlotEntry(const FieldInfoType &fieldInfos, const HarvestInfoType &harvestInfo) {
+        if (!m_bPlotOutputGraph) {
+            return;
+        }
+
         m_OutPlotsFileStream << " <fid id=\"" << fieldInfos.fieldId.c_str() << "\">\n";
         m_OutPlotsFileStream << " <harvest ps=\"" << TimeToString(harvestInfo.evaluation.ttHarvestStartTime).c_str() <<
                                 "\" pe=\"" << TimeToString(harvestInfo.evaluation.ttHarvestEndTime).c_str() <<
@@ -2393,22 +2775,22 @@ private:
                                 "\"/>\n";
         m_OutPlotsFileStream << "  <ndvis>\n";
         for (size_t i = 0; i<fieldInfos.ndviLines.size(); i++) {
-            m_OutPlotsFileStream << "   <ndvi date=\"" << fieldInfos.ndviLines[i].strDate <<
+            m_OutPlotsFileStream << "   <ndvi date=\"" << fieldInfos.ndviLines[i].strDate.c_str() <<
                                     "\" val=\"" << ValueToString(fieldInfos.ndviLines[i].meanVal).c_str() << "\"/>\n";
         }
         m_OutPlotsFileStream << "  </ndvis>\n";
         m_OutPlotsFileStream << "  <amps>\n";
         for (size_t i = 0; i<fieldInfos.ampVVLines.size(); i++) {
-            m_OutPlotsFileStream << "   <amp date=\"" << fieldInfos.ampVVLines[i].strDate <<
-                                    "\" val=\"" << ValueToString(fieldInfos.ampVVLines[i].meanVal) << "\"/>\n";
+            m_OutPlotsFileStream << "   <amp date=\"" << fieldInfos.ampVVLines[i].strDate.c_str() <<
+                                    "\" val=\"" << ValueToString(fieldInfos.ampVVLines[i].meanVal).c_str() << "\"/>\n";
         }
         m_OutPlotsFileStream << "  </amps>\n";
         m_OutPlotsFileStream << "  <cohs>\n";
         for (size_t i = 0; i<fieldInfos.coheVVLines.size(); i++) {
-            m_OutPlotsFileStream << "   <coh date=\"" << fieldInfos.coheVVLines[i].strDate <<
-                                    "\" val=\"" << ValueToString(fieldInfos.coheVVLines[i].meanVal) << "\"/>\n";
+            m_OutPlotsFileStream << "   <coh date=\"" << fieldInfos.coheVVLines[i].strDate.c_str() <<
+                                    "\" val=\"" << ValueToString(fieldInfos.coheVVLines[i].meanVal).c_str() << "\"/>\n";
         }
-        m_OutPlotsFileStream << "  </cohs>\n";
+        m_OutPlotsFileStream << "  </cohs>\n</fid>\n";
     }
 
     double ComputeOpticalThresholdBuffer(int nVegWeeksCnt, double maxMeanNdviDropVal, double OpticalThresholdValue) {
@@ -2432,15 +2814,36 @@ private:
     double ComputeAmplitudeThresholdBreak(double stdDevVal) {
         double ampThrBreak = stdDevVal / 6;
         // minimum change
-        if (ampThrBreak < m_AmpThrMinimum) {
+        if (IsLess(ampThrBreak, m_AmpThrMinimum)) {
             ampThrBreak = m_AmpThrMinimum;
         }
         return ampThrBreak;
     }
 
 
-    void PrintMergedValues(const std::vector<MergedAllValInfosType> &mergedVals) {
+    void PrintFieldGeneralInfos(const FieldInfoType &fieldInfos) {
+        if (!m_bDebugMode) {
+            return;
+        }
+        std::cout << "Field ID: " << fieldInfos.fieldId << std::endl;
+        std::cout << "Vegetation start: " << TimeToString(fieldInfos.ttVegStartTime) << std::endl;
+        std::cout << "Vegetation start floor time: " << TimeToString(fieldInfos.ttVegStartWeekFloorTime) << std::endl;
+        std::cout << "Vegetation start WEEK No: " <<  fieldInfos.vegStartWeekNo << std::endl;
+        std::cout << "Harvest start: " << TimeToString(fieldInfos.ttHarvestStartTime) << std::endl;
+        std::cout << "Harvest start floor time: " << TimeToString(fieldInfos.ttHarvestStartWeekFloorTime) << std::endl;
+        std::cout << "Harvest start WEEK No: " <<  fieldInfos.harvestStartWeekNo << std::endl;
+        std::cout << "Harvest end : " << TimeToString(fieldInfos.ttHarvestEndTime) << std::endl;
+        std::cout << "Harvest end floor time: " << TimeToString(fieldInfos.ttHarvestEndWeekFloorTime) << std::endl;
+
+    }
+    void PrintMergedValues(const std::vector<MergedAllValInfosType> &mergedVals, double ampThrValue) {
+        if (!m_bDebugMode) {
+            return;
+        }
+
         std::cout << "Printing merged values" << std::endl;
+        std::cout << "Amplitude threshold value is: " << ValueToString(ampThrValue) << std::endl;
+
         std::cout << "   Date  coh.max   coh.change  grd.mean  grd.max grd.change " << std::endl;
 
         for(size_t i = 0; i < mergedVals.size(); i++) {
@@ -2488,6 +2891,10 @@ private:
     }
 
     void PrintAmplitudeInfos(const FieldInfoType &fieldInfos) {
+        if (!m_bDebugMode) {
+            return;
+        }
+
         std::cout << "Printing amplitude values:" << std::endl;
         for (size_t i = 0; i<fieldInfos.mergedAmpInfos.size(); i++) {
             const MergedDateAmplitudeType &val = fieldInfos.mergedAmpInfos[i];
@@ -2508,6 +2915,10 @@ private:
     }
 
     void PrintAmpGroupedMeanValues(const std::vector<GroupedMeanValInfosType> &values) {
+        if (!m_bDebugMode) {
+            return;
+        }
+
         std::cout << "Printing amplitude grouped mean values:" << std::endl;
         for (size_t i = 0; i<values.size(); i++) {
             const GroupedMeanValInfosType &val = values[i];
@@ -2520,6 +2931,10 @@ private:
     }
 
     void PrintNdviInfos(const FieldInfoType &fieldInfos) {
+        if (!m_bDebugMode) {
+            return;
+        }
+
         std::cout << "Printing NDVI values:" << std::endl;
         for (size_t i = 0; i<fieldInfos.ndviLines.size(); i++) {
             const InputFileLineInfoType &val = fieldInfos.ndviLines[i];
@@ -2533,6 +2948,10 @@ private:
     }
 
     void PrintNdviGroupedMeanValues(const std::vector<GroupedMeanValInfosType> &values) {
+        if (!m_bDebugMode) {
+            return;
+        }
+
         std::cout << "Printing NDVI Grouped mean values:" << std::endl;
         for (size_t i = 0; i<values.size(); i++) {
             const GroupedMeanValInfosType &val = values[i];
@@ -2543,6 +2962,10 @@ private:
     }
 
     void PrintCoherenceInfos(const FieldInfoType &fieldInfos) {
+        if (!m_bDebugMode) {
+            return;
+        }
+
         std::cout << "Printing Coherence values:" << std::endl;
         for (size_t i = 0; i<fieldInfos.coheVVLines.size(); i++) {
             const InputFileLineInfoType &val = fieldInfos.coheVVLines[i];
@@ -2559,6 +2982,10 @@ private:
     }
 
     void PrintCoherenceGroupedMeanValues(const std::vector<GroupedMeanValInfosType> &values) {
+        if (!m_bDebugMode) {
+            return;
+        }
+
         std::cout << "Printing Coherence Grouped Mean values:" << std::endl;
         for (size_t i = 0; i<values.size(); i++) {
             const GroupedMeanValInfosType &val = values[i];
@@ -2570,6 +2997,10 @@ private:
     }
 
     void PrintHarvestEvaluation(const FieldInfoType &fieldInfo, HarvestInfoType &harvestInfo) {
+        if (!m_bDebugMode) {
+            return;
+        }
+
         std::cout << "Printing Harvest Evaluation:" << std::endl;
         std::cout << "FIELD_ID COUNTRY YEAR MAIN_CROP VEG_START H_START H_END PRACTICE" << std::endl;
         std::cout << 0 << fieldInfo.fieldId << " " << fieldInfo.countryCode << " " << fieldInfo.mainCrop << " " <<
@@ -2604,6 +3035,9 @@ private:
 
     void PrintEfaMarkers(const std::vector<MergedAllValInfosType> &allMergedValues,
                          const std::vector<EfaMarkersInfoType> &efaMarkers) {
+        if (!m_bDebugMode) {
+            return;
+        }
         std::cout << "Printing EFA Markers:" << std::endl;
         std::cout << "Group.1   coh.max coh.change grd.mean  grd.max ndvi.mean ndvi.presence" << std::endl;
         for (size_t i = 0; i<efaMarkers.size(); i++) {
@@ -2696,6 +3130,7 @@ private:
 
     std::string m_outputDir;
     std::ofstream m_OutFileStream;
+    std::ofstream m_OutContinousPrdFileStream;
     std::string m_countryName;
     std::string m_practiceName;
     std::string m_year;
@@ -2753,6 +3188,10 @@ private:
     bool m_bPlotOutputGraph;
     // # optional: in case continuos products (csv file) shall be generated set the value to TRUE otherwise set to FALSE
     bool m_bResultContinuousProduct;
+
+    bool m_bAllowGaps;
+
+    bool m_bDebugMode;
 
 };
 

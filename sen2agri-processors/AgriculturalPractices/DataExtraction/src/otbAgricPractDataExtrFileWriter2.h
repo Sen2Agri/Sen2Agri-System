@@ -72,14 +72,21 @@ public:
 
   typedef std::map<std::string, FileFieldsInfoType>         FileFieldsContainer;
 
+  /** Method to add mean and stdev maps with a given type */
+  template <typename MapType>
+  void AddInputMaps(const std::string &fileName, const MapType& mapMeans,  const MapType& mapStdDev);
+
   /** Method to add a map statistic with a given type */
   template <typename MapType>
   void AddInputMap(const std::string &fileName, const MapType& map );
 
-  inline void SetWriteMode(bool append) { m_AppendMode = append;}
+  void WriteOutputXmlFile();
+  void WriteEntriesToXmlOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos);
 
-  void WriteOutputFile();
-  void WriteEntriesToOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos);
+  void WriteOutputCsvFormat();
+  void WriteCsvHeader(std::ofstream &fileStream, bool individualFieldFile);
+  std::string GetIndividualFieldFileName(const std::string &outPath, const std::string &fileName);
+  void WriteEntriesToCsvOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos, bool writeSuffix);
 
   /** Remove previously added inputs (vectors and maps) */
   void CleanInputs();
@@ -100,13 +107,22 @@ public:
   inline void SetHeaderFields(const StringVectorType &vec) {
       this->m_HeaderFields = vec;
   }
-  inline void SetWriteValuesInDb(bool inDb) {
-      m_bWriteInDb = inDb;
-  }
   inline StringVectorType GetHeaderFields() {return this->m_HeaderFields;}
 
   inline void SetUseLatestFileNamingFormat(bool latestNamingFormat) {
       m_bUseLatestNamingFormat = latestNamingFormat;
+  }
+
+  inline void SetOutputCsvFormat(bool bOutCsv) {
+      m_bOutputCsvFormat = bOutCsv;
+  }
+
+  inline void SetUseMultiFileMode(bool bMultiFileMode) {
+      m_bMultiFileMode = bMultiFileMode;
+  }
+
+  inline void SetCsvCompactMode(bool bCsvCompactMode) {
+      m_bCsvCompactMode = bCsvCompactMode;
   }
 
 protected:
@@ -142,10 +158,11 @@ private:
 
   FileFieldsContainer           m_FileFieldsContainer;
 
-  bool                          m_AppendMode;
-  bool                          m_MultiFileMode;
-  bool                          m_bWriteInDb;
+  bool                          m_bOutputCsvFormat;
+  bool                          m_bCsvCompactMode;
+  bool                          m_bMultiFileMode;
   bool                          m_bUseLatestNamingFormat;
+  bool                          m_bUseDate2;
 
 }; // end of class AgricPractDataExtrFileWriter2
 

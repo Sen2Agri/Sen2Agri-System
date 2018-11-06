@@ -9,13 +9,13 @@ typedef struct {
 } FileInfoType;
 
 
-class StatisticsInfosFolderFilesReader : public StatisticsInfosReaderBase
+class StatisticsInfosCsvReaderBase : public StatisticsInfosReaderBase
 {
 
 public:
-    StatisticsInfosFolderFilesReader();
+    StatisticsInfosCsvReaderBase();
 
-   virtual  ~StatisticsInfosFolderFilesReader()
+   virtual  ~StatisticsInfosCsvReaderBase()
     {
     }
     virtual void Initialize(const std::string &source, const std::vector<std::string> &filters);

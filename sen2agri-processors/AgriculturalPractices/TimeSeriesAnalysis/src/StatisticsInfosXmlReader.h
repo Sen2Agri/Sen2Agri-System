@@ -3,9 +3,18 @@
 
 #include "StatisticsInfosReaderBase.h"
 #include "expat.h"
+#include <inttypes.h>
 
 class StatisticsInfosXmlReader : public StatisticsInfosReaderBase
 {
+
+    typedef struct {
+        std::string name;
+        uintmax_t startIdx;
+        unsigned int len;
+    } FieldIndexInfos;
+
+    typedef std::map<std::string, std::vector<FieldIndexInfos>> IdxMapType;
 
 public:
     StatisticsInfosXmlReader();
@@ -13,7 +22,7 @@ public:
    virtual  ~StatisticsInfosXmlReader()
     {
     }
-    virtual void SetSource(const std::string &source);
+    virtual void Initialize(const std::string &source, const std::vector<std::string> &filters);
     virtual std::string GetName() { return "xml"; }
 
     virtual bool GetEntriesForField(const std::string &inFieldId, const std::vector<std::string> &filters,
@@ -23,21 +32,10 @@ public:
 private:
     std::string m_strSource;
 
-//    std::vector<FileInfoType> GetFilesInFolder(const std::string &targetPath);
-//    std::vector<FileInfoType> FindFilesForFieldId(const std::string &fieldId);
-//    std::vector<std::string> GetInputFileLineElements(const std::string &line);
-//    bool ExtractFileInfosForFilter(const FileInfoType &fileInfo, const std::string &filter,
-//                                   std::map<std::string, std::vector<InputFileLineInfoType>> &retMap);
-//    bool ExtractInfosFromLine(const std::string &fileLine, InputFileLineInfoType &lineInfo);
-//    bool ExtractLineInfos(const std::string &filePath, std::vector<InputFileLineInfoType> &retValidLines);
-
 private:
-//    std::vector<FileInfoType> m_InfoFiles;
-//    std::vector<std::string> m_InputFileHeader;
-//    std::vector<std::string> m_CoheInputFileHeader;
 
     XML_Parser m_Parser;
-
+    IdxMapType m_IdxMap;
 };
 
 #endif

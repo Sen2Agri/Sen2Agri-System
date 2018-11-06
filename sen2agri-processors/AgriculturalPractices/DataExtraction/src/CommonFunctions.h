@@ -48,6 +48,23 @@
 #define AMP_FT          "AMP"
 #define COHE_FT         "COHE"
 
+std::vector<std::string> split (const std::string &s, char delim) {
+    std::vector<std::string> result;
+    std::stringstream ss (s);
+    std::string item;
+
+    while (std::getline (ss, item, delim)) {
+        result.push_back (item);
+    }
+
+    return result;
+}
+
+
+void NormalizeFieldId(std::string &fieldId) {
+    std::replace( fieldId.begin(), fieldId.end(), '/', '_');
+}
+
 time_t to_time_t(const boost::gregorian::date& date ){
     if (date.is_not_a_date()) {
         return 0;
@@ -66,7 +83,7 @@ std::string TimeToString(time_t ttTime) {
     return buffer;
 }
 
-bool getFileInfosFromName(const std::string &filePath, std::string &fileType, std::string & polarisation,
+bool GetFileInfosFromName(const std::string &filePath, std::string &fileType, std::string & polarisation,
                           std::string & orbit, time_t &fileDate, time_t &additionalFileDate, bool useLatestNameFormat = true)
 {
     boost::filesystem::path p(filePath);
@@ -85,6 +102,7 @@ bool getFileInfosFromName(const std::string &filePath, std::string &fileType, st
     int dateRegexIdx2 = -1;
     int orbitIdx = -1;
     additionalFileDate = 0;
+    bool useDate2 = false;
 
     if (fileName.find(NDVI_STR) != std::string::npos) {
         fileType = NDVI_FT;
@@ -99,6 +117,7 @@ bool getFileInfosFromName(const std::string &filePath, std::string &fileType, st
             dateRegexIdx2 = useLatestNameFormat ? AMP_REGEX_DATE2_IDX : -1; // we did not had 2 dates here in 2017
         } else if (lowerCaseFileName.find(lowerCaseCoheStr) != std::string::npos) {
             fileType = COHE_FT;
+            useDate2 = true;
             regexExpStr = useLatestNameFormat ? COHE_VV_REGEX : COHE_VV_REGEX_OLD;
             dateRegexIdx = COHE_REGEX_DATE_IDX;
             dateRegexIdx2 = COHE_REGEX_DATE2_IDX;
@@ -113,6 +132,7 @@ bool getFileInfosFromName(const std::string &filePath, std::string &fileType, st
             dateRegexIdx2 = useLatestNameFormat ? AMP_REGEX_DATE2_IDX : -1; // we did not had 2 dates here in 2017
         } else if (lowerCaseFileName.find(lowerCaseCoheStr) != std::string::npos) {
             fileType = COHE_FT;
+            useDate2 = true;
             regexExpStr = useLatestNameFormat ? COHE_VH_REGEX : COHE_VH_REGEX_OLD;
             dateRegexIdx = COHE_REGEX_DATE_IDX;
             dateRegexIdx2 = COHE_REGEX_DATE2_IDX;
@@ -135,10 +155,15 @@ bool getFileInfosFromName(const std::string &filePath, std::string &fileType, st
         if (dateRegexIdx2 != -1) {
             const std::string &fileDateTmp2 = matches[dateRegexIdx2].str();
             time_t fileDate2 = to_time_t(boost::gregorian::from_undelimited_string(fileDateTmp2));
+            // if we have 2 dates, get the maximum of the dates as we do not know the order
             additionalFileDate = fileDate2;
             if (fileDate < fileDate2) {
                 additionalFileDate = fileDate;
                 fileDate = fileDate2;
+            }
+            // even if we have 2 dates, for amplitude for ex. we need only one
+            if (!useDate2) {
+                additionalFileDate = 0;
             }
         }
         if (orbitIdx != -1) {
@@ -152,7 +177,7 @@ bool getFileInfosFromName(const std::string &filePath, std::string &fileType, st
 
 std::string BuildOutputFileName(const std::string &fid, const std::string &fileType,
                                 const std::string &polarisation, const std::string &orbitId,
-                                time_t ttFileDate, time_t ttAdditionalFileDate) {
+                                time_t ttFileDate, time_t ttAdditionalFileDate, bool fullFileName=false) {
     // 31.0000001696738.001_timeseries_VH - AMP
     // 31.0000001696738.001_SERIES_088_6_day_timeseries_VH.txt
     // 31.0000001696738.001_SERIES_088_12_day_timeseries_VH.txt
@@ -160,17 +185,23 @@ std::string BuildOutputFileName(const std::string &fid, const std::string &fileT
 
     std::string fileNameAdditionalField;
     if (fileType == COHE_FT) {
-        std::string dateStr = "12_day_";
+        std::string dateStr = "12_day";
         if ((ttFileDate - ttAdditionalFileDate) == 6 * SEC_IN_DAY) {
-            dateStr = "6_day_";
+            dateStr = "6_day";
         }
-//        fileNameAdditionalField = "_SERIES_" + orbitId + "_" + dateStr;      // To be cf. with ATBD
-        fileNameAdditionalField = "_" + orbitId + "_" + dateStr;      // To be cf. with ATBD
+        if (fullFileName) {
+            fileNameAdditionalField = "SERIES_" + orbitId + "_" + dateStr;      // To be cf. with ATBD
+        } else {
+            fileNameAdditionalField = orbitId + "_" + dateStr;      // To be cf. with ATBD
+        }
     }
-//    return fid + (fileNameAdditionalField.size() > 0 ? fileNameAdditionalField : "") +
-//            "_timeseries_" + (polarisation.size() > 0 ? polarisation : fileType) + ".txt";
-    return (fileNameAdditionalField.size() > 0 ? fileNameAdditionalField : "") +
-            (polarisation.size() > 0 ? polarisation : fileType);
+    if (fullFileName) {
+        return fid + (fileNameAdditionalField.size() > 0 ? "_" + fileNameAdditionalField : "") +
+                "_timeseries_" + (polarisation.size() > 0 ? polarisation : fileType) + ".txt";
+    } else {
+        return (fileNameAdditionalField.size() > 0 ? (fileNameAdditionalField + "_") : "") +
+                (polarisation.size() > 0 ? polarisation : fileType);
+    }
 }
 
 std::string DoubleToString(double value, int precission = 7)

@@ -17,15 +17,17 @@ otb_create_application(
                  PracticeCsvReader.h
                  PracticeCsvReader.cpp
                  StatisticsInfosReaderBase.h
-                 StatisticsInfosXmlReader.cpp
-                 StatisticsInfosXmlReader.h
-                 StatisticsInfosFolderFilesReader.h
-                 StatisticsInfosFolderFilesReader.cpp
                  StatisticsInfosReaderFactory.h
                  StatisticsInfosReaderFactory.cpp
+                 StatisticsInfosFolderFilesReader.h
+                 StatisticsInfosFolderFilesReader.cpp
+                 StatisticsInfosXmlReader.cpp
+                 StatisticsInfosXmlReader.h
+                 StatisticsInfosSingleCsvReader.h
+                 StatisticsInfosSingleCsvReader.cpp
 
 
-  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata Sen2AgriPrdMetaWriters boost_regex)
+  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata Sen2AgriPrdMetaWriters boost_regex gsl)
 
 #if(BUILD_TESTING)
 #  add_subdirectory(test)

@@ -1,4 +1,4 @@
-#include "StatisticsInfosFolderFilesReader.h"
+#include "StatisticsInfosCsvReaderBase.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -6,19 +6,19 @@
 
 #include "TimeSeriesAnalysisUtils.h"
 
-StatisticsInfosFolderFilesReader::StatisticsInfosFolderFilesReader()
+StatisticsInfosCsvReaderBase::StatisticsInfosCsvReaderBase()
 {
     m_InputFileHeader = {"KOD_PB", "date", "mean", "stdev"};
     m_CoheInputFileHeader = {"KOD_PB", "date1", "date2", "mean", "stdev"};
 }
 
-void StatisticsInfosFolderFilesReader::Initialize(const std::string &source, const std::vector<std::string> &filters)
+void StatisticsInfosCsvReaderBase::Initialize(const std::string &source, const std::vector<std::string> &filters)
 {
     (void)filters; //suppress not used warning
     this->m_InfoFiles = GetFilesInFolder(source);
 }
 
-bool StatisticsInfosFolderFilesReader::GetEntriesForField(const std::string &fieldId, const std::vector<std::string> &filters,
+bool StatisticsInfosCsvReaderBase::GetEntriesForField(const std::string &fieldId, const std::vector<std::string> &filters,
                                                           std::map<std::string, std::vector<InputFileLineInfoType>> &retMap)
 {
     bool ret = true;
@@ -43,7 +43,7 @@ bool StatisticsInfosFolderFilesReader::GetEntriesForField(const std::string &fie
     return ret;
 }
 
-bool StatisticsInfosFolderFilesReader::ExtractFileInfosForFilter(const FileInfoType &fileInfo, const std::string &filter,
+bool StatisticsInfosCsvReaderBase::ExtractFileInfosForFilter(const FileInfoType &fileInfo, const std::string &filter,
                                                                  std::map<std::string, std::vector<InputFileLineInfoType>> &retMap) {
 
     bool ret = true;
@@ -78,7 +78,7 @@ bool StatisticsInfosFolderFilesReader::ExtractFileInfosForFilter(const FileInfoT
     return ret;
 }
 
-std::vector<FileInfoType> StatisticsInfosFolderFilesReader::GetFilesInFolder(const std::string &targetPath) {
+std::vector<FileInfoType> StatisticsInfosCsvReaderBase::GetFilesInFolder(const std::string &targetPath) {
     std::vector<FileInfoType> allFolderFiles;
     boost::filesystem::directory_iterator end_itr; // Default ctor yields past-the-end
     for( boost::filesystem::directory_iterator i( targetPath ); i != end_itr; ++i )
@@ -93,7 +93,7 @@ std::vector<FileInfoType> StatisticsInfosFolderFilesReader::GetFilesInFolder(con
     return allFolderFiles;
 }
 
-std::vector<FileInfoType> StatisticsInfosFolderFilesReader::FindFilesForFieldId(const std::string &fieldId)
+std::vector<FileInfoType> StatisticsInfosCsvReaderBase::FindFilesForFieldId(const std::string &fieldId)
 {
     std::vector<FileInfoType> allMatchingFiles;
     const std::string &cmpFieldId = fieldId + "_";
@@ -115,13 +115,13 @@ std::vector<FileInfoType> StatisticsInfosFolderFilesReader::FindFilesForFieldId(
 //        return allMatchingFiles;
 }
 
-std::vector<std::string> StatisticsInfosFolderFilesReader::GetInputFileLineElements(const std::string &line) {
+std::vector<std::string> StatisticsInfosCsvReaderBase::GetInputFileLineElements(const std::string &line) {
     std::vector<std::string> results;
     boost::algorithm::split(results, line, [](char c){return c == ';';});
     return results;
 }
 
-bool StatisticsInfosFolderFilesReader::ExtractInfosFromLine(const std::string &fileLine, InputFileLineInfoType &lineInfo)
+bool StatisticsInfosCsvReaderBase::ExtractInfosFromLine(const std::string &fileLine, InputFileLineInfoType &lineInfo)
 {
     const std::vector<std::string> &lineElems = GetInputFileLineElements(fileLine);
     if (lineElems.size() != m_InputFileHeader.size() &&
@@ -170,7 +170,7 @@ bool StatisticsInfosFolderFilesReader::ExtractInfosFromLine(const std::string &f
     return true;
 }
 
-bool StatisticsInfosFolderFilesReader::ExtractLineInfos(const std::string &filePath, std::vector<InputFileLineInfoType> &retValidLines)
+bool StatisticsInfosCsvReaderBase::ExtractLineInfos(const std::string &filePath, std::vector<InputFileLineInfoType> &retValidLines)
 {
     std::ifstream ampFile(filePath);
     std::string line;

@@ -140,6 +140,9 @@ private:
         AddParameter(ParameterType_OutputFilename, "out", "Output practice CSV file");
         SetParameterDescription("out", "TODO");
 
+        AddParameter(ParameterType_String, "filters", "Filter field ids");
+        SetParameterDescription("filters","Filter field ids");
+        MandatoryOff("filters");
 
         AddRAMParameter();
 
@@ -207,6 +210,8 @@ private:
             m_pCountryInfos->SetAdditionalFiles(GetParameterStringList("addfiles"));
         }
 
+        m_FieldFilters = LoadFilters();
+
         otb::ogr::DataSource::Pointer source = otb::ogr::DataSource::New(
             inShpFile, otb::ogr::DataSource::Modes::Read);
         for (otb::ogr::DataSource::const_iterator lb=source->begin(), le=source->end(); lb != le; ++lb)
@@ -222,10 +227,14 @@ private:
 
     void ProcessFeature(const ogr::Feature& feature) {
         OGRFeature &ogrFeat = feature.ogr();
+        if (!FilterFeature(ogrFeat)) {
+            return;
+        }
+
         // If the current line has required practice
         bool bWriteLine = false;
         if (m_pCountryInfos->GetPractice().size() > 0 &&
-                m_pCountryInfos->GetPractice() != "NA") {
+                m_pCountryInfos->GetPractice() != "NA") {   // this should be filled but there were some errors for some countries in input data
             if (m_pCountryInfos->GetHasPractice(ogrFeat, m_pCountryInfos->GetPractice())) {
                 bWriteLine = true;
             }
@@ -256,15 +265,21 @@ private:
             return;
         }
         OGRFeature &ogrFeat = feature.ogr();
-        m_outFileStream << m_pCountryInfos->GetUniqueId(ogrFeat) << ";" << m_country << ";" << m_year << ";";
-        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetMainCrop(ogrFeat)) << ";";
-        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetVegStart()) << ";";
-        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetHStart(ogrFeat)) << ";";
-        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetHEnd(ogrFeat)) << ";";
-        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetPractice(ogrFeat)) << ";";
-        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetPracticeType(ogrFeat)) << ";";
-        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetPStart(ogrFeat)) << ";";
-        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetPEnd(ogrFeat)) << "\n";
+        const std::string &uid = m_pCountryInfos->GetUniqueId(ogrFeat);
+        const std::string &mainCrop = GetValueOrNA(m_pCountryInfos->GetMainCrop(ogrFeat));
+        if (mainCrop == "NA") {
+            std::cout << "Main crop NA - Ignoring field with unique ID " << uid << std::endl;
+            return;
+        }
+        m_outFileStream << uid.c_str() << ";" << m_country.c_str() << ";" << m_year.c_str() << ";";
+        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetMainCrop(ogrFeat)).c_str() << ";";
+        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetVegStart()).c_str() << ";";
+        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetHStart(ogrFeat)).c_str() << ";";
+        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetHEnd(ogrFeat)).c_str() << ";";
+        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetPractice(ogrFeat)).c_str() << ";";
+        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetPracticeType(ogrFeat)).c_str() << ";";
+        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetPStart(ogrFeat)).c_str() << ";";
+        m_outFileStream << GetValueOrNA(m_pCountryInfos->GetPEnd(ogrFeat)).c_str() << "\n";
     }
 
     std::string GetValueOrNA(const std::string &str) {
@@ -274,8 +289,51 @@ private:
         return "NA";
     }
 
+    bool FilterFeature(OGRFeature &ogrFeat) {
+        if (!m_pCountryInfos->IsMonitoringParcel(ogrFeat)) {
+            return false;
+        }
+        // if we have filters and we did not find the id
+        std::string uid = m_pCountryInfos->GetUniqueId(ogrFeat);
+        NormalizeFieldId(uid);
+        if(m_FieldFilters.size() != 0 && m_FieldFilters.find(uid) == m_FieldFilters.end()) {
+            return false;
+        }
+        return true;
+    }
+
+    std::map<std::string, int> LoadFilters() {
+        std::map<std::string, int> filters;
+        if (HasValue("filters")) {
+            const std::string &filtersFile = GetParameterAsString("filters");
+            std::ifstream fStream(filtersFile);
+            std::string line;
+            int lineIdx = 0;
+            while (std::getline(fStream, line)) {
+                if (lineIdx == 0) {
+                    // skip header
+                    lineIdx++;
+                    continue;
+                }
+                NormalizeFieldId(line);
+                filters[line] = 1;
+                if (lineIdx < 10) {
+                    otbAppLogINFO("Extracted filter: " << line);
+                }
+                lineIdx++;
+            }
+            otbAppLogINFO("Found a number of " << filters.size() << " filters!")
+        }
+        return filters;
+    }
+
+    static void NormalizeFieldId(std::string &fieldId) {
+        std::replace( fieldId.begin(), fieldId.end(), '/', '_');
+    }
+
 private:
     std::string m_year;
+    std::map<std::string, int> m_FieldFilters;
 
 // //////////////////////////////////
 
@@ -286,13 +344,18 @@ private:
     class CountryInfoBase {
     public:
         virtual void SetAdditionalFiles(const std::vector<std::string> &additionalFiles) {
-            if (m_additionalFiles.size() > 0 && m_LineHandlerFnc == nullptr) {
-                std::cout << "ERROR: Additional files provided but no handler function defined for this country" << std::endl;
-                return;
-            }
             m_additionalFiles.insert(m_additionalFiles.end(), additionalFiles.begin(), additionalFiles.end());
             for(const auto &file: m_additionalFiles) {
-                ParseCsvFile(file, m_LineHandlerFnc);
+                const std::string &extension = boost::filesystem::extension(file);
+                if (boost::iequals(extension, ".csv")) {
+                    if (m_LineHandlerFnc == nullptr) {
+                        std::cout << "ERROR: Additional files provided but no handler function defined for this country" << std::endl;
+                        continue;
+                    }
+                    ParseCsvFile(file, m_LineHandlerFnc);
+                } else if (boost::iequals(extension, ".shp")) {
+                    ParseShpFile(file, m_ShpFeatHandlerFnc);
+                }
             }
         }
         virtual std::string GetName() = 0;
@@ -320,6 +383,19 @@ private:
         virtual std::string GetPracticeType(OGRFeature &ogrFeat) {(void)ogrFeat ; return m_ptype;}
         virtual std::string GetPStart(OGRFeature &ogrFeat) {(void)ogrFeat ; return m_pstart;}
         virtual std::string GetPEnd(OGRFeature &ogrFeat) {(void)ogrFeat ; return m_pend;}
+
+        virtual bool IsMonitoringParcel(OGRFeature &ogrFeat) {
+            int fieldIndex = ogrFeat.GetFieldIndex("CR_CAT");
+            if (fieldIndex == -1) {
+                return true;    // we don't have the column
+            }
+            const char* field = ogrFeat.GetFieldAsString(fieldIndex);
+            if (field == NULL) {
+                return true;
+            }
+            int fieldValue = std::atoi(field);
+            return (fieldValue > 0 && fieldValue < 5);
+        }
 
     private:
 
@@ -352,6 +428,26 @@ private:
             }
         }
 
+        void ParseShpFile(const std::string &filePath,
+                          std::function<int(OGRFeature&, int)> fnc) {
+            std::cout << "Loading SHP file " << filePath << std::endl;
+
+            std::ptrdiff_t pos = std::find(m_additionalFiles.begin(), m_additionalFiles.end(), filePath) - m_additionalFiles.begin();
+
+            otb::ogr::DataSource::Pointer source = otb::ogr::DataSource::New(
+                filePath, otb::ogr::DataSource::Modes::Read);
+            for (otb::ogr::DataSource::const_iterator lb=source->begin(), le=source->end(); lb != le; ++lb)
+            {
+                otb::ogr::Layer const& inputLayer = *lb;
+                otb::ogr::Layer::const_iterator featIt = inputLayer.begin();
+                for(; featIt!=inputLayer.end(); ++featIt)
+                {
+                    fnc(featIt->ogr(), pos);
+                }
+            }
+        }
+
+
     protected:
         std::vector<std::string> GetInputFileLineElements(const std::string &line) {
             std::vector<std::string> results;
@@ -375,6 +471,7 @@ private:
         std::vector<std::string> m_additionalFiles;
 
         std::function<int(const MapHdrIdx&, const std::vector<std::string>&, int)> m_LineHandlerFnc;
+        std::function<int(OGRFeature&, int)> m_ShpFeatHandlerFnc;
     };
 
     // //////////// CZE Infos ///////////////////
@@ -390,6 +487,11 @@ private:
             return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("NKOD_DPB"));
         }
         virtual std::string GetMainCrop(OGRFeature &ogrFeat) {
+            const std::string &plod2 = GetLpisInfos(GetUniqueId(ogrFeat)).plod2;
+            // Ignore items that have plod2 filled
+            if (plod2.size() > 0 && std::atoi(plod2.c_str()) > 0) {
+                return "NA";
+            }
             return GetLpisInfos(GetUniqueId(ogrFeat)).plod1;
         }
         virtual bool GetHasPractice(OGRFeature &ogrFeat, const std::string &practice) {
@@ -456,6 +558,7 @@ private:
     private :
         typedef struct {
             std::string plod1;
+            std::string plod2;
             std::string vymera;
         } LpisInfosType;
 
@@ -477,6 +580,10 @@ private:
                     itMap = header.find("PLOD1");
                     if (itMap != header.end() && itMap->second < line.size()) {
                         lpisInfos.plod1 = line[itMap->second];
+                    }
+                    itMap = header.find("PLOD2");
+                    if (itMap != header.end() && itMap->second < line.size()) {
+                        lpisInfos.plod2 = line[itMap->second];
                     }
                     itMap = header.find("VYMERA");
                     if (itMap != header.end() && itMap->second < line.size()) {
@@ -759,19 +866,100 @@ private:
 
     // //////////// ROMANIA Infos ///////////////////
     class RouCountryInfo : public CountryInfoBase {
+    private:
+        std::map<std::string, int> m_gsaaIdsMap;
+        const std::map<int, int> m_nfcCropCodes = {{1511 , 1511}, {15171, 15171}, {1591 , 1591}, {1521 , 1521}, {15271, 15271},
+                                                   {2031 , 2031}, {20371, 20371}, {1271 , 1271}, {1281 , 1281}, {1291 , 1291},
+                                                   {1301 , 1301}, {1531 , 1531}, {1551 , 1551}, {95591, 95591}, {1571 , 1571},
+                                                   {1541 , 1541}, {1561 , 1561}, {9731 , 9731}, {95531, 95531}, {95541, 95541},
+                                                   {9741 , 9741}, {95561, 95561}, {97471, 97471}, {97481, 97481}, {97491, 97491},
+                                                   {9751 , 9751}};
+
     public:
+        RouCountryInfo() {
+            using namespace std::placeholders;
+            m_ShpFeatHandlerFnc = std::bind(&RouCountryInfo::HandleCCFeature, this, _1, _2);
+        }
+
         virtual std::string GetName() { return "ROU"; }
         virtual std::string GetUniqueId(OGRFeature &ogrFeat) {
-            return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("TODO"));
+            int aggId = ogrFeat.GetFieldIndex("agg_id");
+            std::string gsaaId;
+            if (aggId >= 0) {
+                gsaaId = ogrFeat.GetFieldAsString(aggId);
+            } else {
+                gsaaId = std::string(ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("ID_unic"))) +
+                        ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("parcel_nr")) +
+                        ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("crop_nr"));
+            }
+            return gsaaId;
         }
         virtual std::string GetMainCrop(OGRFeature &ogrFeat) {
-            (void)ogrFeat;
-            return "TODO";
+            return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("crop_code"));
         }
         virtual bool GetHasPractice(OGRFeature &ogrFeat, const std::string &practice) {
-            (void)ogrFeat;
-            (void)practice;
+            if (practice == CATCH_CROP_VAL) {
+                const std::string &uid = GetUniqueId(ogrFeat);
+                if (m_gsaaIdsMap.find(uid) != m_gsaaIdsMap.end()) {
+                    return true;
+                }
+            } else if (practice == NITROGEN_FIXING_CROP_VAL) {
+                int cropCode = std::atoi(GetMainCrop(ogrFeat).c_str());
+                if (m_nfcCropCodes.find(cropCode) != m_nfcCropCodes.end()) {
+                    return true;
+                }
+            }
             return false;
+        }
+
+        virtual std::string GetPEnd(OGRFeature &ogrFeat) {
+            if (m_practice == NITROGEN_FIXING_CROP_VAL) {
+                int cropCode = std::atoi(GetMainCrop(ogrFeat).c_str());
+                switch(cropCode) {
+                    case 1511:
+                    case 15171:
+                    case 1591:
+                        return "2018-05-27";
+                    case 1281:
+                    case 1291:
+                    case 1301:
+                        return "2018-08-26";
+                    case 9731:
+                    case 95531:
+                    case 95541:
+                    case 9751:
+                        return "2018-06-30";
+                    case 9741:
+                    case 95561:
+                    case 97471:
+                    case 97481:
+                        return "2018-04-29";
+                }
+                return m_pend;
+            } else if (m_practice == NITROGEN_FIXING_CROP_VAL || m_practice == FALLOW_LAND_VAL) {
+                return m_pend;
+            }
+            return "NA";
+        }
+
+        int HandleCCFeature(OGRFeature &ogrFeat, int fileIdx) {
+            if (fileIdx > 0) {
+                std::cout << "The Romania country supports only one shp file as input" << std::endl;
+                return false;
+            }
+            int aggId = ogrFeat.GetFieldIndex("agg_id");
+            std::string gsaaId;
+            if (aggId >= 0) {
+                gsaaId = ogrFeat.GetFieldAsString(aggId);
+            } else {
+                const std::string &idUnic = std::to_string(ogrFeat.GetFieldAsInteger(ogrFeat.GetFieldIndex("ID_unic")));
+                const std::string &parcelNo = std::to_string(ogrFeat.GetFieldAsInteger(ogrFeat.GetFieldIndex("parcel_nr")));
+                gsaaId = idUnic + "-" + parcelNo + "-" +
+                        ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("crop_nr"));
+            }
+
+            m_gsaaIdsMap[gsaaId] = 1;
+            return true;
         }
 
     };
@@ -781,15 +969,29 @@ private:
     public:
         virtual std::string GetName() { return "ITA"; }
         virtual std::string GetUniqueId(OGRFeature &ogrFeat) {
-            return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("TODO"));
+            return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("parcel_id"));
         }
         virtual std::string GetMainCrop(OGRFeature &ogrFeat) {
-            (void)ogrFeat;
-            return "TODO";
+            if (m_practice.size() == 0) {
+                // If the practice is NA, then we should not write these items
+                int efaCrop = std::atoi(ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("EFA_crop")));
+                if (efaCrop != 0) {
+                    return "";
+                }
+            }
+            return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("crop_code"));
         }
         virtual bool GetHasPractice(OGRFeature &ogrFeat, const std::string &practice) {
-            (void)ogrFeat;
-            (void)practice;
+            int efaCrop = std::atoi(ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("EFA_crop")));
+            if (practice == NITROGEN_FIXING_CROP_VAL) {
+                if (efaCrop != 0 && efaCrop != 214) {
+                    return true;
+                }
+            } else if (practice == FALLOW_LAND_VAL) {
+                if (efaCrop == 214) {
+                    return true;
+                }
+            }
             return false;
         }
 

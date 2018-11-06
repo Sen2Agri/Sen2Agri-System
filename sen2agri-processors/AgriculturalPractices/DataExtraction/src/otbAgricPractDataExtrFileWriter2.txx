@@ -32,36 +32,43 @@ namespace otb {
 
 template < class TMeasurementVector >
 AgricPractDataExtrFileWriter2<TMeasurementVector>
-::AgricPractDataExtrFileWriter2(): m_TargetFileName(""), m_AppendMode(false),
-    m_MultiFileMode(false), m_bWriteInDb(false), m_bUseLatestNamingFormat(true)
+::AgricPractDataExtrFileWriter2(): m_TargetFileName(""),
+    m_bOutputCsvFormat(true), m_bMultiFileMode(false), m_bUseLatestNamingFormat(true), m_bUseDate2(false)
 {}
 
 template < class TMeasurementVector >
 template <typename MapType>
 void
 AgricPractDataExtrFileWriter2<TMeasurementVector>
-::AddInputMap(const std::string &fileName, const MapType& map )
+::AddInputMaps(const std::string &fileName, const MapType& mapMeans,  const MapType& mapStdDev)
 {
-    // we exclude from the header the fid and the date
-    int meanPosInHeader = GetPositionInHeader("mean");
-    int stdevPosInHeader = GetPositionInHeader("stdev");
-
+    // TODO: This is a copy/paste with small changes of the function below
+    //      It should be unified with the other one
     std::string fileType;
     std::string polarisation;
     std::string orbit;
     time_t fileDate;
     time_t additionalFileDate = 0;
-    if (!getFileInfosFromName(fileName, fileType, polarisation, orbit, fileDate, additionalFileDate, m_bUseLatestNamingFormat))
+    if (!GetFileInfosFromName(fileName, fileType, polarisation, orbit, fileDate, additionalFileDate, m_bUseLatestNamingFormat))
     {
-        // TODO: log error here
+        std::cout << "Error extracting file informations from file name " << fileName << std::endl;
         return;
     }
+    if (additionalFileDate) {
+        m_bUseDate2 = true;
+    }
+
+    // we exclude from the header the fid and the date
+    int meanPosInHeader = GetPositionInHeader("mean");
+    int stdevPosInHeader = GetPositionInHeader("stdev");
 
     typename MapType::const_iterator it;
     std::string fieldId;
-    for ( it = map.begin() ; it != map.end() ; ++it)
+    for ( it = mapMeans.begin() ; it != mapMeans.end() ; ++it)
     {
       fieldId = boost::lexical_cast<std::string>(it->first);
+      const auto &meanVal = it->second[0];
+      const auto &stdDevVal = mapStdDev[fieldId][0];
 
       const std::string &fieldOutFileName = BuildOutputFileName(fieldId, fileType, polarisation, orbit, fileDate, additionalFileDate);
       const std::string &uniqueId = fieldId + fieldOutFileName;
@@ -74,8 +81,8 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
           fieldEntry.additionalFileDate = additionalFileDate;
           // we exclude from the header the fid and the date
           fieldEntry.values.resize(m_HeaderFields.size() - 2);
-          fieldEntry.values[meanPosInHeader] = it->second.mean[0];
-          fieldEntry.values[stdevPosInHeader] = it->second.stdDev[0];
+          fieldEntry.values[meanPosInHeader] = meanVal;
+          fieldEntry.values[stdevPosInHeader] = stdDevVal;
           containerIt->second.fieldsEntries.push_back(fieldEntry);
 
       } else {
@@ -89,8 +96,75 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
           fieldEntry.additionalFileDate = additionalFileDate;
           // we exclude from the header the fid and the date
           fieldEntry.values.resize(m_HeaderFields.size() - 2);
-          fieldEntry.values[meanPosInHeader] = it->second.mean[0];
-          fieldEntry.values[stdevPosInHeader] = it->second.stdDev[0];
+          fieldEntry.values[meanPosInHeader] = meanVal;
+          fieldEntry.values[stdevPosInHeader] = stdDevVal;
+          fileFieldsInfoType.fieldsEntries.push_back(fieldEntry);
+
+          m_FileFieldsContainer[uniqueId] = fileFieldsInfoType;
+      }
+    }
+}
+
+template < class TMeasurementVector >
+template <typename MapType>
+void
+AgricPractDataExtrFileWriter2<TMeasurementVector>
+::AddInputMap(const std::string &fileName, const MapType& map )
+{
+    std::string fileType;
+    std::string polarisation;
+    std::string orbit;
+    time_t fileDate;
+    time_t additionalFileDate = 0;
+    if (!GetFileInfosFromName(fileName, fileType, polarisation, orbit, fileDate, additionalFileDate, m_bUseLatestNamingFormat))
+    {
+        std::cout << "Error extracting file informations from file name " << fileName << std::endl;
+        return;
+    }
+    if (additionalFileDate) {
+        m_bUseDate2 = true;
+    }
+
+    // we exclude from the header the fid and the date
+    int meanPosInHeader = GetPositionInHeader("mean");
+    int stdevPosInHeader = GetPositionInHeader("stdev");
+
+    typename MapType::const_iterator it;
+    std::string fieldId;
+    for ( it = map.begin() ; it != map.end() ; ++it)
+    {
+      fieldId = boost::lexical_cast<std::string>(it->first);
+      const auto &meanVal = it->second.mean[0];
+      const auto &stdDevVal = it->second.stdDev[0];
+
+      const std::string &fieldOutFileName = BuildOutputFileName(fieldId, fileType, polarisation, orbit, fileDate, additionalFileDate);
+      const std::string &uniqueId = fieldId + fieldOutFileName;
+
+      typename std::map<std::string, FileFieldsInfoType>::iterator containerIt =
+              m_FileFieldsContainer.find(uniqueId);
+      if(containerIt != m_FileFieldsContainer.end()) {
+          FieldEntriesType fieldEntry;
+          fieldEntry.date = fileDate;
+          fieldEntry.additionalFileDate = additionalFileDate;
+          // we exclude from the header the fid and the date
+          fieldEntry.values.resize(m_HeaderFields.size() - 2);
+          fieldEntry.values[meanPosInHeader] = meanVal;
+          fieldEntry.values[stdevPosInHeader] = stdDevVal;
+          containerIt->second.fieldsEntries.push_back(fieldEntry);
+
+      } else {
+          // add it into the container
+          FileFieldsInfoType fileFieldsInfoType;
+          fileFieldsInfoType.fid = fieldId;
+          fileFieldsInfoType.fileName = fieldOutFileName;
+
+          FieldEntriesType fieldEntry;
+          fieldEntry.date = fileDate;
+          fieldEntry.additionalFileDate = additionalFileDate;
+          // we exclude from the header the fid and the date
+          fieldEntry.values.resize(m_HeaderFields.size() - 2);
+          fieldEntry.values[meanPosInHeader] = meanVal;
+          fieldEntry.values[stdevPosInHeader] = stdDevVal;
           fileFieldsInfoType.fieldsEntries.push_back(fieldEntry);
 
           m_FileFieldsContainer[uniqueId] = fileFieldsInfoType;
@@ -101,45 +175,25 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
 template < class TMeasurementVector >
 void
 AgricPractDataExtrFileWriter2<TMeasurementVector>
-::WriteOutputFile()
+::WriteOutputXmlFile()
 {
-    const std::string strEndFids("</fids>");
+    std::ofstream xmlFile;
+    xmlFile.open(m_TargetFileName, std::ios_base::trunc | std::ios_base::out);
+    xmlFile << "<fids>\n";
 
-  bool validFileExists = false;
-  if (m_AppendMode && boost::filesystem::exists(m_TargetFileName)) {
-      std::ifstream infile(m_TargetFileName);
-      std::string line;
-      if (std::getline(infile, line) && line == "<fids>") {
-          validFileExists = true;
-      }
-  }
-
-  std::ofstream xmlFile;
-  xmlFile.open(m_TargetFileName, (m_AppendMode ? std::ios_base::app : std::ios_base::trunc) | std::ios_base::out);
-  if (validFileExists) {
-      long pos = xmlFile.tellp();
-      if (pos > 0) {
-          // TODO: aparently, this is not working very well - DISABLED for now through m_AppendMode
-          // go back to overwrite </fids>
-          xmlFile.seekp(pos- (strEndFids.size()));
-      }
-  } else {
-      xmlFile << "<fids>\n";
-  }
-
-  typename FileFieldsContainer::iterator fileFieldContainerIt;
-  for (fileFieldContainerIt = m_FileFieldsContainer.begin(); fileFieldContainerIt != m_FileFieldsContainer.end();
-       ++fileFieldContainerIt)
-  {
-      WriteEntriesToOutputFile(xmlFile, fileFieldContainerIt->second);
-  }
-  xmlFile << "</fids>";
+    typename FileFieldsContainer::iterator fileFieldContainerIt;
+    for (fileFieldContainerIt = m_FileFieldsContainer.begin(); fileFieldContainerIt != m_FileFieldsContainer.end();
+        ++fileFieldContainerIt)
+    {
+        WriteEntriesToXmlOutputFile(xmlFile, fileFieldContainerIt->second);
+    }
+    xmlFile << "</fids>";
 }
 
 template < class TMeasurementVector >
 void
 AgricPractDataExtrFileWriter2<TMeasurementVector>
-::WriteEntriesToOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos)
+::WriteEntriesToXmlOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos)
 {
     // now sort the resVect
     std::sort (fileFieldsInfos.fieldsEntries.begin(), fileFieldsInfos.fieldsEntries.end(), m_LinesComparator);
@@ -164,18 +218,132 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
 template < class TMeasurementVector >
 void
 AgricPractDataExtrFileWriter2<TMeasurementVector>
+::WriteOutputCsvFormat()
+{
+    if (m_bMultiFileMode) {
+        typename FileFieldsContainer::iterator fileFieldContainerIt;
+        for (fileFieldContainerIt = m_FileFieldsContainer.begin(); fileFieldContainerIt != m_FileFieldsContainer.end();
+            ++fileFieldContainerIt)
+        {
+            std::string fileName = fileFieldContainerIt->first;
+            NormalizeFieldId(fileName);
+            const std::string &targetFile = GetIndividualFieldFileName(m_TargetFileName, fileName);
+            std::ofstream fileStream;
+            fileStream.open(targetFile, std::ios_base::trunc | std::ios_base::out);
+            if (!fileStream.is_open()) {
+                std::cout << "Cannot open the file " << targetFile << std::endl;
+                continue;
+            }
+
+            // write the header for the file
+            WriteCsvHeader(fileStream, true);
+
+            // write the entries in the file
+            WriteEntriesToCsvOutputFile(fileStream, fileFieldContainerIt->second, false);
+        }
+
+    } else {
+        std::ofstream fileStream;
+        fileStream.open(m_TargetFileName, std::ios_base::trunc | std::ios_base::out);
+
+        // write the header
+        WriteCsvHeader(fileStream, false);
+
+        typename FileFieldsContainer::iterator fileFieldContainerIt;
+        for (fileFieldContainerIt = m_FileFieldsContainer.begin(); fileFieldContainerIt != m_FileFieldsContainer.end();
+            ++fileFieldContainerIt)
+        {
+            WriteEntriesToCsvOutputFile(fileStream, fileFieldContainerIt->second, true);
+        }
+    }
+}
+
+template < class TMeasurementVector >
+void
+AgricPractDataExtrFileWriter2<TMeasurementVector>
+::WriteEntriesToCsvOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos, bool writeSuffix)
+{
+    // now sort the resVect
+    std::sort (fileFieldsInfos.fieldsEntries.begin(), fileFieldsInfos.fieldsEntries.end(), m_LinesComparator);
+
+    outStream << fileFieldsInfos.fid.c_str() << ";";
+    if (writeSuffix) {
+        outStream << fileFieldsInfos.fileName.c_str() << ";";
+    }
+
+    int fieldEntriesSize = fileFieldsInfos.fieldsEntries.size();
+    for (int i = 0; i<fieldEntriesSize; i++) {
+        const std::vector<double> &curLineVect = fileFieldsInfos.fieldsEntries[i].values;
+        outStream << TimeToString(fileFieldsInfos.fieldsEntries[i].date).c_str() << ";";
+        if (fileFieldsInfos.fieldsEntries[i].additionalFileDate != 0) {
+            outStream << TimeToString(fileFieldsInfos.fieldsEntries[i].additionalFileDate).c_str() << ";";
+        }
+        for (int j = 0; j<curLineVect.size(); j++) {
+            //outStream << boost::lexical_cast<std::string>(curLineVect[j]).c_str() << ";";
+            outStream << DoubleToString(curLineVect[j]).c_str();
+            if (j < curLineVect.size() - 1 ) {
+                outStream << ";";
+            }
+        }
+        outStream << (m_bCsvCompactMode ? ((i == fieldEntriesSize - 1) ? "\n" : "|") : "\n");
+    }
+}
+
+template < class TMeasurementVector >
+void
+AgricPractDataExtrFileWriter2<TMeasurementVector>
+::WriteCsvHeader(std::ofstream &fileStream, bool individualFieldFile) {
+    for (int i = 0; i<m_HeaderFields.size(); i++) {
+        fileStream << m_HeaderFields[i];
+        if (i < m_HeaderFields.size()-1) {
+            fileStream << ";";
+        }
+        if (m_FileFieldsContainer.size() > 0) {
+            if (i == 0) {
+                if (!individualFieldFile) {
+                    fileStream << "suffix" << ";";
+                }
+            } else if (i == 1 && m_bUseDate2 != 0) {
+                fileStream << "date2" << ";";
+            }
+        }
+    }
+    fileStream << "\n";
+}
+
+template < class TMeasurementVector >
+std::string
+AgricPractDataExtrFileWriter2<TMeasurementVector>
+::GetIndividualFieldFileName(const std::string &outPath, const std::string &fileName) {
+    boost::filesystem::path rootFolder(outPath);
+    // check if this path is a folder or a file
+    // if it is a file, then we get its parent folder
+    if (!boost::filesystem::is_directory(rootFolder)) {
+        rootFolder = rootFolder.parent_path();
+    }
+    return (rootFolder / fileName).string() + ".txt";
+}
+
+
+template < class TMeasurementVector >
+void
+AgricPractDataExtrFileWriter2<TMeasurementVector>
 ::GenerateData()
 {
-  // Check if the input are not null
-  if(m_FileFieldsContainer.size() == 0)
-    itkExceptionMacro(<<"At least one input is required, please set input using the methods AddInputMap");
+    // Check if the input are not null
+    if(m_FileFieldsContainer.size() == 0)
+        itkExceptionMacro(<<"At least one input is required, please set input using the methods AddInputMap");
 
-  // Check if the filename is not empty
-  if(m_TargetFileName.empty()) {
-    itkExceptionMacro(<<"The output directory TargetDir is empty, please set the target dir name via the method SetTargetDir");
-  }
+    // Check if the filename is not empty
+    if(m_TargetFileName.empty()) {
+        itkExceptionMacro(<<"The output directory TargetDir is empty, please set the target dir name via the method SetTargetDir");
+    }
 
-  WriteOutputFile();
+    if (m_bOutputCsvFormat) {
+        WriteOutputCsvFormat();
+    } else {
+        WriteOutputXmlFile();
+    }
 }
 
 template < class TMeasurementVector >

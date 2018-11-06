@@ -5,6 +5,11 @@
 #include <vector>
 #include <iostream>
 
+#define NOT_AVAILABLE               -10000
+#define NR                          -10001
+
+#define DEFAULT_EFA_NDVI_MIN        300
+
 typedef struct {
     std::string fieldId;
 
@@ -83,15 +88,36 @@ typedef struct {
     size_t cnt;                     // intermediate for computing mean val - can be done outside
 } GroupedMeanValInfosType;
 
-struct GroupedMeanValInfosComparator
-{
-    inline bool operator() (const GroupedMeanValInfosType& struct1, const GroupedMeanValInfosType& struct2)
-    {
-        return (struct1.ttDate < struct2.ttDate);
-    }
-};
+typedef struct MergedAllValInfosType {
+    MergedAllValInfosType() {
+        ttDate = 0;
+        cohMax = NOT_AVAILABLE;
+        cohChange = NOT_AVAILABLE;
 
-typedef struct {
+        ampMean = NOT_AVAILABLE;
+        ampMax = NOT_AVAILABLE;
+        ampChange = NOT_AVAILABLE;
+
+        ndviMeanVal = NOT_AVAILABLE;
+        ndviPrev = NOT_AVAILABLE;
+        ndviNext = NOT_AVAILABLE;
+        vegWeeks = false;
+        ndviPresence = NOT_AVAILABLE;
+        ndviDrop = NOT_AVAILABLE;
+        vegWeeks = NOT_AVAILABLE;
+        candidateOptical = false;
+
+        coherenceBase = false;
+        coherenceHigh = false;
+        coherencePresence = false;
+        candidateCoherence = false;
+        candidateAmplitude = false;
+        amplitudePresence = false;
+        harvest = false;
+        candidateEfa = false;
+        catchStart = false;
+
+    }
     time_t ttDate;
 
     double cohMax;                  // coherence max value in week week
@@ -125,56 +151,36 @@ typedef struct {
 
 } MergedAllValInfosType;
 
-typedef struct {
-    std::string fieldId;
-    int year;
-    int mainCrop;
-    time_t ttVegStartTime;
-    time_t ttHarvestStartTime;
-    time_t ttHarvestEndTime;
-    std::string practiceName;
-    time_t ttPracticeStartTime;
-    time_t ttPracticeEndTime;
+template <typename T>
+struct TimedValInfosComparator
+{
+    inline bool operator() (const T& struct1, const T& struct2)
+    {
+        return (struct1.ttDate < struct2.ttDate);
+    }
+};
 
-    short ndviPresence;             // M1 / M6
-    bool candidateOptical;          // M2
-    bool candidateAmplitude;        // M3
-    bool amplitudePresence;         // M4
-    bool candidateCoherence;        // M5
-    short harvestConfirmWeek;       // WEEK
 
-    std::string efaIndex;           // C_INDEX
-    short ndviGrowth;               // M7
-    double ndviNoLoss;              // M8
-    double ampNoLoss;               // M9
-    double cohNoLoss;               // M10
 
-} HarvestEvaluationType;
-
-typedef struct {
-    time_t harvestConfirmed;
-    HarvestEvaluationType evaluation;
-
-} HarvestInfoType;
-
-typedef struct {
-    time_t ttDate;
-    short ndviPresence;
-    short ndviDrop;
-    double ndviMean;
-    short ndviGrowth;
-    short ndviNoLoss;
-
-    short ampNoLoss;
-
-    short cohNoLoss;
-
-} EfaMarkersInfoType;
 
 typedef struct FieldInfoType {
 
     FieldInfoType(const std::string &fid) {
         fieldId = fid;
+
+        ttVegStartTime = 0;
+        ttVegStartWeekFloorTime = 0;
+        ttHarvestStartTime = 0;
+        ttHarvestStartWeekFloorTime = 0;
+        ttHarvestEndTime = 0;
+        ttHarvestEndWeekFloorTime = 0;
+        ttPracticeStartTime = 0;
+        ttPracticeStartWeekFloorTime = 0;
+        ttPracticeEndTime = 0;
+        ttPracticeEndWeekFloorTime = 0;
+        vegStartWeekNo = NOT_AVAILABLE;
+        harvestStartWeekNo = NOT_AVAILABLE;
+        coheVVMaxValue = NOT_AVAILABLE;
     }
     std::string fieldId;
     std::string countryCode;
@@ -203,7 +209,7 @@ typedef struct FieldInfoType {
     std::vector<MergedDateAmplitudeType> mergedAmpInfos;
 
     std::vector<InputFileLineInfoType> coheVVLines;
-    std::vector<InputFileLineInfoType> coheVHLines;     // TODO: These are read but not actually used anywhere. To be removed (???)
+    //std::vector<InputFileLineInfoType> coheVHLines;     // TODO: These are read but not actually used anywhere. To be removed (???)
     double coheVVMaxValue;                              // Needed for marker 5
 
     std::vector<InputFileLineInfoType> ndviLines;
@@ -214,5 +220,79 @@ typedef struct FieldInfoType {
 
 } FieldInfoType;
 
+typedef struct HarvestEvaluationType {
+    HarvestEvaluationType() {
+        ndviPresence = NOT_AVAILABLE;               // M1 / M6
+        candidateOptical = NOT_AVAILABLE;           // M2
+        candidateAmplitude = NOT_AVAILABLE;         // M3
+        amplitudePresence = NOT_AVAILABLE;          // M4
+        candidateCoherence = NOT_AVAILABLE;         // M5
+        harvestConfirmWeek = NOT_AVAILABLE;          // WEEK
+
+        efaIndex = "NA";                            // C_INDEX
+        ndviGrowth = NOT_AVAILABLE;                 // M7
+        ndviNoLoss = NOT_AVAILABLE;                 // M8
+        ampNoLoss = NOT_AVAILABLE;                  // M9
+        cohNoLoss = NOT_AVAILABLE;                  // M10
+    }
+
+    void Initialize(const FieldInfoType &fieldInfos) {
+        fieldId = fieldInfos.fieldId;
+        year = fieldInfos.year;
+        ttVegStartTime = fieldInfos.ttVegStartTime;
+        ttHarvestStartTime = fieldInfos.ttHarvestStartTime;
+        ttHarvestEndTime = fieldInfos.ttHarvestEndTime;
+        practiceName = fieldInfos.practiceName;
+        ttPracticeStartTime = fieldInfos.ttPracticeStartTime;
+        ttPracticeEndTime = fieldInfos.ttPracticeEndTime;
+    }
+
+    std::string fieldId;
+    int year;
+    int mainCrop;
+    time_t ttVegStartTime;
+    time_t ttHarvestStartTime;
+    time_t ttHarvestEndTime;
+    std::string practiceName;
+    time_t ttPracticeStartTime;
+    time_t ttPracticeEndTime;
+
+    short ndviPresence;             // M1 / M6
+    short candidateOptical;          // M2
+    short candidateAmplitude;        // M3
+    short amplitudePresence;         // M4
+    short candidateCoherence;        // M5
+    short harvestConfirmWeek;       // WEEK
+
+    std::string efaIndex;           // C_INDEX
+    short ndviGrowth;               // M7
+    double ndviNoLoss;              // M8
+    double ampNoLoss;               // M9
+    double cohNoLoss;               // M10
+
+} HarvestEvaluationType;
+
+typedef struct HarvestInfoType {
+    HarvestInfoType() {
+        harvestConfirmed = NOT_AVAILABLE;
+    }
+    time_t harvestConfirmed;
+    HarvestEvaluationType evaluation;
+
+} HarvestInfoType;
+
+typedef struct {
+    time_t ttDate;
+    short ndviPresence;
+    short ndviDrop;
+    double ndviMean;
+    short ndviGrowth;
+    short ndviNoLoss;
+
+    short ampNoLoss;
+
+    short cohNoLoss;
+
+} EfaMarkersInfoType;
 
 #endif
