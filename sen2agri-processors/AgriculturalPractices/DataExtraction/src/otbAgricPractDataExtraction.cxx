@@ -73,10 +73,6 @@ public:
 
     typedef std::map<std::string , std::string>           GenericMapType;
     typedef std::map<std::string , GenericMapType>        GenericMapContainer;
-    typedef struct {
-        std::string inputImage;
-        std::vector<std::string> s2MsksFiles;
-    } S2MaskedInputFileInfoType;
 
 private:
     AgricPractDataExtraction()
@@ -113,6 +109,10 @@ private:
         AddParameter(ParameterType_StringList, "il", "Input Images");
         SetParameterDescription("il", "Support images that will be classified");
 
+        AddParameter(ParameterType_InputImage,  "mask",   "Input validity mask");
+        SetParameterDescription("mask", "Validity mask (only pixels corresponding to a mask value greater than 0 will be used for statistics)");
+        MandatoryOff("mask");
+
         AddParameter(ParameterType_InputFilename, "vec", "Input vectors");
         SetParameterDescription("vec","Input geometries to analyze");
 
@@ -127,14 +127,6 @@ private:
         SetParameterDescription("layer", "Layer index to read in the input vector file.");
         MandatoryOff("layer");
         SetDefaultParameterInt("layer",0);
-
-        AddParameter(ParameterType_StringList, "s2il", "S2 tiles parcels masks images");
-        SetParameterDescription("s2il", "S2 tiles parcels masks images");
-        MandatoryOff("s2il");
-
-        AddParameter(ParameterType_StringList, "s2ilcnts", "Number of S2 tiles parcels masks images for each input image");
-        SetParameterDescription("s2ilcnts", "Number of S2 tiles parcels masks images for each input image");
-        MandatoryOff("s2ilcnts");
 
         AddParameter(ParameterType_Int, "convdb", "Convert pixel values to db before processing");
         SetParameterDescription("convdb", "Convert pixel values to db before processing.");
@@ -162,11 +154,7 @@ private:
         MandatoryOff("mfiles");
         SetDefaultParameterInt("mfiles",0);
 
-        AddParameter(ParameterType_InputImage,  "mask",   "Input validity mask");
-        SetParameterDescription("mask", "Validity mask (only pixels corresponding to a mask value greater than 0 will be used for statistics)");
-        MandatoryOff("mask");
-
-        //ElevationParametersHandler::AddElevationParameters(this, "elev");
+        ElevationParametersHandler::AddElevationParameters(this, "elev");
 
         AddRAMParameter();
 
@@ -223,6 +211,8 @@ private:
             otbAppLogFATAL(<<"No image was given as input!");
         }
 
+        otb::Wrapper::ElevationParametersHandler::SetupDEMHandlerFromElevationParameters(this,"elev");
+
         // Reproject geometries
         const std::string &vectFile = this->GetParameterString("vec");
         otbAppLogINFO("Loading vectors from file " << vectFile);
@@ -231,84 +221,68 @@ private:
         const std::vector<std::string> &cFieldNames = GetChoiceNames("field");
         const std::string &fieldName = cFieldNames[selectedCFieldIdx.front()];
 
-        // Initialize the writer
-        InitializeWriter();
+        std::vector<std::string>::const_iterator itImages;
+        std::vector<std::string>::const_iterator itImagesEnd = imagesPaths.end();
 
-        if (HasValue("s2il")) {
-            const std::vector<std::string> &s2MsksPaths = this->GetParameterStringList("s2il");
-            if (HasValue("s2ilcnts")) {
-                const std::vector<std::string> &s2MsksCnts = this->GetParameterStringList("s2ilcnts");
-                if (imagesPaths.size() != s2MsksCnts.size()) {
-                    otbAppLogFATAL(<<"Invalid number of S2 masks given for the number of input images list! Expected: " <<
-                                   imagesPaths.size() << " but got " << s2MsksCnts.size());
-                }
-                // first perform a validation of the counts
-                int expectedS2Imgs = 0;
-                for (int i = 0; i<s2MsksCnts.size(); i++) {
-                    expectedS2Imgs += std::atoi(s2MsksCnts[i].c_str());
-                }
-                if (expectedS2Imgs != s2MsksPaths.size()) {
-                    otbAppLogFATAL(<<"The S2 masks number and the provided S2 files do not match! Expected " <<
-                                   expectedS2Imgs << " but got " << s2MsksPaths.size());
-                }
-                int curS2IlIdx = 0;
-                for (int i = 0; i<imagesPaths.size(); i++) {
-                    S2MaskedInputFileInfoType info;
-                    info.inputImage = imagesPaths[i];
-                    int curImgCnt = std::atoi(s2MsksCnts[i].c_str());
-                    for(int j = 0; j<curImgCnt; j++) {
-                        info.s2MsksFiles.emplace_back(s2MsksPaths[curS2IlIdx+j]);
-                    }
-                    m_s2MaskedInputFiles.emplace_back(info);
-                    curS2IlIdx += curImgCnt;
-                }
-            } else {
-                otbAppLogWARNING("WARNING: Using all s2 mask files for each input image!!!");
-                for (const auto &inputImg: imagesPaths) {
-                    S2MaskedInputFileInfoType info;
-                    info.inputImage = inputImg;
-                    info.s2MsksFiles = s2MsksPaths;
-                    m_s2MaskedInputFiles.emplace_back(info);
-                }
-            }
-            // TODO: call here the corresponding function
-        } else {
-            //otb::Wrapper::ElevationParametersHandler::SetupDEMHandlerFromElevationParameters(this,"elev");
-
-            int i = 1;
-            otb::ogr::DataSource::Pointer reprojVector = vectors;
-            for (std::vector<std::string>::const_iterator itImages = imagesPaths.begin();
-                 itImages != imagesPaths.end(); ++itImages)
-            {
-                if ( !boost::filesystem::exists( *itImages) ) {
-                    otbAppLogWARNING("File " << *itImages << " does not exist on disk!");
-                    continue;
-                }
-                FloatVectorImageType::Pointer inputImage = getInputImage(*itImages);
-                otbAppLogINFO("Handling file " << *itImages);
-
-                if (NeedsReprojection(reprojVector, inputImage)) {
-                    otbAppLogINFO("Reprojecting vectors needed for file " << *itImages);
-                    reprojVector = GetVector(vectors, inputImage);
-                } else {
-                    otbAppLogINFO("No need to reproject vectors for " << *itImages);
-                }
-                FilterType::Pointer filter = getStatisticsFilter(inputImage, reprojVector, fieldName);
-                const FilterType::PixeMeanStdDevlValueMapType &meanStdValues = filter->GetMeanStdDevValueMap();
-                m_agricPracticesDataWriter->AddInputMap<FilterType::PixeMeanStdDevlValueMapType>(*itImages, meanStdValues);
-
-                otbAppLogINFO("Extracted a number of " << meanStdValues.size() << " values for file " << *itImages);
-                otbAppLogINFO("Processed " << i << " products. Remaining products = " << imagesPaths.size() - i <<
-                              ". Percent completed = " << (int)((((double)i) / imagesPaths.size()) * 100) << "%");
-
-                filter->GetFilter()->Reset();
-                i++;
-            }
-        }
         const std::string &outDir = this->GetParameterString("outdir");
+        AgricPracticesWriterType2::Pointer agricPracticesDataWriter = AgricPracticesWriterType2::New();
+        agricPracticesDataWriter->SetTargetFileName(BuildUniqueFileName(outDir, imagesPaths[0]));
+        std::vector<std::string> header = {"KOD_PB", "date", "mean", "stdev"};
+        agricPracticesDataWriter->SetHeaderFields(header);
+        bool bUseLatestNamingFormat = (GetParameterInt("oldnf") == 0);
+        agricPracticesDataWriter->SetUseLatestFileNamingFormat(bUseLatestNamingFormat);
+
+        bool bOutputCsv = (GetParameterInt("outcsv") != 0);
+        agricPracticesDataWriter->SetOutputCsvFormat(bOutputCsv);
+        bool bCsvCompactMode = (GetParameterInt("csvcompact") != 0);
+        agricPracticesDataWriter->SetCsvCompactMode(bCsvCompactMode);
+        bool bMultiFileMode = (GetParameterInt("mfiles") != 0);
+        agricPracticesDataWriter->SetUseMultiFileMode(bMultiFileMode);
+
+        int i = 1;
+        otb::ogr::DataSource::Pointer reprojVector = vectors;
+        for (itImages = imagesPaths.begin(); itImages != itImagesEnd; ++itImages)
+        {
+            if ( !boost::filesystem::exists( *itImages) ) {
+                otbAppLogWARNING("File " << *itImages << " does not exist on disk!");
+                continue;
+            }
+            FloatVectorImageType::Pointer inputImage = getInputImage(*itImages);
+            otbAppLogINFO("Handling file " << *itImages);
+
+            if (NeedsReprojection(reprojVector, inputImage)) {
+                otbAppLogINFO("Reprojecting vectors needed for file " << *itImages);
+                reprojVector = GetVector(vectors, inputImage);
+            } else {
+                otbAppLogINFO("No need to reproject vectors for " << *itImages);
+            }
+            FilterType::Pointer filter = getStatisticsFilter(inputImage, reprojVector, fieldName);
+            const FilterType::PixeMeanStdDevlValueMapType &meanStdValues = filter->GetMeanStdDevValueMap();
+            agricPracticesDataWriter->AddInputMap<FilterType::PixeMeanStdDevlValueMapType>(*itImages, meanStdValues);
+
+            otbAppLogINFO("Extracted a number of " << meanStdValues.size() << " values for file " << *itImages);
+            otbAppLogINFO("Processed " << i << " products. Remaining products = " << imagesPaths.size() - i <<
+                          ". Percent completed = " << (int)((((double)i) / imagesPaths.size()) * 100) << "%");
+
+            filter->GetFilter()->Reset();
+            i++;
+        }
         otbAppLogINFO("Writing outputs to folder " << outDir);
-        m_agricPracticesDataWriter->Update();
+        agricPracticesDataWriter->Update();
         otbAppLogINFO("Writing outputs to folder done!");
+//        if (imagesPaths.size() > 1)
+//        {
+//            std::vector<std::string>::const_iterator itImages;
+//            std::vector<std::string>::const_iterator itImagesEnd = imagesPaths.end();
+//            for (itImages = imagesPaths.begin(); itImages != itImagesEnd; ++itImages)
+//            {
+//                FloatVectorImageType::Pointer input = getInputImage(*itImages);
+//                m_concatenateImagesFilter->PushBackInput(input);
+//            }
+//            filter->SetInput(m_concatenateImagesFilter->GetOutput());
+//        } else {
+//            filter->SetInput(getInputImage(imagesPaths[0]));
+//        }
     }
 
     FilterType::Pointer getStatisticsFilter(const FloatVectorImageType::Pointer &inputImg,
@@ -347,24 +321,6 @@ private:
         FloatVectorImageType::Pointer retImg = imageReader->GetOutput();
         retImg->UpdateOutputInformation();
         return retImg;
-    }
-
-    void InitializeWriter() {
-        const std::vector<std::string> &imagesPaths = this->GetParameterStringList("il");
-        const std::string &outDir = this->GetParameterString("outdir");
-        m_agricPracticesDataWriter = AgricPracticesWriterType2::New();
-        m_agricPracticesDataWriter->SetTargetFileName(BuildUniqueFileName(outDir, imagesPaths[0]));
-        std::vector<std::string> header = {"KOD_PB", "date", "mean", "stdev"};
-        m_agricPracticesDataWriter->SetHeaderFields(header);
-        bool bUseLatestNamingFormat = (GetParameterInt("oldnf") == 0);
-        m_agricPracticesDataWriter->SetUseLatestFileNamingFormat(bUseLatestNamingFormat);
-
-        bool bOutputCsv = (GetParameterInt("outcsv") != 0);
-        m_agricPracticesDataWriter->SetOutputCsvFormat(bOutputCsv);
-        bool bCsvCompactMode = (GetParameterInt("csvcompact") != 0);
-        m_agricPracticesDataWriter->SetCsvCompactMode(bCsvCompactMode);
-        bool bMultiFileMode = (GetParameterInt("mfiles") != 0);
-        m_agricPracticesDataWriter->SetUseMultiFileMode(bMultiFileMode);
     }
 
     otb::ogr::DataSource::Pointer GetVector(const otb::ogr::DataSource::Pointer &vectors, const FloatVectorImageType::Pointer &inputImg) {
@@ -438,10 +394,6 @@ private:
         //ReadersListType::Pointer m_Readers;
         ImageReaderType::Pointer m_ImageReader;
         GenericMapContainer         m_GenericMapContainer;
-
-        AgricPracticesWriterType2::Pointer m_agricPracticesDataWriter;
-
-        std::vector<S2MaskedInputFileInfoType> m_s2MaskedInputFiles;
 };
 
 } // end of namespace Wrapper
