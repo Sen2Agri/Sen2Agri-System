@@ -10,6 +10,7 @@ CREATE TABLE downloader_history
   no_of_retries smallint NOT NULL DEFAULT 0,
   product_date timestamp with time zone NOT NULL DEFAULT now(),
   orbit_id INTEGER NOT NULL DEFAULT -1,
+  orbit_type_id smallint,
   status_reason character varying NULL,
   tiles text[] NULL,
   footprint geography NULL,
