@@ -120,7 +120,6 @@ def main():
             for f1 in layer:
                 g1 = f1.GetGeometryRef()
 
-                # why is this needed?
                 if g0.Overlaps(g1):
                     intersection = g0.Intersection(g1)
                 else:
