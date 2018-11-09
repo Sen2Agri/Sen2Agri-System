@@ -2,10 +2,12 @@
 from __future__ import print_function
 
 import argparse
+import hashlib
 import multiprocessing.dummy
 import os
 import os.path
 from osgeo import osr
+from osgeo import ogr
 from osgeo import gdal
 import psycopg2
 from psycopg2.sql import SQL, Literal
@@ -32,6 +34,55 @@ class Config(object):
         self.site_id = args.site_id
 
 
+def get_extent(raster):
+    gt = raster.GetGeoTransform()
+    (cols, rows) = raster.RasterXSize, raster.RasterYSize
+
+    extent = []
+
+    x = gt[0]
+    y = gt[3]
+    extent.append((x, y))
+
+    x = gt[0] + rows * gt[2]
+    y = gt[3] + rows * gt[5]
+    extent.append((x, y))
+
+    x = gt[0] + cols * gt[1] + rows * gt[2]
+    y = gt[3] + cols * gt[4] + rows * gt[5]
+    extent.append((x, y))
+
+    x = gt[0] + cols * gt[1]
+    y = gt[3] + cols * gt[4]
+    extent.append((x, y))
+
+    return extent
+
+
+def get_wgs84_extent_as_wkt(raster):
+    extent = get_extent(raster)
+
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    ring.AddPoint_2D(extent[0][0], extent[0][1])
+    ring.AddPoint_2D(extent[3][0], extent[3][1])
+    ring.AddPoint_2D(extent[2][0], extent[2][1])
+    ring.AddPoint_2D(extent[1][0], extent[1][1])
+    ring.AddPoint_2D(extent[0][0], extent[0][1])
+
+    geom = ogr.Geometry(ogr.wkbPolygon)
+    geom.AddGeometry(ring)
+
+    raster_srs = osr.SpatialReference()
+    raster_srs.ImportFromWkt(raster.GetProjection())
+    wgs84_srs = osr.SpatialReference()
+    wgs84_srs.ImportFromEPSG(4326)
+
+    transform = osr.CoordinateTransformation(raster_srs, wgs84_srs)
+
+    geom.Transform(transform)
+    return geom.ExportToWkt()
+
+
 def get_footprint(raster):
     georef = raster.GetGeoTransform()
     (xmin, ymax) = georef[0], georef[3]
@@ -41,8 +92,20 @@ def get_footprint(raster):
     ymin = ymax + ycell * rows
 
     footprint = "(({}, {}), ({}, {}))".format(xmin, ymin, xmax, ymax)
+    geog = get_wgs84_extent_as_wkt(raster)
+    return (footprint, geog)
 
-    return footprint
+
+def md5(file):
+    try:
+        hasher = hashlib.md5()
+        with open(file, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hasher.update(chunk)
+        return hasher.hexdigest()
+    except Exception as e:
+        print(e)
+        return None
 
 
 def process(id, full_path, use_temp):
@@ -55,10 +118,15 @@ def process(id, full_path, use_temp):
     else:
         temp = output
 
+    try:
+        os.remove(temp)
+    except Exception:
+        pass
+
     print("autocrop-raster.py", full_path, temp)
     ret = subprocess.call(["autocrop-raster.py", full_path, temp])
     if ret == 2:
-        return (id, full_path + "-INVALID", None, old_path)
+        return (id, full_path + "-INVALID", None, None, old_path)
     elif ret != 0:
         print("autocrop-raster.py returned", ret)
         return None
@@ -68,7 +136,7 @@ def process(id, full_path, use_temp):
 
     raster = gdal.Open(temp, gdal.GA_Update)
     raster.SetProjection(osr.SRS_WKT_WGS84)
-    footprint = get_footprint(raster)
+    (footprint, geog) = get_footprint(raster)
     del raster
 
     if use_temp:
@@ -79,7 +147,7 @@ def process(id, full_path, use_temp):
             return None
         os.remove(temp)
 
-    return (id, output, footprint, old_path)
+    return (id, output, footprint, geog, old_path)
 
 
 def remove_ncs(config, conn, use_temp):
@@ -105,6 +173,8 @@ def remove_ncs(config, conn, use_temp):
         cursor.execute(query)
 
         products = cursor.fetchall()
+        conn.commit()
+
         for product in products:
             full_path = product[0]
 
@@ -174,6 +244,8 @@ def remove_ncs(config, conn, use_temp):
         cursor.execute(query)
 
         products = cursor.fetchall()
+        conn.commit()
+
         products_to_remove = []
         for product in products:
             id = product[0]
@@ -190,8 +262,45 @@ def remove_ncs(config, conn, use_temp):
         psycopg2.extras.execute_batch(cursor, q, products_to_remove)
 
         cursor.execute("delete from product where satellite_id = 3 and full_path = 'INVALID'")
-
         conn.commit()
+
+
+def fix_footprints(config, conn):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+            select id,
+                   full_path
+            from product
+            where full_path like '%%.tif'
+              and satellite_id = 3
+            {}
+            order by id
+            """
+        )
+
+        if config.site_id is not None:
+            site_filter = SQL("and site_id = {}").format(Literal(config.site_id))
+        else:
+            site_filter = SQL("")
+
+        query = query.format(site_filter)
+        print(query.as_string(conn))
+        cursor.execute(query)
+
+        update_list = []
+        products = cursor.fetchall()
+        conn.commit()
+
+        for (id, full_path) in products:
+            raster = gdal.Open(full_path, gdal.GA_ReadOnly)
+            if not raster:
+                print("unable to open", full_path)
+            else:
+                geog = get_wgs84_extent_as_wkt(raster)
+                update_list.append((geog, id))
+        q = "update product set geog = %s where id = %s"
+        psycopg2.extras.execute_batch(cursor, q, update_list)
 
 
 def get_updates(config, conn, pool, use_temp, old_last_id):
@@ -240,20 +349,63 @@ def get_updates(config, conn, pool, use_temp, old_last_id):
     return (update_list, last_id)
 
 
+def remove_duplicates(config, conn):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+                select id,
+                    full_path
+                from (
+                    select id,
+                        full_path,
+                        row_number() over (partition by md5sum, site_id order by inserted_timestamp desc) as count
+                    from product
+                    where satellite_id = 3
+                      and md5sum is not null
+                      {}
+                ) as products
+                where count > 1;
+            """
+        )
+
+        if config.site_id is not None:
+            site_filter = SQL("and site_id = {}").format(Literal(config.site_id))
+        else:
+            site_filter = SQL("")
+
+        query = query.format(site_filter)
+        print(query.as_string(conn))
+        cursor.execute(query)
+
+        products = cursor.fetchall()
+        conn.commit()
+
+        print("removing duplicates")
+        query = "delete from product where id = %s"
+        for (id, path) in products:
+            try:
+                print(path)
+                os.remove(path)
+                cursor.execute(query, (id,))
+            except OSError as e:
+                print("unable to remove {}: {}".format(path, e))
+        conn.commit()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Crops and recompresses S1 L2A products")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
     parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
     parser.add_argument('--use-temp', action='store_true', help="site ID to filter by")
-    parser.add_argument('--fix', action='store_true', help="clean up existing products")
+    parser.add_argument('--fix-geog', action='store_true', help="update footprints to match the files")
     args = parser.parse_args()
 
     config = Config(args)
     pool = multiprocessing.dummy.Pool(8)
 
     with psycopg2.connect(host=config.host, dbname=config.dbname, user=config.user, password=config.password) as conn:
-        if args.fix:
-            remove_ncs(config, conn, args.use_temp)
+        if args.fix_geog:
+            fix_footprints(config, conn)
 
         last_id = None
         while True:
@@ -263,31 +415,37 @@ def main():
             (update_list, last_id) = res
 
             with conn.cursor() as cursor:
-                for (id, full_path, footprint, _) in update_list:
-                    print(id, full_path, footprint)
-                q = "update product set full_path = %s, footprint = %s where id = %s"
-                query_args = [(full_path, footprint, id) for (id, full_path, footprint, _) in update_list if full_path is not None]
+                query_args = []
+                for (id, full_path, footprint, geog, old_path) in update_list:
+                    if full_path is None or full_path.endswith("-INVALID"):
+                        continue
+                    print(id, full_path)
+                    md5sum = md5(full_path)
+                    query_args.append((full_path, footprint, geog, md5sum, id))
+                q = "update product set full_path = %s, footprint = %s, geog = %s, md5sum = %s where id = %s"
                 psycopg2.extras.execute_batch(cursor, q, query_args)
 
             conn.commit()
 
-            invalid_products = [id for (id, full_path, _, _) in update_list if full_path is None]
+            invalid_products = [(id, full_path) for (id, full_path, _, _, _) in update_list if full_path is None or full_path.endswith("-INVALID")]
             with conn.cursor() as cursor:
-                for id in invalid_products:
+                for (id, _) in invalid_products:
                     print("removing invalid product", id, full_path)
 
                 q = "delete from product where id = %s"
-                query_args = [id for (id, _) in invalid_products]
+                query_args = [(id,) for (id, _) in invalid_products]
                 psycopg2.extras.execute_batch(cursor, q, query_args)
 
             conn.commit()
 
-            for (_, _, _, old_path) in update_list:
+            for (_, _, _, _, old_path) in update_list:
                 try:
-                    print("removing processed product", old_path)
-                    os.remove(old_path)
+                    print("not removing processed product", old_path)
+                    # os.remove(old_path)
                 except OSError as e:
                     print("unable to remove {}: {}".format(old_path, e))
+
+        remove_duplicates(config, conn)
 
 
 if __name__ == "__main__":
