@@ -19,6 +19,7 @@ _____________________________________________________________________________
 from __future__ import print_function
 import argparse
 import glob
+import re
 import os
 from os.path import isfile, isdir, join
 import sys
@@ -42,10 +43,10 @@ def create_sym_links(filenames, target_directory, log_path, log_filename):
             basename = os.path.basename(file_to_sym_link[:len(file_to_sym_link) - 1])
         else:
             basename = os.path.basename(file_to_sym_link)
-        target = target_directory+"/" + basename
+        target = os.path.join(target_directory, basename)
         #does it already exist?
         if os.path.isfile(target) or os.path.isdir(target):
-            log(log_path, "Path exists already", log_filename)
+            log(log_path, "The path {} does exist already".format(target), log_filename)
             #skip it
             continue
         #create it
@@ -60,7 +61,7 @@ def remove_sym_links(filenames, target_directory):
             basename = os.path.basename(sym_link[:len(sym_link) - 1])
         else:
             basename = os.path.basename(sym_link)
-        if run_command(["rm", "{}/{}".format(target_directory, basename)]) != 0:
+        if run_command(["rm", os.path.join(target_directory, basename)]) != 0:
             continue
     return True
 
@@ -70,11 +71,11 @@ def get_prev_l2a_tile_path(tile_id, prev_l2a_product_path):
     print("START get_prev_l2a_tile_path")
     print("Tile_id = {} | prev_l2a_product_path = {}".format(tile_id, prev_l2a_product_path))
     if os.path.exists(prev_l2a_product_path) and os.path.isdir(prev_l2a_product_path):
-        all_files = glob.glob("{}/*.*".format(prev_l2a_product_path))
+        all_files = glob.glob("{}/*".format(prev_l2a_product_path))
         print("all_files = {}".format(all_files))
         for filename in all_files:
             print("Checking {}".format(filename))
-            if filename.rfind(tile_id) > 0:
+            if filename.rfind(tile_id, len(prev_l2a_product_path)) > 0:
                 print("added: {}".format(filename))
                 tile_files.append(filename)
             else:
@@ -128,6 +129,11 @@ class DEMMACCSContext(object):
         self.prev_l2a_products_paths = prev_l2a_products_paths
         self.maccs_address = maccs_address
         self.maccs_launcher = maccs_launcher
+        self.l1c_processor = L1C_UNKNOWN_PROCESSOR_OUTPUT_FORMAT 
+        if re.search("maccs", maccs_launcher, re.IGNORECASE):
+            self.l1c_processor = L1C_MACCS_PROCESSOR_OUTPUT_FORMAT
+        elif re.search("maja", maccs_launcher, re.IGNORECASE):
+            self.l1c_processor = L1C_MAJA_PROCESSOR_OUTPUT_FORMAT
         self.input = l1c_input
         self.output = l2a_output
 
@@ -187,7 +193,7 @@ def maccs_launcher(demmaccs_context):
     tile_log_filename = "demmaccs_{}.log".format(tile_id)
     if suffix_log_name is not None:
         tile_log_filename = "demmaccs_{}_{}.log".format(tile_id, suffix_log_name)
-    working_dir = "{}/{}".format(demmaccs_context.base_working_dir, tile_id)
+    working_dir = os.path.join(demmaccs_context.base_working_dir, tile_id)
     maccs_working_dir = "{}/maccs_{}".format(demmaccs_context.output[:len(demmaccs_context.output) - 1] if demmaccs_context.output.endswith("/") else demmaccs_context.output, tile_id)
     if not create_recursive_dirs(working_dir):
         log(demmaccs_context.output, "Tile failure: Could not create the working directory {}".format(working_dir), tile_log_filename)
@@ -279,7 +285,7 @@ def maccs_launcher(demmaccs_context):
                     "--enableTest", "false",
                     "--CheckXMLFilesWithSchema", "false"]
     if sat_id == SENTINEL2_SATELLITE_ID:
-        #UserConfiguration has to be added for SENTINEL in cmd_array (don't know why, but I saw this way it is working)
+        #UserConfiguration has to be added for SENTINEL in cmd_array (don't know why, but I saw this is the only way to make it working)
         cmd_array += ["--conf", "/usr/share/sen2agri/sen2agri-demmaccs/UserConfiguration"]
     log(demmaccs_context.output, "sat_id = {} | acq_date = {}".format(sat_id, acquistion_date), tile_log_filename)
     log(demmaccs_context.output, "Starting MACCS in {} for {} | TileID: {}".format(maccs_mode, demmaccs_context.input, tile_id), tile_log_filename)
@@ -290,8 +296,6 @@ def maccs_launcher(demmaccs_context):
         log(demmaccs_context.output, "MACCS mode {} for {} tile {} finished in: {}. Location: {}".format(maccs_mode, demmaccs_context.input, tile_id, datetime.timedelta(seconds=(time.time() - start)), demmaccs_context.output), tile_log_filename)
     # move the maccs output to the output directory.
     # only the valid files should be moved
-    maccs_dbl_dir = glob.glob("{}/*_L2VALD_*.DBL.DIR".format(maccs_working_dir))
-    maccs_hdr_file = glob.glob("{}/*_L2VALD_*.HDR".format(maccs_working_dir))
     maccs_report_file = glob.glob("{}/*_L*REPT*.EEF".format(maccs_working_dir))
     new_maccs_report_file = ""
     return_tile_id = ""
@@ -313,37 +317,55 @@ def maccs_launcher(demmaccs_context):
             elif os.path.isfile(new_maccs_report_file):
                 log(demmaccs_context.output, "The file {} already exists. Trying to delete it in order to move the new created file by MACCS".format(new_maccs_report_file), tile_log_filename)
                 os.remove(new_maccs_report_file)
-            else: #the dest does not exist, so will move it without problems
+            else: #the destination does not exist, so move the files
                 pass
             log(demmaccs_context.output, "Moving {} to {}".format(maccs_report_file[0], new_maccs_report_file), tile_log_filename)
             shutil.move(maccs_report_file[0], new_maccs_report_file)
         else:
             log(demmaccs_context.output, "No report maccs files (REPT) found in: {}.".format(maccs_working_dir), tile_log_filename)
-
-        maccs_working_dir_content = glob.glob("{}/*".format(maccs_working_dir))
-        log(demmaccs_context.output, "Searching for valid products in MACCS working dir: {}. Following is the content of this dir: {}".format(maccs_working_dir, maccs_working_dir_content), tile_log_filename)
-        if len(maccs_dbl_dir) >= 1 and len(maccs_hdr_file) >= 1:
+        working_dir_content = glob.glob("{}/*".format(maccs_working_dir))
+        log(demmaccs_context.output, "Searching for valid products in working dir: {}. Following is the content of this dir: {}".format(maccs_working_dir, working_dir_content), tile_log_filename)
+        #check for MACCS format
+        output_format, maja_dir = get_l1c_processor_output_format(maccs_working_dir, tile_id)
+        print("output_format = {}, maja_dir = {}".format(output_format, maja_dir))
+        if output_format == L1C_MACCS_PROCESSOR_OUTPUT_FORMAT:
+            log(demmaccs_context.output, "MACCS output format found. Searching output for valid results", tile_log_filename)
             return_tile_id = "{}".format(tile_id)
-            log(demmaccs_context.output, "Found valid tile id {} in {}. Moveing all the files to destination".format(tile_id, maccs_working_dir), tile_log_filename)
-            for maccs_out in maccs_working_dir_content:
-                new_file = "{}/{}".format(demmaccs_context.output[:len(demmaccs_context.output) - 1] if demmaccs_context.output.endswith("/") else demmaccs_context.output, os.path.basename(maccs_out))
+            log(demmaccs_context.output, "Found valid tile id {} in {}. Moving all the files to destination".format(tile_id, maccs_working_dir), tile_log_filename)
+            for maccs_out in working_dir_content:
+                new_file = os.path.join(demmaccs_context.output, os.path.basename(maccs_out))
                 if os.path.isdir(new_file):
                     log(demmaccs_context.output, "The directory {} already exists. Trying to delete it in order to move the new created directory by MACCS".format(new_file), tile_log_filename)
                     shutil.rmtree(new_file)
                 elif os.path.isfile(new_file):
                     log(demmaccs_context.output, "The file {} already exists. Trying to delete it in order to move the new created file by MACCS".format(new_file), tile_log_filename)
                     os.remove(new_file)
-                else: #the dest does not exist, so will move it without problems
+                else: #the dest does not exist, so it will be moved without problems
                     pass
-                log(demmaccs_context.output, "Moving {} to {}".format(maccs_out, demmaccs_context.output + "/" + os.path.basename(maccs_out)), tile_log_filename)
+                log(demmaccs_context.output, "Moving {} to {}".format(maccs_out, new_file), tile_log_filename)
                 shutil.move(maccs_out, new_file)
+        elif output_format == L1C_MAJA_PROCESSOR_OUTPUT_FORMAT and maja_dir is not None:
+            #check for THEIA/MUSCATE format
+            log(demmaccs_context.output, "THEIA/MUSCATE ouput format found. Searching output for valid results", tile_log_filename)            
+            new_file = os.path.join(demmaccs_context.output, os.path.basename(maja_dir))
+            if os.path.isdir(new_file):
+                log(demmaccs_context.output, "The directory {} already exists. Trying to delete it in order to move the new created directory by MAJA".format(new_file), tile_log_filename)
+                shutil.rmtree(new_file)
+            elif os.path.isfile(new_file):
+                log(demmaccs_context.output, "The file {} already exists. Trying to delete it in order to move the new created file by MAJA".format(new_file), tile_log_filename)
+                os.remove(new_file)
+            else: #the dest does not exist, so it will be moved without problems
+                pass
+            log(demmaccs_context.output, "Moving {} to {}".format(maja_dir, new_file), tile_log_filename)
+            shutil.move(maja_dir, new_file)
+            return_tile_id = "{}".format(tile_id)
         else:
-            log(demmaccs_context.output, "No valid products (VALD status) found in: {}.".format(maccs_working_dir), tile_log_filename)
+            log(demmaccs_context.output, "No valid products (MACCS VALD status or THEIA/MUSCATE formats) found in: {}.".format(maccs_working_dir), tile_log_filename)
         log(demmaccs_context.output, "Erasing the MACCS working directory: rmtree: {}".format(maccs_working_dir), tile_log_filename)
         shutil.rmtree(maccs_working_dir)
     except Exception, e:
         return_tile_id = ""
-        log(demmaccs_context.output, "Tile failure: Exception caught when moving maccs files for tile {} to the output directory {}".format(tile_id, e), tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: Exception caught when moving maccs files for tile {} to the output directory {}: {}".format(tile_id, demmaccs_context.output, e), tile_log_filename)
  
     return return_tile_id
 
@@ -357,7 +379,7 @@ parser.add_argument('-w', '--working-dir', required=True,
 parser.add_argument('--srtm', required=True, help="SRTM dataset path")
 parser.add_argument('--swbd', required=True, help="SWBD dataset path")
 parser.add_argument('--gipp-dir', required=True, help="directory where gip are to be found")
-parser.add_argument('--maccs-launcher', required=True, help="MACCS binary path in localhost (or remote host if maccs-address is set)")
+parser.add_argument('--maccs-launcher', required=True, help="MACCS or MAJA binary path in localhost (or remote host if maccs-address is set)")
 parser.add_argument('--processes-number-dem', required=False,
                         help="number of processes to run DEM in parallel", default="3")
 parser.add_argument('--processes-number-maccs', required=False,

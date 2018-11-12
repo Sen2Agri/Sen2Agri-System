@@ -19,13 +19,13 @@ _____________________________________________________________________________
 from __future__ import print_function
 import argparse
 import re
+import fnmatch
 import os, errno
 from os.path import isfile, isdir, join
 import glob
 import sys
 import time, datetime
 import gdal
-import fnmatch
 import Queue
 from osgeo import ogr
 from multiprocessing import Pool
@@ -143,7 +143,7 @@ def validate_L1C_product_dir(l1cDir):
 def post_process_maccs_product(demmaccs_config, output_path) : 
     print ("Postprocessing product {} ...".format(output_path))
     for root, dirnames, filenames in os.walk(output_path):
-        for filename in fnmatch.filter(filenames, '*.TIF'):
+        for filename in fnmatch.filter(filenames, "*.TIF"):
             tifFilePath = os.path.join(root, filename)
             print("Processing {}".format(filename))
             if (demmaccs_config.removeSreFiles == True) :
@@ -182,19 +182,46 @@ def post_process_maccs_product(demmaccs_config, output_path) :
                 print("Running optimize_gtiff.py with params {}".format(optgtiffArgs))                 
                 os.system("optimize_gtiff.py" + optgtiffArgs)
     
-def get_product_footprint(tiles_dir_list, satellite_id):
-    wgs84_extent_list = []
-    for tile_dir in tiles_dir_list:
-        if satellite_id == SENTINEL2_SATELLITE_ID:
-            tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
-        else: #satellite_id is LANDSAT8_SATELLITE_ID:
-            tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
+# def get_product_footprint(tiles_dir_list, satellite_id):
+#     wgs84_extent_list = []
+#     for tile_dir in tiles_dir_list:
+#         if satellite_id == SENTINEL2_SATELLITE_ID:
+#             tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
+#         else: #satellite_id is LANDSAT8_SATELLITE_ID:
+#             tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
 
-        if len(tile_img) > 0:
-            wgs84_extent_list.append(get_footprint(tile_img[0])[0])
+#         if len(tile_img) > 0:
+#             wgs84_extent_list.append(get_footprint(tile_img[0])[0])
+#     wkt = get_envelope(wgs84_extent_list)
+#     return wkt
+
+def get_product_footprint(output_path, output_format, maja_dir, satellite_id, tile_log_filename):
+    wgs84_extent_list = []
+    if output_format == L1C_MACCS_PROCESSOR_OUTPUT_FORMAT:
+        tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(output_path)))
+        log(output_path, "{}: Creating common footprint for MACCS output DBL.DIR: [{}]".format(threading.currentThread().getName(), tiles_dir_list), tile_log_filename)
+        for tile_dir in tiles_dir_list:
+            if satellite_id == SENTINEL2_SATELLITE_ID:
+                tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
+            else: #satellite_id is LANDSAT8_SATELLITE_ID:
+                tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
+
+            if len(tile_img) > 0:
+                wgs84_extent_list.append(get_footprint(tile_img[0])[0])
+    elif output_format == L1C_MAJA_PROCESSOR_OUTPUT_FORMAT and maja_dir is not None:
+        log(output_path, "{}: Creating common footprint for MAJA".format(threading.currentThread().getName()), tile_log_filename)
+        tile_img = ""
+        for root, dirs, filenames in os.walk(output_path):
+            for filename in fnmatch.filter(filenames, "*_FRE_B2.tif"):
+                tile_img = os.path.join(root, filename)
+                log(output_path, "{}: MAJA common footprint tif file: {}".format(threading.currentThread().getName(), tile_img), tile_log_filename)
+                wgs84_extent_list.append(get_footprint(tile_img)[0])
+                break
+            if len(tile_img) > 0:
+                break
+        
     wkt = get_envelope(wgs84_extent_list)
     return wkt
-
 def launch_demmaccs(l1c_context, l1c_db_thread):
     global general_log_path
     global general_log_filename
@@ -432,11 +459,11 @@ def get_log_info(path, tile_id):
     path_to_use = path[:len(path) - 1] if path.endswith("/") else path
     maccs_report_file = "{}/MACCS_L2REPT_{}.EEF".format(path_to_use, tile_id)
     demmaccs_log_extract = get_maccs_log_extract(maccs_report_file)
+    tile_log_filename = "{}/demmaccs_{}.log".format(path_to_use, tile_id)
     if len(demmaccs_log_extract.error_message) > 0:
         demmaccs_log_extract.error_message = "MACCS: \n" + demmaccs_log_extract.error_message
-        print("MACCS error / warning text found. should retry: {}".format(demmaccs_log_extract.should_retry))
+        log(path, "MACCS error / warning text found. should retry: {}".format(demmaccs_log_extract.should_retry), tile_log_filename)
 
-    tile_log_filename = "{}/demmaccs_{}.log".format(path_to_use, tile_id)
     try:
         with open(tile_log_filename) as in_file:
             contents = in_file.readlines()
@@ -503,9 +530,9 @@ def new_launch_demmaccs(l1c_db_thread):
         orbit_id = l1c[0][2]
         tile_id = l1c[0][3]
         product_id = l1c[0][4]        
-        log(general_log_path, "{}: Starting extract_from_archive_if_needed".format(threading.currentThread().getName()), general_log_filename)
+        log(general_log_path, "{}: Starting extract_from_archive_if_needed for tile {}".format(threading.currentThread().getName(), tile_id), general_log_filename)
         l1c_was_archived, full_path = extract_from_archive_if_needed(l1c[0][5])
-        log(general_log_path, "{}: Ended extract_from_archive_if_needed".format(threading.currentThread().getName()), general_log_filename)
+        log(general_log_path, "{}: Ended extract_from_archive_if_needed for tile {}".format(threading.currentThread().getName(), tile_id), general_log_filename)
         previous_l2a_path = l1c[0][6]
         print("{}: site_id = {}".format(threading.currentThread().getName(), site_id))
         print("{}: satellite_id = {}".format(threading.currentThread().getName(), satellite_id))
@@ -522,10 +549,8 @@ def new_launch_demmaccs(l1c_db_thread):
 #        l1c_queue.task_done()
 #        thread_finished_queue.get()
 #        continue
-        print("{}: Starting the process for tile {}".format(threading.currentThread().getName(), tile_id))
-        tile_log_filename = "demmaccs_{}.log".format(tile_id)
+
         # processing the tile
-        tiles_dir_list = []
         #get site short name
         site_short_name = l1c_db_thread.get_short_name("site", site_id)
         #create the output_path. it will hold all the tiles found inside the l1c
@@ -596,6 +621,8 @@ def new_launch_demmaccs(l1c_db_thread):
             continue
 
         output_path = site_output_path + l2a_basename + "/"
+        tile_log_filename = "demmaccs_{}.log".format(tile_id)
+        log(output_path, "{}: Starting the process for tile {}".format(threading.currentThread().getName(), tile_id), tile_log_filename)
         # the output_path should be created by the demmaccs.py script itself, but for log reason it will be created here
         if not create_recursive_dirs(output_path):
             log(general_log_path, "{}: Could not create the output directory".format(threading.currentThread().getName()), general_log_filename)
@@ -616,6 +643,7 @@ def new_launch_demmaccs(l1c_db_thread):
         sat_id = 0
         acquisition_date = ""
         base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
+        #demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "--processes-number-dem", "1", "--processes-number-maccs", "1", "--gipp-dir", "/mnt/archive/gipp_maja", "--working-dir", demmaccs_config.working_dir, "--maccs-launcher", "/opt/maja/3.1.1/bin/maja", "--delete-temp", "False", full_path, output_path]
         demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "--processes-number-dem", "1", "--processes-number-maccs", "1", "--gipp-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-launcher", demmaccs_config.maccs_launcher, "--delete-temp", "True", full_path, output_path]
         if len(demmaccs_config.maccs_ip_address) > 0:
             demmaccs_command += ["--maccs-address", demmaccs_config.maccs_ip_address]
@@ -652,39 +680,58 @@ def new_launch_demmaccs(l1c_db_thread):
             reason = demmaccs_log_extract.error_message
             db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, tile_id, demmaccs_log_extract.cloud_coverage, demmaccs_log_extract.snow_coverage, reason, should_retry)
             log(output_path, "{}: Tile {} marked as FAILED (should the process be retried: {}). The L1C product {} finished: {}. Reason for failure: {}".format(threading.currentThread().getName(), tile_id, demmaccs_log_extract.should_retry, l2a_basename, db_result_tile_processed, reason), tile_log_filename)
+        #handle the MAJA processo case
+        #elif l1c_processor = L1C_MAJA_PROCESSOR:
+        #                        tile = re.search(r"_L2A_T(\d\d[a-zA-Z]{3})_[\w]+$", tile_dbl_dir)
+        #                        print("MAJA: tile = {}".format(tile))
+        #elif l1c_processor = L1C_MAJA_PROCESSOR:
+        #                        tile = re.search(r"_L2A_T([\d]{6})_[\w]+$", tile_dbl_dir)
+        #                        print("MAJA: tile = {}".format(tile))
         if db_result_tile_processed:
             # to end the transaction started in mark_l1_tile_done or mark_l1_tile_failed functions,
             # the sql commit for database has to be called within set_l2a_product function below
-            tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(output_path)))
-            log(output_path, "{}: Creating common footprint for tiles: DBL.DIR List: {}".format(threading.currentThread().getName(), tiles_dir_list), tile_log_filename)            
+            
+                        
             # create the footprint for the whole product
-            wkt = get_product_footprint(tiles_dir_list, satellite_id)
+            #wkt = get_product_footprint(tiles_dir_list, satellite_id)
+            output_format, maja_dir = get_l1c_processor_output_format(output_path, tile_id)
+            wkt = get_product_footprint(output_path, output_format, maja_dir, satellite_id, tile_log_filename)
 
             if len(wkt) == 0:
                 log(output_path, "{}: Could not create the footprint".format(threading.currentThread().getName()), tile_log_filename)
             else:
                 sat_id, acquisition_date = get_product_info(os.path.basename(output_path[:len(output_path) - 1]))
                 if sat_id > 0 and acquisition_date != None:
-                    #check for MACCS tiles output. If none was processed, only the record from
-                    #downloader_history table will be updated. No l2a product will be added into product table
-                    for tile_dbl_dir in tiles_dir_list:
-                        tile = None
-                        print("tile_dbl_dir {}".format(tile_dbl_dir))
-                        if satellite_id == SENTINEL2_SATELLITE_ID:
-                            tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)
-                        else:
-                            tile = re.search(r"_L2VALD_([\d]{6})_[\w\.]+$", tile_dbl_dir)
-                        if tile is not None and not tile.group(1) in l2a_processed_tiles:
-                            l2a_processed_tiles.append(tile.group(1))
-                    log(output_path, "{}: Processed tiles: {}  to path: {}".format(threading.currentThread().getName(), l2a_processed_tiles, output_path), tile_log_filename)
+                    #check for MACCS / MAJA tiles output. If none was processed, only the record from
+                    #downloader_history table will be updated. No l2a product info will be added into the product table                    
+                    if output_format == L1C_MACCS_PROCESSOR_OUTPUT_FORMAT:
+                        tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(output_path)))
+                        for tile_dbl_dir in tiles_dir_list:
+                            tile = None
+                            print("tile_dbl_dir = {}".format(tile_dbl_dir))
+                            if satellite_id == SENTINEL2_SATELLITE_ID:
+                                tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)                            
+                            elif satellite_id == LANDSAT8_SATELLITE_ID:
+                                tile = re.search(r"_L2VALD_([\d]{6})_[\w\.]+$", tile_dbl_dir)                            
+                            if tile is not None and not tile.group(1) in l2a_processed_tiles:
+                                l2a_processed_tiles.append(tile.group(1))
+                        log(output_path, "{}: Processed tiles: {}  to path: {}".format(threading.currentThread().getName(), l2a_processed_tiles, output_path), tile_log_filename)
+                    elif output_format == L1C_MAJA_PROCESSOR_OUTPUT_FORMAT and maja_dir is not None:
+                        # MAJA case: only the tile that has been processed should exist. Each product should be mono-tile
+                        tiles_dir_list = (glob.glob("{}*_T{}_[CHD]_V*".format(output_path, tile_id)))
+                        print("tiles_dir_list = {}".format(tiles_dir_list))
+                        if len(tiles_dir_list) == 1:
+                            l2a_processed_tiles.append(tile_id)
+                    else:
+                        log(output_path, "{}: Unknown format found in output directory".format(threading.currentThread().getName()), tile_log_filename)
                 else:
                     log(output_path,"{}: Could not get the acquisition date from the product name {}".format(threading.currentThread().getName(), output_path), tile_log_filename)
             if len(l2a_processed_tiles) > 0:
                 # post process the valid maccs products
                 post_process_maccs_product(demmaccs_config, output_path);
-                log(output_path, "{}: Insert info in product table for {}. Also, set state as processed in downloader_history table ".format(threading.currentThread().getName(), output_path), tile_log_filename)
+                log(output_path, "{}: Processing for tile {} finished. Insert info in product table for {}. Also, set the state as processed in downloader_history table ".format(threading.currentThread().getName(), tile_id, output_path), tile_log_filename)
             else:
-                log(output_path, "{}: Set the state as processed in downloader_history (no l2a tiles found after maccs finished) for product {}".format(threading.currentThread().getName(), output_path), tile_log_filename)
+                log(output_path, "{}: Processing for tile {} finished. Set the state as processed in downloader_history (no l2a tiles found after maccs finished) for product {}".format(threading.currentThread().getName(), tile_id, output_path), tile_log_filename)
             retries = 0
             max_number_of_retries = 3
             # the postgres SERIALIZATION_FAILURE exception has to be handled
@@ -716,8 +763,23 @@ def new_launch_demmaccs(l1c_db_thread):
                     continue
                 l1c_db_thread.database_disconnect()
                 break
-            if len(l2a_processed_tiles) > 0 and run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", output_path, "-w", demmaccs_config.working_dir], output_path, tile_log_filename) != 0:
-                log(output_path, "{}: Mosaic didn't work".format(threading.currentThread().getName()), tile_log_filename)
+            # create mosaic 
+            if len(l2a_processed_tiles) > 0:
+                # MACCS case, the mosaic script is called
+                if output_format == L1C_MACCS_PROCESSOR_OUTPUT_FORMAT:
+                    if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", output_path, "-w", demmaccs_config.working_dir], output_path, tile_log_filename) != 0:
+                        log(output_path, "{}: Mosaic didn't work".format(threading.currentThread().getName()), tile_log_filename)
+                # MAJA case, just copy the QKL file as "output_path/mosaic.jpg"
+                elif output_format == L1C_MAJA_PROCESSOR_OUTPUT_FORMAT and maja_dir is not None:
+                    mosaic = ""
+                    for root, dirs, filenames in os.walk(output_path):
+                        for filename in filenames:
+                            if re.search("QKL(.*)\.jpg$", filename, re.IGNORECASE) is not None:
+                                mosaic = os.path.join(output_path, "mosaic.jpg")
+                                shutil.copy(os.path.join(root, filename), mosaic)
+                                break
+                        if len(mosaic) > 0:
+                            break                        
             if l1c_was_archived:
                 remove_dir(full_path)
         # end of tile processing
@@ -748,7 +810,10 @@ if demmaccs_config is None:
     log(general_log_path, "Could not load the config from database", general_log_filename)
     sys.exit(-1)
 #delete all the temporary content from a previous run
-remove_dir_content("{}/".format(demmaccs_config.working_dir))
+if not os.path.isdir(demmaccs_config.working_dir) and not create_recursive_dirs(demmaccs_config.working_dir):
+    log(general_log_path, "Could not create the work base directory {}".format(demmaccs_config.working_dir), general_log_filename)
+    sys.exit(-1)
+remove_dir_content(demmaccs_config.working_dir)
 #create directory for the eventual archives like l1c products
 create_recursive_dirs(os.path.join(demmaccs_config.working_dir, ARCHIVES))
 l1c_queue = Queue.Queue(maxsize=int(args.processes_number))

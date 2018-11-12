@@ -46,12 +46,15 @@ from dateutil.relativedelta import relativedelta
 from threading import Thread
 import threading
 
-FAKE_COMMAND = 0
+#FAKE_COMMAND = 1
 DEBUG = True
 
 DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(4)
 SENTINEL2_SATELLITE_ID = int(1)
 LANDSAT8_SATELLITE_ID = int(2)
+L1C_UNKNOWN_PROCESSOR_OUTPUT_FORMAT = int(0)
+L1C_MACCS_PROCESSOR_OUTPUT_FORMAT = int(1)
+L1C_MAJA_PROCESSOR_OUTPUT_FORMAT = int(2)
 FILES_IN_LANDSAT_L1_PRODUCT = int(13)
 UNKNOWN_SATELLITE_ID = int(-1)
 #should not exceed 11 !!!!
@@ -143,12 +146,12 @@ def manage_log_file(location, log_filename):
 
 
 
-def run_command(cmd_array, log_path = "", log_filename = ""):
+def run_command(cmd_array, log_path = "", log_filename = "", fake_command = False):
     start = time.time()
     cmd_str = " ".join(map(pipes.quote, cmd_array))
     log(log_path, "Running command: {}".format(cmd_str), log_filename)
     res = 0
-    if not FAKE_COMMAND:
+    if not fake_command:
         res = subprocess.call(cmd_array, shell=False)
     ok = "OK"
     nok = "NOK"
@@ -208,6 +211,7 @@ def get_footprint(image_filename):
     target_srs.ImportFromEPSG(4326)
 
     wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
+    print("FOOTPRINT: wgs84_extent= {} |  extent= {}".format(wgs84_extent, extent))
     return (wgs84_extent, extent)
 
 
@@ -291,6 +295,48 @@ def get_product_info(product_name):
 
     return sat_id and (sat_id, acquisition_date)
 
+def check_maja_valid_output(maja_out, tile_id):
+    if not os.path.isdir(maja_out):
+        return False
+    dir_content = glob.glob("{}/*".format(maja_out))
+    atb_files_count = 0
+    fre_files_count = 0
+    sre_files_count = 0
+    qkl_file = False
+    mtd_file = False
+    data_dir = False
+    masks_dir = False
+    for filename in dir_content:
+        if os.path.isfile(filename) and re.search("_L2A_T{}_.*ATB.*\.tif$".format(tile_id), filename, re.IGNORECASE) is not None:
+            atb_files_count += 1
+        if os.path.isfile(filename) and re.search("_L2A_T{}_.*FRE.*\.tif$".format(tile_id), filename, re.IGNORECASE) is not None:
+            fre_files_count += 1
+        if os.path.isfile(filename) and re.search("_L2A_T{}_.*SRE.*\.tif$".format(tile_id), filename, re.IGNORECASE) is not None:
+            sre_files_count += 1
+        if os.path.isfile(filename) and re.search("_L2A_T{}_.*MTD.*\.xml$".format(tile_id), filename, re.IGNORECASE) is not None:
+            mtd_file = True
+        if os.path.isfile(filename) and re.search("_L2A_T{}_.*QKL.*\.jpg$".format(tile_id), filename, re.IGNORECASE) is not None:
+            qkl_file = True
+        if os.path.isdir(filename) and re.search(".*\DATA$", filename) is not None:
+            data_dir = True
+        if os.path.isdir(filename) and re.search(".*\MASKS$", filename) is not None:
+            masks_dir = True
+    return (atb_files_count > 0 and fre_files_count > 0 and sre_files_count > 0 and qkl_file and mtd_file and data_dir and masks_dir)
+
+def get_l1c_processor_output_format(working_directory, tile_id):
+    if not os.path.isdir(working_directory):
+        return L1C_UNKNOWN_PROCESSOR_OUTPUT_FORMAT, None
+    #check for MACCS output
+    maccs_dbl_dir = glob.glob("{}/*_L2VALD_{}*.DBL.DIR".format(working_directory, tile_id))
+    maccs_hdr_file = glob.glob("{}/*_L2VALD_{}*.HDR".format(working_directory, tile_id))
+    if len(maccs_dbl_dir) >= 1 and len(maccs_hdr_file) >= 1:
+        return L1C_MACCS_PROCESSOR_OUTPUT_FORMAT, None
+    #check for THEIA/MUSCATE format
+    working_dir_content = glob.glob("{}/*".format(working_directory))
+    for maja_out in working_dir_content:
+        if os.path.isdir(maja_out) and re.search(".*_L2A_T{}_.*".format(tile_id), maja_out, re.IGNORECASE) and check_maja_valid_output(maja_out, tile_id):
+            return L1C_MAJA_PROCESSOR_OUTPUT_FORMAT, maja_out
+    return L1C_UNKNOWN_PROCESSOR_OUTPUT_FORMAT, None
 
 #def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearArray):
 ##, logDir, logFileName):
@@ -1191,6 +1237,11 @@ class DEMMACCSConfig(object):
         self.swbd_path = swbd_path
         self.maccs_ip_address = maccs_ip_address
         self.maccs_launcher = maccs_launcher
+        self.l1c_processor = L1C_UNKNOWN_PROCESSOR_OUTPUT_FORMAT 
+        if re.search("maccs", maccs_launcher, re.IGNORECASE):
+            self.l1c_processor = L1C_MACCS_PROCESSOR_OUTPUT_FORMAT
+        elif re.search("maja", maccs_launcher, re.IGNORECASE):
+            self.l1c_processor = L1C_MAJA_PROCESSOR_OUTPUT_FORMAT
         self.working_dir = working_dir
 
         self.compressTiffs = False;
@@ -1529,7 +1580,7 @@ class L1CInfo(object):
         else:
             if ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and ret_array[0][0][0] == True:
                 # commit to database will be perfomed later within set_processed_product function
-                print("The query to mark the tile {} as done will be commited later when insertion in product table will be performed".format(tile_id))
+                print("The query to mark the tile {} as done will be commited later when insertion in product table is performed".format(tile_id))
                 return True
 
         return False
@@ -1566,7 +1617,7 @@ class L1CInfo(object):
         else:
             if ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and ret_array[0][0][0] == True:
                 # commit to database will be perfomed later within set_processed_product function
-                print("The query to mark the tile {} as failed will be commited later when insertion in product table will be performed".format(tile_id))
+                print("The query to mark the tile {} as failed will be commited later when insertion in product table is performed".format(tile_id))
                 return True
 
         return False
