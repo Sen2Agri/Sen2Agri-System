@@ -200,7 +200,7 @@ def maccs_launcher(demmaccs_context):
         return ""
 
     if not create_recursive_dirs(maccs_working_dir):
-        log(demmaccs_context.output, "Tile failure: Could not create the MACCS working directory {}".format(maccs_working_dir), tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: Could not create the MACCS/MAJA working directory {}".format(maccs_working_dir), tile_log_filename)
         return ""
 
     if not create_sym_links([demmaccs_context.input], working_dir, demmaccs_context.output, tile_log_filename):
@@ -254,21 +254,21 @@ def maccs_launcher(demmaccs_context):
 
         prev_l2a_tile_path = get_prev_l2a_tile_path(tile_id, product_path)
 
-        log(demmaccs_context.output, "Creating sym links for NOMINAL MACCS mode: l2a prev tiles {}".format(prev_l2a_tile_path), tile_log_filename)
+        log(demmaccs_context.output, "Creating sym links for NOMINAL MACCS/MAJA mode: l2a prev tiles {}".format(prev_l2a_tile_path), tile_log_filename)
         if len(prev_l2a_tile_path) > 0 and create_sym_links(prev_l2a_tile_path, working_dir, demmaccs_context.output, tile_log_filename):
             #set MACCS mode to NOMINAL
-            log(demmaccs_context.output, "Created sym links for NOMINAL MACCS mode for {}".format(prev_l2a_tile_path), tile_log_filename)
+            log(demmaccs_context.output, "Created sym links for NOMINAL MACCS/MAJA mode for {}".format(prev_l2a_tile_path), tile_log_filename)
             maccs_mode = "L2NOMINAL"
         else:
             # something went wrong. shall this be an exit point?
             # shall the mode remain to L2INIT? This behavior may as well hide a bug in a previous demmaccs run (it's possible)...
-            log(demmaccs_context.output, "Tile failure: Could not create sym links for NOMINAL MACCS mode for {}. Exit".format(prev_l2a_tile_path), tile_log_filename)
+            log(demmaccs_context.output, "Tile failure: Could not create sym links for NOMINAL MACCS/MAJA mode for {}. Exit".format(prev_l2a_tile_path), tile_log_filename)
             return ""
     except SystemExit:
-        log(demmaccs_context.output, "Tile failure: SystemExit caught when trying to create sym links for NOMINAL MACCS mode, product {}. Exit!".format(demmaccs_context.input), tile_log_filename)
+        log(demmaccs_context.output, "Tile failure: SystemExit caught when trying to create sym links for NOMINAL MACCS/MAJA mode, product {}. Exit!".format(demmaccs_context.input), tile_log_filename)
         return ""
     except:
-        log(demmaccs_context.output, "No previous processed l2a tile found for {} in product {}. Running MACCS in L2INIT mode".format(tile_id, product_name), tile_log_filename)
+        log(demmaccs_context.output, "No previous processed l2a tile found for {} in product {}. Running MACCS/MAJA in L2INIT mode".format(tile_id, product_name), tile_log_filename)
         pass
     #MACCS bug. In case of setting the file status from VALD to NOTV, MACCS will try to create a directory LTC in the current running directory
     #which is / Of course, it will fail. That's why we have to move the current running directory to the MACCS temporary directory
@@ -288,12 +288,12 @@ def maccs_launcher(demmaccs_context):
         #UserConfiguration has to be added for SENTINEL in cmd_array (don't know why, but I saw this is the only way to make it working)
         cmd_array += ["--conf", "/usr/share/sen2agri/sen2agri-demmaccs/UserConfiguration"]
     log(demmaccs_context.output, "sat_id = {} | acq_date = {}".format(sat_id, acquistion_date), tile_log_filename)
-    log(demmaccs_context.output, "Starting MACCS in {} for {} | TileID: {}".format(maccs_mode, demmaccs_context.input, tile_id), tile_log_filename)
+    log(demmaccs_context.output, "Starting MACCS/MAJA in {} for {} | TileID: {}".format(maccs_mode, demmaccs_context.input, tile_id), tile_log_filename)
     log(demmaccs_context.output, "MACCS_COMMAND: {}".format(cmd_array), tile_log_filename)
     if run_command(cmd_array, demmaccs_context.output, tile_log_filename) != 0:
-        log(demmaccs_context.output, "MACCS mode {} didn't work for {} | TileID: {}. Location {}".format(maccs_mode, demmaccs_context.input, tile_id, demmaccs_context.output), tile_log_filename)
+        log(demmaccs_context.output, "MACCS/MAJA mode {} didn't work for {} | TileID: {}. Location {}".format(maccs_mode, demmaccs_context.input, tile_id, demmaccs_context.output), tile_log_filename)
     else:
-        log(demmaccs_context.output, "MACCS mode {} for {} tile {} finished in: {}. Location: {}".format(maccs_mode, demmaccs_context.input, tile_id, datetime.timedelta(seconds=(time.time() - start)), demmaccs_context.output), tile_log_filename)
+        log(demmaccs_context.output, "MACCS/MAJA mode {} for {} tile {} finished in: {}. Location: {}".format(maccs_mode, demmaccs_context.input, tile_id, datetime.timedelta(seconds=(time.time() - start)), demmaccs_context.output), tile_log_filename)
     # move the maccs output to the output directory.
     # only the valid files should be moved
     maccs_report_file = glob.glob("{}/*_L*REPT*.EEF".format(maccs_working_dir))
@@ -312,10 +312,10 @@ def maccs_launcher(demmaccs_context):
             log(demmaccs_context.output, "Report maccs file (REPT) found in: {} : {}".format(maccs_working_dir, maccs_report_file[0]), tile_log_filename)
             new_maccs_report_file = "{}/MACCS_L2REPT_{}.EEF".format(demmaccs_context.output[:len(demmaccs_context.output) - 1] if demmaccs_context.output.endswith("/") else demmaccs_context.output, tile_id)
             if os.path.isdir(new_maccs_report_file):
-                log(demmaccs_context.output, "The directory {} already exists. Trying to delete it in order to move the new created directory by MACCS".format(new_maccs_report_file), tile_log_filename)
+                log(demmaccs_context.output, "The directory {} already exists. Trying to delete it in order to move the new created directory by MACCS/MAJA".format(new_maccs_report_file), tile_log_filename)
                 shutil.rmtree(new_maccs_report_file)
             elif os.path.isfile(new_maccs_report_file):
-                log(demmaccs_context.output, "The file {} already exists. Trying to delete it in order to move the new created file by MACCS".format(new_maccs_report_file), tile_log_filename)
+                log(demmaccs_context.output, "The file {} already exists. Trying to delete it in order to move the new created file by MACCS/MAJA".format(new_maccs_report_file), tile_log_filename)
                 os.remove(new_maccs_report_file)
             else: #the destination does not exist, so move the files
                 pass
@@ -361,7 +361,7 @@ def maccs_launcher(demmaccs_context):
             return_tile_id = "{}".format(tile_id)
         else:
             log(demmaccs_context.output, "No valid products (MACCS VALD status or THEIA/MUSCATE formats) found in: {}.".format(maccs_working_dir), tile_log_filename)
-        log(demmaccs_context.output, "Erasing the MACCS working directory: rmtree: {}".format(maccs_working_dir), tile_log_filename)
+        log(demmaccs_context.output, "Erasing the MACCS/MAJA working directory: rmtree: {}".format(maccs_working_dir), tile_log_filename)
         shutil.rmtree(maccs_working_dir)
     except Exception, e:
         return_tile_id = ""
@@ -371,7 +371,7 @@ def maccs_launcher(demmaccs_context):
 
 
 parser = argparse.ArgumentParser(
-    description="Launches DEM and MACCS for L2A product creation")
+    description="Launches DEM and MACCS/MAJA for L2A product creation")
 parser.add_argument('input', help="input L1C directory")
 parser.add_argument('-t', '--tiles-to-process', required=False, nargs='+', help="only this tiles shall be processed from the whole product", default=None)
 parser.add_argument('-w', '--working-dir', required=True,
@@ -383,8 +383,8 @@ parser.add_argument('--maccs-launcher', required=True, help="MACCS or MAJA binar
 parser.add_argument('--processes-number-dem', required=False,
                         help="number of processes to run DEM in parallel", default="3")
 parser.add_argument('--processes-number-maccs', required=False,
-                        help="number of processes to run MACCS in parallel", default="2")
-parser.add_argument('--maccs-address', required=False, help="MACCS has to be run from a remote host. This should be the ip address of the pc where MACCS is to be found")
+                        help="number of processes to run MACCS/MAJA in parallel", default="2")
+parser.add_argument('--maccs-address', required=False, help="MACCS/MAJA has to be run from a remote host. This should be the ip address of the pc where MACCS/MAJA is to be found")
 parser.add_argument('--skip-dem', required=False,
                         help="skip DEM if a directory with previous work of DEM is given", default=None)
 parser.add_argument('--prev-l2a-tiles', required=False,
@@ -527,10 +527,10 @@ else:
 
 sys_exit = int(0)
 if len(processed_tiles) == 0:
-    log(general_log_path, "MACCS did not processed any tiles for L1C product {}".format(args.input), log_filename)
+    log(general_log_path, "MACCS/MAJA did not processed any tiles for L1C product {}".format(args.input), log_filename)
     sys_exit = 1
 else:
-    log(general_log_path, "MACCS processed the following tiles for L1C product {} :".format(args.input), log_filename)
+    log(general_log_path, "MACCS/MAJA processed the following tiles for L1C product {} :".format(args.input), log_filename)
     log(general_log_path, "{}".format(processed_tiles), log_filename)
 #    if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", args.output, "-w", working_dir], args.output, log_filename) != 0:
 #        log(general_log_path, "Mosaic didn't work", log_filename)

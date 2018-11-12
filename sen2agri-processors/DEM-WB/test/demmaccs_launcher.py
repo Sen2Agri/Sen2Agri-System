@@ -451,7 +451,7 @@ def get_maccs_log_extract(maccs_report_file):
                     demmaccs_log_extract.snow_coverage = numbers[0]
             
     except Exception, e:
-        print("Exception received when trying to read the MACCS error text from file {}: {}".format(maccs_report_file, e))
+        print("Exception received when trying to read the MACCS/MAJA error text from file {}: {}".format(maccs_report_file, e))
         pass
     return demmaccs_log_extract
 
@@ -461,8 +461,8 @@ def get_log_info(path, tile_id):
     demmaccs_log_extract = get_maccs_log_extract(maccs_report_file)
     tile_log_filename = "{}/demmaccs_{}.log".format(path_to_use, tile_id)
     if len(demmaccs_log_extract.error_message) > 0:
-        demmaccs_log_extract.error_message = "MACCS: \n" + demmaccs_log_extract.error_message
-        log(path, "MACCS error / warning text found. should retry: {}".format(demmaccs_log_extract.should_retry), tile_log_filename)
+        demmaccs_log_extract.error_message = "MACCS/MAJA: \n" + demmaccs_log_extract.error_message
+        log(path, "MACCS/MAJA error / warning text found. should retry: {}".format(demmaccs_log_extract.should_retry), tile_log_filename)
 
     try:
         with open(tile_log_filename) as in_file:
@@ -788,9 +788,9 @@ def new_launch_demmaccs(l1c_db_thread):
         l1c_queue.task_done()
 
 parser = argparse.ArgumentParser(
-    description="Launcher for DEM MACCS script")
+    description="Launcher for DEM MACCS/MAJA script")
 parser.add_argument('-c', '--config', default="/etc/sen2agri/sen2agri.conf", help="configuration file")
-parser.add_argument('-p', '--processes-number', default=2, help="Number of tiles to be processed at the same time. This number is also applying for the number of MACCS processes which may run at the same time")
+parser.add_argument('-p', '--processes-number', default=2, help="Number of tiles to be processed at the same time. This number is also applying for the number of MACCS/MAJA processes which may run at the same time")
 parser.add_argument('--skip-dem', required=False,
                         help="skip DEM if a directory with previous work of DEM is given", default=None)
 
