@@ -12,19 +12,43 @@ StatisticsInfosSingleCsvReader::StatisticsInfosSingleCsvReader()
 {
     m_InputFileHeader = {"KOD_PB", "suffix", "date", "mean", "stdev"};
     m_CoheInputFileHeader = {"KOD_PB", "suffix", "date1", "date2", "mean", "stdev"};
+    m_bIsCoheFile = false;
 }
 
-void StatisticsInfosSingleCsvReader::Initialize(const std::string &source, const std::vector<std::string> &filters)
+void StatisticsInfosSingleCsvReader::Initialize(const std::string &source, const std::vector<std::string> &filters, int year)
 {
     (void)filters;
+
+    std::ifstream ifs( source.c_str() );
+    if( ifs.fail() ) {
+        std::cout << "Error opening input file " << source << " exiting..." << std::endl;
+        return;
+    }
+
+    std::string line;
+    if (!std::getline(ifs, line)) {
+        std::cout << "Input file " << source << " is empty. Exiting..." << std::endl;
+        return;
+    }
+    std::vector<std::string> hdrItems;
+    boost::algorithm::split(hdrItems, line, [](char c){return c == ';';});
+    if (hdrItems.size() != m_InputFileHeader.size() &&
+        hdrItems.size() != m_CoheInputFileHeader.size()) {
+        //otbAppLogWARNING("Invalid line fields length for line " << fileLine);
+        std::cout << "Invalid header length for file " << source << std::endl;
+        return;
+    }
+    m_bIsCoheFile = (hdrItems.size() == m_CoheInputFileHeader.size());
+
     m_strSource = source;
+    m_year = year;
+
     // check if index file exists near the source xml
     const std::string &idxFilePath(source + ".idx");
     if ( boost::filesystem::exists(idxFilePath)) {
         std::cout << "Loading indexes file " << idxFilePath << std::endl;
         // load the indexes
         std::ifstream idxFileStream(idxFilePath);
-        std::string line;
         while (std::getline(idxFileStream, line)) {
             const std::vector<std::string> &tokens = split (line, ';');
             if (tokens.size() == 4) {
@@ -94,7 +118,7 @@ bool StatisticsInfosSingleCsvReader::GetEntriesForField(const std::string &fid, 
     std::map<std::string, std::vector<InputFileLineInfoType>>::iterator mapIt;
     for (mapIt = mapInfos.begin(); mapIt != mapInfos.end(); ++mapIt) {
         std::vector<std::string>::const_iterator itF;
-        for (itF = filters.begin(); itF != filters.end(); ++itF) {
+        for (itF = findFilters.begin(); itF != findFilters.end(); ++itF) {
             if(itF->size() == 0 || mapIt->first.find(*itF) != std::string::npos) {
                 // get the existing map for the filter
                 std::map<std::string, std::vector<InputFileLineInfoType>>::iterator i = retMap.find(*itF);
@@ -120,19 +144,18 @@ bool StatisticsInfosSingleCsvReader::ExtractLinesFromStream(std::istream &inStre
     while (std::getline(inStream, line)) {
         // check if line starts with the field id
         if (line.compare(0, fieldToFind.length(), fieldToFind) == 0) {
-            InputFileLineInfoType lineInfo;
+            std::vector<InputFileLineInfoType> lineInfos;
             std::string uid;
-            lineInfo.Reset();
-            if (ExtractInfosFromLine(line, findFilters, lineInfo, uid)) {
+            lineInfos.clear();
+            if (ExtractInfosFromLine(line, findFilters, lineInfos, uid)) {
                 std::map<std::string, std::vector<InputFileLineInfoType>>::iterator i = retMap.find(uid);
                 if (i == retMap.end()) {
-                    std::vector<InputFileLineInfoType> mapCurInfos;
-                    mapCurInfos.push_back(lineInfo);
-                    retMap[uid] = mapCurInfos;
+                    retMap[uid] = lineInfos;
                 }
                 else {
                     // TODO: Check for duplicates!!!
-                    i->second.push_back(lineInfo);
+                    i->second.insert(i->second.end(), lineInfos.begin(), lineInfos.end());
+
                 }
             }
         }
@@ -142,8 +165,8 @@ bool StatisticsInfosSingleCsvReader::ExtractLinesFromStream(std::istream &inStre
     for (itMap = retMap.begin(); itMap != retMap.end(); ++itMap) {
 
         if (m_minReqEntries > 0 && (int)itMap->second.size() < m_minReqEntries) {
-            // if one of the filters has less values than needed
-            return false;
+            // if one of the filters has less values than needed - we ignore it but not return error
+            return true;
         }
         // sort the read lines information
         std::sort (itMap->second.begin(), itMap->second.end(), InputFileLineInfoComparator());
@@ -168,69 +191,116 @@ std::vector<std::string> StatisticsInfosSingleCsvReader::GetInputFileLineElement
 }
 
 bool StatisticsInfosSingleCsvReader::ExtractInfosFromLine(const std::string &fileLine, const std::vector<std::string> &findFilters,
-                                                          InputFileLineInfoType &lineInfo, std::string &uid)
+                                                          std::vector<InputFileLineInfoType> &lineInfos, std::string &uid)
 {
-    const std::vector<std::string> &lineElems = GetInputFileLineElements(fileLine);
-    if (lineElems.size() != m_InputFileHeader.size() &&
-        lineElems.size() != m_CoheInputFileHeader.size()) {
-        //otbAppLogWARNING("Invalid line fields length for line " << fileLine);
-        std::cout << "Invalid line fields length for line " << fileLine << std::endl;
-        return false;
-    }
+    std::vector<std::string> entries;
+    // check if we have the compacted version of the CVS file
+    boost::algorithm::split(entries, fileLine, [](char c){return c == '|';});
 
-    // check also if the suffix pass the filter
-    const std::string &fid = lineElems[0];
-    const std::string &suffix = lineElems[1];
-    const std::string &strDate = lineElems[2];
-    if(findFilters.size() > 0) {
-        bool doFilter = false;
-        for (const std::string & filter: findFilters) {
-            if (suffix.find(filter) != std::string::npos) {
-                doFilter = true;
+    int curEntryIdx = 0;
+    std::string fid;
+    std::string suffix;
+    for (const auto &entry: entries) {
+        int offset = 0;
+        int hdrDiff;
+        const std::vector<std::string> &lineElems = GetInputFileLineElements(entry);
+        if (curEntryIdx == 0) {
+            if(findFilters.size() > 0) {
+                bool doFilter = false;
+                for (const std::string & filter: findFilters) {
+                    if (lineElems[1].find(filter) != std::string::npos) {
+                        doFilter = true;
+                        break;
+                    }
+                }
+                if (!doFilter) {
+                    return false;
+                }
+            }
+            fid = lineElems[0];
+            suffix = lineElems[1];
+            offset = 2;
+            hdrDiff = 0;
+            // update the returned uid
+            uid = fid + suffix;
+            curEntryIdx++;
+        } else {
+            hdrDiff = 2;
+        }
+
+        if (m_bIsCoheFile) {
+            if (lineElems.size() != (size_t)(m_CoheInputFileHeader.size() - hdrDiff)) {
+                std::cout << "Invalid file field length for " << fid + "_" + suffix << std::endl;
+                return false;
+            }
+        } else {
+            if (lineElems.size() != (size_t)(m_InputFileHeader.size() - hdrDiff)) {
+                std::cout << "Invalid file field length for " << fid + "_" + suffix << std::endl;
+                return false;
             }
         }
-        if (!doFilter) {
-            return false;
-        }
-    }
 
-    // update the returned uid
-    uid = fid + suffix;
+        InputFileLineInfoType lineInfo;
+        lineInfo.Reset();
+        int curIdx = offset;
+        const std::string &strDate = lineElems[curIdx++];
 
-    bool isCohe = (lineElems.size() == m_CoheInputFileHeader.size());
-    int meanIdx = isCohe ? 4 : 3;
-    int stdDevIdx = isCohe ? 5 : 4;
-    std::string::size_type sz;     // alias of size_t
-    int weekNo, yearNo;
-    if (GetWeekFromDate(strDate, yearNo, weekNo, INPUT_FILE_DATE_PATTERN))
-    {
-        lineInfo.fieldId = fid; // Normally, here the name should be normalized
-        lineInfo.strDate = strDate;
-        lineInfo.ttDate = GetTimeFromString(strDate);
-        lineInfo.weekNo = weekNo;
-        lineInfo.ttDateFloor = FloorDateToWeekStart(lineInfo.ttDate);// FloorWeekDate(yearNo, weekNo);
-        lineInfo.stdDev = std::stod(lineElems[stdDevIdx], &sz);
-        lineInfo.meanVal = std::stod(lineElems[meanIdx], &sz);
-    } else {
-        //otbAppLogWARNING("Invalid date format found for line " << fileLine);
-        std::cout << "Invalid date format found for line " << fileLine <<std::endl;
-        return false;
-    }
+        const std::string &strDate2 = m_bIsCoheFile ? lineElems[curIdx++] : "";
+        std::string::size_type sz;     // alias of size_t
+        lineInfo.meanVal = std::stod(lineElems[curIdx++], &sz);
+        lineInfo.stdDev = std::stod(lineElems[curIdx++], &sz);
 
-    if (isCohe)
-    {
-        const std::string &strDate2 = lineElems[3];
-        int weekNo2, yearNo2;
-        if (GetWeekFromDate(strDate2, yearNo2, weekNo2, INPUT_FILE_DATE_PATTERN)) {
-            lineInfo.strDate2 = strDate2;
-            lineInfo.ttDate2 = GetTimeFromString(strDate2);
-            lineInfo.weekNo2 = weekNo2;
-            lineInfo.ttDate2Floor = FloorDateToWeekStart(lineInfo.ttDate2);// FloorWeekDate(yearNo2, weekNo2);
+        int weekNo, yearNo;
+        int itemYear;
+        // ignore products that are not from the current year
+        if (GetWeekFromDate(strDate, yearNo, weekNo, INPUT_FILE_DATE_PATTERN))
+        {
+            lineInfo.fieldId = fid; // Normally, here the name should be normalized
+            if (m_bIsCoheFile && m_bSwitchDates && strDate2 != "") {
+                lineInfo.strDate2 = strDate;
+                lineInfo.ttDate2 = GetTimeFromString(strDate);
+                lineInfo.weekNo2 = weekNo;
+                lineInfo.ttDate2Floor = FloorDateToWeekStart(lineInfo.ttDate2);
+            } else {
+                lineInfo.strDate = strDate;
+                lineInfo.ttDate = GetTimeFromString(strDate);
+                lineInfo.weekNo = weekNo;
+                lineInfo.ttDateFloor = FloorDateToWeekStart(lineInfo.ttDate);
+                itemYear = yearNo;
+            }
         } else {
-            //otbAppLogWARNING("Invalid date 2 format found for line " << fileLine);
-            std::cout << "Invalid date 2 format found for line " << fileLine << std::endl;
+            std::cout << "Ignoring date: Invalid date format " << strDate <<std::endl;
             return false;
         }
+
+        if (m_bIsCoheFile)
+        {
+            int weekNo2, yearNo2;
+            if (GetWeekFromDate(strDate2, yearNo2, weekNo2, INPUT_FILE_DATE_PATTERN)) {
+                if (m_bIsCoheFile && m_bSwitchDates && strDate2 != "") {
+                    lineInfo.strDate = strDate2;
+                    lineInfo.ttDate = GetTimeFromString(strDate2);
+                    lineInfo.weekNo = weekNo2;
+                    lineInfo.ttDateFloor = FloorDateToWeekStart(lineInfo.ttDate);
+                    itemYear = yearNo2;
+                } else {
+                    lineInfo.strDate2 = strDate2;
+                    lineInfo.ttDate2 = GetTimeFromString(strDate2);
+                    lineInfo.weekNo2 = weekNo2;
+                    lineInfo.ttDate2Floor = FloorDateToWeekStart(lineInfo.ttDate2);
+                }
+            } else {
+                //otbAppLogWARNING("Invalid date 2 format found for line " << fileLine);
+                std::cout << "Ignoring date: Invalid date 2 format found " << strDate << std::endl;
+                return false;
+            }
+        }
+        if (m_year == itemYear) {
+            lineInfos.push_back (lineInfo);
+        } //else {
+            // silently ignore the error
+            //std::cout << "Ignoring date: Invalid year found in date " << strDate << " for UID " << uid << std::endl;
+//        }
     }
 
     return true;

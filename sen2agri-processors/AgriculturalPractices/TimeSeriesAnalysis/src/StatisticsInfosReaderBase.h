@@ -54,7 +54,7 @@
 class StatisticsInfosReaderBase
 {
 public:
-    StatisticsInfosReaderBase() : m_minReqEntries(0), m_bUseDate2(true), m_bSwitchDates(true)
+    StatisticsInfosReaderBase() : m_minReqEntries(0), m_bUseDate2(true), m_bSwitchDates(true), m_year(0)
     {
     }
 
@@ -62,7 +62,7 @@ public:
     {
     }
 
-    virtual void Initialize(const std::string &source, const std::vector<std::string> &filters) = 0;
+    virtual void Initialize(const std::string &source, const std::vector<std::string> &filters, int year) = 0;
 
     virtual std::string GetName() = 0;
 
@@ -96,6 +96,7 @@ protected:
     int m_minReqEntries;
     bool m_bUseDate2;
     bool m_bSwitchDates;
+    int m_year;
 
     struct InputFileLineInfoComparator
     {

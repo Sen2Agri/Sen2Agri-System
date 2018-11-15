@@ -12,9 +12,10 @@ StatisticsInfosFolderFilesReader::StatisticsInfosFolderFilesReader()
     m_CoheInputFileHeader = {"KOD_PB", "date1", "date2", "mean", "stdev"};
 }
 
-void StatisticsInfosFolderFilesReader::Initialize(const std::string &source, const std::vector<std::string> &filters)
+void StatisticsInfosFolderFilesReader::Initialize(const std::string &source, const std::vector<std::string> &filters, int year)
 {
     (void)filters; //suppress not used warning
+    m_year = year;
     this->m_InfoFiles = GetFilesInFolder(source);
 }
 

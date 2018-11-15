@@ -9,6 +9,7 @@ class FeatureDescription
 {
 public:
     virtual std::string GetFieldId() const = 0;
+    virtual std::string GetFieldSeqId() const = 0;
     virtual std::string GetMainCrop() const = 0;
     virtual std::string GetCountryCode() const = 0;
     virtual std::string GetYear() const = 0;

@@ -257,11 +257,17 @@ private:
         std::vector<std::string>::const_iterator itFile;
         std::vector<FidType> resultFidList;
         MapIndex mapIndex;
+        int i = 1;
         for (itFile = inFilePaths.begin(); itFile != inFilePaths.end(); ++itFile) {
             std::vector<FidType> curFids;
             if (ReadFile(*itFile, curFids)) {
                 MergeFids(curFids, resultFidList, mapIndex);
             }
+            otbAppLogINFO("File " << (*itFile) << " Done!");
+            otbAppLogINFO("Processed " << i << " files. Remaining files = " << inFilePaths.size() - i <<
+                          ". Percent completed = " << (int)((((double)i) / inFilePaths.size()) * 100) << "%");
+            i++;
+
         }
 
         WriteOutputFile(resultFidList);
@@ -269,6 +275,7 @@ private:
     }
 
     bool ReadFile(const std::string &filePath, std::vector<FidType> &retFids) {
+        otbAppLogINFO("Reading file " << filePath);
         boost::filesystem::path pathObj(filePath);
         if (boost::iequals(pathObj.extension().string(), ".xml")) {
             return ReadXmlFile(filePath, retFids);

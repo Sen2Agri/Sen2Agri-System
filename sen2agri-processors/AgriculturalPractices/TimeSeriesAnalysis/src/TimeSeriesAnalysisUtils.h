@@ -15,7 +15,7 @@
 
 #define DOUBLE_EPSILON                  0.00000001
 
-boost::gregorian::greg_weekday const FirstDayOfWeek = boost::gregorian::Sunday;
+boost::gregorian::greg_weekday const FirstDayOfWeek = boost::gregorian::Monday;
 
 inline std::vector<std::string> split (const std::string &s, char delim) {
     std::vector<std::string> result;
@@ -38,6 +38,13 @@ inline void NormalizeFieldId(std::string &fieldId) {
 template <typename T>
 inline bool IsNA(T val) {
     return (val == NOT_AVAILABLE || val == NR);
+}
+
+inline bool IsEqual(const double &val1, const double &val2) {
+    if (std::fabs(val1-val2) < DOUBLE_EPSILON) {
+        return true;    // equal values
+    }
+    return false;
 }
 
 inline bool IsLessOrEqual(const double &val1, const double &val2) {
@@ -269,29 +276,75 @@ inline int GetYearFromDate(time_t ttTime) {
     return resTm->tm_year + 1900;
 }
 
+inline bool isLeap( int year )
+{
+    if ( year % 4 == 0 )
+    {
+       if ( year % 100 == 0 && year % 400 != 0 ) {
+           return false;
+       } else {
+           return true;
+       }
+    }
+    return false;
+}
+
+inline void GetYearAndWeek( tm TM, int &YYYY, int &WW )                       // Reference: https://en.wikipedia.org/wiki/ISO_8601
+{
+   YYYY = TM.tm_year + 1900;
+   int day = TM.tm_yday;
+
+   int Monday = day - ( TM.tm_wday + 6 ) % 7;                          // Monday this week: may be negative down to 1-6 = -5;
+   int MondayYear = 1 + ( Monday + 6 ) % 7;                            // First Monday of the year
+   int Monday01 = ( MondayYear > 4 ) ? MondayYear - 7 : MondayYear;    // Monday of week 1: should lie between -2 and 4 inclusive
+   WW = 1 + ( Monday - Monday01 ) / 7;                                 // Nominal week ... but see below
+
+   // In ISO-8601 there is no week 0 ... it will be week 52 or 53 of the previous year
+   if ( WW == 0 )
+   {
+      YYYY--;
+      WW = 52;
+      if ( MondayYear == 3 || MondayYear == 4 || ( isLeap( YYYY ) && MondayYear == 2 ) ) WW = 53;
+   }
+
+   // Similar issues at the end of the calendar year
+   if ( WW == 53)
+   {
+      int daysInYear = isLeap( YYYY ) ? 366 : 365;
+      if ( daysInYear - Monday < 3 )
+      {
+         YYYY++;
+         WW = 1;
+      }
+   }
+}
+
 inline int GetWeekFromDate(time_t ttTime) {
     std::tm tmTime = {};
+    int weekNo;
     std::tm *resTm = gmtime_r(&ttTime, &tmTime);
-    std::tm tmTime2 = {};
-
-    const std::string &startOfYear = std::to_string(resTm->tm_year + 1900) + "-01-01";
-    time_t ttStartYear = GetTimeFromString(startOfYear);
-    std::tm *resTm2 = gmtime_r(&ttStartYear, &tmTime2);
-    int weekNo = ((resTm->tm_yday + 6)/7);
-    if (resTm->tm_wday < resTm2->tm_wday) {
-        ++weekNo;
-    }
     if (FirstDayOfWeek == boost::gregorian::Sunday) {
+        std::tm tmTime2 = {};
+
+        const std::string &startOfYear = std::to_string(resTm->tm_year + 1900) + "-01-01";
+        time_t ttStartYear = GetTimeFromString(startOfYear);
+        std::tm *resTm2 = gmtime_r(&ttStartYear, &tmTime2);
+        weekNo = ((resTm->tm_yday + 6)/7);
+        if (resTm->tm_wday < resTm2->tm_wday) {
+            ++weekNo;
+        }
         if (resTm->tm_wday == 0) {
             ++weekNo;
         }
+    } else {
+        int year;
+        GetYearAndWeek(*resTm, year, weekNo);
     }
     return weekNo;
 
 //    boost::gregorian::date bDate = boost::posix_time::from_time_t(ttTime).date();
 //    return bDate.week_number();
 }
-
 
 inline bool GetWeekFromDate(const std::string &dateStr, int &retYear, int &retWeek,
                      const std::string &pattern = "%4d-%2d-%2d")
@@ -326,6 +379,9 @@ inline time_t GetTimeOffsetFromStartOfYear(int year, int week) {
 
 
 inline std::string TimeToString(time_t ttTime) {
+    if (ttTime == 0) {
+        return "NA";
+    }
     std::tm * ptm = std::gmtime(&ttTime);
     char buffer[20];
     std::strftime(buffer, 20, "%Y-%m-%d", ptm);

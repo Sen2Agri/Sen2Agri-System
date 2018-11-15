@@ -183,6 +183,7 @@ typedef struct FieldInfoType {
         coheVVMaxValue = NOT_AVAILABLE;
     }
     std::string fieldId;
+    std::string fieldSeqId;
     std::string countryCode;
     std::string mainCrop;
     std::string practiceType;

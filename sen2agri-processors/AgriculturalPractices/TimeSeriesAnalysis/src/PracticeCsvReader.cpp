@@ -32,11 +32,12 @@ std::vector<std::string> PracticeCsvReader::CsvFeatureDescription::LineToVector(
 bool PracticeCsvReader::CsvFeatureDescription::ExtractHeaderInfos(const std::string &line)
 {
     m_InputFileHeader = LineToVector(line);
-    if (m_InputFileHeader.size() != m_ExpectedHeaderEntries.size()) {
+    if (m_InputFileHeader.size() != HEADER_SIZE && m_InputFileHeader.size() != HEADER_SIZE_WITH_SEQ_ID) {
         std::cout << "Header " << line << " does not correspond with the expected one for file " << m_source << std::endl;
         return false;
     }
     m_FieldIdFieldIdx = GetPosInHeader("FIELD_ID");
+    m_SeqFieldIdFieldIdx = GetPosInHeader("SEQ_ID");
     m_CountryFieldIdx = GetPosInHeader("COUNTRY");
     m_YearFieldIdx = GetPosInHeader("YEAR");
     m_MainCropFieldIdx = GetPosInHeader("MAIN_CROP");
@@ -62,7 +63,11 @@ bool PracticeCsvReader::CsvFeatureDescription::ExtractHeaderInfos(const std::str
 
 int PracticeCsvReader::CsvFeatureDescription::GetPosInHeader(const std::string &item)
 {
-    return std::distance(m_InputFileHeader.begin(), std::find(m_InputFileHeader.begin(), m_InputFileHeader.end(), item));
+    auto result = std::find(m_InputFileHeader.begin(), m_InputFileHeader.end(), item);
+    if (result != m_InputFileHeader.end()) {
+        return std::distance(m_InputFileHeader.begin(), std::find(m_InputFileHeader.begin(), m_InputFileHeader.end(), item));
+    }
+    return -1;
 }
 
 
@@ -81,6 +86,9 @@ bool PracticeCsvReader::CsvFeatureDescription::ExtractLineInfos(const std::strin
         m_PracticeTypeVal  = lineEntries[m_PracticeTypeFieldIdx];
         m_PracticeStartVal = lineEntries[m_PracticeStartFieldIdx];
         m_PracticeEndVal   = lineEntries[m_PracticeEndFieldIdx];
+        if (m_SeqFieldIdFieldIdx != -1) {
+            m_SeqFieldIdVal = lineEntries[m_SeqFieldIdFieldIdx];
+        }
         m_bIsValid = true;
         return true;
     }
@@ -91,6 +99,11 @@ bool PracticeCsvReader::CsvFeatureDescription::ExtractLineInfos(const std::strin
 std::string PracticeCsvReader::CsvFeatureDescription::GetFieldId() const
 {
     return m_FieldIdVal;
+}
+
+std::string PracticeCsvReader::CsvFeatureDescription::GetFieldSeqId() const
+{
+    return m_SeqFieldIdVal;
 }
 
 std::string PracticeCsvReader::CsvFeatureDescription::GetCountryCode() const

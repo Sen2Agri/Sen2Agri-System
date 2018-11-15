@@ -28,160 +28,6 @@
 namespace otb
 {
 
-/** \class StatisticsMapAccumulator
- * \brief Holds statistics for each label of a label image
- *
- * Intended to store and update the following statistics:
- * -count
- * -sum of values
- * -sum of squared values
- * -min
- * -max
- *
- * TODO:
- * -Better architecture?
- * -Enrich with other statistics?
- * -Move this class in a dedicated source to enable its use by other otbStatistics stuff?
- *
- * \ingroup OTBStatistics
- */
-template<class TRealVectorPixelType>
-class StatisticsAccumulator
-{
-public:
-
-    typedef typename TRealVectorPixelType::ValueType RealValueType;
-
-    // Constructor (default)
-    StatisticsAccumulator(){}
-
-    // Constructor (initialize the accumulator with the given pixel)
-    StatisticsAccumulator(const TRealVectorPixelType & pixel)
-    {
-        m_Pixels.push_back(pixel);
-
-        m_Count = pixel;
-        m_CountInvalid = pixel;
-        m_Sum = pixel;
-        m_Min = pixel;
-        m_Max = pixel;
-        m_SqSum = pixel;
-        for (unsigned int band = 0 ; band < m_SqSum.GetSize() ; band++) {
-            if (checkValid(pixel[band])) {
-                m_Count[band] = 1;
-                m_SqSum[band] *= m_SqSum[band];
-            } else {
-                m_CountInvalid[band] = 1;
-                m_Count[band] = 0;
-                m_Sum[band] = 0;
-                m_Min[band] = 0;
-                m_Max[band] = 0;
-                m_SqSum[band] = 0;
-            }
-        }
-    }
-
-    // Constructor (other)
-    StatisticsAccumulator(const StatisticsAccumulator & other)
-    {
-        m_Pixels = other.m_Pixels;
-
-        m_Count = other.m_Count;
-        m_CountInvalid = other.m_CountInvalid;
-        m_Sum = other.m_Sum;
-        m_Min = other.m_Min;
-        m_Max = other.m_Max;
-        m_SqSum = other.m_SqSum;
-    }
-
-    // Destructor
-    ~StatisticsAccumulator(){}
-
-    // Function update (pixel)
-    void Update(const TRealVectorPixelType & pixel)
-    {
-        m_Pixels.push_back(pixel);
-
-        const unsigned int nBands = pixel.GetSize();
-        for (unsigned int band = 0 ; band < nBands ; band ++ )
-        {
-            const RealValueType value = pixel[band];
-            if (checkValid(value))
-            {
-                m_Count[band]++;
-                const RealValueType sqValue = value * value;
-                UpdateValues(value, sqValue, value, value,
-                       m_Sum[band], m_SqSum[band], m_Min[band], m_Max[band]);
-            } else {
-                m_CountInvalid[band]++;
-            }
-        }
-    }
-
-    // Function update (self)
-    void Update(const StatisticsAccumulator & other)
-    {
-        m_Pixels.insert(m_Pixels.end(), other.m_Pixels.begin(), other.m_Pixels.end());
-
-        m_Count += other.m_Count;
-        m_CountInvalid += other.m_CountInvalid;
-        const unsigned int nBands = other.m_Sum.GetSize();
-        for (unsigned int band = 0 ; band < nBands ; band ++ )
-        {
-            UpdateValues(other.m_Sum[band], other.m_SqSum[band], other.m_Min[band], other.m_Max[band],
-                   m_Sum[band], m_SqSum[band], m_Min[band], m_Max[band]);
-        }
-    }
-
-    bool checkValid(const RealValueType &value)
-    {
-        if ((value != 0.0) && (value != -10000))
-        {
-            return true;
-        }
-        return false;
-    }
-
-    // Accessors
-    itkGetMacro(Sum, TRealVectorPixelType);
-    itkGetMacro(SqSum, TRealVectorPixelType);
-    itkGetMacro(Min, TRealVectorPixelType);
-    itkGetMacro(Max, TRealVectorPixelType);
-    itkGetMacro(Count, TRealVectorPixelType);
-    itkGetMacro(CountInvalid, TRealVectorPixelType);
-
-private:
-    void UpdateValues(const RealValueType & otherSum, const RealValueType & otherSqSum,
-                    const RealValueType & otherMin, const RealValueType & otherMax,
-                    RealValueType & sum, RealValueType & sqSum,
-                    RealValueType & min, RealValueType & max)
-    {
-        sum += otherSum;
-        sqSum += otherSqSum;
-        if (otherMin < min)
-        {
-            min = otherMin;
-        }
-        if (otherMax > max)
-        {
-            max = otherMax;
-        }
-    }
-
-public:
-  std::vector<TRealVectorPixelType> m_Pixels;
-
-protected:
-  TRealVectorPixelType m_Sum;
-  TRealVectorPixelType m_SqSum;
-  TRealVectorPixelType m_Min;
-  TRealVectorPixelType m_Max;
-  TRealVectorPixelType m_Count;
-  TRealVectorPixelType m_CountInvalid;
-
-};
-
-
 /**
  * \class PersistentOGRDataToClassStatisticsFilter
  * 
@@ -193,6 +39,160 @@ template<class TInputImage, class TMaskImage>
 class ITK_EXPORT PersistentOGRDataToClassStatisticsFilter :
   public PersistentSamplingFilterBase<TInputImage, TMaskImage>
 {
+public:
+    /** \class StatisticsMapAccumulator
+     * \brief Holds statistics for each label of a label image
+     *
+     * Intended to store and update the following statistics:
+     * -count
+     * -sum of values
+     * -sum of squared values
+     * -min
+     * -max
+     *
+     * TODO:
+     * -Better architecture?
+     * -Enrich with other statistics?
+     * -Move this class in a dedicated source to enable its use by other otbStatistics stuff?
+     *
+     * \ingroup OTBStatistics
+     */
+    template<class TRealVectorPixelType>
+    class StatisticsAccumulator
+    {
+    public:
+
+        typedef typename TRealVectorPixelType::ValueType RealValueType;
+
+        // Constructor (default)
+        StatisticsAccumulator(){}
+
+        // Constructor (initialize the accumulator with the given pixel)
+        StatisticsAccumulator(const TRealVectorPixelType & pixel)
+        {
+            m_Pixels.push_back(pixel);
+
+            m_Count = pixel;
+            m_CountInvalid = pixel;
+            m_Sum = pixel;
+            m_Min = pixel;
+            m_Max = pixel;
+            m_SqSum = pixel;
+            for (unsigned int band = 0 ; band < m_SqSum.GetSize() ; band++) {
+                if (checkValid(pixel[band])) {
+                    m_Count[band] = 1;
+                    m_SqSum[band] *= m_SqSum[band];
+                } else {
+                    m_CountInvalid[band] = 1;
+                    m_Count[band] = 0;
+                    m_Sum[band] = 0;
+                    m_Min[band] = 0;
+                    m_Max[band] = 0;
+                    m_SqSum[band] = 0;
+                }
+            }
+        }
+
+        // Constructor (other)
+        StatisticsAccumulator(const StatisticsAccumulator & other)
+        {
+            m_Pixels = other.m_Pixels;
+
+            m_Count = other.m_Count;
+            m_CountInvalid = other.m_CountInvalid;
+            m_Sum = other.m_Sum;
+            m_Min = other.m_Min;
+            m_Max = other.m_Max;
+            m_SqSum = other.m_SqSum;
+        }
+
+        // Destructor
+        ~StatisticsAccumulator(){}
+
+        // Function update (pixel)
+        void Update(const TRealVectorPixelType & pixel)
+        {
+            m_Pixels.push_back(pixel);
+
+            const unsigned int nBands = pixel.GetSize();
+            for (unsigned int band = 0 ; band < nBands ; band ++ )
+            {
+                const RealValueType value = pixel[band];
+                if (checkValid(value))
+                {
+                    m_Count[band]++;
+                    const RealValueType sqValue = value * value;
+                    UpdateValues(value, sqValue, value, value,
+                           m_Sum[band], m_SqSum[band], m_Min[band], m_Max[band]);
+                } else {
+                    m_CountInvalid[band]++;
+                }
+            }
+        }
+
+        // Function update (self)
+        void Update(const StatisticsAccumulator & other)
+        {
+            m_Pixels.insert(m_Pixels.end(), other.m_Pixels.begin(), other.m_Pixels.end());
+
+            m_Count += other.m_Count;
+            m_CountInvalid += other.m_CountInvalid;
+            const unsigned int nBands = other.m_Sum.GetSize();
+            for (unsigned int band = 0 ; band < nBands ; band ++ )
+            {
+                UpdateValues(other.m_Sum[band], other.m_SqSum[band], other.m_Min[band], other.m_Max[band],
+                       m_Sum[band], m_SqSum[band], m_Min[band], m_Max[band]);
+            }
+        }
+
+        bool checkValid(const RealValueType &value)
+        {
+            if ((value != 0.0) && (value != -10000))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        // Accessors
+        itkGetMacro(Sum, TRealVectorPixelType);
+        itkGetMacro(SqSum, TRealVectorPixelType);
+        itkGetMacro(Min, TRealVectorPixelType);
+        itkGetMacro(Max, TRealVectorPixelType);
+        itkGetMacro(Count, TRealVectorPixelType);
+        itkGetMacro(CountInvalid, TRealVectorPixelType);
+
+    private:
+        void UpdateValues(const RealValueType & otherSum, const RealValueType & otherSqSum,
+                        const RealValueType & otherMin, const RealValueType & otherMax,
+                        RealValueType & sum, RealValueType & sqSum,
+                        RealValueType & min, RealValueType & max)
+        {
+            sum += otherSum;
+            sqSum += otherSqSum;
+            if (otherMin < min)
+            {
+                min = otherMin;
+            }
+            if (otherMax > max)
+            {
+                max = otherMax;
+            }
+        }
+
+    public:
+      std::vector<TRealVectorPixelType> m_Pixels;
+
+    protected:
+      TRealVectorPixelType m_Sum;
+      TRealVectorPixelType m_SqSum;
+      TRealVectorPixelType m_Min;
+      TRealVectorPixelType m_Max;
+      TRealVectorPixelType m_Count;
+      TRealVectorPixelType m_CountInvalid;
+
+    };
+
 public:
   /** Standard Self typedef */
   typedef PersistentOGRDataToClassStatisticsFilter        Self;

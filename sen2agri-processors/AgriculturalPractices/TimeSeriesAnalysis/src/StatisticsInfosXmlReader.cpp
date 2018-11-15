@@ -161,9 +161,10 @@ StatisticsInfosXmlReader::StatisticsInfosXmlReader()
 {
 }
 
-void StatisticsInfosXmlReader::Initialize(const std::string &source, const std::vector<std::string> &filters)
+void StatisticsInfosXmlReader::Initialize(const std::string &source, const std::vector<std::string> &filters, int year)
 {
     m_strSource = source;
+    m_year = year;
     // check if index file exists near the source xml
     const std::string &idxFilePath(source + ".idx");
     if ( boost::filesystem::exists(idxFilePath)) {

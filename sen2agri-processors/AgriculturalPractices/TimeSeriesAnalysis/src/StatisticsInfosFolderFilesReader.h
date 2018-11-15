@@ -18,7 +18,7 @@ public:
    virtual  ~StatisticsInfosFolderFilesReader()
     {
     }
-    virtual void Initialize(const std::string &source, const std::vector<std::string> &filters);
+    virtual void Initialize(const std::string &source, const std::vector<std::string> &filters, int year);
     virtual std::string GetName() { return "dir"; }
 
     virtual bool GetEntriesForField(const std::string &fieldId, const std::vector<std::string> &filters,

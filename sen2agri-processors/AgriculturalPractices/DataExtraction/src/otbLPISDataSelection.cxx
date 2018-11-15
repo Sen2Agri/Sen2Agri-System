@@ -256,7 +256,7 @@ private:
             return;
         }
         // # create result csv file for harvest and EFA practice evaluation
-        m_outFileStream << "FIELD_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;PRACTICE;P_TYPE;P_START;P_END\n";
+        m_outFileStream << "FIELD_ID;SEQ_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;PRACTICE;P_TYPE;P_START;P_END\n";
     }
 
     void WriteLine(const ogr::Feature& feature) {
@@ -266,12 +266,13 @@ private:
         }
         OGRFeature &ogrFeat = feature.ogr();
         const std::string &uid = m_pCountryInfos->GetUniqueId(ogrFeat);
+        int seqId = m_pCountryInfos->GetSeqId(ogrFeat);
         const std::string &mainCrop = GetValueOrNA(m_pCountryInfos->GetMainCrop(ogrFeat));
         if (mainCrop == "NA") {
             std::cout << "Main crop NA - Ignoring field with unique ID " << uid << std::endl;
             return;
         }
-        m_outFileStream << uid.c_str() << ";" << m_country.c_str() << ";" << m_year.c_str() << ";";
+        m_outFileStream << uid.c_str() << ";" << seqId << ";" << m_country.c_str() << ";" << m_year.c_str() << ";";
         m_outFileStream << GetValueOrNA(m_pCountryInfos->GetMainCrop(ogrFeat)).c_str() << ";";
         m_outFileStream << GetValueOrNA(m_pCountryInfos->GetVegStart()).c_str() << ";";
         m_outFileStream << GetValueOrNA(m_pCountryInfos->GetHStart(ogrFeat)).c_str() << ";";
@@ -360,6 +361,13 @@ private:
         }
         virtual std::string GetName() = 0;
         virtual std::string GetUniqueId(OGRFeature &ogrFeat) = 0;
+        virtual int GetSeqId(OGRFeature &ogrFeat) {
+            int fieldIndex = ogrFeat.GetFieldIndex("NewID");
+            if (fieldIndex == -1) {
+                return -1;    // we don't have the column
+            }
+            return (int)ogrFeat.GetFieldAsDouble(fieldIndex);
+        }
         virtual std::string GetMainCrop(OGRFeature &ogrFeat) = 0;
         virtual bool GetHasPractice(OGRFeature &ogrFeat, const std::string &practice) = 0;
 
