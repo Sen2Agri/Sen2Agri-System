@@ -45,7 +45,8 @@ MYSQL_CMD=${MYSQL_DB_CREATION}${MYSQL_DB_ACCESS_GRANT}
 #----------------SEN2AGRI POSTGRESQL DATABASE NAME-----------------------------------------#
 : ${SEN2AGRI_DATABASE_NAME:="sen2agri"}
 #------------------------------------------------------------------------------------------#
-
+declare -r -i -g L1C_PROCESSOR_MACCS=1
+declare -r -i -g L1C_PROCESSOR_MAJA=2
 #------------------------------------------------------------------------------------------#
 function parse_and_update_slurm_conf_file()
 {
@@ -364,7 +365,8 @@ function install_and_config_postgresql()
    # the tables, data and other stuff is created (see down, privileges.sql
    cat "$(find ./ -name "database")/00-database"/sen2agri.sql | su - postgres -c 'psql'
 
-   sed -i -re "s|'demmaccs.maccs-launcher',([^,]+),\s+'[^']+'|'demmaccs.maccs-launcher',\1, '${maccs_location}'|" $(find ./ -name "database")/07-data/09.config.sql
+   sed -i -re "s|'demmaccs.maccs-launcher',([^,]+),\s+'[^']+'|'demmaccs.maccs-launcher',\1, '${l1c_processor_location}'|" $(find ./ -name "database")/07-data/09.config.sql
+   sed -i -re "s|'demmaccs.gips-path',([^,]+),\s+'[^']+'|'demmaccs.gips-path',\1, '${l1c_processor_gipp_destination}'|" $(find ./ -name "database")/07-data/09.config.sql
 
    #run scripts populating database
    populate_from_scripts "$(find ./ -name "database")/01-extensions"
@@ -489,6 +491,48 @@ function install_RPMs()
 ../rpm_binaries/slurm/slurm-torque-15.08.7-1.el7.centos.x86_64.rpm
 }
 
+function maccs_or_maja()
+{
+    while [[ $answer != '1' ]] && [[ $answer != '2' ]]
+    do	
+	read -n1 -p "What L1C processor should be used? (1 for MACCS / 2 for MAJA): " -r answer
+	printf "\n"
+	case $answer in
+	    1)
+		echo "MACCS will be used as L1C processor"
+		l1c_processor=$L1C_PROCESSOR_MACCS
+ 		;;
+	    2)
+		echo "MAJA will be used as L1C processor"
+		l1c_processor=$L1C_PROCESSOR_MAJA
+		;;
+	    *)
+		echo "Unknown answer"
+		;;
+	esac
+    done
+    case $l1c_processor in
+    $L1C_PROCESSOR_MACCS)
+	l1c_processor_name="MACCS"
+	l1c_processor_bin="maccs"
+	l1c_processor_path="/opt/maccs/core"
+	l1c_processor_gipp_destination="/mnt/archive/gipp"
+	l1c_processor_gipp_source="../gipp"
+	;;
+    $L1C_PROCESSOR_MAJA)
+	l1c_processor_name="MAJA"
+	l1c_processor_bin="maja"
+	l1c_processor_path="/opt/maja"
+	l1c_processor_gipp_destination="/mnt/archive/gipp_maja"
+	l1c_processor_gipp_source="../gipp_maja"
+	;;
+    *)
+	echo "Unknown L1C processor...exit "
+	exit
+	;;
+    esac
+}
+
 function check_paths()
 {
     echo "Checking paths..."
@@ -554,12 +598,12 @@ function check_paths()
         fi
     fi
 
-    if ! ls -A /mnt/archive/gipp > /dev/null 2>&1; then
-        if [ -d ../gipp ]; then
-            echo "Copying MACCS GIPP files to /mnt/archive"
-            cp -rf ../gipp /mnt/archive
+    if ! ls -A $l1c_processor_gipp_destination > /dev/null 2>&1; then
+        if [ -d $l1c_processor_gipp_source ]; then
+            echo "Copying $l1c_processor_name GIPP files to /mnt/archive"
+            cp -rf $l1c_processor_gipp_source /mnt/archive
         else
-            echo "Cannot find MACCS GIPP files in the distribution, please copy them to /mnt/archive/gipp"
+            echo "Cannot find $l1c_processor_name GIPP files in the distribution, please copy them to $l1c_processor_gipp_destination"
         fi
     fi
 
@@ -571,36 +615,38 @@ function check_paths()
     fi
 }
 
-function find_maccs()
+function find_l1c_processor()
 {
     IFS=$'\n'
-    out=($(find /opt/maccs/core -name maccs -type f -executable 2>&-))
     ret=$?
     unset IFS
-    if [ $ret -eq 0 ] && [ -n "$out" ]; then
-        if [ ${#out[@]} -eq 1 ]; then
-            maccs_location=${out[0]}
-            echo "MACCS found at ${maccs_location}"
+    echo "ret = $ret"
+    l1c_processor_bin_find_out=($(find $l1c_processor_path -name $l1c_processor_bin -type f -executable 2>&-))
+    echo "l1c_processor_bin_find_out = $l1c_processor_bin_find_out"
+    if [ $ret -eq 0 ] && [ -n "$l1c_processor_bin_find_out" ]; then
+        if [ ${#l1c_processor_bin_find_out[@]} -eq 1 ]; then
+            l1c_processor_location=${l1c_processor_bin_find_out[0]}
+	    echo "${l1c_processor_name} found at ${l1c_processor_location}"
             return 0
-        else
-            echo "Multiple MACCS executables found under /opt/maccs/core:"
-            printf '%s\n' "${out[@]}"
+        else            
+	    echo "Multiple ${l1c_processor_name} executables found under ${l1c_processor_path}:"
+            printf '%s\n' "${l1c_processor_bin_find_out[@]}"
             return 2
         fi
     else
-        echo "Unable to find MACCS under /opt/maccs/core"
+        echo "Unable to find ${l1c_processor_name} under ${l1c_processor_path}"
         return 1
     fi
 }
 
-function install_maccs()
+function install_l1c_processor()
 {
     yum -y install libxslt gd
-
-    echo "Looking for MACCS..."
-    maccs_location=$(type -P maccs)
+    
+    echo "Looking for $l1c_processor_name ..."
+    l1c_processor_location=$(type -P $l1c_processor_bin)
     if [ $? -eq 0 ]; then
-        echo "MACCS found in PATH at $maccs_location"
+        echo "$l1c_processor_name found in PATH at $l1c_processor_location"
         status=0
     else
         status=1
@@ -610,60 +656,80 @@ function install_maccs()
         return 0
     fi
 
-    find_maccs
+    find_l1c_processor
     if [ $? -eq 0 ]; then
         return 0
     fi
 
-    echo "MACCS not found, trying to install it"
+    echo "$l1c_processor_name not found, trying to install it"
 
     found_kit=1
-    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>&-)
-    if [ $? -ne 0 ] || [ -z "$cots_installer" ]; then
-        echo "Unable to find MACCS COTS installer"
-        found_kit=0
+    if [ $l1c_processor -eq $L1C_PROCESSOR_MACCS ]; then	
+	cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>&-)
+	if [ $? -ne 0 ] || [ -z "$cots_installer" ]; then
+	    echo "Unable to find MACCS COTS installer"
+	    found_kit=0
+	fi
+	if [ $found_kit -eq 1 ]; then
+	    core_installer=$(find ../maccs/core -name "install-maccs-*.sh" 2>&-)
+	    if [ $? -ne 0 ] || [ -z "$core_installer" ]; then
+		echo "Unable to find MACCS installer"
+		found_kit=0
+	    fi
+	fi
     fi
-    if [ $found_kit -eq 1 ]; then
-        core_installer=$(find ../maccs/core -name "install-maccs-*.sh" 2>&-)
-        if [ $? -ne 0 ] || [ -z "$core_installer" ]; then
-            echo "Unable to find MACCS installer"
-            found_kit=0
-        fi
+    if [ $l1c_processor -eq $L1C_PROCESSOR_MAJA ]; then	
+	core_installer=$(find ../maja -name "MAJA*.run" 2>&-)
+	if [ $? -ne 0 ] || [ -z "$core_installer" ]; then
+	    echo "Unable to find MAJA installer"
+	    found_kit=0
+	fi
     fi
-
+    
     if [ $found_kit -eq 1 ]; then
-        yum -y install redhat-lsb-core
+	if [ $l1c_processor -eq $L1C_PROCESSOR_MACCS ]; then	
+            yum -y install redhat-lsb-core	
 
-        echo "Installing MACCS COTS"
-        sh $cots_installer || {
-            echo "Failed, exiting now"
-            exit 1
-        }
-        echo "Installing MACCS"
-        sh $core_installer || {
-            echo "Failed, exiting now"
-            exit 1
-        }
-
-        find_maccs
+	    echo "Installing MACCS COTS"
+	    sh $cots_installer || {
+		echo "Failed, exiting now"
+		exit 1
+	    }
+	    echo "Installing MACCS"
+	    sh $core_installer || {
+		echo "Failed, exiting now"
+		exit 1
+	    }
+	fi
+	if [ $l1c_processor -eq $L1C_PROCESSOR_MAJA ]; then
+	    echo "Installing MAJA"
+	    sh $core_installer || {
+		echo "Failed, exiting now"
+		exit 1
+	    }
+	    echo "chmoding"
+	    chmod -R a+rx $l1c_processor_path
+	fi	
+	echo "find_l1c_processor"
+        find_l1c_processor
         if [ $? -eq 0 ]; then
             return 0
         fi
 
-        echo "Cannot find installed MACCS. Did you install it under a different path?"
+        echo "Cannot find installed $l1c_processor_name. Did you install it under a different path?"
     fi
 
-    echo "If MACCS is already installed, please enter the path to the 'maccs' executable (e.g. /opt/maccs/core/4.7/bin/maccs)"
+    echo "If $l1c_processor_name is already installed, please enter the path to the '$l1c_processor_bin' executable (e.g. /opt/maccs/core/4.7/bin/maccs for MACCS or /otp/maja/bin/maja for MAJA)"
     while :; do
-        read -ep "Path to maccs executable: "
+        read -ep "Path to $l1c_processor_bin executable: "
         if [ $? -ne 0 ]; then
             echo "Cancelled, exiting"
             exit 1
         fi
 
         if [[ -x "$REPLY" ]]; then
-            maccs_location=$REPLY
-            echo "MACCS path seems fine, continuing"
+            l1c_processor_location=$REPLY
+            echo "$l1c_processor_name path seems fine, continuing"
             return 0
         fi
 
@@ -735,6 +801,9 @@ if [ $EUID -ne 0 ]; then
     exit 1
 fi
 
+#use MACCS or MAJA?
+maccs_or_maja
+
 check_paths
 
 disable_selinux
@@ -746,7 +815,7 @@ yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.3-x86_64/pgdg-ce
 
 install_sen2agri_services
 
-install_maccs
+install_l1c_processor
 
 #-----------------------------------------------------------#
 ####  OTB, SEN2AGRI, SLURM INSTALL  & CONFIG     ######

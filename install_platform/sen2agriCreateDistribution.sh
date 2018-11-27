@@ -54,6 +54,8 @@ function prepare_distribution()
    mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/maccs/core
    mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/maccs/cots
 
+   mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/maja/
+
    #----------------------rpm_binaries dir--------------------------------------------------------------------#
 
    ##create dir "rpm_binaries" inside distribution folder Sen2AgriDistribution
@@ -94,6 +96,7 @@ function prepare_distribution()
    cp -f ${SOURCES_DIR_PATH}/snap-adapters/*.nbm ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/adapters
 
    cp -rf ${SOURCES_DIR_PATH}/gipp ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/
+   cp -rf ${SOURCES_DIR_PATH}/gipp_maja ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/
    cp -f ${SOURCES_DIR_PATH}/CHANGELOG.md ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/docs
    cp -rf ${SOURCES_DIR_PATH}/licenses ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}
 }
