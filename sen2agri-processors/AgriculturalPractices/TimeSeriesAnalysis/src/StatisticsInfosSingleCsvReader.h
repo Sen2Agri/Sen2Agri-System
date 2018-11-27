@@ -21,7 +21,7 @@ public:
    virtual  ~StatisticsInfosSingleCsvReader()
     {
     }
-    virtual void Initialize(const std::string &source, const std::vector<std::string> &filters);
+    virtual void Initialize(const std::string &source, const std::vector<std::string> &filters, int year);
     virtual std::string GetName() { return "csv"; }
 
     virtual bool GetEntriesForField(const std::string &fid, const std::vector<std::string> &filters,
@@ -35,7 +35,7 @@ private:
                                 const std::vector<std::string> &findFilters,
                                 std::map<std::string, std::vector<InputFileLineInfoType>> &retMap);
     bool ExtractInfosFromLine(const std::string &fileLine, const std::vector<std::string> &findFilters,
-                              InputFileLineInfoType &lineInfo, std::string &uid);
+                              std::vector<InputFileLineInfoType> &lineInfos, std::string &uid);
 
 private:
     std::vector<std::string> m_InputFileHeader;
@@ -43,6 +43,7 @@ private:
 
     std::string m_strSource;
     IdxMapType m_IdxMap;
+    bool m_bIsCoheFile;
 };
 
 #endif

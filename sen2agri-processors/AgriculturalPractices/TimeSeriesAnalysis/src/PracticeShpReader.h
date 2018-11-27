@@ -28,6 +28,7 @@ private:
             m_PracticeEndFieldName = "P_END";
         }
         virtual std::string GetFieldId() const;
+        virtual std::string GetFieldSeqId() const;
         virtual std::string GetMainCrop() const;
         virtual std::string GetCountryCode() const;
         virtual std::string GetYear() const;

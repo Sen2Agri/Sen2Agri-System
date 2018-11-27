@@ -6,6 +6,9 @@
 
 #include "PracticeReaderBase.h"
 
+#define HEADER_SIZE                 11
+#define HEADER_SIZE_WITH_SEQ_ID     12
+
 class PracticeCsvReader : public PracticeReaderBase
 {
 public:
@@ -16,11 +19,10 @@ private:
     class CsvFeatureDescription : public FeatureDescription
     {
         CsvFeatureDescription() : m_bIsValid(false) {
-             m_ExpectedHeaderEntries = {"FIELD_ID", "COUNTRY", "YEAR", "MAIN_CROP",
-                                  "VEG_START", "H_START", "H_END", "PRACTICE",
-                                 "P_TYPE", "P_START", "P_END"};
+            m_SeqFieldIdFieldIdx = -1;
         }
         virtual std::string GetFieldId() const;
+        virtual std::string GetFieldSeqId() const;
         virtual std::string GetCountryCode() const;
         virtual std::string GetYear() const;
         virtual std::string GetMainCrop() const;
@@ -40,11 +42,10 @@ private:
 
 
         std::ifstream m_fStream;
-
-        std::vector<std::string> m_ExpectedHeaderEntries;
         std::vector<std::string> m_InputFileHeader;
 
         int m_FieldIdFieldIdx;
+        int m_SeqFieldIdFieldIdx;
         int m_CountryFieldIdx;
         int m_YearFieldIdx;
         int m_MainCropFieldIdx;
@@ -57,6 +58,7 @@ private:
         int m_PracticeEndFieldIdx;
 
         std::string m_FieldIdVal;
+        std::string m_SeqFieldIdVal;
         std::string m_CountryVal;
         std::string m_YearVal;
         std::string m_MainCropVal;

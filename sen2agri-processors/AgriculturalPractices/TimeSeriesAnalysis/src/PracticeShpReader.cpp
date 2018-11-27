@@ -25,6 +25,11 @@ std::string PracticeShpReader::OgrFeatureDescription::GetFieldId() const
     return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex(this->m_FieldIdFieldName.c_str()));
 }
 
+std::string PracticeShpReader::OgrFeatureDescription::GetFieldSeqId() const
+{
+    return "-1";
+}
+
 std::string PracticeShpReader::OgrFeatureDescription::GetMainCrop() const
 {
     OGRFeature &ogrFeat = (*featIt).ogr();

@@ -68,7 +68,7 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
     {
       fieldId = boost::lexical_cast<std::string>(it->first);
       const auto &meanVal = it->second[0];
-      const auto &stdDevVal = mapStdDev[fieldId][0];
+      const auto &stdDevVal = mapStdDev.at(it->first)[0];
 
       const std::string &fieldOutFileName = BuildOutputFileName(fieldId, fileType, polarisation, orbit, fileDate, additionalFileDate);
       const std::string &uniqueId = fieldId + fieldOutFileName;

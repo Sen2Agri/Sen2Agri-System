@@ -22,7 +22,7 @@ public:
    virtual  ~StatisticsInfosXmlReader()
     {
     }
-    virtual void Initialize(const std::string &source, const std::vector<std::string> &filters);
+    virtual void Initialize(const std::string &source, const std::vector<std::string> &filters, int year);
     virtual std::string GetName() { return "xml"; }
 
     virtual bool GetEntriesForField(const std::string &inFieldId, const std::vector<std::string> &filters,

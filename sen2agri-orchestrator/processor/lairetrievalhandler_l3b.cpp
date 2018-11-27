@@ -651,7 +651,7 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
         productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
         productFormatterArgs += laiErrList[i];
     }
-    productFormatterArgs += "-processor.vegetation.laimdateflgs";
+    productFormatterArgs += "-processor.vegetation.laistatusflgs";
     for(int i = 0; i<tileIdsList.size(); i++) {
         productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
         productFormatterArgs += laiFlgsList[i];
