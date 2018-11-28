@@ -9,5 +9,8 @@ Stopwatch::Stopwatch(QString operation) : operation_(std::move(operation)) { tim
 
 Stopwatch::~Stopwatch()
 {
-    Logger::debug(QStringLiteral("%1 took %2 ms").arg(operation_).arg(timer_.elapsed()));
+    auto elapsed = timer_.elapsed();
+    if (elapsed > 100) {
+        Logger::warn(QStringLiteral("%1 took %2 ms").arg(operation_).arg(timer_.elapsed()));
+    }
 }
