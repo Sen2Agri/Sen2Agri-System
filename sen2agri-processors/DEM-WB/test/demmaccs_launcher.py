@@ -546,7 +546,8 @@ def new_launch_demmaccs(l1c_db_thread):
 #        db_result_tile_processed = set_l1_tile_status(l1c_db_thread, product_id, "196025", demmaccs_log_extract.cloud_coverage, demmaccs_log_extract.snow_coverage)
 #        l1c_db_thread.sql_rollback        
 #        print("!!!!{}".format(db_result_tile_processed))
-#        l1c_queue.task_done()
+#        time.sleep(10) 
+#        l1c_queue.task_done()        
 #        thread_finished_queue.get()
 #        continue
 
@@ -838,12 +839,13 @@ while True:
         l1c_queue.put(L1CContext(l1c_tile_to_process, processor_short_name, base_output_path, args.skip_dem))
         print("Demmaccs main thread: feeding the queue for workers with: {}".format(l1c_tile_to_process))
         l1c_tile_to_process = []
+        time.sleep(1)
         #print("{}: Queue feeded")
     else:
         #print("Main thread is sleeping....")
         time.sleep(5)
-    l1c_tile_to_process = l1c_db.get_unprocessed_l1c_tile()
-    
+    if thread_finished_queue.qsize() < int(args.processes_number):
+        l1c_tile_to_process = l1c_db.get_unprocessed_l1c_tile()    
     if (l1c_tile_to_process == None) or (len(l1c_tile_to_process) == 0 and thread_finished_queue.qsize() == 0):
         for i in range(int(args.processes_number)):
             l1c_queue.put(L1CContext(None, processor_short_name, base_output_path, args.skip_dem))
@@ -851,6 +853,7 @@ while True:
         l1c_queue.join()
         print("All the workers finished their job. Exiting...")
         break
+
 remove_dir_content("{}/".format(demmaccs_config.working_dir))
 # following code applies to the old function launch_demmaccs. This launches in paralel products instead of tiles 
 #load the unprocessed l1c products from db
