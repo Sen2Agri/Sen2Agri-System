@@ -32,9 +32,9 @@ import java.util.List;
 @Transactional
 public interface DataSourceRepository extends JpaRepository<DataSourceConfiguration, Integer> {
 
-    @Query(value = "SELECT DISTINCT ON (satellite_id, scope, enabled) id, satellite_id, name, scope, username, passwrd, fetch_mode, " +
+    @Query(value = "SELECT DISTINCT ON (site_id, satellite_id, scope, enabled) id, site_id, satellite_id, name, scope, username, passwrd, fetch_mode, " +
             "max_retries, retry_interval_minutes, download_path, specific_params,max_connections, local_root, enabled " +
-            "FROM datasource ORDER BY satellite_id, scope, enabled, name DESC",
+            "FROM datasource ORDER BY site_id, satellite_id, scope, enabled, name DESC",
             nativeQuery = true)
     List<DataSourceConfiguration> getConfigurations();
 }

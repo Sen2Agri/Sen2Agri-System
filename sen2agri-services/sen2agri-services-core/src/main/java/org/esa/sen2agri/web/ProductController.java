@@ -145,7 +145,7 @@ public class ProductController extends ControllerBase {
                 ProductDownloadListener listener = new ProductDownloadListener(persistenceManager);
                 List<Path> folders = Files.walk(sourcePath, 1).collect(Collectors.toList());
                 int count = 0;
-                DataSourceConfiguration configuration = Config.getDownloadConfiguration(satellite);
+                DataSourceConfiguration configuration = Config.getDownloadConfiguration(site, satellite);
                 Path downloadPath = Paths.get(configuration.getDownloadPath()).resolve(site.getShortName());
                 for (Path folder : folders) {
                     try {

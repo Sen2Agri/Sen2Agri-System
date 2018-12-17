@@ -305,6 +305,7 @@ public class DownloadProductRepository extends NonMappedRepository<DownloadProdu
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         KeyHolder keyHolder = new GeneratedKeyHolder();
         final boolean isUpdateQuery = findByName(product.getSiteId(), product.getProductName()) != null;
+        Connection conn;
         jdbcTemplate.update(connection -> {
             PreparedStatement statement = connection.prepareStatement(isUpdateQuery ? updateQuery() : insertQuery(), Statement.RETURN_GENERATED_KEYS);
             statement.setShort(1, product.getSiteId());

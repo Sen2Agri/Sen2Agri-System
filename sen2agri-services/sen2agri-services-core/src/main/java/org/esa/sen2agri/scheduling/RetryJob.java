@@ -61,19 +61,20 @@ public class RetryJob extends AbstractJob {
     @Override
     @SuppressWarnings("unchecked")
     protected void executeImpl(JobDataMap dataMap) {
-        List<Site> sites =  (List<Site>) dataMap.get("sites");
+        //List<Site> sites =  (List<Site>) dataMap.get("sites");
+        Site site = (Site) dataMap.get("site");
         DataSourceConfiguration qCfg = (DataSourceConfiguration) dataMap.get("queryConfig");
         DataSourceConfiguration dldCfg = (DataSourceConfiguration) dataMap.get("downloadConfig");
-        for (Site site : sites) {
+        //for (Site site : sites) {
             if (!site.isEnabled()) {
-                continue;
+                return;
             }
             if (!Config.isFeatureEnabled(site.getId(), ConfigurationKeys.DOWNLOADER_STATE_ENABLED) ||
                     !Config.isFeatureEnabled(site.getId(), String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
                             dldCfg.getSatellite().shortName().toLowerCase()))) {
                 logger.info(String.format(MESSAGE, site.getShortName(), dldCfg.getSatellite().name(),
                                           "Download disabled"));
-                continue;
+                return;
             }
             Config.getWorkerFor(dldCfg).submit(() -> {
                 final String downloadPath = Paths.get(dldCfg.getDownloadPath(), site.getShortName()).toString();
@@ -81,7 +82,7 @@ public class RetryJob extends AbstractJob {
                                           "Retry failed products"));
                 retryDownloads(site, qCfg, dldCfg, downloadPath);
             });
-        }
+        //}
     }
 
     private void retryDownloads(Site site, DataSourceConfiguration queryCfg, DataSourceConfiguration downloadCfg, String path) {

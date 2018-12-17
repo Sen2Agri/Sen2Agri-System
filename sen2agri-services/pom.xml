@@ -10,6 +10,7 @@
     <modules>
         <module>sen2agri-services-core</module>
         <module>sen2agri-startup</module>
+        <module>sen2agri-dias-adapters</module>
         <module>sen2agri-services-kit</module>
     </modules>
     <packaging>pom</packaging>

@@ -16,6 +16,7 @@
 package org.esa.sen2agri.entities;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * @author Cosmin Cara
@@ -63,17 +64,14 @@ public class Site implements Serializable {
         this.enabled = enabled;
     }
 
-    /*public List<SiteTiles> getTiles() { return tiles; }
-    public void setTiles(List<SiteTiles> tiles) { this.tiles = tiles; }
+    @Override
+    public int hashCode() { return Objects.hash(id); }
 
-    public String[] getTilesFor(Satellite satellite) {
-        String[] names = null;
-        if (tiles != null) {
-            final Optional<SiteTiles> first = tiles.stream().filter(t -> satellite.equals(t.getSatellite())).findFirst();
-            if (first.isPresent()) {
-                names = first.get().getTiles();
-            }
-        }
-        return names;
-    }*/
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Site site = (Site) o;
+        return id == site.id;
+    }
 }

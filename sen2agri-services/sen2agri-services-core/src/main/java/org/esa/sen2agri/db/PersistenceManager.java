@@ -69,7 +69,7 @@ public class PersistenceManager {
     @Autowired
     private DatabaseConfiguration dbConfig;
 
-    @Transactional
+    //@Transactional
     public DownloadProduct save(DownloadProduct eoProduct) {
         return getDownloadProductRepository().save(eoProduct);
     }

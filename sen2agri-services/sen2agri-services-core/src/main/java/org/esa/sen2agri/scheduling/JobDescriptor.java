@@ -23,7 +23,6 @@ import org.springframework.util.StringUtils;
 import java.sql.Date;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -84,7 +83,7 @@ public class JobDescriptor {
     }
 
     public JobDetail buildJobDetail(Class<? extends Job> jobType,
-                                    List<Site> sites,
+                                    Site site,
                                     DataSourceConfiguration queryCfg,
                                     DataSourceConfiguration downloadCfg) {
         if (queryCfg == null && downloadCfg == null) {
@@ -92,7 +91,7 @@ public class JobDescriptor {
         }
         JobDataMap jobDataMap = new JobDataMap();
         jobDataMap.put("descriptor", this);
-        jobDataMap.put("sites", sites);
+        jobDataMap.put("site", site);
         if (queryCfg != null) {
             jobDataMap.put("queryConfig", queryCfg);
         }

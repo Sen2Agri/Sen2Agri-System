@@ -58,72 +58,70 @@ public class LookupJob extends AbstractJob {
     @Override
     @SuppressWarnings("unchecked")
     protected void executeImpl(JobDataMap dataMap) {
-        List<Site> sites =  (List<Site>) dataMap.get("sites");
+        final Site site =  (Site) dataMap.get("site");
         DataSourceConfiguration queryConfig = (DataSourceConfiguration) dataMap.get("queryConfig");
         DataSourceConfiguration downloadConfig = (DataSourceConfiguration) dataMap.get("downloadConfig");
-        for (Site site : sites) {
-            if (!site.isEnabled()) {
-                continue;
-            }
-            Satellite satellite = queryConfig.getSatellite();
-            Tuple<String, String> key = new Tuple<>(site.getName(), satellite.shortName());
-            if (runningJobs.containsKey(key)) {
-                logger.warning(String.format("A job is already running for the site '%s'", site.getName()));
-                continue;
-            }
-            boolean downloadEnabled = Config.isFeatureEnabled(site.getId(), ConfigurationKeys.DOWNLOADER_STATE_ENABLED);
-            boolean sensorDownloadEnabled = Config.isFeatureEnabled(site.getId(),
+        if (!site.isEnabled()) {
+            return;
+        }
+        Satellite satellite = queryConfig.getSatellite();
+        Tuple<String, String> key = new Tuple<>(site.getName(), satellite.shortName());
+        if (runningJobs.containsKey(key)) {
+            logger.warning(String.format("A job is already running for the site '%s'", site.getName()));
+            return;
+        }
+        boolean downloadEnabled = Config.isFeatureEnabled(site.getId(), ConfigurationKeys.DOWNLOADER_STATE_ENABLED);
+        boolean sensorDownloadEnabled = Config.isFeatureEnabled(site.getId(),
+                String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
+                        satellite.shortName().toLowerCase()));
+        if (!downloadEnabled || !sensorDownloadEnabled) {
+            logger.info(String.format(MESSAGE, site.getShortName(), satellite.name(), "Download disabled"));
+            cleanupJob(site, satellite);
+            return;
+        }
+        final short siteId = site.getId();
+        final List<Season> seasons = persistenceManager.getEnabledSeasons(siteId);
+        if (seasons != null && seasons.size() > 0) {
+            seasons.sort(Comparator.comparing(Season::getStartDate));
+            logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
+                                      "Seasons defined: " +
+                                        String.join(";",
+                                                    seasons.stream()
+                                                            .map(Season::toString)
+                                                            .collect(Collectors.toList()))));
+            LocalDateTime startDate = getStartDate(satellite, site, seasons);
+            LocalDateTime endDate = getEndDate(seasons);
+            logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
+                    String.format("Using start date: %s and end date: %s", startDate, endDate)));
+            downloadEnabled = Config.isFeatureEnabled(site.getId(), ConfigurationKeys.DOWNLOADER_STATE_ENABLED);
+            sensorDownloadEnabled = Config.isFeatureEnabled(site.getId(),
                     String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
                             satellite.shortName().toLowerCase()));
             if (!downloadEnabled || !sensorDownloadEnabled) {
                 logger.info(String.format(MESSAGE, site.getShortName(), satellite.name(), "Download disabled"));
-                cleanupJob(site, satellite);
-                continue;
+                return;
             }
-            final short siteId = site.getId();
-            final List<Season> seasons = persistenceManager.getEnabledSeasons(siteId);
-            if (seasons != null && seasons.size() > 0) {
-                seasons.sort(Comparator.comparing(Season::getStartDate));
-                logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
-                                          "Seasons defined: " +
-                                            String.join(";",
-                                                        seasons.stream()
-                                                                .map(Season::toString)
-                                                                .collect(Collectors.toList()))));
-                LocalDateTime startDate = getStartDate(satellite, site, seasons);
-                LocalDateTime endDate = getEndDate(seasons);
-                logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
-                        String.format("Using start date: %s and end date: %s", startDate, endDate)));
-                downloadEnabled = Config.isFeatureEnabled(site.getId(), ConfigurationKeys.DOWNLOADER_STATE_ENABLED);
-                sensorDownloadEnabled = Config.isFeatureEnabled(site.getId(),
-                        String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
-                                satellite.shortName().toLowerCase()));
-                if (!downloadEnabled || !sensorDownloadEnabled) {
-                    logger.info(String.format(MESSAGE, site.getShortName(), satellite.name(), "Download disabled"));
-                    continue;
-                }
-                final String downloadPath = Paths.get(queryConfig.getDownloadPath(), site.getShortName()).toString();
-                if (LocalDateTime.now().compareTo(startDate) >= 0) {
-                    if (endDate.compareTo(startDate) >= 0) {
-                        logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
-                                                  String.format("Lookup for new products in range %s - %s",
-                                                                startDate.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)),
-                                                                endDate.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)))));
-                        lookupAndDownload(site, startDate, endDate, downloadPath, queryConfig, downloadConfig);
-                    } else {
-                        logger.info(String.format(MESSAGE, site.getName(), satellite.name(),
-                                                  "No products to download"));
-                        cleanupJob(site, satellite);
-                    }
+            final String downloadPath = Paths.get(queryConfig.getDownloadPath(), site.getShortName()).toString();
+            if (LocalDateTime.now().compareTo(startDate) >= 0) {
+                if (endDate.compareTo(startDate) >= 0) {
+                    logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
+                                              String.format("Lookup for new products in range %s - %s",
+                                                            startDate.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)),
+                                                            endDate.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)))));
+                    lookupAndDownload(site, startDate, endDate, downloadPath, queryConfig, downloadConfig);
                 } else {
-                    logger.info(String.format(MESSAGE, site.getName(), satellite.name(), "Season not started"));
+                    logger.info(String.format(MESSAGE, site.getName(), satellite.name(),
+                                              "No products to download"));
                     cleanupJob(site, satellite);
                 }
             } else {
-                logger.warning(String.format(MESSAGE, site.getName(), satellite.name(),
-                                             "No season defined or season not started"));
+                logger.info(String.format(MESSAGE, site.getName(), satellite.name(), "Season not started"));
                 cleanupJob(site, satellite);
             }
+        } else {
+            logger.warning(String.format(MESSAGE, site.getName(), satellite.name(),
+                                         "No season defined or season not started"));
+            cleanupJob(site, satellite);
         }
     }
 

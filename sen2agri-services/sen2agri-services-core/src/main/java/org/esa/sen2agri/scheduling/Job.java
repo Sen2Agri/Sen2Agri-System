@@ -21,7 +21,6 @@ import org.esa.sen2agri.entities.Site;
 import org.quartz.JobDetail;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -43,11 +42,11 @@ public interface Job extends org.quartz.Job {
                 .setFireTime(LocalDateTime.now().plusSeconds(10))
                 .setRate(rateInMinutes);
     }
-    default JobDetail buildDetail(List<Site> sites,
+    default JobDetail buildDetail(Site site,
                                   Satellite satellite,
                                   DataSourceConfiguration queryConfig,
                                   DataSourceConfiguration downloadConfig) {
-        return createDescriptor(satellite.name(), downloadConfig.getRetryInterval())
-                .buildJobDetail(getClass(), sites, queryConfig, downloadConfig);
+        return createDescriptor(site.getShortName() + "-" + satellite.name(), downloadConfig.getRetryInterval())
+                .buildJobDetail(getClass(), site, queryConfig, downloadConfig);
     }
 }

@@ -13,100 +13,6 @@
         </persistence-unit-defaults>
     </persistence-unit-metadata>
 
-    <!--<entity class="org.esa.sen2agri.entities.DownloadProduct" access="PROPERTY" name="DbL1Product">
-        <table name="downloader_history"/>
-        <convert converter="org.esa.sen2agri.entities.converters.StatusConverter" attribute-name="statusId" />
-        <convert converter="org.esa.sen2agri.entities.converters.SatelliteConverter" attribute-name="satelliteId" />
-        <attributes>
-            <id name="id">
-                <column name="id" nullable="false" column-definition="serial NOT NULL"/>
-                <generated-value strategy="IDENTITY" />
-            </id>
-            <basic name="siteId">
-                <column name="site_id" nullable="false" column-definition="smallint NOT NULL"/>
-            </basic>
-            <basic name="productName">
-                <column name="product_name" nullable="false" column-definition="character varying NOT NULL"/>
-            </basic>
-            <basic name="fullPath">
-                <column name="full_path" nullable="false" column-definition="character varying NOT NULL"/>
-            </basic>
-            <basic name="timestamp">
-                <column name="created_timestamp" nullable="false" column-definition="timestamp with time zne NOT NULL DEFAULT now()"/>
-            </basic>
-            <basic name="nbRetries">
-                <column name="no_of_retries" nullable="false" column-definition="smallint NOT NULL DEFAULT 0"/>
-            </basic>
-            <basic name="productDate">
-                <column name="product_date" nullable="false" column-definition="timestamp with time zne NOT NULL DEFAULT now()"/>
-            </basic>
-            <basic name="orbitId">
-                <column name="orbit_id" nullable="false" column-definition="integer NOT NULL DEFAULT (-1)"/>
-            </basic>
-            <basic name="satelliteId">
-                <column name="satellite_id" nullable="false" column-definition="short NOT NULL"/>
-            </basic>
-            <basic name="statusId">
-                <column name="status_id" nullable="false" column-definition="short NOT NULL"/>
-            </basic>
-            <basic name="statusReason">
-                <column name="status_reason" nullable="true" column-definition="character varying NULL"/>
-            </basic>
-            <basic name="footprint">
-                <column name="footprint" nullable="true" column-definition="geography(MultiPolygon,4326) NULL"/>
-            </basic>
-            <basic name="tiles">
-                <column name="tiles" nullable="true" column-definition="character varying NULL"/>
-            </basic>
-        </attributes>
-    </entity>-->
-
-    <!--<entity class="org.esa.sen2agri.entities.HighLevelProduct" access="PROPERTY" name="DbLnProduct">
-        <table name="product"/>
-        <convert converter="org.esa.sen2agri.entities.converters.StatusConverter" attribute-name="statusId" />
-        <convert converter="org.esa.sen2agri.entities.converters.SatelliteConverter" attribute-name="satelliteId" />
-        <convert converter="org.esa.sen2agri.entities.converters.ProductTypeConverter" attribute-name="productType" />
-        <attributes>
-            <id name="id">
-                <column name="id" nullable="false" column-definition="serial NOT NULL"/>
-                <generated-value strategy="IDENTITY" />
-            </id>
-            <basic name="siteId">
-                <column name="site_id" nullable="false" column-definition="smallint NOT NULL"/>
-            </basic>
-            <basic name="processorId">
-                <column name="processor_id" nullable="false" column-definition="smallint NOT NULL"/>
-            </basic>
-            <basic name="productName">
-                <column name="name" nullable="false" column-definition="character varying NOT NULL"/>
-            </basic>
-            <basic name="fullPath">
-                <column name="full_path" nullable="false" column-definition="character varying NOT NULL"/>
-            </basic>
-            <basic name="created">
-                <column name="created_timestamp" nullable="false" column-definition="timestamp with time zone NOT NULL DEFAULT now()"/>
-            </basic>
-            <basic name="inserted">
-                <column name="inserted_timestamp" nullable="false" column-definition="timestamp with time zone NOT NULL DEFAULT now()"/>
-            </basic>
-            <basic name="archived">
-                <column name="is_archived" nullable="false" column-definition="boolean DEFAULT false"/>
-            </basic>
-            <basic name="archivedTimestamp">
-                <column name="archived_timestamp" nullable="false" column-definition="timestamp with time zone"/>
-            </basic>
-            <basic name="satellite">
-                <column name="satellite_id" nullable="false" column-definition="smallint NOT NULL"/>
-            </basic>
-            <basic name="productType">
-                <column name="product_type_id" nullable="false" column-definition="smallint NOT NULL"/>
-            </basic>
-            <basic name="tiles">
-                <column name="tiles" nullable="false" column-definition="character varying [] NOT NULL"/>
-            </basic>
-        </attributes>
-    </entity>-->
-
     <entity class="org.esa.sen2agri.entities.ConfigurationItem" access="PROPERTY" name="Config">
         <table name="config"/>
         <attributes>
@@ -186,6 +92,9 @@
                 <column name="id" nullable="false" column-definition="smallserial NOT NULL"/>
                 <generated-value strategy="IDENTITY"/>
             </id>
+            <basic name="siteId">
+                <column name="site_id" nullable="false" column-definition="smallint NOT NULL"/>
+            </basic>
             <basic name="satellite">
                 <column name="satellite_id" nullable="false" column-definition="smallint NOT NULL"/>
             </basic>

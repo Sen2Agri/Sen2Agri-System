@@ -32,6 +32,7 @@
             <useAllReactorProjects>true</useAllReactorProjects>
             <includes>
                 <include>org.esa.sen2agri:sen2agri-services-core</include>
+                <include>org.esa.sen2agri:sen2agri-dias-adapters</include>
                 <include>org.esa.sen2agri:sen2agri-startup</include>
             </includes>
             <binaries>

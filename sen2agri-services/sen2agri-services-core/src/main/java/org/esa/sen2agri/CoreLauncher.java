@@ -25,8 +25,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.config.IntervalTask;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
-import ro.cs.tao.services.commons.ServiceLauncher;
 import ro.cs.tao.datasource.util.NetUtils;
+import ro.cs.tao.services.commons.ServiceLauncher;
 
 import java.util.logging.Logger;
 
@@ -59,4 +59,7 @@ public class CoreLauncher implements SchedulingConfigurer, ServiceLauncher {
         Logger.getLogger(CoreLauncher.class.getName())
                 .info(String.format("Database configuration polling initialized at %d minutes", interval / 60000));
     }
+
+    @Override
+    public String serviceName() { return "Sen2Agri Services"; }
 }

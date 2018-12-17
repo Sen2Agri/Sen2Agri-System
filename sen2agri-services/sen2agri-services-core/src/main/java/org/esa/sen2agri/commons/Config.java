@@ -16,10 +16,7 @@
 package org.esa.sen2agri.commons;
 
 import org.esa.sen2agri.db.PersistenceManager;
-import org.esa.sen2agri.entities.ConfigurationItem;
-import org.esa.sen2agri.entities.DataSourceConfiguration;
-import org.esa.sen2agri.entities.Satellite;
-import org.esa.sen2agri.entities.Scope;
+import org.esa.sen2agri.entities.*;
 import org.esa.sen2agri.services.DownloadService;
 import ro.cs.tao.EnumUtils;
 import ro.cs.tao.datasource.DataSource;
@@ -33,8 +30,6 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * @author Cosmin Cara
@@ -263,28 +258,48 @@ public class Config {
         return Double.parseDouble(getSetting(siteId, name, String.valueOf(defaultValue)));
     }
 
-    public static Map<Satellite, DataSourceConfiguration> getQueryConfigurations() {
-        return dataSourceConfigurations.stream()
+    public static Map<Satellite, List<DataSourceConfiguration>> getQueryConfigurations() {
+        final Map<Satellite, List<DataSourceConfiguration>> configurations = new HashMap<>();
+        dataSourceConfigurations.stream()
                 .filter(ds -> (ds.isEnabled() && (ds.getScope() & Scope.QUERY) != 0))
-                .collect(Collectors.toMap(DataSourceConfiguration::getSatellite, Function.identity()));
+                .forEach(ds -> {
+                    Satellite satellite = ds.getSatellite();
+                    if (!configurations.containsKey(satellite)) {
+                        configurations.put(satellite, new ArrayList<>());
+                    }
+                    configurations.get(satellite).add(ds);
+                });
+        return configurations;
     }
 
-    public static DataSourceConfiguration getQueryConfiguration(Satellite satellite) {
+    public static DataSourceConfiguration getQueryConfiguration(Site site, Satellite satellite) {
         return dataSourceConfigurations.stream()
                 .filter(ds -> satellite.equals (ds.getSatellite()) &&
-                        (ds.isEnabled() && (ds.getScope() & Scope.QUERY) != 0)).findFirst().orElse(null);
+                        (ds.isEnabled() && (ds.getScope() & Scope.QUERY) != 0) &&
+                        ((ds.getSiteId() != null && ds.getSiteId().equals(site.getId())) || ds.getSiteId() == null))
+                .findFirst().orElse(null);
     }
 
-    public static DataSourceConfiguration getDownloadConfiguration(Satellite satellite) {
+    public static DataSourceConfiguration getDownloadConfiguration(Site site, Satellite satellite) {
         return dataSourceConfigurations.stream()
                 .filter(ds -> satellite.equals (ds.getSatellite()) &&
-                        (ds.isEnabled() && (ds.getScope() & Scope.DOWNLOAD) != 0)).findFirst().orElse(null);
+                        (ds.isEnabled() && (ds.getScope() & Scope.DOWNLOAD) != 0) &&
+                        ((ds.getSiteId() != null && ds.getSiteId().equals(site.getId())) || ds.getSiteId() == null))
+                .findFirst().orElse(null);
     }
 
-    public static Map<Satellite, DataSourceConfiguration> getDownloadConfigurations() {
-        return dataSourceConfigurations.stream()
+    public static Map<Satellite, List<DataSourceConfiguration>> getDownloadConfigurations() {
+        final Map<Satellite, List<DataSourceConfiguration>> configurations = new HashMap<>();
+        dataSourceConfigurations.stream()
                 .filter(ds -> (ds.isEnabled() && (ds.getScope() & Scope.DOWNLOAD) != 0))
-                .collect(Collectors.toMap(DataSourceConfiguration::getSatellite, Function.identity()));
+                .forEach(ds -> {
+                    Satellite satellite = ds.getSatellite();
+                    if (!configurations.containsKey(satellite)) {
+                        configurations.put(satellite, new ArrayList<>());
+                    }
+                    configurations.get(satellite).add(ds);
+                });
+        return configurations;
     }
 
     public static void setSetting(String name, String value) {

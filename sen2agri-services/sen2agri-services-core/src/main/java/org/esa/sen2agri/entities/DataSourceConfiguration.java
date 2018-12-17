@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 @XmlRootElement(name = "dataSourceConfiguration")
 public class DataSourceConfiguration {
     private short id;
+    private Short siteId;
     private Satellite satellite;
     private String dataSourceName;
     private int scope;
@@ -52,6 +53,10 @@ public class DataSourceConfiguration {
     @XmlAttribute(name = "id")
     public short getId() { return id; }
     public void setId(short id) { this.id = id; }
+
+    @XmlAttribute(name = "siteId")
+    public Short getSiteId() { return siteId; }
+    public void setSiteId(Short siteId) { this.siteId = siteId; }
 
     @XmlAttribute(name = "name")
     public String getDataSourceName() { return dataSourceName; }
