@@ -73,12 +73,16 @@ public:
   typedef std::map<std::string, FileFieldsInfoType>         FileFieldsContainer;
 
   /** Method to add mean and stdev maps with a given type */
-  template <typename MapType>
-  void AddInputMaps(const std::string &fileName, const MapType& mapMeans,  const MapType& mapStdDev);
+//  template <typename MapType>
+//  void AddInputMaps(const std::string &fileName, const MapType& mapMeans,  const MapType& mapStdDev);
 
   /** Method to add a map statistic with a given type */
-  template <typename MapType>
-  void AddInputMap(const std::string &fileName, const MapType& map );
+//  template <typename MapType>
+//  void AddInputMap(const std::string &fileName, const MapType& map );
+
+  /** Method to add a map statistic with a given type */
+  template <typename MapType, typename MapMinMaxType>
+  void AddInputMap(const std::string &fileName, const MapType& map, const MapMinMaxType& mapMins, const MapMinMaxType& mapMax);
 
   void WriteOutputXmlFile();
   void WriteEntriesToXmlOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos);
@@ -125,6 +129,10 @@ public:
       m_bCsvCompactMode = bCsvCompactMode;
   }
 
+  inline void SetUseMinMax(bool bUseMinMax) {
+      m_bUseMinMax = bUseMinMax;
+  }
+
 protected:
 
   virtual void GenerateData();
@@ -163,6 +171,7 @@ private:
   bool                          m_bMultiFileMode;
   bool                          m_bUseLatestNamingFormat;
   bool                          m_bUseDate2;
+  bool                          m_bUseMinMax;
 
 }; // end of class AgricPractDataExtrFileWriter2
 

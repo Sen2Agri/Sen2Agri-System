@@ -1019,7 +1019,7 @@ private:
             return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("C_DECLARA"));
         }
         virtual std::string GetMainCrop(OGRFeature &ogrFeat) {
-            return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("C_PRODUCTO"));
+            return RemoveSuffix(ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("C_PRODUCTO")));
         }
         virtual bool GetHasPractice(OGRFeature &ogrFeat, const std::string &practice) {
             if (practice == FALLOW_LAND_VAL) {
@@ -1048,6 +1048,13 @@ private:
                 return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("C_VARIEDAD"));
             } // else if (practice == NITROGEN_FIXING_CROP_VAL) return "NA"
             return "NA";
+        }
+        std::string RemoveSuffix(const std::string &field) {
+            size_t lastindex = field.find_last_of(".");
+            if (lastindex != field.npos) {
+                return field.substr(0, lastindex);
+            }
+            return field;
         }
 
     };

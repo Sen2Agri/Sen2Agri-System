@@ -33,9 +33,11 @@ namespace otb {
 template < class TMeasurementVector >
 AgricPractDataExtrFileWriter2<TMeasurementVector>
 ::AgricPractDataExtrFileWriter2(): m_TargetFileName(""),
-    m_bOutputCsvFormat(true), m_bMultiFileMode(false), m_bUseLatestNamingFormat(true), m_bUseDate2(false)
+    m_bOutputCsvFormat(true), m_bCsvCompactMode(true), m_bMultiFileMode(false), m_bUseLatestNamingFormat(true),
+    m_bUseDate2(false), m_bUseMinMax(false)
 {}
 
+/*
 template < class TMeasurementVector >
 template <typename MapType>
 void
@@ -104,12 +106,24 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
       }
     }
 }
-
+*/
+/*
 template < class TMeasurementVector >
 template <typename MapType>
 void
 AgricPractDataExtrFileWriter2<TMeasurementVector>
 ::AddInputMap(const std::string &fileName, const MapType& map )
+{
+    MapType mapMins;
+    MapType mapMax;
+    AddInputMap(fileName, map, mapMins, mapMax);
+}
+*/
+template < class TMeasurementVector >
+template <typename MapType, typename MapMinMaxType>
+void
+AgricPractDataExtrFileWriter2<TMeasurementVector>
+::AddInputMap(const std::string &fileName, const MapType& map, const MapMinMaxType& mapMins, const MapMinMaxType& mapMax )
 {
     std::string fileType;
     std::string polarisation;
@@ -128,16 +142,33 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
     // we exclude from the header the fid and the date
     int meanPosInHeader = GetPositionInHeader("mean");
     int stdevPosInHeader = GetPositionInHeader("stdev");
+    int minPosInHeader = -1;
+    int maxPosInHeader = -1;
+    bool useMinMax = false;
+    if (m_bUseMinMax) {
+        minPosInHeader = GetPositionInHeader("min");
+        maxPosInHeader = GetPositionInHeader("max");
+        if (map.size() == mapMins.size() && map.size() == mapMax.size()) {
+            useMinMax = true;
+        }
+    }
 
     typename MapType::const_iterator it;
+    typename MapMinMaxType::const_iterator itMin = mapMins.begin();
+    typename MapMinMaxType::const_iterator itMax = mapMax.begin();
     std::string fieldId;
     for ( it = map.begin() ; it != map.end() ; ++it)
     {
       fieldId = boost::lexical_cast<std::string>(it->first);
+//      if (fieldId != "584109910/2") {
+//          continue;
+//      }
       const auto &meanVal = it->second.mean[0];
       const auto &stdDevVal = it->second.stdDev[0];
 
-      const std::string &fieldOutFileName = BuildOutputFileName(fieldId, fileType, polarisation, orbit, fileDate, additionalFileDate);
+      const std::string &fieldOutFileName = m_bUseMinMax ?
+                  boost::filesystem::path(fileName).filename().c_str() :
+                  BuildOutputFileName(fieldId, fileType, polarisation, orbit, fileDate, additionalFileDate);
       const std::string &uniqueId = fieldId + fieldOutFileName;
 
       typename std::map<std::string, FileFieldsInfoType>::iterator containerIt =
@@ -150,6 +181,10 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
           fieldEntry.values.resize(m_HeaderFields.size() - 2);
           fieldEntry.values[meanPosInHeader] = meanVal;
           fieldEntry.values[stdevPosInHeader] = stdDevVal;
+          if (useMinMax && minPosInHeader > 0 && maxPosInHeader > 0) {
+              fieldEntry.values[minPosInHeader] = itMin->second[0];
+              fieldEntry.values[maxPosInHeader] = itMax->second[0];
+          }
           containerIt->second.fieldsEntries.push_back(fieldEntry);
 
       } else {
@@ -165,9 +200,17 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
           fieldEntry.values.resize(m_HeaderFields.size() - 2);
           fieldEntry.values[meanPosInHeader] = meanVal;
           fieldEntry.values[stdevPosInHeader] = stdDevVal;
+          if (useMinMax && minPosInHeader > 0 && maxPosInHeader > 0) {
+              fieldEntry.values[minPosInHeader] = itMin->second[0];
+              fieldEntry.values[maxPosInHeader] = itMax->second[0];
+          }
           fileFieldsInfoType.fieldsEntries.push_back(fieldEntry);
 
           m_FileFieldsContainer[uniqueId] = fileFieldsInfoType;
+      }
+      if (useMinMax) {
+          ++itMin;
+          ++itMax;
       }
     }
 }

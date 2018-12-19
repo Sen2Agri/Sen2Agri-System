@@ -90,7 +90,7 @@ bool StatisticsInfosSingleCsvReader::GetEntriesForField(const std::string &fid, 
     const std::vector<std::string> &findFilters = filters.size() > 0 ? filters : emptyVect;
     if (m_IdxMap.size() == 0) {
         // read from the entire file
-        if (!ExtractLinesFromStream(ifs, fieldId, findFilters, mapInfos)) {
+        if (!ExtractLinesFromStream(ifs, fid, findFilters, mapInfos)) {
             return false;
         }
     } else {
@@ -106,7 +106,7 @@ bool StatisticsInfosSingleCsvReader::GetEntriesForField(const std::string &fid, 
                         buff[info.len] = 0;
                         std::istringstream siStream(buff);
                         // read only from this section of the file
-                        if (!ExtractLinesFromStream(siStream, fieldId, findFilters, mapInfos)) {
+                        if (!ExtractLinesFromStream(siStream, fid, findFilters, mapInfos)) {
                             return false;
                         }
                     }

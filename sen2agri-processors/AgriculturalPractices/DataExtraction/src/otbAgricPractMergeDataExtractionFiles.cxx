@@ -270,6 +270,9 @@ private:
 
         }
 
+        // Here we must remove all the duplicates
+        RemoveDuplicates(resultFidList);
+
         WriteOutputFile(resultFidList);
 
     }
@@ -461,19 +464,37 @@ private:
                 continue;
             }
 
-            // compare by name and not id in order to make distinction between VV and VH
-            const std::string &uid = (it->fid + it->name);
-            int idxInResults = LookupString(uid, mapIndex);
-            if (idxInResults >=0) {
-                // merge the infos
-                resultFidList[idxInResults].infos.insert(std::end(resultFidList[idxInResults].infos),
-                                                         std::begin(it->infos), std::end(it->infos));
-            } else {
-                // if not already present, add the current fid info at the end of the result
-                // as the data is to be inserted at back therefore index is size of vector before insertion
-                mapIndex.insert(std::make_pair(uid, resultFidList.size()));
-                resultFidList.push_back(*it);
-            }
+            AddEntriesToResultList(*it, resultFidList, mapIndex);
+        }
+    }
+
+    void AddEntriesToResultList(const FidType &fidInfo, std::vector<FidType> &resultFidList, MapIndex &mapIndex) {
+        // compare by name and not id in order to make distinction between VV and VH
+        const std::string &uid = (fidInfo.fid + fidInfo.name);
+        int idxInResults = LookupString(uid, mapIndex);
+        if (idxInResults >=0) {
+            // merge the infos
+            resultFidList[idxInResults].infos.insert(std::end(resultFidList[idxInResults].infos),
+                                                     std::begin(fidInfo.infos), std::end(fidInfo.infos));
+        } else {
+            // if not already present, add the current fid info at the end of the result
+            // as the data is to be inserted at back therefore index is size of vector before insertion
+            mapIndex.insert(std::make_pair(uid, resultFidList.size()));
+            resultFidList.push_back(fidInfo);
+        }
+    }
+
+    void RemoveDuplicates(std::vector<FidType> &resultFidList) {
+        for (auto &fidType: resultFidList) {
+            auto comp = [] ( const FidInfosType& lhs, const FidInfosType& rhs ) {
+                // TODO: For now we keep the ones that have different mean values
+                return ((lhs.date == rhs.date) && (lhs.date2 == rhs.date2) &&
+                        (lhs.meanVal == rhs.meanVal));};
+
+            auto pred = []( const FidInfosType& lhs, const FidInfosType& rhs ) {return ((lhs.date.compare(rhs.date)) < 0);;};
+            std::sort(fidType.infos.begin(), fidType.infos.end(),pred);
+            auto last = std::unique(fidType.infos.begin(), fidType.infos.end(),comp);
+            fidType.infos.erase(last, fidType.infos.end());
         }
     }
 

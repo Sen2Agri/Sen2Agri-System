@@ -125,6 +125,7 @@ private:
     {
         m_concatenateImagesFilter = ConcatenateImagesFilterType::New();
         //m_Readers = ReadersListType::New();
+        m_bOutputMinMax = false;
     }
 
     void DoInit() override
@@ -214,6 +215,11 @@ private:
         SetParameterDescription("mask", "Validity mask (only pixels corresponding to a mask value greater than 0 will be used for statistics)");
         MandatoryOff("mask");
 
+        AddParameter(ParameterType_Int, "minmax", "Extract the min and max statistics.");
+        SetParameterDescription("minmax", "Extracts also the minimum and maximum for each parcel");
+        MandatoryOff("minmax");
+        SetDefaultParameterInt("minmax",0);
+
         //ElevationParametersHandler::AddElevationParameters(this, "elev");
 
         AddRAMParameter();
@@ -284,6 +290,8 @@ private:
             m_bConvToDb = (GetParameterInt("convdb") != 0);
         }
 
+        m_bOutputMinMax = (GetParameterInt("minmax") != 0);
+
         m_bIndividualOutFilesForInputs = (GetParameterInt("ifiles") != 0);
 
         // Initialize the writer
@@ -350,7 +358,10 @@ private:
         }
         FilterType::Pointer filter = GetStatisticsFilter(inputImage, reprojVector, m_fieldName);
         const FilterType::PixeMeanStdDevlValueMapType &meanStdValues = filter->GetMeanStdDevValueMap();
-        m_agricPracticesDataWriter->AddInputMap<FilterType::PixeMeanStdDevlValueMapType>(imgPath, meanStdValues);
+        const FilterType::PixelValueMapType &minValues = filter->GetMinValueMap();
+        const FilterType::PixelValueMapType &maxValues = filter->GetMaxValueMap();
+        m_agricPracticesDataWriter->AddInputMap<FilterType::PixeMeanStdDevlValueMapType,
+                FilterType::PixelValueMapType>(imgPath, meanStdValues, minValues, maxValues);
 
         otbAppLogINFO("Extracted a number of " << meanStdValues.size() << " values for file " << imgPath);
 
@@ -410,7 +421,10 @@ private:
 //            m_agricPracticesDataWriter->AddInputMaps<StatisticsFilterType::PixelValueMapType>(imgInfos.inputImage,
 //                                                                                             meanValues, stdDevValues);
         }
-        m_agricPracticesDataWriter->AddInputMap<FilterType::PixeMeanStdDevlValueMapType>(imgInfos.inputImage, fieldsMap);
+        FilterType::PixelValueMapType minMap;// = statisticsFilter->GetMinValueMap();
+        FilterType::PixelValueMapType maxMap;// = statisticsFilter->GetMaxValueMap();
+        m_agricPracticesDataWriter->AddInputMap<FilterType::PixeMeanStdDevlValueMapType,
+                FilterType::PixelValueMapType>(imgInfos.inputImage, fieldsMap, minMap, maxMap);
     }
 
     FilterType::Pointer GetStatisticsFilter(const FloatVectorImageType::Pointer &inputImg,
@@ -433,6 +447,9 @@ private:
         if (IsParameterEnabled("mask") && HasValue("mask"))
         {
             filter->SetMask(this->GetParameterImage<UInt8ImageType>("mask"));
+        }
+        if (m_bOutputMinMax) {
+            filter->SetComputeMinMax(true);
         }
 
         filter->SetOGRData(reprojVector);
@@ -473,6 +490,11 @@ private:
         m_agricPracticesDataWriter = AgricPracticesWriterType2::New();
         m_agricPracticesDataWriter->SetTargetFileName(BuildUniqueFileName(outDir, imagesPaths[0]));
         std::vector<std::string> header = {"KOD_PB", "date", "mean", "stdev"};
+        if (m_bOutputMinMax) {
+            header.push_back("min");
+            header.push_back("max");
+            m_agricPracticesDataWriter->SetUseMinMax(true);
+        }
         m_agricPracticesDataWriter->SetHeaderFields(header);
         bool bUseLatestNamingFormat = (GetParameterInt("oldnf") == 0);
         m_agricPracticesDataWriter->SetUseLatestFileNamingFormat(bUseLatestNamingFormat);
@@ -647,6 +669,7 @@ private:
 
     private:
         bool m_bConvToDb;
+        bool m_bOutputMinMax;
         std::string m_fieldName;
         otb::ogr::DataSource::Pointer m_vectors;
         std::vector<std::string> m_imagesPaths;

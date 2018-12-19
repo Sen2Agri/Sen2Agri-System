@@ -27,10 +27,10 @@
 #define AMP_VH_REGEX_OLD        R"((\d{8})_.*_VH_.*\.tiff)"
 
 // 2018 naming format for coherence and amplitude
-#define COHE_VV_REGEX       R"(SEN4CAP_L2A_PRD_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VV_(\d{3})_COHE\.tif)"
-#define COHE_VH_REGEX       R"(SEN4CAP_L2A_PRD_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VH_(\d{3})_COHE\.tif)"
-#define AMP_VV_REGEX        R"(SEN4CAP_L2A_PRD_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VV_\d{3}_AMP\.tif)"
-#define AMP_VH_REGEX        R"(SEN4CAP_L2A_PRD_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VH_\d{3}_AMP\.tif)"
+#define COHE_VV_REGEX       R"(SEN4CAP_L2A_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VV_(\d{3})_COHE\.tif)"
+#define COHE_VH_REGEX       R"(SEN4CAP_L2A_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VH_(\d{3})_COHE\.tif)"
+#define AMP_VV_REGEX        R"(SEN4CAP_L2A_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VV_\d{3}_AMP\.tif)"
+#define AMP_VH_REGEX        R"(SEN4CAP_L2A_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VH_\d{3}_AMP\.tif)"
 
 #define NDVI_REGEX_DATE_IDX         1
 

@@ -243,7 +243,6 @@ typedef struct HarvestEvaluationType {
         ttVegStartTime = fieldInfos.ttVegStartTime;
         ttHarvestStartTime = fieldInfos.ttHarvestStartTime;
         ttHarvestEndTime = fieldInfos.ttHarvestEndTime;
-        practiceName = fieldInfos.practiceName;
         ttPracticeStartTime = fieldInfos.ttPracticeStartTime;
         ttPracticeEndTime = fieldInfos.ttPracticeEndTime;
     }
@@ -254,7 +253,6 @@ typedef struct HarvestEvaluationType {
     time_t ttVegStartTime;
     time_t ttHarvestStartTime;
     time_t ttHarvestEndTime;
-    std::string practiceName;
     time_t ttPracticeStartTime;
     time_t ttPracticeEndTime;
 

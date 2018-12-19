@@ -260,22 +260,24 @@ public:
    /** Return the computed Mean and Standard Deviation for each label in the input label image */
    PixeMeanStdDevlValueMapType GetMeanStdDevValueMap() const;
 
-   // NOT NEEDED FOR AGRICULTURAL PRACTICES
+   /** Return the computed Min for each label in the input label image */
+   PixelValueMapType GetMinValueMap() const;
 
-//   /** Return the computed Min for each label in the input label image */
-//   PixelValueMapType GetMinValueMap() const;
-
-//   /** Return the computed Max for each label in the input label image */
-//   PixelValueMapType GetMaxValueMap() const;
+   /** Return the computed Max for each label in the input label image */
+   PixelValueMapType GetMaxValueMap() const;
 
   /** Make a DataObject of the correct type to be used as the specified
    * output. */
   itk::DataObject::Pointer MakeOutput(DataObjectPointerArraySizeType idx) override;
   using Superclass::MakeOutput;
 
-  /** Set/Get macro for the layer index containing the sampling areas */
+  /** Set/Get macro for the flag specifying if the values should be converted to decibels */
   itkSetMacro(ConvertValuesToDecibels, bool);
   itkGetMacro(ConvertValuesToDecibels, bool);
+
+  /** Set/Get macro for the flag specifying if min/max should be computed or not */
+  itkSetMacro(ComputeMinMax, bool);
+  itkGetMacro(ComputeMinMax, bool);
 
 protected:
   /** Convert values to decibels before processing, default to 0 */
@@ -324,10 +326,10 @@ private:
 
   PixeMeanStdDevlValueMapType                    m_MeanStdDevRadiometricValue;
 
-  // NOT NEEDED FOR AGRICULTURAL PRACTICES
+  PixelValueMapType                      m_MinRadiometricValue;
+  PixelValueMapType                      m_MaxRadiometricValue;
 
-//  PixelValueMapType                      m_MinRadiometricValue;
-//  PixelValueMapType                      m_MaxRadiometricValue;
+  bool m_ComputeMinMax;
 
 
 };
@@ -392,6 +394,9 @@ public:
   void SetConvertValuesToDecibels(bool exp);
   bool GetConvertValuesToDecibels();
 
+  void SetComputeMinMax(bool exp);
+  bool GetComputeMinMax();
+
   void SetLayerIndex(int index);
   int GetLayerIndex();
 
@@ -412,14 +417,11 @@ public:
    /** Return the computed Mean and Standard Deviation for each label in the input label image */
    PixeMeanStdDevlValueMapType GetMeanStdDevValueMap() const;
 
+   /** Return the computed Min for each label in the input label image */
+   PixelValueMapType GetMinValueMap() const;
 
-   // NOT NEEDED FOR AGRICULTURAL PRACTICES
-
-//   /** Return the computed Min for each label in the input label image */
-//   PixelValueMapType GetMinValueMap() const;
-
-//   /** Return the computed Max for each label in the input label image */
-//   PixelValueMapType GetMaxValueMap() const;
+   /** Return the computed Max for each label in the input label image */
+   PixelValueMapType GetMaxValueMap() const;
 
 
 protected:

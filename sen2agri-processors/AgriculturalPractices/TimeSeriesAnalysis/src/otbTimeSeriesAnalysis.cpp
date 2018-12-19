@@ -95,11 +95,10 @@ private:
         m_AmpThrMinimum = 0.1;
 
         // INPUT THRESHOLDS - EFA PRACTICE evaluation
-        // m_CatchMain = "InMainCrop";
         // TODO: Ask Gisat for CZE
+        m_CatchCropIsMain = CATCH_CROP_IS_MAIN_VAL;
         m_CatchPeriod = 56;               // in days (e.g. 8 weeks == 56 days)
         m_CatchProportion = 1/3;       // buffer threshold
-        //m_CatchPeriodStart = "2017-08-01";
 
         m_EfaNdviThr = 400; // 325;
         m_EfaNdviUp = 600; // 400;
@@ -229,6 +228,10 @@ private:
         AddParameter(ParameterType_String, "catchmain", "Catch main");
         SetParameterDescription("catchmain", "TODO");
         MandatoryOff("catchmain");
+
+        AddParameter(ParameterType_String, "catchcropismain", "Catch crop is main");
+        SetParameterDescription("catchcropismain", "TODO");
+        MandatoryOff("catchcropismain");
 
         AddParameter(ParameterType_Int, "catchperiod", "Catch period");
         SetParameterDescription("catchperiod", "in days (e.g. 8 weeks == 56 days)");
@@ -387,6 +390,10 @@ private:
         if (HasValue("catchmain")) {
             m_CatchMain = GetParameterString("catchmain");
         }
+        if (HasValue("catchcropismain")) {
+            m_CatchCropIsMain = GetParameterString("catchcropismain");
+        }
+
         if (HasValue("catchperiod")) {
             m_CatchPeriod = GetParameterInt("catchperiod");
         }
@@ -441,16 +448,6 @@ private:
                 itkExceptionMacro("catch main parameter was not specified for the Catch Crop practice!");
             }
         }
-
-        if (m_practiceName == m_FallowLandVal) {
-            if (m_flMarkersEndDateStr.size() == 0) {
-                itkExceptionMacro("Invalid or no value provided for parameter flmarkstenddate when Fallow practice used!");
-            }
-            if (m_flMarkersEndDateStr.size() == 0) {
-                itkExceptionMacro("Invalid or no value provided for parameter flmarkstenddate when Fallow practice used!");
-            }
-        }
-
     }
     void DoExecute() override
     {
@@ -1882,7 +1879,8 @@ private:
         // ### EFA PRACTICE EVALUATION ###
 
         // is catch-crop grown in/under the main crop on the parcel
-        bool catchInMaincrop = (ccHarvestInfos.evaluation.practiceName == m_CatchMain);
+        bool catchInMaincrop = ((fieldInfos.practiceType == m_CatchMain) ||
+                (fieldInfos.practiceType == m_CatchCropIsMain));
         time_t ttVegSeasonStart = FloorDateToWeekStart(ccHarvestInfos.evaluation.ttVegStartTime);
 
 //      DEBUG
@@ -2121,11 +2119,6 @@ private:
         time_t weekA = fieldInfos.ttPracticeStartWeekFloorTime;
         time_t weekB = fieldInfos.ttPracticeEndWeekFloorTime;
 
-        time_t ttDateC = GetTimeFromString(m_flMarkersStartDateStr);
-        time_t ttDateD = GetTimeFromString(m_flMarkersEndDateStr);
-        time_t weekC = FloorDateToWeekStart(ttDateC);
-        time_t weekD = FloorDateToWeekStart(ttDateD);
-
         time_t lastDate = retAllMergedValues[retAllMergedValues.size()-1].ttDate;
         bool efaPeriodEnded = (lastDate >= weekB);
 
@@ -2213,53 +2206,87 @@ private:
             }
             flHarvestInfos.evaluation.cohNoLoss = efaCoh;                       // M10
         } else {
-            if (!flHarvestInfos.evaluation.ndviPresence) {
-                // # no evidence of GREEN FALLOW vegetation in the EFA practice period - return POOR evaluation
-                flHarvestInfos.evaluation.efaIndex = "POOR";
-                return true;
+            if (fieldInfos.countryCode == "CZE") {
+                time_t ttDateC = GetTimeFromString(m_flMarkersStartDateStr);
+                time_t ttDateD = GetTimeFromString(m_flMarkersEndDateStr);
+                time_t weekC = FloorDateToWeekStart(ttDateC);
+                time_t weekD = FloorDateToWeekStart(ttDateD);
 
-            } else if (IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
-                // # vegetation is present, harvest was not detected - FALLOW is considered ok - evaluate
-                // TODO: see how harvestConfirmWeek is initialized - NOT_AVAILABLE or 0 ?
-                flHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
-            } else {
-                // # set the first day of the harvest week - evaluate
-                time_t harvestConfirmed = GetTimeOffsetFromStartOfYear(harvestInfos.evaluation.year, harvestInfos.evaluation.harvestConfirmWeek);
-                if (harvestConfirmed > weekA && harvestConfirmed <= weekB) {
-                    // # harvest was detected within the fallow period - FALLOW is considered not ok - return WEAK evaluation
-                    flHarvestInfos.evaluation.efaIndex = "WEAK";
+                if (!flHarvestInfos.evaluation.ndviPresence) {
+                    // # no evidence of GREEN FALLOW vegetation in the EFA practice period - return POOR evaluation
+                    flHarvestInfos.evaluation.efaIndex = "POOR";
                     return true;
-                }
-            }
 
-            // ### MARKER 8 - efa.noloss.ndvi ###
-            // # mowing or mulching is required between "2017-06-01" and "2017-08-31" - efa.noloss.ndvi shall be FALSE in this period
-            std::vector<EfaMarkersInfoType> efaMarkers2;
-            // # get efa markers for the specified period & buffer
-            ExtractEfaMarkers(ttDateC - 30 * SEC_IN_DAY, ttDateD + 30 * SEC_IN_DAY, fieldInfos, efaMarkers2);
-            for (int i = (int)efaMarkers2.size() - 2; i>=0; i--) {
-                if (IsNA(efaMarkers2[i].ndviNoLoss) && !IsNA(efaMarkers2[i+1].ndviNoLoss)) {
-                    efaMarkers2[i].ndviNoLoss = efaMarkers2[i+1].ndviNoLoss;
-                }
-            }
-            // # if there is evidence of loss in NDVI in the period - M8(noloss) is FALSE
-            bool ndviNoLossFalseFound = false;
-            for (size_t i = 0; i<efaMarkers2.size(); i++) {
-                if (IsNA(efaMarkers2[i].ndviNoLoss)) {
-                    continue;
-                }
-                if (efaMarkers2[i].ttDate >= weekC && efaMarkers2[i].ttDate <= weekD + 7 * SEC_IN_DAY) {
-                    if (efaMarkers2[i].ndviNoLoss == false) {
-                        ndviNoLossFalseFound = true;
-                        break;
+                } else if (IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
+                    // # vegetation is present, harvest was not detected - FALLOW is considered ok - evaluate
+                    // TODO: see how harvestConfirmWeek is initialized - NOT_AVAILABLE or 0 ?
+                    flHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
+                } else {
+                    // # set the first day of the harvest week - evaluate
+                    time_t harvestConfirmed = GetTimeOffsetFromStartOfYear(harvestInfos.evaluation.year, harvestInfos.evaluation.harvestConfirmWeek);
+                    if (harvestConfirmed > weekA && harvestConfirmed <= weekB) {
+                        // # harvest was detected within the fallow period - FALLOW is considered not ok - return WEAK evaluation
+                        flHarvestInfos.evaluation.efaIndex = "WEAK";
+                        return true;
                     }
                 }
-            }
-            flHarvestInfos.evaluation.ndviNoLoss = !ndviNoLossFalseFound; // M8
-            if (!flHarvestInfos.evaluation.ndviNoLoss) {
-                flHarvestInfos.evaluation.efaIndex = "STRONG";
+
+                // ### MARKER 8 - efa.noloss.ndvi ###
+                // # mowing or mulching is required between "2017-06-01" and "2017-08-31" - efa.noloss.ndvi shall be FALSE in this period
+                std::vector<EfaMarkersInfoType> efaMarkers2;
+                // # get efa markers for the specified period & buffer
+                ExtractEfaMarkers(ttDateC - 30 * SEC_IN_DAY, ttDateD + 30 * SEC_IN_DAY, fieldInfos, efaMarkers2);
+                for (int i = (int)efaMarkers2.size() - 2; i>=0; i--) {
+                    if (IsNA(efaMarkers2[i].ndviNoLoss) && !IsNA(efaMarkers2[i+1].ndviNoLoss)) {
+                        efaMarkers2[i].ndviNoLoss = efaMarkers2[i+1].ndviNoLoss;
+                    }
+                }
+                // # if there is evidence of loss in NDVI in the period - M8(noloss) is FALSE
+                bool ndviNoLossFalseFound = false;
+                for (size_t i = 0; i<efaMarkers2.size(); i++) {
+                    if (IsNA(efaMarkers2[i].ndviNoLoss)) {
+                        continue;
+                    }
+                    if (efaMarkers2[i].ttDate >= weekC && efaMarkers2[i].ttDate <= weekD + 7 * SEC_IN_DAY) {
+                        if (efaMarkers2[i].ndviNoLoss == false) {
+                            ndviNoLossFalseFound = true;
+                            break;
+                        }
+                    }
+                }
+                flHarvestInfos.evaluation.ndviNoLoss = !ndviNoLossFalseFound; // M8
+                if (!flHarvestInfos.evaluation.ndviNoLoss) {
+                    flHarvestInfos.evaluation.efaIndex = "STRONG";
+                } else {
+                    flHarvestInfos.evaluation.efaIndex = "MODERATE";
+                }
             } else {
-                flHarvestInfos.evaluation.efaIndex = "MODERATE";
+                // ITA or ESP
+                time_t weekC = weekB;
+                if (fieldInfos.countryCode == "ITA") {
+                    time_t ttDateC = GetTimeFromString(m_flMarkersStartDateStr);
+                    weekC = FloorDateToWeekStart(ttDateC);
+                }
+                if (!flHarvestInfos.evaluation.ndviPresence) {
+                    // # no evidence of vegetation in the whole vegetation season (==black fallow) - return STRONG evaluation
+                    flHarvestInfos.evaluation.efaIndex = "STRONG";
+                } else if (IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
+                    flHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
+                    flHarvestInfos.evaluation.efaIndex = "MODERATE";
+                } else {
+                    // # set the first day of the harvest week - evaluate
+                    time_t harvestConfirmed = GetTimeOffsetFromStartOfYear(harvestInfos.evaluation.year, harvestInfos.evaluation.harvestConfirmWeek);
+                    if (harvestConfirmed > weekA && harvestConfirmed <= weekC) {
+                        // # harvest was detected within the fallow period - FALLOW is considered not ok - return WEAK evaluation
+                        flHarvestInfos.evaluation.efaIndex = "WEAK";
+                    } else {
+                        flHarvestInfos.evaluation.efaIndex = "MODERATE";
+                    }
+                }
+                // # if there is no NDVI value in the whole EFA practice period - return "NA" for the M6
+                if (AllNdviMeanAreNA(efaMarkers)) {
+                    flHarvestInfos.evaluation.ndviPresence = NOT_AVAILABLE;
+                }
             }
         }
         return true;
@@ -3278,6 +3305,7 @@ private:
 
     // INPUT THRESHOLDS - EFA PRACTICE evaluation
     std::string m_CatchMain;
+    std::string m_CatchCropIsMain;
     // TODO: Ask Gisat for CZE
     int m_CatchPeriod;               // in days (e.g. 8 weeks == 56 days)
     double m_CatchProportion;       // buffer threshold
