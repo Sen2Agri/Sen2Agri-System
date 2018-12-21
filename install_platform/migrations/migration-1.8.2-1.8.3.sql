@@ -208,7 +208,7 @@ begin
             execute _statement;
 
             _statement := $str$
-                drop function sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[]);
+                drop function if exists sp_get_dashboard_products(smallint, integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[]);
             $str$;
             raise notice '%', _statement;
             execute _statement;
@@ -1022,7 +1022,7 @@ begin
             execute _statement;
 
             _statement := $str$
-                drop function sp_authenticate(character varying, text);
+                drop function if exists sp_authenticate(character varying, text);
             $str$;
             raise notice '%', _statement;
             execute _statement;
