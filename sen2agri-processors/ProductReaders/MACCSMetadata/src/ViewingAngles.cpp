@@ -26,7 +26,7 @@ static void checkDimensions(std::string expectedColumnUnit,
                             std::string expectedRowStep,
                             size_t expectedHeight,
                             size_t expectedWidth,
-                            const MACCSAngleList &grid)
+                            const CommonAngleList &grid)
 {
     if (grid.ColumnUnit != expectedColumnUnit) {
         throw std::runtime_error("The angle grids must have the same column unit");
@@ -64,7 +64,7 @@ static std::vector<std::vector<double> > makeGrid(size_t height, size_t width)
 }
 
 std::vector<MACCSBandViewingAnglesGrid>
-ComputeViewingAngles(const std::vector<MACCSViewingAnglesGrid> &angleGrids)
+ComputeViewingAngles(const std::vector<CommonViewingAnglesGrid> &angleGrids)
 {
     if (angleGrids.empty() || angleGrids.front().Angles.Zenith.Values.empty()) {
         return {};

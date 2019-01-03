@@ -5,16 +5,22 @@ include_directories(../../Common/XmlUtils/include)
 set(MACCSMetadata_HEADERS
     ../include/MACCSMetadata.hpp
     ../include/SPOT4Metadata.hpp
+    ../include/MAJAMetadata.hpp
     ../include/MACCSMetadataReader.hpp
     ../include/MACCSMetadataWriter.hpp
     ../include/SPOT4MetadataReader.hpp
+    ../include/MAJAMetadataReader.hpp
+    ../include/SEN2CORMetadataReader.hpp
     ../include/ViewingAngles.hpp
-    ../include/MetadataUtil.hpp)
+    ../include/MetadataUtil.hpp
+    ../include/CommonMetadata.hpp)
 
 set(MACCSMetadata_SOURCES
     MACCSMetadataReader.cpp
     MACCSMetadataWriter.cpp
     SPOT4MetadataReader.cpp
+    MAJAMetadataReader.cpp
+    SEN2CORMetadataReader.cpp
     ViewingAngles.cpp
     MetadataUtil.cpp)
 

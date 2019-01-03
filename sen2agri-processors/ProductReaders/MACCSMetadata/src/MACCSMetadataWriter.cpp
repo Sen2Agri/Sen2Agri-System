@@ -55,7 +55,7 @@ XElement Format(const MACCSInstanceId &instanceId)
                     XElement("Acquisition_Date", instanceId.AcquisitionDate));
 }
 
-XElement Format(const MACCSSize &size)
+XElement Format(const CommonSize &size)
 {
     return XElement("Size",
                     XElement("Lines", size.Lines),
@@ -63,7 +63,7 @@ XElement Format(const MACCSSize &size)
                     XElement("Bands", size.Bands));
 }
 
-XElement Format(const std::vector<MACCSBand> &bands)
+XElement Format(const std::vector<CommonBand> &bands)
 {
     XElement bandsEl("List_of_Bands", XAttribute("count", std::to_string(bands.size())));
 

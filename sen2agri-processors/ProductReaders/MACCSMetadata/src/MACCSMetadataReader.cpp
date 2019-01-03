@@ -21,6 +21,7 @@
 #include "otbMacro.h"
 
 #include "MACCSMetadataReader.hpp"
+#include "MetadataUtil.hpp"
 #include "tinyxml_utils.hpp"
 #include "string_utils.hpp"
 
@@ -186,161 +187,9 @@ MACCSGeoCoverage ReadGeoCoverage(const TiXmlElement *el)
     return result;
 }
 
-std::vector<double> ReadDoubleList(const std::string &s)
+CommonBandWavelength ReadBandWavelength(const TiXmlElement *el)
 {
-    std::vector<double> result;
-
-    std::istringstream is(s);
-    std::string value;
-    while (is >> value) {
-        result.emplace_back(ReadDouble(value));
-    }
-
-    return result;
-}
-
-MACCSAngleList ReadAngleList(const TiXmlElement *el)
-{
-    MACCSAngleList result;
-
-    if (!el) {
-        return result;
-    }
-
-    if (auto colStepEl = el->FirstChildElement("COL_STEP")) {
-        result.ColumnUnit = GetAttribute(colStepEl, "unit");
-        result.ColumnStep = GetText(colStepEl);
-    }
-
-    if (auto rowStepEl = el->FirstChildElement("ROW_STEP")) {
-        result.RowUnit = GetAttribute(rowStepEl, "unit");
-        result.RowStep = GetText(rowStepEl);
-    }
-
-    if (auto valuesListEl = el->FirstChildElement("Values_List")) {
-        for (auto valuesEl = valuesListEl->FirstChildElement("VALUES"); valuesEl;
-             valuesEl = valuesEl->NextSiblingElement("VALUES")) {
-
-            result.Values.emplace_back(ReadDoubleList(GetText(valuesEl)));
-        }
-    }
-
-    return result;
-}
-
-MACCSAnglePair ReadAnglePair(const TiXmlElement *el, const std::string &zenithElName,
-                             const std::string &azimuthElName)
-{
-    MACCSAnglePair result;
-    result.ZenithValue = std::numeric_limits<double>::quiet_NaN();
-    result.AzimuthValue = std::numeric_limits<double>::quiet_NaN();
-
-    if (!el) {
-        return result;
-    }
-
-    if (auto zenithEl = el->FirstChildElement(zenithElName)) {
-        result.ZenithUnit = GetAttribute(zenithEl, "unit");
-        result.ZenithValue = ReadDouble(GetText(zenithEl));
-    }
-
-    if (auto azimuthEl = el->FirstChildElement(azimuthElName)) {
-        result.AzimuthUnit = GetAttribute(azimuthEl, "unit");
-        result.AzimuthValue = ReadDouble(GetText(azimuthEl));
-    }
-
-    return result;
-}
-
-MACCSAngles ReadSolarAngles(const TiXmlElement *el)
-{
-    MACCSAngles result;
-
-    if (!el) {
-        return result;
-    }
-
-    if (auto zenithEl = el->FirstChildElement("Zenith")) {
-        result.Zenith = ReadAngleList(zenithEl);
-    }
-
-    if (auto azimuthEl = el->FirstChildElement("Azimuth")) {
-        result.Azimuth = ReadAngleList(azimuthEl);
-    }
-
-    return result;
-}
-
-MACCSMeanViewingIncidenceAngle ReadMeanViewingIncidenceAngle(const TiXmlElement *el)
-{
-    MACCSMeanViewingIncidenceAngle result;
-
-    if (!el) {
-        return result;
-    }
-
-    result.BandId = GetAttribute(el, "bandId");
-    if(result.BandId.empty())
-        result.BandId = GetAttribute(el, "band_id");
-    result.Angles = ReadAnglePair(el, "ZENITH_ANGLE", "AZIMUTH_ANGLE");
-
-    return result;
-}
-
-std::vector<MACCSMeanViewingIncidenceAngle> ReadMeanViewingIncidenceAngles(const TiXmlElement *el)
-{
-    std::vector<MACCSMeanViewingIncidenceAngle> result;
-
-    if (!el) {
-        return result;
-    }
-
-    for (auto angleEl = el->FirstChildElement("Mean_Viewing_Incidence_Angle"); angleEl;
-         angleEl = angleEl->NextSiblingElement("Mean_Viewing_Incidence_Angle")) {
-        result.emplace_back(ReadMeanViewingIncidenceAngle(angleEl));
-    }
-
-    return result;
-}
-
-MACCSViewingAnglesGrid ReadViewingAnglesGrid(const TiXmlElement *el)
-{
-    MACCSViewingAnglesGrid result;
-
-    if (!el) {
-        return result;
-    }
-
-    result.BandId = GetAttribute(el, "bandId");
-    if(result.BandId.empty())
-        result.BandId = GetAttribute(el, "band_id");
-    result.DetectorId = GetAttribute(el, "detectorId");
-    if(result.DetectorId.empty())
-        result.DetectorId = GetAttribute(el, "detector_id");
-    result.Angles = ReadSolarAngles(el);
-
-    return result;
-}
-
-std::vector<MACCSViewingAnglesGrid> ReadViewingAnglesGridList(const TiXmlElement *el)
-{
-    std::vector<MACCSViewingAnglesGrid> result;
-
-    if (!el) {
-        return result;
-    }
-
-    for (auto gridsEl = el->FirstChildElement("Viewing_Incidence_Angles_Grids"); gridsEl;
-         gridsEl = gridsEl->NextSiblingElement("Viewing_Incidence_Angles_Grids")) {
-        result.emplace_back(ReadViewingAnglesGrid(gridsEl));
-    }
-
-    return result;
-}
-
-MACCSBandWavelength ReadBandWavelength(const TiXmlElement *el)
-{
-    MACCSBandWavelength result;
+    CommonBandWavelength result;
 
     if (!el) {
         return result;
@@ -349,13 +198,16 @@ MACCSBandWavelength ReadBandWavelength(const TiXmlElement *el)
     result.BandName = GetAttribute(el, "sk");
     result.Unit = GetAttribute(el, "unit");
     result.WaveLength = GetText(el);
-
+    result.MaxUnit = result.Unit;
+    result.MaxWaveLength = result.WaveLength;
+    result.MinUnit = result.Unit;
+    result.MinWaveLength = result.WaveLength;
     return result;
 }
 
-std::vector<MACCSBandWavelength> ReadBandWavelengths(const TiXmlElement *el)
+std::vector<CommonBandWavelength> ReadBandWavelengths(const TiXmlElement *el)
 {
-    std::vector<MACCSBandWavelength> result;
+    std::vector<CommonBandWavelength> result;
 
     if (!el) {
         return result;
@@ -369,9 +221,9 @@ std::vector<MACCSBandWavelength> ReadBandWavelengths(const TiXmlElement *el)
     return result;
 }
 
-MACCSBandResolution ReadBandResolution(const TiXmlElement *el)
+CommonBandResolution ReadBandResolution(const TiXmlElement *el)
 {
-    MACCSBandResolution result;
+    CommonBandResolution result;
 
     if (!el) {
         return result;
@@ -384,9 +236,9 @@ MACCSBandResolution ReadBandResolution(const TiXmlElement *el)
     return result;
 }
 
-std::vector<MACCSBandResolution> ReadBandResolutions(const TiXmlElement *el)
+std::vector<CommonBandResolution> ReadBandResolutions(const TiXmlElement *el)
 {
-    std::vector<MACCSBandResolution> result;
+    std::vector<CommonBandResolution> result;
 
     if (!el) {
         return result;
@@ -399,6 +251,7 @@ std::vector<MACCSBandResolution> ReadBandResolutions(const TiXmlElement *el)
 
     return result;
 }
+
 MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
 {
     MACCSProductInformation result;
@@ -420,7 +273,7 @@ MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
     result.MeanViewingIncidenceAngles =
         ReadMeanViewingIncidenceAngles(el->FirstChildElement("Mean_Viewing_Incidence_Angle_List"));
     if(result.MeanViewingIncidenceAngles.empty()) {
-        MACCSMeanViewingIncidenceAngle meanVIncAng;
+        CommonMeanViewingIncidenceAngle meanVIncAng;
         meanVIncAng.Angles = ReadAnglePair(el->FirstChildElement("Mean_Viewing_Angles"),
                                                   "Zenith", "Azimuth");
         if(!std::isnan(meanVIncAng.Angles.AzimuthValue) &&
@@ -440,9 +293,9 @@ MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
     return result;
 }
 
-MACCSSize ReadSize(const TiXmlElement *el)
+CommonSize ReadSize(const TiXmlElement *el)
 {
-    MACCSSize result;
+    CommonSize result;
 
     if (!el) {
         return result;
@@ -455,9 +308,9 @@ MACCSSize ReadSize(const TiXmlElement *el)
     return result;
 }
 
-MACCSBand ReadBand(const TiXmlElement *el)
+CommonBand ReadBand(const TiXmlElement *el)
 {
-    MACCSBand result;
+    CommonBand result;
 
     if (!el) {
         return result;
@@ -469,25 +322,9 @@ MACCSBand ReadBand(const TiXmlElement *el)
     return result;
 }
 
-MACCSGeoPosition ReadGeoPosition(const TiXmlElement *el)
+CommonProductSampling ReadProductSampling(const TiXmlElement *el)
 {
-    MACCSGeoPosition result;
-
-    if (!el) {
-        return result;
-    }
-
-    result.UnitLengthX = GetChildText(el, "ULX");
-    result.UnitLengthY = GetChildText(el, "ULY");
-    result.DimensionX = GetChildText(el, "XDIM");
-    result.DimensionY = GetChildText(el, "YDIM");
-
-    return result;
-}
-
-MACCSProductSampling ReadProductSampling(const TiXmlElement *el)
-{
-    MACCSProductSampling result;
+    CommonProductSampling result;
 
     if (!el) {
         return result;
@@ -506,9 +343,9 @@ MACCSProductSampling ReadProductSampling(const TiXmlElement *el)
     return result;
 }
 
-std::vector<MACCSBand> ReadBands(const TiXmlElement *el)
+std::vector<CommonBand> ReadBands(const TiXmlElement *el)
 {
-    std::vector<MACCSBand> result;
+    std::vector<CommonBand> result;
 
     if (!el) {
         return result;
@@ -543,9 +380,9 @@ std::vector<MACCSBand> ReadBands(const TiXmlElement *el)
     return result;
 }
 
-MACCSResolution ReadResolution(const TiXmlElement *el)
+CommonResolution ReadResolution(const TiXmlElement *el)
 {
-    MACCSResolution result;
+    CommonResolution result;
 
     if (!el) {
         return result;
@@ -560,9 +397,9 @@ MACCSResolution ReadResolution(const TiXmlElement *el)
     return result;
 }
 
-std::vector<MACCSResolution> ReadResolutions(const TiXmlElement *el)
+std::vector<CommonResolution> ReadResolutions(const TiXmlElement *el)
 {
-    std::vector<MACCSResolution> result;
+    std::vector<CommonResolution> result;
 
     if (!el) {
         return result;
@@ -645,13 +482,17 @@ MACCSImageInformation ReadImageInformation(const TiXmlElement *el)
     return result;
 }
 
-MACCSFileInformation ReadFileInformation(const TiXmlElement *el)
+CommonFileInformation ReadFileInformation(const TiXmlElement *el)
 {
-    MACCSFileInformation result;
+    CommonFileInformation result;
 
     if (!el) {
         return result;
     }
+    // no BandNumber, BitNumber or GroupId in MACCS
+    result.BandNumber = -1;
+    result.BitNumber = -1;
+    result.GroupId = "";
 
     result.Nature = GetChildText(el, "Nature");
     result.FileLocation = GetChildText(el, "File_Location");
@@ -660,9 +501,9 @@ MACCSFileInformation ReadFileInformation(const TiXmlElement *el)
     return result;
 }
 
-MACCSAnnexInformation ReadAnnexInformation(const TiXmlElement *el)
+CommonAnnexInformation ReadAnnexInformation(const TiXmlElement *el)
 {
-    MACCSAnnexInformation result;
+    CommonAnnexInformation result;
 
     if (!el) {
         return result;
@@ -674,9 +515,9 @@ MACCSAnnexInformation ReadAnnexInformation(const TiXmlElement *el)
     return result;
 }
 
-std::vector<MACCSAnnexInformation> ReadAnnexes(const TiXmlElement *el)
+std::vector<CommonAnnexInformation> ReadAnnexes(const TiXmlElement *el)
 {
-    std::vector<MACCSAnnexInformation> result;
+    std::vector<CommonAnnexInformation> result;
 
     if (!el) {
         return result;
@@ -711,7 +552,7 @@ std::vector<MACCSAnnexInformation> ReadAnnexes(const TiXmlElement *el)
     return result;
 }
 
-static void FixProductOrganization(MACCSProductOrganization &po)
+static void FixProductOrganization(CommonProductOrganization &po)
 {
     auto foundSRE = false;
     auto foundSRE_R1 = false;
@@ -754,7 +595,7 @@ static void FixProductOrganization(MACCSProductOrganization &po)
                                                  const std::string &suffix) {
         const auto &logicalName = name + suffix;
         po.ImageFiles.emplace_back(
-            MACCSFileInformation{ nature, dir + "/" + logicalName + ".HDR", logicalName });
+            CommonFileInformation{ nature, dir + "/" + logicalName + ".HDR", logicalName });
     };
 
     if (!foundSRE) {
@@ -775,9 +616,9 @@ static void FixProductOrganization(MACCSProductOrganization &po)
     }
 }
 
-MACCSProductOrganization ReadProductOrganization(const TiXmlElement *el)
+CommonProductOrganization ReadProductOrganization(const TiXmlElement *el)
 {
-    MACCSProductOrganization result;
+    CommonProductOrganization result;
 
     if (!el) {
         return result;

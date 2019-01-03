@@ -340,11 +340,11 @@ private:
     }
 
     std::string getMACCSRasterFileName(const std::string& rootFolder,
-                                       const std::vector<MACCSFileInformation>& imageFiles,
+                                       const std::vector<CommonFileInformation>& imageFiles,
                                        const std::string& ending,
                                        const bool fileTypeMeta) {
 
-        for (const MACCSFileInformation& fileInfo : imageFiles) {
+        for (const CommonFileInformation& fileInfo : imageFiles) {
             if (fileInfo.LogicalName.length() >= ending.length() &&
                     0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
                 boost::filesystem::path rootFolderPath(rootFolder);

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Earth_Explorer_File xmlns="http://gs2.esa.int/DATA_STRUCTURE/olqcReport">
+    <Earth_Explorer_Header>
+        <Fixed_Header>
+            <File_Name>GENERAL_QUALITY.xml</File_Name>
+            <File_Description>Report produced by OLQC-SC</File_Description>
+            <Notes></Notes>
+            <Mission>S2B</Mission>
+            <File_Class>OPER</File_Class>
+            <File_Type>REP_OLQCPA</File_Type>
+            <Validity_Period>
+                <Validity_Start>UTC=2015-06-22T00:00:00</Validity_Start>
+                <Validity_Stop>UTC=2100-01-01T00:00:00</Validity_Stop>
+            </Validity_Period>
+            <File_Version>2</File_Version>
+            <Source>
+                <System>OLQC-SC</System>
+                <Creator>OLQC-SC</Creator>
+                <Creator_Version>01.06.03</Creator_Version>
+                <Creation_Date>UTC=2018-11-27T17:26:12</Creation_Date>
+            </Source>
+        </Fixed_Header>
+    </Earth_Explorer_Header>
+    <Data_Block type="xml">
+        <report gippVersion="1.0" globalStatus="PASSED" date="2018-11-27T17:26:12.919Z">
+            <checkList>
+                <parentID>S2B_OPER_GIP_OLQCPA_MPC__20180528T000018_V20150622T000000</parentID>
+                <name>GENERAL_QUALITY</name>
+                <version>1.0</version>
+                <item url="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/" className="PDI Level 2A Datastrip Folder" name="S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11" class="http://www.esa.int/s2#pdi_level_2a_datastrip_container"/>
+                <check>
+                    <inspection creation="2018-11-27T17:26:12.869Z" duration="11" execution="2018-11-27T17:26:12.904Z" id="Lost_Packets" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check the number of lost packets " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">NUMBER_OF_LOST_PACKETS value 0 does not exceed the threshold (0) </message>
+                    <extraValues>
+                        <value name="NUMBER_OF_LOST_PACKETS">0</value>
+                    </extraValues>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:12.943Z" duration="3" execution="2018-11-27T17:26:12.960Z" id="Relative_Orbit_Number_SENSING" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check the consistency of relative imaging orbit number. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Sensing orbit number (123) is in range [0,99999] </message>
+                    <extraValues>
+                        <value name="SENSING_ORBIT_NUMBER">123</value>
+                    </extraValues>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:12.991Z" duration="1" execution="2018-11-27T17:26:13.006Z" id="Degraded_Packets" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check the number of degraded packets " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">NUMBER_OF_TOO_DEGRADED_PACKETS value 0 does not exceed the threshold (0) </message>
+                    <extraValues>
+                        <value name="NUMBER_OF_TOO_DEGRADED_PACKETS">0</value>
+                    </extraValues>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:13.104Z" duration="1" execution="2018-11-27T17:26:13.119Z" id="Relative_Orbit_Number_DOWNLINK" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check the consistency of downlink orbit number. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Downlink Orbit number (9016) is in range [0,99999] </message>
+                    <extraValues>
+                        <value name="DOWNLINK_ORBIT_NUMBER">9016</value>
+                    </extraValues>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:13.657Z" duration="250" execution="2018-11-27T17:26:13.668Z" id="checkMetadata" item="S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/" name="Metadata file check. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Metadata file is present.</message>
+                </check>
+            </checkList>
+        </report>
+    </Data_Block>
+</Earth_Explorer_File>

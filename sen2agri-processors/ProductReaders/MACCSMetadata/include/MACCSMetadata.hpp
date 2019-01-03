@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include "CommonMetadata.hpp"
 
 struct MACCSConsumer
 {
@@ -67,111 +68,23 @@ struct MACCSGeoCoverage
     MACCSGeoPoint LowerRightCorner;
 };
 
-struct MACCSAngleList
-{
-    std::string ColumnUnit;
-    std::string ColumnStep;
-    std::string RowUnit;
-    std::string RowStep;
-    std::vector<std::vector<double> > Values;
-};
-
-struct MACCSAngles
-{
-    MACCSAngleList Zenith;
-    MACCSAngleList Azimuth;
-};
-
-struct MACCSViewingAnglesGrid
-{
-    std::string BandId;
-    std::string DetectorId;
-    MACCSAngles Angles;
-};
-
-struct MACCSAnglePair
-{
-    std::string ZenithUnit;
-    std::string AzimuthUnit;
-    double ZenithValue;
-    double AzimuthValue;
-};
-
-struct MACCSMeanViewingIncidenceAngle
-{
-    std::string BandId;
-    MACCSAnglePair Angles;
-};
-
 struct MACCSBandViewingAnglesGrid
 {
     std::string BandId;
-    MACCSAngles Angles;
-};
-
-struct MACCSBandWavelength
-{
-    std::string BandName;
-    std::string Unit;
-    std::string WaveLength;
-};
-
-struct MACCSBandResolution
-{
-    std::string BandName;
-    std::string Unit;
-    std::string Resolution;
+    CommonAngles Angles;
 };
 
 struct MACCSProductInformation
 {
     std::string AcquisitionDateTime;
     MACCSGeoCoverage GeoCoverage;
-    MACCSAnglePair MeanSunAngle;
-    MACCSAngles SolarAngles;
-    std::vector<MACCSMeanViewingIncidenceAngle> MeanViewingIncidenceAngles;
-    std::vector<MACCSViewingAnglesGrid> ViewingAngles;
+    CommonAnglePair MeanSunAngle;
+    CommonAngles SolarAngles;
+    std::vector<CommonMeanViewingIncidenceAngle> MeanViewingIncidenceAngles;
+    std::vector<CommonViewingAnglesGrid> ViewingAngles;
     std::string ReflectanceQuantificationValue;
-    std::vector<MACCSBandWavelength> BandWavelengths;
-    std::vector<MACCSBandResolution> BandResolutions;
-};
-
-struct MACCSSize
-{
-    std::string Lines;
-    std::string Columns;
-    std::string Bands;
-};
-
-struct MACCSBand
-{
-    std::string Id;
-    std::string Name;
-};
-
-struct MACCSGeoPosition
-{
-    std::string UnitLengthX;
-    std::string UnitLengthY;
-    std::string DimensionX;
-    std::string DimensionY;
-};
-
-struct MACCSProductSampling
-{
-    std::string ByLineUnit;
-    std::string ByLineValue;
-    std::string ByColumnUnit;
-    std::string ByColumnValue;
-};
-
-struct MACCSResolution
-{
-    std::string Id;
-    MACCSSize Size;
-    MACCSGeoPosition GeoPosition;
-    MACCSProductSampling ProductSampling;
-    std::vector<MACCSBand> Bands;
+    std::vector<CommonBandWavelength> BandWavelengths;
+    std::vector<CommonBandResolution> BandResolutions;
 };
 
 struct MACCSImageInformation
@@ -186,10 +99,10 @@ struct MACCSImageInformation
     std::string VAPQuantificationValue;
     std::string AOTNoDataValue;
     std::string AOTQuantificationValue;
-    MACCSSize Size;
+    CommonSize Size;
     std::string ImageCompactingTool;
-    std::vector<MACCSResolution> Resolutions;
-    std::vector<MACCSBand> Bands;
+    std::vector<CommonResolution> Resolutions;
+    std::vector<CommonBand> Bands;
     std::string SubSamplingFactor;
     std::string SubSamplingFactorLine;
     std::string SubSamplingFactorColumn;
@@ -197,26 +110,6 @@ struct MACCSImageInformation
     std::string QuantificationBitValue;
     std::string ColorSpace;
     std::string BandsOrder;
-};
-
-struct MACCSFileInformation
-{
-    std::string Nature;
-    std::string FileLocation;
-    std::string LogicalName;
-};
-
-struct MACCSAnnexInformation
-{
-    std::string Id;
-    MACCSFileInformation File;
-};
-
-struct MACCSProductOrganization
-{
-    std::vector<MACCSFileInformation> ImageFiles;
-    std::vector<MACCSFileInformation> QuickLookFiles;
-    std::vector<MACCSAnnexInformation> AnnexFiles;
 };
 
 struct MACCSFileMetadata
@@ -228,7 +121,7 @@ struct MACCSFileMetadata
     std::string AnnexCompleteName;
     MACCSProductInformation ProductInformation;
     MACCSImageInformation ImageInformation;
-    MACCSProductOrganization ProductOrganization;
+    CommonProductOrganization ProductOrganization;
 
     std::string ProductPath;
 };

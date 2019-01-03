@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="DISPLAY/display.xsl"?>
+<Earth_Explorer_Header schema_version="1.00" xmlns="http://eop-cfi.esa.int/CFI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://eop-cfi.esa.int/CFI ./LUTANX_AnnexLUT.xsd" xsi:type="LUTANX_Header_Type">
+    <Fixed_Header>
+        <File_Name>LTC</File_Name>
+        <File_Description>AnnexLUT</File_Description>
+        <Notes>L2 note</Notes>
+        <Mission>SENTINEL-2A</Mission>
+        <File_Class>OPER</File_Class>
+        <File_Type>NOT_INITIALIZED</File_Type>
+        <Validity_Period>
+            <Validity_Start>UTC=2016-09-30T00:00:00</Validity_Start>
+            <Validity_Stop>UTC=2016-09-28T00:00:00</Validity_Stop>
+        </Validity_Period>
+        <File_Version>0001</File_Version>
+        <Source>
+            <System>MAJA</System>
+            <Creator>MAJA_L2_INIT_CHAIN</Creator>
+            <Creator_Version>3.1.1</Creator_Version>
+            <Creation_Date>UTC=2018-10-25T17:34:03</Creation_Date>
+        </Source>
+    </Fixed_Header>
+    <Variable_Header>
+        <Main_Product_Header>
+            <List_of_Consumers count="0" />
+            <List_of_Extensions count="0" />
+        </Main_Product_Header>
+        <Specific_Product_Header>
+            <Instance_Id>
+                <Reference_Product_Semantic>L2VALD</Reference_Product_Semantic>
+                <Reference_Product_Instance></Reference_Product_Instance>
+                <Annex_Code>LTC</Annex_Code>
+            </Instance_Id>
+            <Reference_Product_Header_Id></Reference_Product_Header_Id>
+            <Annex_Complete_Name>Lut of Top of Canopy</Annex_Complete_Name>
+            <LUT_Indexes>
+                <Altitude_Indexes>0 1000 2000 3000</Altitude_Indexes>
+                <AOT_Indexes>0.0 0.0625 0.125 0.1875 0.25 0.3125 0.375 0.4375 0.5 0.5625 0.625 0.6875 0.75 0.8125 0.875 0.9375 1.0 1.0625 1.125 1.1875 1.25 1.3125 1.375 1.4375 1.5</AOT_Indexes>
+                <TOA_Reflectance_Indexes>-0.2 -0.13 -0.06 0.01 0.08 0.15 0.22 0.29 0.36 0.43 0.5 0.57 0.64 0.71 0.78 0.85 0.92 0.99 1.06 1.13</TOA_Reflectance_Indexes>
+            </LUT_Indexes>
+            <List_of_Band_Theoretical_Wavelength count="1">
+                <Band_Theoretical_Wavelength sn="1" unit="nanometer">443</Band_Theoretical_Wavelength>
+            </List_of_Band_Theoretical_Wavelength>
+            <List_of_LTC count="1">
+                <LTC sn="1">
+                    <Date>UTC=2016-09-30T00:00:00</Date>
+                    <Solar_Angles>
+                        <Image_Center>
+                            <Azimuth unit="deg">166.336290044</Azimuth>
+                            <Zenith unit="deg">54.068367078</Zenith>
+                        </Image_Center>
+                    </Solar_Angles>
+                    <Viewing_Angles>
+                        <Image_Center>
+                            <Azimuth unit="deg">104.966276914</Azimuth>
+                            <Zenith unit="deg">8.145190396</Zenith>
+                        </Image_Center>
+                    </Viewing_Angles>
+                </LTC>
+            </List_of_LTC>
+            <DBL_Organization>
+                <List_of_Packaged_DBL_Files count="1">
+                    <Packaged_DBL_File sn="1">
+                        <Relative_File_Path>LTC/20160928.mha</Relative_File_Path>
+                        <File_Definition>SSC_LUTANX</File_Definition>
+                    </Packaged_DBL_File>
+                </List_of_Packaged_DBL_Files>
+            </DBL_Organization>
+        </Specific_Product_Header>
+    </Variable_Header>
+</Earth_Explorer_Header>

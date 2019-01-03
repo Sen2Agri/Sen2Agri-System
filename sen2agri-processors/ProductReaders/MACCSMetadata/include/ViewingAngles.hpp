@@ -4,4 +4,4 @@
 
 #include "MACCSMetadata.hpp"
 
-std::vector<MACCSBandViewingAnglesGrid> ComputeViewingAngles(const std::vector<MACCSViewingAnglesGrid> &angleGrids);
+std::vector<MACCSBandViewingAnglesGrid> ComputeViewingAngles(const std::vector<CommonViewingAnglesGrid> &angleGrids);

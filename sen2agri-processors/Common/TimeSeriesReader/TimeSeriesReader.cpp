@@ -340,8 +340,8 @@ void TimeSeriesReader::ProcessSentinel2Metadata(const MACCSFileMetadata& meta, c
     descriptor.mask = getSentinelMask(meta, rootFolder,td);
 }
 
-int TimeSeriesReader::getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name) {
-    for (const MACCSBand& band : bands) {
+int TimeSeriesReader::getBandIndex(const std::vector<CommonBand>& bands, const std::string& name) {
+    for (const CommonBand& band : bands) {
         if (band.Name == name) {
             return std::stoi(band.Id);
         }
@@ -404,9 +404,9 @@ FloatVectorImageReaderType::Pointer TimeSeriesReader::getFloatVectorImageReader(
     return reader;
 }
 
-std::string TimeSeriesReader::getMACCSRasterFileName(const boost::filesystem::path &rootFolder, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
+std::string TimeSeriesReader::getMACCSRasterFileName(const boost::filesystem::path &rootFolder, const std::vector<CommonFileInformation>& imageFiles, const std::string& ending) {
 
-    for (const MACCSFileInformation& fileInfo : imageFiles) {
+    for (const CommonFileInformation& fileInfo : imageFiles) {
         if (fileInfo.LogicalName.length() >= ending.length() &&
                 0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
             return (rootFolder / (fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF")).string();
@@ -416,9 +416,9 @@ std::string TimeSeriesReader::getMACCSRasterFileName(const boost::filesystem::pa
     return "";
 }
 
-std::string TimeSeriesReader::getMACCSMaskFileName(const boost::filesystem::path &rootFolder, const std::vector<MACCSAnnexInformation>& maskFiles, const std::string& ending) {
+std::string TimeSeriesReader::getMACCSMaskFileName(const boost::filesystem::path &rootFolder, const std::vector<CommonAnnexInformation>& maskFiles, const std::string& ending) {
 
-    for (const MACCSAnnexInformation& fileInfo : maskFiles) {
+    for (const CommonAnnexInformation& fileInfo : maskFiles) {
         if (fileInfo.File.LogicalName.length() >= ending.length() &&
                 0 == fileInfo.File.LogicalName.compare (fileInfo.File.LogicalName.length() - ending.length(), ending.length(), ending)) {
             return (rootFolder / (fileInfo.File.FileLocation.substr(0, fileInfo.File.FileLocation.find_last_of('.')) + ".DBL.TIF")).string();

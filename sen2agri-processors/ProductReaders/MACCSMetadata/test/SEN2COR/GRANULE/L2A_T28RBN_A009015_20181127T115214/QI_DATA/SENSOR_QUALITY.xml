@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Earth_Explorer_File xmlns="http://gs2.esa.int/DATA_STRUCTURE/olqcReport">
+    <Earth_Explorer_Header>
+        <Fixed_Header>
+            <File_Name>SENSOR_QUALITY.xml</File_Name>
+            <File_Description>Report produced by OLQC-SC</File_Description>
+            <Notes></Notes>
+            <Mission>S2B</Mission>
+            <File_Class>OPER</File_Class>
+            <File_Type>REP_OLQCPA</File_Type>
+            <Validity_Period>
+                <Validity_Start>UTC=2015-06-22T00:00:00</Validity_Start>
+                <Validity_Stop>UTC=2100-01-01T00:00:00</Validity_Stop>
+            </Validity_Period>
+            <File_Version>2</File_Version>
+            <Source>
+                <System>OLQC-SC</System>
+                <Creator>OLQC-SC</Creator>
+                <Creator_Version>01.06.03</Creator_Version>
+                <Creation_Date>UTC=2018-11-27T17:03:50</Creation_Date>
+            </Source>
+        </Fixed_Header>
+    </Earth_Explorer_Header>
+    <Data_Block type="xml">
+        <report gippVersion="1.0" globalStatus="PASSED" date="2018-11-27T17:03:50.438Z">
+            <checkList>
+                <parentID>S2B_OPER_GIP_OLQCPA_MPC__20180528T000018_V20150622T000000</parentID>
+                <name>SENSOR_QUALITY</name>
+                <version>1.0</version>
+                <item url="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/GR/S2B_OPER_MSI_L2A_TL_SGS__20181127T154920_A009015_T28RBN_N02.11/" className="PDI Level 2A Tile Folder" name="S2B_OPER_MSI_L2A_TL_SGS__20181127T154920_A009015_T28RBN_N02.11" class="http://www.esa.int/s2#pdi_level_2a_tile_container"/>
+                <check>
+                    <inspection creation="2018-11-27T17:03:50.420Z" duration="0" execution="2018-11-27T17:03:50.434Z" id="Sensing_Time" item="MTD_TL.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/GR/S2B_OPER_MSI_L2A_TL_SGS__20181127T154920_A009015_T28RBN_N02.11/MTD_TL.xml" name="Check the consistency of the sensing time. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Sensing time is valid </message>
+                    <extraValues>
+                        <value name="SENSING_TIME">2018-11-27T11:54:39.141Z</value>
+                    </extraValues>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:03:50.668Z" duration="27" execution="2018-11-27T17:03:50.682Z" id="checkMetadata" item="S2B_OPER_MSI_L2A_TL_SGS__20181127T154920_A009015_T28RBN_N02.11" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/GR/S2B_OPER_MSI_L2A_TL_SGS__20181127T154920_A009015_T28RBN_N02.11/" name="Metadata file check. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Metadata file is present.</message>
+                </check>
+            </checkList>
+        </report>
+    </Data_Block>
+</Earth_Explorer_File>

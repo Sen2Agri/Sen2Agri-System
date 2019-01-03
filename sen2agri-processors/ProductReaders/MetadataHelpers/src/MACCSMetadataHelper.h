@@ -204,29 +204,29 @@ protected:
     std::string getSnowFileName();
     std::string getQualityFileName();
 
-    std::string getMACCSImageFileName(const std::vector<MACCSFileInformation>& imageFiles,
+    std::string getMACCSImageFileName(const std::vector<CommonFileInformation>& imageFiles,
                                       const std::string& ending);
-    std::string getMACCSImageFileName(const std::vector<MACCSAnnexInformation>& maskFiles,
+    std::string getMACCSImageFileName(const std::vector<CommonAnnexInformation>& maskFiles,
                                       const std::string& ending);
-    bool getMACCSImageFileName(const MACCSFileInformation& fileInfo,
+    bool getMACCSImageFileName(const CommonFileInformation& fileInfo,
                                       const std::string& ending, std::string& retStr);
-    std::string getMACCSImageHdrName(const std::vector<MACCSAnnexInformation>& maskFiles,
+    std::string getMACCSImageHdrName(const std::vector<CommonAnnexInformation>& maskFiles,
                                      const std::string& ending);
-    std::string getMACCSImageHdrName(const std::vector<MACCSFileInformation>& imageFiles,
+    std::string getMACCSImageHdrName(const std::vector<CommonFileInformation>& imageFiles,
                                                           const std::string& ending);
-    bool getMACCSImageHdrName(const MACCSFileInformation& fileInfo,
+    bool getMACCSImageHdrName(const CommonFileInformation& fileInfo,
                               const std::string& ending, std::string &retStr);
     void ReadSpecificMACCSImgHdrFile();
     void ReadSpecificMACCSAotHdrFile();
     void ReadSpecificMACCSCldHdrFile();
     void ReadSpecificMACCSMskHdrFile();
-    int getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name);
+    int getBandIndex(const std::vector<CommonBand>& bands, const std::string& name);
     bool CheckFileExistence(std::string &fileName);
 
     void InitializeS2Angles();
     bool BandAvailableForCurrentResolution(unsigned int nBand);
-    const MACCSResolution& GetMACCSResolutionInfo(int nResolution);
-    std::vector<MACCSBand> GetAllMACCSBandsInfos();
+    const CommonResolution& GetMACCSResolutionInfo(int nResolution);
+    std::vector<CommonBand> GetAllMACCSBandsInfos();
     //virtual std::unique_ptr<itk::LightObject> GetMetadata() { return m_metadata; }
 
     virtual MetadataHelper::SingleBandShortImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult);

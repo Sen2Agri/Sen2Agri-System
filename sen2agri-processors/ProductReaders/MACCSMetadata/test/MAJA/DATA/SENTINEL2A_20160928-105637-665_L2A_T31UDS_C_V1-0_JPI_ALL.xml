@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<JobProcessingInformations xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="JobProcessingInformations.xsd">
+    <MNT_Statistics>
+        <Min unit="m">-12.3606</Min>
+        <Max unit="m">218.078</Max>
+        <Average unit="m">26.4821</Average>
+        <Standard_Deviation unit="m">42.7822</Standard_Deviation>
+    </MNT_Statistics>
+    <Processing_Flags_And_Modes_List>
+        <Processing_Flags_And_Modes>
+            <Key>Processing_Mode</Key>
+            <Value>INIT_MODE</Value>
+        </Processing_Flags_And_Modes>
+        <Processing_Flags_And_Modes>
+            <Key>Adjacency_Effects_And_Slope_Correction</Key>
+            <Value>true</Value>
+        </Processing_Flags_And_Modes>
+        <Processing_Flags_And_Modes>
+            <Key>Quality_check</Key>
+            <Value>false</Value>
+        </Processing_Flags_And_Modes>
+        <Processing_Flags_And_Modes>
+            <Key>Validity_Flag</Key>
+            <Value>L2VALD</Value>
+        </Processing_Flags_And_Modes>
+        <Processing_Flags_And_Modes>
+            <Key>Cirrus_Correction</Key>
+            <Value>true</Value>
+        </Processing_Flags_And_Modes>
+        <Processing_Flags_And_Modes>
+            <Key>CAMS_Processing</Key>
+            <Value>Activated_NoAvailableData</Value>
+        </Processing_Flags_And_Modes>
+    </Processing_Flags_And_Modes_List>
+</JobProcessingInformations>

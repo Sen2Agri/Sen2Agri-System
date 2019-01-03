@@ -399,7 +399,7 @@ private:
         reader->UpdateOutputInformation();
         int curRes = reader->GetOutput()->GetSpacing()[0];
 
-        std::vector<MACCSBand>::iterator it;
+        std::vector<CommonBand>::iterator it;
         int i = 0;
         ExtractROIFilterType::Pointer extractor;
         for (it = imageMeta->ImageInformation.Bands.begin(), i = 1; it != imageMeta->ImageInformation.Bands.end(); it++, i++)

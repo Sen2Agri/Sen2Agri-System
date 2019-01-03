@@ -38,8 +38,8 @@ std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelati
         }
         return m_specificImgMetadata->ImageInformation.Bands[nBandIdx].Name;
     } else {
-        const std::vector<MACCSBand>& maccsBands = GetAllMACCSBandsInfos();
-        for (const MACCSBand& band : maccsBands) {
+        const std::vector<CommonBand>& maccsBands = GetAllMACCSBandsInfos();
+        for (const CommonBand& band : maccsBands) {
             // the bands in the file are 1 based while our parameter nBandIdx is 0 based
             if (std::stoi(band.Id) == (int)nBandIdx) {
                 return band.Name;
@@ -69,7 +69,7 @@ int MACCSMetadataHelper::GetResolutionForAbsoluteBandIndex(int nAbsBandIdx)
     }
     // In the case of S2 we need to compute the relative index
     int bandIdx = 1;
-    for(const MACCSBandResolution& maccsBandResolution: m_metadata->ProductInformation.BandResolutions) {
+    for(const CommonBandResolution& maccsBandResolution: m_metadata->ProductInformation.BandResolutions) {
         if (bandIdx == nAbsBandIdx) {
             return std::stoi(maccsBandResolution.Resolution);
         }
@@ -198,9 +198,9 @@ void MACCSMetadataHelper::UpdateValuesForSentinel()
     m_nBandsNoForCurRes = ((m_nResolution == 10) ? 4 : 6);
     if(m_nResolution == 10)
     {
-        // for S2 we do not use the ImageInformation bands but the bands from the MACCSResolution structures
+        // for S2 we do not use the ImageInformation bands but the bands from the CommonResolution structures
         //const MACCSResolution& maccsRes = GetMACCSResolutionInfo(m_nResolution);
-        std::vector<MACCSBand> maccsBands = GetAllMACCSBandsInfos();
+        std::vector<CommonBand> maccsBands = GetAllMACCSBandsInfos();
         m_nAbsRedBandIndex = getBandIndex(maccsBands, "B4");
         m_nAbsBlueBandIndex = getBandIndex(maccsBands, "B2");
         m_nAbsGreenBandIndex = getBandIndex(maccsBands, "B3");
@@ -365,10 +365,10 @@ std::string MACCSMetadataHelper::getQualityFileName()
 }
 
 // Return the path to a file for which the name end in the ending
-std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSFileInformation>& imageFiles,
+std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<CommonFileInformation>& imageFiles,
                                                        const std::string& ending) {
     std::string retStr;
-    for (const MACCSFileInformation& fileInfo : imageFiles) {
+    for (const CommonFileInformation& fileInfo : imageFiles) {
         if(getMACCSImageFileName(fileInfo, ending, retStr))
             return retStr;
     }
@@ -376,17 +376,17 @@ std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSFi
 }
 
 // Return the path to a file for which the name end in the ending
-std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSAnnexInformation>& maskFiles,
+std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<CommonAnnexInformation>& maskFiles,
                                                        const std::string& ending) {
     std::string retStr;
-    for (const MACCSAnnexInformation& fileInfo : maskFiles) {
+    for (const CommonAnnexInformation& fileInfo : maskFiles) {
         if(getMACCSImageFileName(fileInfo.File, ending, retStr))
             return retStr;
     }
     return "";
 }
 
-bool MACCSMetadataHelper::getMACCSImageFileName(const MACCSFileInformation& fileInfo,
+bool MACCSMetadataHelper::getMACCSImageFileName(const CommonFileInformation& fileInfo,
                                                        const std::string& ending, std::string& retStr) {
     if (fileInfo.LogicalName.length() >= ending.length() &&
             0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
@@ -401,10 +401,10 @@ bool MACCSMetadataHelper::getMACCSImageFileName(const MACCSFileInformation& file
 }
 
 // Return the path to a file for which the name end in the ending
-std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<MACCSAnnexInformation>& maskFiles,
+std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<CommonAnnexInformation>& maskFiles,
                                                       const std::string& ending) {
     std::string retStr;
-    for (const MACCSAnnexInformation& fileInfo : maskFiles) {
+    for (const CommonAnnexInformation& fileInfo : maskFiles) {
         if(getMACCSImageHdrName(fileInfo.File, ending, retStr))
             return retStr;
     }
@@ -412,17 +412,17 @@ std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<MACCSAnn
 }
 
 // Return the path to a file for which the name end in the ending
-std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<MACCSFileInformation>& imageFiles,
+std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<CommonFileInformation>& imageFiles,
                                                       const std::string& ending) {
     std::string retStr;
-    for (const MACCSFileInformation& fileInfo : imageFiles) {
+    for (const CommonFileInformation& fileInfo : imageFiles) {
         if(getMACCSImageHdrName(fileInfo, ending, retStr))
             return retStr;
     }
     return "";
 }
 
-bool MACCSMetadataHelper::getMACCSImageHdrName(const MACCSFileInformation& fileInfo,
+bool MACCSMetadataHelper::getMACCSImageHdrName(const CommonFileInformation& fileInfo,
                                                       const std::string& ending, std::string &retStr) {
     if (fileInfo.LogicalName.length() >= ending.length() &&
             0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
@@ -465,8 +465,8 @@ bool MACCSMetadataHelper::CheckFileExistence(std::string &fileName) {
 
 
 // Get the id of the band. Return -1 if band not found.
-int MACCSMetadataHelper::getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name) {
-    for (const MACCSBand& band : bands) {
+int MACCSMetadataHelper::getBandIndex(const std::vector<CommonBand>& bands, const std::string& name) {
+    for (const CommonBand& band : bands) {
         if (band.Name == name) {
             return std::stoi(band.Id);
         }
@@ -474,8 +474,8 @@ int MACCSMetadataHelper::getBandIndex(const std::vector<MACCSBand>& bands, const
     return -1;
 }
 
-const MACCSResolution& MACCSMetadataHelper::GetMACCSResolutionInfo(int nResolution) {
-    for(const MACCSResolution& maccsRes: m_metadata->ImageInformation.Resolutions) {
+const CommonResolution& MACCSMetadataHelper::GetMACCSResolutionInfo(int nResolution) {
+    for(const CommonResolution& maccsRes: m_metadata->ImageInformation.Resolutions) {
         if(std::atoi(maccsRes.Id.c_str()) == nResolution) {
             return maccsRes;
         }
@@ -483,15 +483,15 @@ const MACCSResolution& MACCSMetadataHelper::GetMACCSResolutionInfo(int nResoluti
     itkExceptionMacro("No resolution structure was found in the main xml for S2 resolution : " << nResolution);
 }
 
-std::vector<MACCSBand> MACCSMetadataHelper::GetAllMACCSBandsInfos() {
+std::vector<CommonBand> MACCSMetadataHelper::GetAllMACCSBandsInfos() {
     if(m_missionType == LANDSAT) {
         return m_metadata->ImageInformation.Bands;
     } else {
         // Sentinel 2
-        std::vector<MACCSBand> maccsBands;
+        std::vector<CommonBand> maccsBands;
         int bandIdx = 1;
-        for(const MACCSBandWavelength& maccsBandWavelength: m_metadata->ProductInformation.BandWavelengths) {
-            MACCSBand band;
+        for(const CommonBandWavelength& maccsBandWavelength: m_metadata->ProductInformation.BandWavelengths) {
+            CommonBand band;
             band.Id = std::to_string(bandIdx);
             band.Name = maccsBandWavelength.BandName;
             maccsBands.push_back(band);
@@ -513,7 +513,7 @@ void MACCSMetadataHelper::InitializeS2Angles() {
 
     // first compute the total number of bands to add into m_sensorBandsMeanAngles
     unsigned int nMaxBandId = 0;
-    std::vector<MACCSMeanViewingIncidenceAngle> angles = m_metadata->ProductInformation.MeanViewingIncidenceAngles;
+    std::vector<CommonMeanViewingIncidenceAngle> angles = m_metadata->ProductInformation.MeanViewingIncidenceAngles;
     for(unsigned int i = 0; i<angles.size(); i++) {
         unsigned int anglesBandId = std::atoi(angles[i].BandId.c_str());
         if(nMaxBandId < anglesBandId) {
@@ -595,7 +595,7 @@ bool MACCSMetadataHelper::BandAvailableForCurrentResolution(unsigned int nBand) 
     } else {
         // Sentinel 2
         if(nBand < m_metadata->ProductInformation.BandResolutions.size()) {
-            const MACCSBandResolution& maccsBandResolution = m_metadata->ProductInformation.BandResolutions[nBand];
+            const CommonBandResolution& maccsBandResolution = m_metadata->ProductInformation.BandResolutions[nBand];
             int nBandRes = std::atoi(maccsBandResolution.Resolution.c_str());
             if(nBandRes == m_nResolution) {
                 return true;

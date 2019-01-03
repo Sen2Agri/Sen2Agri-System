@@ -329,9 +329,9 @@ private:
     }
 
     // Return the path to a file for which the name end in the ending
-    std::string getMACCSRasterFileName(const std::string& rootFolder, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
+    std::string getMACCSRasterFileName(const std::string& rootFolder, const std::vector<CommonFileInformation>& imageFiles, const std::string& ending) {
 
-        for (const MACCSFileInformation& fileInfo : imageFiles) {
+        for (const CommonFileInformation& fileInfo : imageFiles) {
             if (fileInfo.LogicalName.length() >= ending.length() &&
                     0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
                 return rootFolder + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";

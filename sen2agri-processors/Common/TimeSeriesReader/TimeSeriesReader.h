@@ -231,7 +231,7 @@ protected:
     void ProcessSentinel2Metadata(const MACCSFileMetadata& meta, const std::string& filename, ImageDescriptor& descriptor, const TileData& td);
 
     // Get the id of the band. Return -1 if band not found.
-    int getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name);
+    int getBandIndex(const std::vector<CommonBand>& bands, const std::string& name);
 
     UInt8ImageReaderType::Pointer getUInt8ImageReader(const std::string& filePath);
 
@@ -241,10 +241,10 @@ protected:
     FloatVectorImageReaderType::Pointer getFloatVectorImageReader(const std::string& filePath);
 
     // Return the path to a file for which the name end in the ending
-    std::string getMACCSRasterFileName(const boost::filesystem::path &rootFolder, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending);
+    std::string getMACCSRasterFileName(const boost::filesystem::path &rootFolder, const std::vector<CommonFileInformation>& imageFiles, const std::string& ending);
 
     // Return the path to a file for which the name end in the ending
-    std::string getMACCSMaskFileName(const boost::filesystem::path &rootFolder, const std::vector<MACCSAnnexInformation>& maskFiles, const std::string& ending);
+    std::string getMACCSMaskFileName(const boost::filesystem::path &rootFolder, const std::vector<CommonAnnexInformation>& maskFiles, const std::string& ending);
 
     virtual void getSpotBands(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor);
     otb::Wrapper::UInt8ImageType::Pointer getSpotMask(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td);

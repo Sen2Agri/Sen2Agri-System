@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Earth_Explorer_File xmlns="http://gs2.esa.int/DATA_STRUCTURE/olqcReport">
+    <Earth_Explorer_Header>
+        <Fixed_Header>
+            <File_Name>GEOMETRIC_QUALITY.xml</File_Name>
+            <File_Description>Report produced by OLQC-SC</File_Description>
+            <Notes></Notes>
+            <Mission>S2B</Mission>
+            <File_Class>OPER</File_Class>
+            <File_Type>REP_OLQCPA</File_Type>
+            <Validity_Period>
+                <Validity_Start>UTC=2015-06-22T00:00:00</Validity_Start>
+                <Validity_Stop>UTC=2100-01-01T00:00:00</Validity_Stop>
+            </Validity_Period>
+            <File_Version>2</File_Version>
+            <Source>
+                <System>OLQC-SC</System>
+                <Creator>OLQC-SC</Creator>
+                <Creator_Version>01.06.03</Creator_Version>
+                <Creation_Date>UTC=2018-11-27T17:26:10</Creation_Date>
+            </Source>
+        </Fixed_Header>
+    </Earth_Explorer_Header>
+    <Data_Block type="xml">
+        <report gippVersion="1.0" globalStatus="PASSED" date="2018-11-27T17:26:10.440Z">
+            <checkList>
+                <parentID>S2B_OPER_GIP_OLQCPA_MPC__20180528T000018_V20150622T000000</parentID>
+                <name>GEOMETRIC_QUALITY</name>
+                <version>1.0</version>
+                <item url="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/" className="PDI Level 2A Datastrip Folder" name="S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11" class="http://www.esa.int/s2#pdi_level_2a_datastrip_container"/>
+                <check>
+                    <inspection creation="2018-11-27T17:26:10.406Z" duration="6" execution="2018-11-27T17:26:10.429Z" id="Ephemeris_Quality" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check the ephemeris quality value. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Ephemeris quality is valid (2.0&lt;=9.0) </message>
+                    <extraValues>
+                        <value name="VALUE">2.0</value>
+                        <value name="EXPECTED">9.0</value>
+                    </extraValues>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:10.442Z" duration="6" execution="2018-11-27T17:26:10.465Z" id="Absolute_Location_Value" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check the absolute Location value. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Absolute location is valid (20.0&lt;30.0) </message>
+                    <extraValues>
+                        <value name="VALUE">20.0</value>
+                        <value name="EXPECTED">30.0</value>
+                    </extraValues>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:10.505Z" duration="186" execution="2018-11-27T17:26:10.526Z" id="Attitude_Quality_Indicator_Raw" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check the admissibility of Raw Attitude Quality Indicator. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">No wrong raw attitude indicators were found.</message>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:12.921Z" duration="5" execution="2018-11-27T17:26:12.935Z" id="Planimetric_Stability" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check the planimetric stability value  " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Planimetric stability is valid (3.0&lt;5.0) </message>
+                    <extraValues>
+                        <value name="VALUE">3.0</value>
+                        <value name="EXPECTED">5.0</value>
+                    </extraValues>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:12.965Z" duration="1" execution="2018-11-27T17:26:12.987Z" id="Geometric_Refining_Image_Refining" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check of the correctness of the Geometric Refining: Image Refining. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Geometry of image has not been refined.</message>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:13.051Z" duration="5" execution="2018-11-27T17:26:13.097Z" id="Geometric_Refining_Spatio_Residual_Histograms" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check of the correctness of the Geometric Refining: Spatio Residual Histograms. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">Geometric Spatio Residual Histograms not computed.</message>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:13.166Z" duration="1" execution="2018-11-27T17:26:13.186Z" id="Geometric_Refining_Vnir_Swir_Registration" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check of the correctness of the Geometric Refining: VNIR/SWIR Registration. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">VNIR / SWIR bands have not been registered.</message>
+                </check>
+                <check>
+                    <inspection creation="2018-11-27T17:26:13.203Z" duration="391" execution="2018-11-27T17:26:13.214Z" id="Attitude_Quality_Indicator_Corrected" item="MTD_DS.xml" itemURL="/dpc/data/phoebus-share/PHOEBUS-3.4.1.1/wp_in_progress/l2a_20181127_30/app_data/steps_data/DS/S2B_OPER_MSI_L2A_DS_SGS__20181127T154920_S20181127T115214_N02.11/MTD_DS.xml" name="Check the admissibility of Corrected Attitude Quality Indicator. " priority="5" processingStatus="done" status="PASSED"/>
+                    <message contentType="text/plain">No wrong corrected attitude indicators were found.</message>
+                </check>
+            </checkList>
+        </report>
+    </Data_Block>
+</Earth_Explorer_File>
