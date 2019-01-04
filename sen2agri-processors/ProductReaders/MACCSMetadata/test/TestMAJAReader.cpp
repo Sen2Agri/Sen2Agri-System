@@ -31,8 +31,8 @@ BOOST_AUTO_TEST_CASE(MAJAReader)
     BOOST_CHECK_EQUAL(m->InstanceId.AcquisitionDate, "20160928");
     BOOST_CHECK_EQUAL(m->Header.FixedHeader.Mission, "SENTINEL2A");
 
-
     /*
+     * specific MAJA
     //metadata identification
     BOOST_CHECK_EQUAL(m->MetadataIdentification.MetadataFormat, "METADATA_MUSCATE");
     BOOST_CHECK_EQUAL(m->MetadataIdentification.MetdataFormatVersion, "1.16");
@@ -44,7 +44,8 @@ BOOST_AUTO_TEST_CASE(MAJAReader)
     BOOST_CHECK_EQUAL(m->DatasetIdentification.Authority, "THEIA");
     BOOST_CHECK_EQUAL(m->DatasetIdentification.Producer, "MUSCATE");
     BOOST_CHECK_EQUAL(m->DatasetIdentification.Project, "SENTINEL2");
-*/
+    */
+
     //product characteristic
     BOOST_ASSERT(m->ImageInformation.Resolutions.size() == 2);
     BOOST_CHECK_EQUAL(m->ImageInformation.Resolutions[0].Id, "R1");
@@ -179,7 +180,6 @@ BOOST_AUTO_TEST_CASE(MAJAReader)
     BOOST_CHECK_EQUAL(m->ProductOrganization.AnnexFiles[5].File.GroupId, "R2");
 
     BOOST_CHECK_EQUAL(m->ProductInformation.AcquisitionDateTime, "2016-09-28T10:56:37.665Z");
-
 
     //MAJAProductInformation ProductInformation;
     BOOST_CHECK_EQUAL(m->ProductInformation.MeanSunAngle.ZenithUnit, "deg");
