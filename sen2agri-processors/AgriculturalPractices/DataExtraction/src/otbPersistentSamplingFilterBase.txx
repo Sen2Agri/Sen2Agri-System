@@ -376,6 +376,14 @@ PersistentSamplingFilterBase<TInputImage,TMaskImage>
   ogr::Layer::const_iterator featIt = layerForThread.begin();
   for(; featIt!=layerForThread.end(); ++featIt)
     {
+      if (m_FieldValueFilterIds.size() > 0) {
+          // ignore values that are not in the filters map
+          std::string className(featIt->ogr().GetFieldAsString(this->GetFieldIndex()));
+          if (m_FieldValueFilterIds.find(className) == m_FieldValueFilterIds.end()) {
+                continue;
+          }
+      }
+
     // Compute the intersection of thread region and polygon bounding region, called "considered region"
     // This need not be done in ThreadedGenerateData and could be pre-processed and cached before filter execution if needed
     RegionType consideredRegion = FeatureBoundingRegion(inputImage, featIt);

@@ -1,10 +1,12 @@
 find_package(Boost REQUIRED COMPONENTS filesystem)
 
 include_directories(../../../Common/OTBExtensions)
+include_directories(../../Common/include)
 
 otb_create_application(
   NAME           TimeSeriesAnalysis
   SOURCES        otbTimeSeriesAnalysis.cpp
+                 ../../Common/include/CommonFunctions.h ../../Common/include/CommonDefs.h
                  TimeSeriesAnalysisTypes.h
                  TimeSeriesAnalysisUtils.h
                  PracticesEvaluator.h

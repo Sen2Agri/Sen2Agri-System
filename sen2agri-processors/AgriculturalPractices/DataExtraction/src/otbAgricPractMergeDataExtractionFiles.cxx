@@ -692,16 +692,6 @@ private:
       return ssStr.size();
   }
 
-  std::string GetIndividualFieldFileName(const std::string &outDirPath, const std::string &fileName) {
-      boost::filesystem::path rootFolder(outDirPath);
-      // check if this path is a folder or a file
-      // if it is a file, then we get its parent folder
-      if (!boost::filesystem::is_directory(rootFolder)) {
-          rootFolder = rootFolder.parent_path();
-      }
-      return (rootFolder / fileName).string() + ".txt";
-  }
-
 private:
     FidInfosComparator  m_FidInfosComparator;
     std::string         m_outFormat;

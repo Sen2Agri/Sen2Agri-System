@@ -6,49 +6,9 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-#define SEC_IN_DAY                   86400          // seconds in day = 24 * 3600
+#include "CommonDefs.h"
 
-#define NDVI_STR    "_SNDVI_"
-#define VV_STR      "_VV_"
-#define VH_STR      "_VH_"
-#define LAI_STR     "_SLAI_"
-
-#define AMP_STR      "_AMP"
-#define COHE_STR     "_COHE"
-
-
-#define NDVI_REGEX          R"(S2AGRI_L3B_SNDVI_A(\d{8})T.*\.TIF)"
-#define LAI_REGEX           R"(S2AGRI_L3B_SLAI_A(\d{8})T.*\.TIF)"
-
-// 2017 naming format for coherence and amplitude
-#define COHE_VV_REGEX_OLD       R"((\d{8})-(\d{8})_.*_(\d{3})_VV_.*\.tiff)"
-#define COHE_VH_REGEX_OLD       R"((\d{8})-(\d{8})_.*_(\d{3})_VH_.*\.tiff)"
-#define AMP_VV_REGEX_OLD        R"((\d{8})_.*_VV_.*\.tiff)"
-#define AMP_VH_REGEX_OLD        R"((\d{8})_.*_VH_.*\.tiff)"
-
-// 2018 naming format for coherence and amplitude
-#define COHE_VV_REGEX       R"(SEN4CAP_L2A_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VV_(\d{3})_COHE\.tif)"
-#define COHE_VH_REGEX       R"(SEN4CAP_L2A_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VH_(\d{3})_COHE\.tif)"
-#define AMP_VV_REGEX        R"(SEN4CAP_L2A_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VV_\d{3}_AMP\.tif)"
-#define AMP_VH_REGEX        R"(SEN4CAP_L2A_.*_V(\d{8})T\d{6}_(\d{8})T\d{6}_VH_\d{3}_AMP\.tif)"
-
-#define NDVI_REGEX_DATE_IDX         1
-
-#define COHE_REGEX_DATE_IDX         1           // this is the same for 2017 and 2018 formats
-#define COHE_REGEX_DATE2_IDX        2           // this is the same for 2017 and 2018 formats
-
-#define AMP_REGEX_DATE_IDX          1
-#define AMP_REGEX_DATE2_IDX         2           // this does not exists for 2017
-
-#define COHE_REGEX_ORBIT_IDX        3           // this is the same for 2017 and 2018 formats
-
-#define LAI_REGEX_DATE_IDX          1
-
-#define NDVI_FT         "NDVI"
-#define AMP_FT          "AMP"
-#define COHE_FT         "COHE"
-
-std::vector<std::string> split (const std::string &s, char delim) {
+inline std::vector<std::string> split (const std::string &s, char delim) {
     std::vector<std::string> result;
     std::stringstream ss (s);
     std::string item;
@@ -60,12 +20,7 @@ std::vector<std::string> split (const std::string &s, char delim) {
     return result;
 }
 
-
-void NormalizeFieldId(std::string &fieldId) {
-    std::replace( fieldId.begin(), fieldId.end(), '/', '_');
-}
-
-time_t to_time_t(const boost::gregorian::date& date ){
+inline time_t to_time_t(const boost::gregorian::date& date ){
     if (date.is_not_a_date()) {
         return 0;
     }
@@ -76,14 +31,22 @@ time_t to_time_t(const boost::gregorian::date& date ){
     return time_t(secs);
 }
 
-std::string TimeToString(time_t ttTime) {
+inline std::string TimeToString(time_t ttTime) {
+    if (ttTime == 0) {
+        return "NA";
+    }
     std::tm * ptm = std::gmtime(&ttTime);
     char buffer[20];
     std::strftime(buffer, 20, "%Y-%m-%d", ptm);
     return buffer;
 }
 
-bool GetFileInfosFromName(const std::string &filePath, std::string &fileType, std::string & polarisation,
+
+inline void NormalizeFieldId(std::string &fieldId) {
+    std::replace( fieldId.begin(), fieldId.end(), '/', '_');
+}
+
+inline bool GetFileInfosFromName(const std::string &filePath, std::string &fileType, std::string & polarisation,
                           std::string & orbit, time_t &fileDate, time_t &additionalFileDate, bool useLatestNameFormat = true)
 {
     boost::filesystem::path p(filePath);
@@ -175,7 +138,7 @@ bool GetFileInfosFromName(const std::string &filePath, std::string &fileType, st
     return false;
 }
 
-std::string BuildOutputFileName(const std::string &fid, const std::string &fileType,
+inline std::string BuildOutputFileName(const std::string &fid, const std::string &fileType,
                                 const std::string &polarisation, const std::string &orbitId,
                                 time_t ttFileDate, time_t ttAdditionalFileDate, bool fullFileName=false) {
     // 31.0000001696738.001_timeseries_VH - AMP
@@ -204,7 +167,18 @@ std::string BuildOutputFileName(const std::string &fid, const std::string &fileT
     }
 }
 
-std::string DoubleToString(double value, int precission = 7)
+inline std::string GetIndividualFieldFileName(const std::string &outDirPath, const std::string &fileName) {
+    boost::filesystem::path rootFolder(outDirPath);
+    // check if this path is a folder or a file
+    // if it is a file, then we get its parent folder
+    if (!boost::filesystem::is_directory(rootFolder)) {
+        rootFolder = rootFolder.parent_path();
+    }
+    return (rootFolder / fileName).string() + ".txt";
+}
+
+
+inline std::string DoubleToString(double value, int precission = 7)
 {
     std::stringstream stream;
     stream << std::fixed << std::setprecision(precission) << value;

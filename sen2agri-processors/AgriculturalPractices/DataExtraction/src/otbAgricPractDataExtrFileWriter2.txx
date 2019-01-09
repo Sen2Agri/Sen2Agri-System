@@ -123,7 +123,8 @@ template < class TMeasurementVector >
 template <typename MapType, typename MapMinMaxType>
 void
 AgricPractDataExtrFileWriter2<TMeasurementVector>
-::AddInputMap(const std::string &fileName, const MapType& map, const MapMinMaxType& mapMins, const MapMinMaxType& mapMax )
+::AddInputMap(const std::string &fileName, const MapType& map, const MapMinMaxType& mapMins, const MapMinMaxType& mapMax,
+              const MapMinMaxType& mapValidPixels, const MapMinMaxType& mapInvalidPixels)
 {
     std::string fileType;
     std::string polarisation;
@@ -144,11 +145,19 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
     int stdevPosInHeader = GetPositionInHeader("stdev");
     int minPosInHeader = -1;
     int maxPosInHeader = -1;
+    int validPixelsPosInHeader = -1;
+    int invalidPixelsPosInHeader = -1;
+
     bool useMinMax = false;
     if (m_bUseMinMax) {
         minPosInHeader = GetPositionInHeader("min");
         maxPosInHeader = GetPositionInHeader("max");
-        if (map.size() == mapMins.size() && map.size() == mapMax.size()) {
+        validPixelsPosInHeader = GetPositionInHeader("valid_pixels_cnt");
+        invalidPixelsPosInHeader = GetPositionInHeader("invalid_pixels_cnt");
+
+        if (map.size() == mapMins.size() && map.size() == mapMax.size() &&
+                map.size() == mapValidPixels.size() &&
+                map.size() == mapInvalidPixels.size()) {
             useMinMax = true;
         }
     }
@@ -156,6 +165,9 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
     typename MapType::const_iterator it;
     typename MapMinMaxType::const_iterator itMin = mapMins.begin();
     typename MapMinMaxType::const_iterator itMax = mapMax.begin();
+    typename MapMinMaxType::const_iterator itValidPixelsCnt = mapValidPixels.begin();
+    typename MapMinMaxType::const_iterator itInvalidPixelsCnt = mapInvalidPixels.begin();
+
     std::string fieldId;
     for ( it = map.begin() ; it != map.end() ; ++it)
     {
@@ -173,37 +185,29 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
 
       typename std::map<std::string, FileFieldsInfoType>::iterator containerIt =
               m_FileFieldsContainer.find(uniqueId);
-      if(containerIt != m_FileFieldsContainer.end()) {
-          FieldEntriesType fieldEntry;
-          fieldEntry.date = fileDate;
-          fieldEntry.additionalFileDate = additionalFileDate;
-          // we exclude from the header the fid and the date
-          fieldEntry.values.resize(m_HeaderFields.size() - 2);
-          fieldEntry.values[meanPosInHeader] = meanVal;
-          fieldEntry.values[stdevPosInHeader] = stdDevVal;
-          if (useMinMax && minPosInHeader > 0 && maxPosInHeader > 0) {
-              fieldEntry.values[minPosInHeader] = itMin->second[0];
-              fieldEntry.values[maxPosInHeader] = itMax->second[0];
-          }
-          containerIt->second.fieldsEntries.push_back(fieldEntry);
 
+      FieldEntriesType fieldEntry;
+      fieldEntry.date = fileDate;
+      fieldEntry.additionalFileDate = additionalFileDate;
+      // we exclude from the header the fid and the date
+      fieldEntry.values.resize(m_HeaderFields.size() - 2);
+      fieldEntry.values[meanPosInHeader] = meanVal;
+      fieldEntry.values[stdevPosInHeader] = stdDevVal;
+      if (useMinMax && minPosInHeader > 0 && maxPosInHeader > 0 &&
+              validPixelsPosInHeader > 0 && invalidPixelsPosInHeader > 0) {
+          fieldEntry.values[minPosInHeader] = itMin->second[0];
+          fieldEntry.values[maxPosInHeader] = itMax->second[0];
+          fieldEntry.values[validPixelsPosInHeader] = itValidPixelsCnt->second[0];
+          fieldEntry.values[invalidPixelsPosInHeader] = itInvalidPixelsCnt->second[0];
+      }
+
+      if(containerIt != m_FileFieldsContainer.end()) {
+          containerIt->second.fieldsEntries.push_back(fieldEntry);
       } else {
           // add it into the container
           FileFieldsInfoType fileFieldsInfoType;
           fileFieldsInfoType.fid = fieldId;
           fileFieldsInfoType.fileName = fieldOutFileName;
-
-          FieldEntriesType fieldEntry;
-          fieldEntry.date = fileDate;
-          fieldEntry.additionalFileDate = additionalFileDate;
-          // we exclude from the header the fid and the date
-          fieldEntry.values.resize(m_HeaderFields.size() - 2);
-          fieldEntry.values[meanPosInHeader] = meanVal;
-          fieldEntry.values[stdevPosInHeader] = stdDevVal;
-          if (useMinMax && minPosInHeader > 0 && maxPosInHeader > 0) {
-              fieldEntry.values[minPosInHeader] = itMin->second[0];
-              fieldEntry.values[maxPosInHeader] = itMax->second[0];
-          }
           fileFieldsInfoType.fieldsEntries.push_back(fieldEntry);
 
           m_FileFieldsContainer[uniqueId] = fileFieldsInfoType;
@@ -211,6 +215,8 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
       if (useMinMax) {
           ++itMin;
           ++itMax;
+          ++itValidPixelsCnt;
+          ++itInvalidPixelsCnt;
       }
     }
 }
@@ -353,20 +359,6 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
     }
     fileStream << "\n";
 }
-
-template < class TMeasurementVector >
-std::string
-AgricPractDataExtrFileWriter2<TMeasurementVector>
-::GetIndividualFieldFileName(const std::string &outPath, const std::string &fileName) {
-    boost::filesystem::path rootFolder(outPath);
-    // check if this path is a folder or a file
-    // if it is a file, then we get its parent folder
-    if (!boost::filesystem::is_directory(rootFolder)) {
-        rootFolder = rootFolder.parent_path();
-    }
-    return (rootFolder / fileName).string() + ".txt";
-}
-
 
 template < class TMeasurementVector >
 void

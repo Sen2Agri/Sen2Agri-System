@@ -220,6 +220,10 @@ private:
         MandatoryOff("minmax");
         SetDefaultParameterInt("minmax",0);
 
+        AddParameter(ParameterType_InputFilename, "filterids", "File containing ids to be filtered");
+        SetParameterDescription("filterids","File containing ids to be filtered i.e. the monitorable parcels ids");
+        MandatoryOff("filterids");
+
         //ElevationParametersHandler::AddElevationParameters(this, "elev");
 
         AddRAMParameter();
@@ -238,8 +242,7 @@ private:
         if ( HasValue("vec") )
         {
             std::string vectorFile = GetParameterString("vec");
-            ogr::DataSource::Pointer ogrDS =
-            ogr::DataSource::New(vectorFile, ogr::DataSource::Modes::Read);
+            ogr::DataSource::Pointer ogrDS = ogr::DataSource::New(vectorFile, ogr::DataSource::Modes::Read);
             ogr::Layer layer = ogrDS->GetLayer(this->GetParameterInt("layer"));
             ogr::Feature feature = layer.ogr().GetNextFeature();
 
@@ -269,7 +272,11 @@ private:
         const std::vector<int> &selectedCFieldIdx = GetSelectedItems("field");
         if(selectedCFieldIdx.empty())
         {
-            otbAppLogFATAL(<<"No field has been selected for data labelling!");
+            otbAppLogWARNING(<<"No field has been selected for data labelling! Using " << SEQ_UNIQUE_ID);
+            m_fieldName = SEQ_UNIQUE_ID;
+        } else {
+            const std::vector<std::string> &cFieldNames = GetChoiceNames("field");
+            m_fieldName = cFieldNames[selectedCFieldIdx.front()];
         }
 
         m_imagesPaths = this->GetParameterStringList("il");
@@ -282,8 +289,8 @@ private:
         otbAppLogINFO("Loading vectors from file " << vectFile);
         m_vectors = otb::ogr::DataSource::New(vectFile);
 
-        const std::vector<std::string> &cFieldNames = GetChoiceNames("field");
-        m_fieldName = cFieldNames[selectedCFieldIdx.front()];
+        // Load the file containing the parcel ids filters, if specified
+        LoadMonitorableParcelIdsFilters();
 
         m_bConvToDb = false;
         if (IsParameterEnabled("convdb") && HasValue("convdb")) {
@@ -360,8 +367,11 @@ private:
         const FilterType::PixeMeanStdDevlValueMapType &meanStdValues = filter->GetMeanStdDevValueMap();
         const FilterType::PixelValueMapType &minValues = filter->GetMinValueMap();
         const FilterType::PixelValueMapType &maxValues = filter->GetMaxValueMap();
+        const FilterType::PixelValueMapType &validPixelsCntValues = filter->GetValidPixelsCntMap();
+        const FilterType::PixelValueMapType &invalidPixelsCntValues = filter->GetInvalidPixelsCntMap();
         m_agricPracticesDataWriter->AddInputMap<FilterType::PixeMeanStdDevlValueMapType,
-                FilterType::PixelValueMapType>(imgPath, meanStdValues, minValues, maxValues);
+                FilterType::PixelValueMapType>(imgPath, meanStdValues, minValues, maxValues,
+                                               validPixelsCntValues, invalidPixelsCntValues);
 
         otbAppLogINFO("Extracted a number of " << meanStdValues.size() << " values for file " << imgPath);
 
@@ -398,12 +408,15 @@ private:
             {
                 otb::ogr::Layer const& inputLayer = *lb;
                 otb::ogr::Layer::const_iterator featIt = inputLayer.begin();
+                int colIndex = -1;
                 for(; featIt!=inputLayer.end(); ++featIt)
                 {
                     OGRFeature &ogrFeat = (*featIt).ogr();
-                    int colIndex = ogrFeat.GetFieldIndex(m_shpIntUniqueIdColName.c_str());
                     if (colIndex == -1) {
-                        otbAppLogFATAL("Column for the unique index " << m_shpIntUniqueIdColName << " does not exists in the shapefile!")
+                        colIndex = ogrFeat.GetFieldIndex(m_fieldName.c_str());
+                    }
+                    if (colIndex == -1) {
+                        otbAppLogFATAL("Column for the unique index " << m_fieldName << " does not exists in the shapefile!")
                     }
                     int fieldValue = ogrFeat.GetFieldAsInteger(colIndex);
                     StatisticsFilterType::PixelValueMapType::const_iterator itMean;
@@ -423,8 +436,11 @@ private:
         }
         FilterType::PixelValueMapType minMap;// = statisticsFilter->GetMinValueMap();
         FilterType::PixelValueMapType maxMap;// = statisticsFilter->GetMaxValueMap();
+        FilterType::PixelValueMapType validPixelsCntMap;// = statisticsFilter->GetMaxValueMap();
+        FilterType::PixelValueMapType invalidPixelsCntMap;// = statisticsFilter->GetMaxValueMap();
         m_agricPracticesDataWriter->AddInputMap<FilterType::PixeMeanStdDevlValueMapType,
-                FilterType::PixelValueMapType>(imgInfos.inputImage, fieldsMap, minMap, maxMap);
+                FilterType::PixelValueMapType>(imgInfos.inputImage, fieldsMap, minMap, maxMap,
+                                               validPixelsCntMap, invalidPixelsCntMap);
     }
 
     FilterType::Pointer GetStatisticsFilter(const FloatVectorImageType::Pointer &inputImg,
@@ -451,7 +467,7 @@ private:
         if (m_bOutputMinMax) {
             filter->SetComputeMinMax(true);
         }
-
+        filter->SetFieldValueFilterIds(m_FilterIdsMap);
         filter->SetOGRData(reprojVector);
         filter->SetFieldName(fieldName);
         filter->SetLayerIndex(this->GetParameterInt("layer"));
@@ -493,6 +509,9 @@ private:
         if (m_bOutputMinMax) {
             header.push_back("min");
             header.push_back("max");
+            header.push_back("valid_pixels_cnt");
+            header.push_back("invalid_pixels_cnt");
+
             m_agricPracticesDataWriter->SetUseMinMax(true);
         }
         m_agricPracticesDataWriter->SetHeaderFields(header);
@@ -667,6 +686,31 @@ private:
         return retImg;
     }
 
+    void LoadMonitorableParcelIdsFilters() {
+        // Reproject geometries
+        if (HasValue("filterids")) {
+            const std::string &filterIdsFile = this->GetParameterString("filterids");
+            if (boost::filesystem::exists(filterIdsFile ))
+            {
+                otbAppLogINFO("Loading filter IDs from file " << filterIdsFile);
+                // load the indexes
+                std::ifstream idxFileStream(filterIdsFile);
+                std::string line;
+                int i = -1;
+                while (std::getline(idxFileStream, line)) {
+                    // ignore the first line which is the header line
+                    if (i == 0) {
+                        i++;
+                        continue;
+                    }
+                    NormalizeFieldId(line);
+                    m_FilterIdsMap[line] = 1;
+                }
+                otbAppLogINFO("Loading filter IDs file done!");
+            }
+        }
+    }
+
     private:
         bool m_bConvToDb;
         bool m_bOutputMinMax;
@@ -687,8 +731,9 @@ private:
         ImageResampler<FeatureImageType, FeatureImageType>  m_ImageResampler;
 
         bool m_bIndividualOutFilesForInputs;
-        // TODO: extract this from the app parameters
-        std::string m_shpIntUniqueIdColName = "seq_id";
+
+        typedef std::map<std::string, int> FilterIdsMapType;
+        FilterIdsMapType m_FilterIdsMap;
 };
 
 } // end of namespace Wrapper

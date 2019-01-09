@@ -8,6 +8,7 @@
 #include <cinttypes>
 
 #include "TimeSeriesAnalysisUtils.h"
+#include "CommonFunctions.h"
 
 typedef struct XmlFieldInfos {
     XmlFieldInfos() {

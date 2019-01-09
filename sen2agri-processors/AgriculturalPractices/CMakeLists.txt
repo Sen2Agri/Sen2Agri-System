@@ -1,2 +1,3 @@
 add_subdirectory(DataExtraction)
 add_subdirectory(TimeSeriesAnalysis)
+add_subdirectory(LPISDataSelection)

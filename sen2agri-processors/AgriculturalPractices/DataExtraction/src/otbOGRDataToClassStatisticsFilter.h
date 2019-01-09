@@ -81,6 +81,7 @@ public:
             for (unsigned int band = 0 ; band < m_SqSum.GetSize() ; band++) {
                 if (checkValid(pixel[band])) {
                     m_Count[band] = 1;
+                    m_CountInvalid[band] = 0;
                     m_SqSum[band] *= m_SqSum[band];
                 } else {
                     m_CountInvalid[band] = 1;
@@ -266,6 +267,12 @@ public:
    /** Return the computed Max for each label in the input label image */
    PixelValueMapType GetMaxValueMap() const;
 
+   /** Return the computed the number of valid pixels for each label in the input label image */
+   PixelValueMapType GetValidPixelsCntMap() const;
+
+   /** Return the computed the number of invalid pixels for each label in the input label image */
+   PixelValueMapType GetInvalidPixelsCntMap() const;
+
   /** Make a DataObject of the correct type to be used as the specified
    * output. */
   itk::DataObject::Pointer MakeOutput(DataObjectPointerArraySizeType idx) override;
@@ -328,6 +335,9 @@ private:
 
   PixelValueMapType                      m_MinRadiometricValue;
   PixelValueMapType                      m_MaxRadiometricValue;
+
+  PixelValueMapType                      m_ValidPixelsCnt;
+  PixelValueMapType                      m_InvalidPixelsCnt;
 
   bool m_ComputeMinMax;
 
@@ -400,6 +410,10 @@ public:
   void SetLayerIndex(int index);
   int GetLayerIndex();
 
+  void SetFieldValueFilterIds(const std::map<std::string, int> &filters);
+  std::map<std::string, int> GetFieldValueFilterIds();
+
+
   const ClassCountObjectType* GetClassCountOutput() const;
   ClassCountObjectType* GetClassCountOutput();
 
@@ -423,6 +437,11 @@ public:
    /** Return the computed Max for each label in the input label image */
    PixelValueMapType GetMaxValueMap() const;
 
+   /** Return the computed the number of valid pixels for each label in the input label image */
+   PixelValueMapType GetValidPixelsCntMap() const;
+
+   /** Return the computed the number of invalid pixels for each label in the input label image */
+   PixelValueMapType GetInvalidPixelsCntMap() const;
 
 protected:
   /** Constructor */

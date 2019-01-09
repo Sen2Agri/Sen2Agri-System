@@ -82,14 +82,14 @@ public:
 
   /** Method to add a map statistic with a given type */
   template <typename MapType, typename MapMinMaxType>
-  void AddInputMap(const std::string &fileName, const MapType& map, const MapMinMaxType& mapMins, const MapMinMaxType& mapMax);
+  void AddInputMap(const std::string &fileName, const MapType& map, const MapMinMaxType& mapMins, const MapMinMaxType& mapMax,
+                   const MapMinMaxType& mapValidPixels, const MapMinMaxType& mapInvalidPixels);
 
   void WriteOutputXmlFile();
   void WriteEntriesToXmlOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos);
 
   void WriteOutputCsvFormat();
   void WriteCsvHeader(std::ofstream &fileStream, bool individualFieldFile);
-  std::string GetIndividualFieldFileName(const std::string &outPath, const std::string &fileName);
   void WriteEntriesToCsvOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos, bool writeSuffix);
 
   /** Remove previously added inputs (vectors and maps) */

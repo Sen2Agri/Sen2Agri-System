@@ -8,6 +8,8 @@
 #include <gsl/gsl_fit.h>
 #include <gsl/gsl_cdf.h>
 
+#include "CommonFunctions.h"
+
 #define NOT_AVAILABLE               -10000
 #define NR                          -10001
 #define SEC_IN_DAY                   86400          // seconds in day = 24 * 3600
@@ -16,24 +18,6 @@
 #define DOUBLE_EPSILON                  0.00000001
 
 boost::gregorian::greg_weekday const FirstDayOfWeek = boost::gregorian::Monday;
-
-inline std::vector<std::string> split (const std::string &s, char delim) {
-    std::vector<std::string> result;
-    std::stringstream ss (s);
-    std::string item;
-
-    while (std::getline (ss, item, delim)) {
-        result.push_back (item);
-    }
-
-    return result;
-}
-
-
-inline void NormalizeFieldId(std::string &fieldId) {
-    std::replace( fieldId.begin(), fieldId.end(), '/', '_');
-}
-
 
 template <typename T>
 inline bool IsNA(T val) {
@@ -75,29 +59,8 @@ inline bool IsGreater(const double &val1, const double &val2) {
     return (val1 > val2);
 }
 
-
-inline time_t to_time_t(const boost::gregorian::date& date ){
-    if (date.is_not_a_date()) {
-        return 0;
-    }
-
-    using namespace boost::posix_time;
-    static ptime epoch(boost::gregorian::date(1970, 1, 1));
-    time_duration::sec_type secs = (ptime(date,seconds(0)) - epoch).total_seconds();
-    return time_t(secs);
-}
-
 inline boost::gregorian::date GetBoostDateFromString(const std::string &strDate) {
     return boost::gregorian::from_simple_string(strDate);
-}
-
-inline time_t GetTimeFromString(const std::string &strDate) {
-    try {
-        boost::gregorian::date const d = boost::gregorian::from_simple_string(strDate);
-        return to_time_t(d);
-    } catch (...) {
-        return 0;
-    }
 }
 
 inline bool ComputeSlope(const std::vector<double>& x, const std::vector<double>& y, double &slope){
@@ -224,6 +187,41 @@ bool ComputePValue(const std::vector<T>& xData, const std::vector<T>& yData, dou
     //std::cout<<"F-statistic:  "<<F<<" on 1 and "<<n-2<<" DF,  p-value: "<<p_value<<std::endl;
     pValue = p_value;
     return true;
+}
+
+template <typename T>
+inline std::string ValueToString(T value, bool isBool = false)
+{
+    if (value == NOT_AVAILABLE) {
+        return "NA";
+    }
+    if (value == NR) {
+        return "NR";
+    }
+    if (isBool) {
+        return value == true ? "TRUE" : "FALSE";
+    }
+    if (std::is_same<T, double>::value) {
+        std::stringstream stream;
+        stream << std::fixed << std::setprecision(7) << value;
+        return stream.str();
+    }
+    return std::to_string(value);
+}
+
+inline time_t GetTimeFromString(const std::string &strDate) {
+    try {
+        boost::gregorian::date const d = boost::gregorian::from_simple_string(strDate);
+        return to_time_t(d);
+    } catch (...) {
+        return 0;
+    }
+}
+
+inline time_t GetTimeOffsetFromStartOfYear(int year, int week) {
+    boost::gregorian::date startYearDate(year, 01, 01);
+    boost::gregorian::date date = startYearDate + boost::gregorian::days(week * 7 - 7);
+    return to_time_t(date);
 }
 
 inline time_t FloorDateToWeekStart(time_t ttTime) {
@@ -368,44 +366,6 @@ inline bool GetWeekFromDate(const std::string &dateStr, int &retYear, int &retWe
 //    retWeek = (date.tm_yday-date.tm_wday+7)/7;
 
     return true;
-}
-
-
-inline time_t GetTimeOffsetFromStartOfYear(int year, int week) {
-    boost::gregorian::date harvestEvalStartYearDate(year, 01, 01);
-    boost::gregorian::date date = harvestEvalStartYearDate + boost::gregorian::days(week * 7 - 7);
-    return to_time_t(date);
-}
-
-
-inline std::string TimeToString(time_t ttTime) {
-    if (ttTime == 0) {
-        return "NA";
-    }
-    std::tm * ptm = std::gmtime(&ttTime);
-    char buffer[20];
-    std::strftime(buffer, 20, "%Y-%m-%d", ptm);
-    return buffer;
-}
-
-template <typename T>
-inline std::string ValueToString(T value, bool isBool = false)
-{
-    if (value == NOT_AVAILABLE) {
-        return "NA";
-    }
-    if (value == NR) {
-        return "NR";
-    }
-    if (isBool) {
-        return value == true ? "TRUE" : "FALSE";
-    }
-    if (std::is_same<T, double>::value) {
-        std::stringstream stream;
-        stream << std::fixed << std::setprecision(7) << value;
-        return stream.str();
-    }
-    return std::to_string(value);
 }
 
 #endif

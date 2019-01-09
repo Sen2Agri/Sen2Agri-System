@@ -55,6 +55,8 @@ public:
   typedef TInputImage  InputImageType;
   typedef TMaskImage   MaskImageType;
 
+  typedef std::map<std::string, int> FieldValuesFilterMap;
+
   typedef typename TInputImage::RegionType RegionType;
 
   typedef ogr::DataSource::Pointer OGRDataPointer;
@@ -92,6 +94,14 @@ public:
   /** Set/Get macro for the layer name */
   itkSetMacro(OutLayerName, std::string);
   itkGetMacro(OutLayerName, std::string);
+
+  /** Set/Get the field values filter map */
+  inline void SetFieldValueFilterIds(const FieldValuesFilterMap &map) {
+      m_FieldValueFilterIds = map;
+  }
+  inline FieldValuesFilterMap GetFieldValueFilterIds() {
+      return m_FieldValueFilterIds;
+  }
 
 protected:
   /** Constructor */
@@ -221,6 +231,9 @@ private:
 
   /** name of the output layers */
   std::string m_OutLayerName;
+
+  /** Filter ids for the selected field values */
+  FieldValuesFilterMap m_FieldValueFilterIds;
 
   /** Creation option for output layers */
   std::vector<std::string> m_OGRLayerCreationOptions;
