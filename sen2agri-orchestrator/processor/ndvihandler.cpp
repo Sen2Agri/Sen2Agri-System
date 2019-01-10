@@ -374,7 +374,7 @@ QStringList NdviHandler::GetNdviProductFormatterArgs(TaskToSubmit &productFormat
         productFormatterArgs += ndviList[i];
     }
 
-    productFormatterArgs += "-processor.vegetation.laimdateflgs";
+    productFormatterArgs += "-processor.vegetation.laistatusflgs";
     for(int i = 0; i<tileIdsList.size(); i++) {
         productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
         productFormatterArgs += laiFlgsList[i];
