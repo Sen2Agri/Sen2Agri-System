@@ -126,6 +126,10 @@ private:
         m_concatenateImagesFilter = ConcatenateImagesFilterType::New();
         //m_Readers = ReadersListType::New();
         m_bOutputMinMax = false;
+        m_bUseS2RasterMasks = false;
+        m_fieldName = SEQ_UNIQUE_ID;
+        m_bConvToDb = false;
+        m_noDataValue = 0;
     }
 
     void DoInit() override
@@ -153,11 +157,16 @@ private:
 
         AddDocTag(Tags::Learning);
 
-        AddParameter(ParameterType_StringList, "il", "Input Images");
-        SetParameterDescription("il", "Support images that will be classified");
+        AddParameter(ParameterType_StringList, "il", "Input Images or file containing the list");
+        SetParameterDescription("il", "Support images that will be classified or a file containing these images");
 
         AddParameter(ParameterType_InputFilename, "vec", "Input vectors");
         SetParameterDescription("vec","Input geometries to analyze");
+        MandatoryOff("vec");
+
+        AddParameter(ParameterType_InputFilename, "filterids", "File containing ids to be filtered");
+        SetParameterDescription("filterids","File containing ids to be filtered i.e. the monitorable parcels ids");
+        MandatoryOff("filterids");
 
         AddParameter(ParameterType_String, "outdir", "Output directory for writing agricultural practices data extractin files");
         SetParameterDescription("outdir","Output directory to store agricultural practices data extractin files (txt format)");
@@ -171,18 +180,16 @@ private:
         MandatoryOff("layer");
         SetDefaultParameterInt("layer",0);
 
-        AddParameter(ParameterType_StringList, "s2il", "S2 tiles parcels masks images");
-        SetParameterDescription("s2il", "S2 tiles parcels masks images");
-        MandatoryOff("s2il");
+//        AddParameter(ParameterType_StringList, "s2il", "S2 tiles parcels masks images");
+//        SetParameterDescription("s2il", "S2 tiles parcels masks images");
+//        MandatoryOff("s2il");
 
-        AddParameter(ParameterType_StringList, "s2ilcnts", "Number of S2 tiles parcels masks images for each input image");
-        SetParameterDescription("s2ilcnts", "Number of S2 tiles parcels masks images for each input image");
-        MandatoryOff("s2ilcnts");
+//        AddParameter(ParameterType_StringList, "s2ilcnts", "Number of S2 tiles parcels masks images for each input image");
+//        SetParameterDescription("s2ilcnts", "Number of S2 tiles parcels masks images for each input image");
+//        MandatoryOff("s2ilcnts");
 
-        AddParameter(ParameterType_Int, "convdb", "Convert pixel values to db before processing");
-        SetParameterDescription("convdb", "Convert pixel values to db before processing.");
-        SetDefaultParameterInt("convdb",0);
-        MandatoryOff("convdb");
+        AddParameter(ParameterType_String, "prdtype", "Input product type (AMP/COHE/NDVI)");
+        SetParameterDescription("prdtype", "Input product type (AMP/COHE/NDVI)");
 
         AddParameter(ParameterType_Int, "oldnf", "Use old naming format");
         SetParameterDescription("oldnf", "Use the 2017 naming format for COHE and AMP format instead of the 2018 format.");
@@ -210,7 +217,6 @@ private:
         MandatoryOff("mfiles");
         SetDefaultParameterInt("mfiles",0);
 
-
         AddParameter(ParameterType_InputImage,  "mask",   "Input validity mask");
         SetParameterDescription("mask", "Validity mask (only pixels corresponding to a mask value greater than 0 will be used for statistics)");
         MandatoryOff("mask");
@@ -219,10 +225,6 @@ private:
         SetParameterDescription("minmax", "Extracts also the minimum and maximum for each parcel");
         MandatoryOff("minmax");
         SetDefaultParameterInt("minmax",0);
-
-        AddParameter(ParameterType_InputFilename, "filterids", "File containing ids to be filtered");
-        SetParameterDescription("filterids","File containing ids to be filtered i.e. the monitorable parcels ids");
-        MandatoryOff("filterids");
 
         //ElevationParametersHandler::AddElevationParameters(this, "elev");
 
@@ -268,53 +270,69 @@ private:
 
     void DoExecute() override
     {
+        m_bOutputMinMax = (GetParameterInt("minmax") != 0);
+        const std::string &prdType = GetParameterAsString("prdtype");
+        if (prdType == "AMP" && !m_bOutputMinMax) {
+            m_bConvToDb = true;
+        } else if (prdType == "NDVI") {
+            m_noDataValue = NO_DATA_VALUE;
+        }
+
         // Retrieve the field name
-        const std::vector<int> &selectedCFieldIdx = GetSelectedItems("field");
-        if(selectedCFieldIdx.empty())
-        {
-            otbAppLogWARNING(<<"No field has been selected for data labelling! Using " << SEQ_UNIQUE_ID);
-            m_fieldName = SEQ_UNIQUE_ID;
-        } else {
-            const std::vector<std::string> &cFieldNames = GetChoiceNames("field");
-            m_fieldName = cFieldNames[selectedCFieldIdx.front()];
+        if (HasValue("vec")) {
+            const std::vector<int> &selectedCFieldIdx = GetSelectedItems("field");
+            if(selectedCFieldIdx.empty())
+            {
+                otbAppLogWARNING(<<"No field has been selected for data labelling! Using " << SEQ_UNIQUE_ID);
+            } else {
+                const std::vector<std::string> &cFieldNames = GetChoiceNames("field");
+                m_fieldName = cFieldNames[selectedCFieldIdx.front()];
+            }
         }
 
-        m_imagesPaths = this->GetParameterStringList("il");
-        if(m_imagesPaths.size() == 0) {
+        const std::vector<std::string> &imagesPaths = this->GetParameterStringList("il");
+        if(imagesPaths.size() == 0) {
             otbAppLogFATAL(<<"No image was given as input!");
+        } else if(imagesPaths.size() == 1) {
+            // If we heva only one file, we check if this is a CSV file containing the
+            // products and the masked S2 rasters
+            boost::filesystem::path pathObj(imagesPaths[0]);
+            std::string ext = pathObj.extension().string();
+            if (boost::iequals(ext, ".csv")) {
+                m_bUseS2RasterMasks = true;
+            }
         }
-
-        // Reproject geometries
-        const std::string &vectFile = this->GetParameterString("vec");
-        otbAppLogINFO("Loading vectors from file " << vectFile);
-        m_vectors = otb::ogr::DataSource::New(vectFile);
+        if (!m_bUseS2RasterMasks && !HasValue("vec")) {
+            otbAppLogFATAL(<<"When S2 rasters files are not used, a shapefile should be provided via vec parameter!");
+        }
 
         // Load the file containing the parcel ids filters, if specified
         LoadMonitorableParcelIdsFilters();
 
-        m_bConvToDb = false;
-        if (IsParameterEnabled("convdb") && HasValue("convdb")) {
-            m_bConvToDb = (GetParameterInt("convdb") != 0);
-        }
-
-        m_bOutputMinMax = (GetParameterInt("minmax") != 0);
+        // Initializes the internal image infos (with or without S2 masks)
+        InitializeInputImageInfos(imagesPaths);
 
         m_bIndividualOutFilesForInputs = (GetParameterInt("ifiles") != 0);
 
         // Initialize the writer
         if (!m_bIndividualOutFilesForInputs) {
-            InitializeWriter(m_imagesPaths);
+            InitializeWriter(imagesPaths);
         }
-
-        // Initializes the internal image infos (with or without S2 masks)
-        InitializeInputImageInfos(m_imagesPaths);
 
         const std::string &outDir = this->GetParameterString("outdir");
 
         int i = 1;
+
+        // Reproject geometries
+        const std::string &vectFile = this->GetParameterString("vec");
+        if (vectFile.size() > 0) {
+            otbAppLogINFO("Loading vectors from file " << vectFile);
+            m_vectors = otb::ogr::DataSource::New(vectFile);
+        }
         otb::ogr::DataSource::Pointer reprojVector = m_vectors;
-        for (std::vector<InputFileInfoType>::const_iterator itInfos = m_s2MaskedInputFiles.begin();
-             itInfos != m_s2MaskedInputFiles.end(); ++itInfos)
+
+        for (std::vector<InputFileInfoType>::const_iterator itInfos = m_InputFilesInfos.begin();
+             itInfos != m_InputFilesInfos.end(); ++itInfos)
         {
             if ( !boost::filesystem::exists(itInfos->inputImage) ) {
                 otbAppLogWARNING("File " << itInfos->inputImage << " does not exist on disk!");
@@ -343,8 +361,8 @@ private:
                 otbAppLogINFO("Writing outputs to folder done!");
             }
 
-            otbAppLogINFO("Processed " << i << " products. Remaining products = " << m_imagesPaths.size() - i <<
-                          ". Percent completed = " << (int)((((double)i) / m_imagesPaths.size()) * 100) << "%");
+            otbAppLogINFO("Processed " << i << " products. Remaining products = " << m_InputFilesInfos.size() - i <<
+                          ". Percent completed = " << (int)((((double)i) / m_InputFilesInfos.size()) * 100) << "%");
 
             i++;
         }
@@ -384,9 +402,10 @@ private:
         for (it = imgInfos.s2MsksFiles.begin(); it != imgInfos.s2MsksFiles.end(); ++it) {
             StatisticsFilterType::Pointer statisticsFilter = StatisticsFilterType::New();
             // cut the input image according to the class image
-            // TODO: Should we do viceversa? to cut the class IMG???
+            otbAppLogINFO("Extracting statistics for input image " << imgInfos.inputImage << " and class file " << *it);
             ClassImageType::Pointer classImg = GetClassImage(*it);
             const FloatVectorImageType::Pointer &cutInputImage = CutImage(inputImage, classImg);
+
             if (m_bConvToDb) {
                 m_IntensityToDbFunctor = IntensityToDbFilterType::New();
                 m_IntensityToDbFunctor->SetInput(cutInputImage);
@@ -396,39 +415,56 @@ private:
                 statisticsFilter->SetInput(cutInputImage);
             }
             statisticsFilter->SetInputLabelImage(classImg);
+            statisticsFilter->SetNoDataValue(m_noDataValue);
+            statisticsFilter->SetUseNoDataValue(true);
 
             AddProcess(statisticsFilter->GetStreamer(), "Computing features...");
             statisticsFilter->Update();
 
             const auto &meanValues = statisticsFilter->GetMeanValueMap();
             const auto &stdDevValues = statisticsFilter->GetStandardDeviationValueMap();
-            //const auto &countValues = statisticsFilter->GetPixelCountMap();
+            const auto &countValidValues = statisticsFilter->GetPixelCountMap();
+            const auto &countAllValues = statisticsFilter->GetLabelPopulationMap();
 
-            for (otb::ogr::DataSource::const_iterator lb=m_vectors->begin(), le=m_vectors->end(); lb != le; ++lb)
+//            for (otb::ogr::DataSource::const_iterator lb=m_vectors->begin(), le=m_vectors->end(); lb != le; ++lb)
+//            {
+//                otb::ogr::Layer const& inputLayer = *lb;
+//                otb::ogr::Layer::const_iterator featIt = inputLayer.begin();
+//                int colIndex = -1;
+//                for(; featIt!=inputLayer.end(); ++featIt)
+//                {
+//                    OGRFeature &ogrFeat = (*featIt).ogr();
+//                    if (colIndex == -1) {
+//                        colIndex = ogrFeat.GetFieldIndex(m_fieldName.c_str());
+//                    }
+//                    if (colIndex == -1) {
+//                        otbAppLogFATAL("Column for the unique index " << m_fieldName << " does not exists in the shapefile!")
+//                    }
+//                    int fieldValue = ogrFeat.GetFieldAsInteger(colIndex);
+            StatisticsFilterType::PixelValueMapType::const_iterator itMean;
+            StatisticsFilterType::PixelValueMapType::const_iterator itStdDev;
+            StatisticsFilterType::PixelCountMapType::const_iterator itCountVald;
+            StatisticsFilterType::LabelPopulationMapType::const_iterator itCountAll;
+            int fieldValue;
+            for(std::map<std::string,int>::const_iterator iter = m_FilterIdsMap.begin(); iter != m_FilterIdsMap.end(); ++iter)
             {
-                otb::ogr::Layer const& inputLayer = *lb;
-                otb::ogr::Layer::const_iterator featIt = inputLayer.begin();
-                int colIndex = -1;
-                for(; featIt!=inputLayer.end(); ++featIt)
-                {
-                    OGRFeature &ogrFeat = (*featIt).ogr();
-                    if (colIndex == -1) {
-                        colIndex = ogrFeat.GetFieldIndex(m_fieldName.c_str());
+                fieldValue =  iter->second;
+                itCountVald = countValidValues.find(fieldValue);
+                if (itCountVald != countValidValues.end()) {
+                    int validCnt = itCountVald->second[0];
+                    itCountAll = countAllValues.find(fieldValue);
+                    int allCnt = itCountAll->second;
+
+                    if ((validCnt == 0) || (validCnt <= 0.1 * allCnt)) {
+                        continue;
                     }
-                    if (colIndex == -1) {
-                        otbAppLogFATAL("Column for the unique index " << m_fieldName << " does not exists in the shapefile!")
-                    }
-                    int fieldValue = ogrFeat.GetFieldAsInteger(colIndex);
-                    StatisticsFilterType::PixelValueMapType::const_iterator itMean;
-                    StatisticsFilterType::PixelValueMapType::const_iterator itStdDev;
                     itMean = meanValues.find(fieldValue);
-                    if (itMean != meanValues.end()) {
-                        itStdDev = stdDevValues.find(fieldValue);
-                        if (itMean != stdDevValues.end()) {
-                            fieldsMap[m_fieldName].mean = itMean->second;
-                            fieldsMap[m_fieldName].stdDev = itStdDev->second;
-                        }
+                    itStdDev = stdDevValues.find(fieldValue);
+                    if (std::isnan(itMean->second[0]) || std::isnan(itStdDev->second[0])) {
+                        continue;
                     }
+                    fieldsMap[iter->first].mean = itMean->second;
+                    fieldsMap[iter->first].stdDev = itStdDev->second;
                 }
             }
 //            m_agricPracticesDataWriter->AddInputMaps<StatisticsFilterType::PixelValueMapType>(imgInfos.inputImage,
@@ -527,49 +563,51 @@ private:
     }
 
     void InitializeInputImageInfos(const std::vector<std::string> &imagesPaths) {
-        if (HasValue("s2il")) {
-            const std::vector<std::string> &s2MsksPaths = this->GetParameterStringList("s2il");
-            if (HasValue("s2ilcnts")) {
-                const std::vector<std::string> &s2MsksCnts = this->GetParameterStringList("s2ilcnts");
-                if (imagesPaths.size() != s2MsksCnts.size()) {
-                    otbAppLogFATAL(<<"Invalid number of S2 masks given for the number of input images list! Expected: " <<
-                                   imagesPaths.size() << " but got " << s2MsksCnts.size());
-                }
-                // first perform a validation of the counts
-                size_t expectedS2Imgs = 0;
-                for (size_t i = 0; i<s2MsksCnts.size(); i++) {
-                    expectedS2Imgs += std::atoi(s2MsksCnts[i].c_str());
-                }
-                if (expectedS2Imgs != s2MsksPaths.size()) {
-                    otbAppLogFATAL(<<"The S2 masks number and the provided S2 files do not match! Expected " <<
-                                   expectedS2Imgs << " but got " << s2MsksPaths.size());
-                }
-                int curS2IlIdx = 0;
-                for (size_t i = 0; i<imagesPaths.size(); i++) {
-                    InputFileInfoType info;
-                    info.inputImage = imagesPaths[i];
-                    int curImgCnt = std::atoi(s2MsksCnts[i].c_str());
-                    for(int j = 0; j<curImgCnt; j++) {
-                        info.s2MsksFiles.emplace_back(s2MsksPaths[curS2IlIdx+j]);
-                    }
-                    m_s2MaskedInputFiles.emplace_back(info);
-                    curS2IlIdx += curImgCnt;
-                }
-            } else {
-                otbAppLogWARNING("WARNING: Using all s2 mask files for each input image!!!");
-                for (const auto &inputImg: imagesPaths) {
-                    InputFileInfoType info;
-                    info.inputImage = inputImg;
-                    info.s2MsksFiles = s2MsksPaths;
-                    m_s2MaskedInputFiles.emplace_back(info);
-                }
-            }
+//        if (HasValue("s2il")) {
+//            const std::vector<std::string> &s2MsksPaths = this->GetParameterStringList("s2il");
+//            if (HasValue("s2ilcnts")) {
+//                const std::vector<std::string> &s2MsksCnts = this->GetParameterStringList("s2ilcnts");
+//                if (imagesPaths.size() != s2MsksCnts.size()) {
+//                    otbAppLogFATAL(<<"Invalid number of S2 masks given for the number of input images list! Expected: " <<
+//                                   imagesPaths.size() << " but got " << s2MsksCnts.size());
+//                }
+//                // first perform a validation of the counts
+//                size_t expectedS2Imgs = 0;
+//                for (size_t i = 0; i<s2MsksCnts.size(); i++) {
+//                    expectedS2Imgs += std::atoi(s2MsksCnts[i].c_str());
+//                }
+//                if (expectedS2Imgs != s2MsksPaths.size()) {
+//                    otbAppLogFATAL(<<"The S2 masks number and the provided S2 files do not match! Expected " <<
+//                                   expectedS2Imgs << " but got " << s2MsksPaths.size());
+//                }
+//                int curS2IlIdx = 0;
+//                for (size_t i = 0; i<imagesPaths.size(); i++) {
+//                    InputFileInfoType info;
+//                    info.inputImage = imagesPaths[i];
+//                    int curImgCnt = std::atoi(s2MsksCnts[i].c_str());
+//                    for(int j = 0; j<curImgCnt; j++) {
+//                        info.s2MsksFiles.emplace_back(s2MsksPaths[curS2IlIdx+j]);
+//                    }
+//                    m_InputFilesInfos.emplace_back(info);
+//                    curS2IlIdx += curImgCnt;
+//                }
+//            } else {
+//                otbAppLogWARNING("WARNING: Using all s2 mask files for each input image!!!");
+//                for (const auto &inputImg: imagesPaths) {
+//                    InputFileInfoType info;
+//                    info.inputImage = inputImg;
+//                    info.s2MsksFiles = s2MsksPaths;
+//                    m_InputFilesInfos.emplace_back(info);
+//                }
+//            }
+        if (m_bUseS2RasterMasks) {
+            m_InputFilesInfos = LoadProductS2MasksCsvFile(imagesPaths[0]);
         } else {
             for (std::vector<std::string>::const_iterator itImages = imagesPaths.begin();
                  itImages != imagesPaths.end(); ++itImages) {
                 InputFileInfoType info;
                 info.inputImage = (*itImages);
-                m_s2MaskedInputFiles.emplace_back(info);
+                m_InputFilesInfos.emplace_back(info);
             }
         }
     }
@@ -643,17 +681,15 @@ private:
     FeatureImageType::Pointer CutImage(const FeatureImageType::Pointer &img, const ClassImageType::Pointer &clsImg) {
         FeatureImageType::Pointer retImg = img;
 
-        double m_primaryMissionImgWidth = clsImg->GetLargestPossibleRegion().GetSize()[0];
-        double m_primaryMissionImgHeight = clsImg->GetLargestPossibleRegion().GetSize()[1];
+        double clsImgWidth = clsImg->GetLargestPossibleRegion().GetSize()[0];
+        double clsImgHeight = clsImg->GetLargestPossibleRegion().GetSize()[1];
 
         //ImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
-        int m_nPrimaryImgRes = clsImg->GetSpacing()[0];
-        ImageType::PointType  m_primaryMissionImgOrigin;
-        m_primaryMissionImgOrigin = clsImg->GetOrigin();
+        float clsImgRes = static_cast<float>(clsImg->GetSpacing()[0]);
+        ImageType::PointType  clsImgOrigin;
+        clsImgOrigin = clsImg->GetOrigin();
 
-        GenericRSImageResampler<FeatureImageType, FeatureImageType>  m_GenericRSImageResampler;
-        std::string m_strPrMissionImgProjRef = clsImg->GetProjectionRef();
-        m_GenericRSImageResampler.SetOutputProjection(m_strPrMissionImgProjRef);
+        std::string clsImgProjRef = clsImg->GetProjectionRef();
 
         float imageWidth = img->GetLargestPossibleRegion().GetSize()[0];
         float imageHeight = img->GetLargestPossibleRegion().GetSize()[1];
@@ -662,23 +698,24 @@ private:
         ImageType::PointType imageOrigin;
         imageOrigin[0] = origin[0];
         imageOrigin[1] = origin[1];
-        int curImgRes = img->GetSpacing()[0];
-        const float scale = (float)m_nPrimaryImgRes / curImgRes;
 
-        if((imageWidth != m_primaryMissionImgWidth) || (imageHeight != m_primaryMissionImgHeight) ||
-                (m_primaryMissionImgOrigin[0] != imageOrigin[0]) || (m_primaryMissionImgOrigin[1] != imageOrigin[1])) {
+        if((imageWidth != clsImgWidth) || (imageHeight != clsImgHeight) ||
+                (clsImgOrigin[0] != imageOrigin[0]) || (clsImgOrigin[1] != imageOrigin[1])) {
 
             Interpolator_Type interpolator = Interpolator_Linear;
             std::string imgProjRef = img->GetProjectionRef();
             // if the projections are equal
-            if(imgProjRef == m_strPrMissionImgProjRef) {
+            if(imgProjRef == clsImgProjRef) {
+                float curImgRes = static_cast<float>(img->GetSpacing()[0]);
+                const float scale = (float)clsImgRes / curImgRes;
                 // use the streaming resampler
-                retImg = m_ImageResampler.getResampler(img, scale,m_primaryMissionImgWidth,
-                            m_primaryMissionImgHeight,m_primaryMissionImgOrigin, interpolator)->GetOutput();
+                m_ImageResampler.SetNoDataValue(m_noDataValue);
+                retImg = m_ImageResampler.getResampler(img, scale,clsImgWidth,
+                            clsImgHeight,clsImgOrigin, interpolator)->GetOutput();
             } else {
                 // use the generic RS resampler that allows reprojecting
-                retImg = m_GenericRSImageResampler.getResampler(img, scale,m_primaryMissionImgWidth,
-                            m_primaryMissionImgHeight,m_primaryMissionImgOrigin, interpolator)->GetOutput();
+                m_genericRSImageResampler.SetNoDataValue(m_noDataValue);
+                retImg = m_genericRSImageResampler.getResampler(img, clsImg, interpolator)->GetOutput();
             }
             retImg->UpdateOutputInformation();
         }
@@ -696,7 +733,7 @@ private:
                 // load the indexes
                 std::ifstream idxFileStream(filterIdsFile);
                 std::string line;
-                int i = -1;
+                int i = 0;
                 while (std::getline(idxFileStream, line)) {
                     // ignore the first line which is the header line
                     if (i == 0) {
@@ -704,19 +741,53 @@ private:
                         continue;
                     }
                     NormalizeFieldId(line);
-                    m_FilterIdsMap[line] = 1;
+                    m_FilterIdsMap[line] = std::atoi(line.c_str());
                 }
                 otbAppLogINFO("Loading filter IDs file done!");
             }
+        } else if (m_bUseS2RasterMasks) {
+            otbAppLogFATAL("The filter IDs file should be provided when using the S2 raster masks");
         }
+    }
+
+    std::vector<InputFileInfoType> LoadProductS2MasksCsvFile(const std::string &fileName)
+    {
+        std::vector<InputFileInfoType> retFilesInfos;
+        std::ifstream fStream(fileName);
+        std::string line;
+        int i = 0;
+        while (std::getline(fStream, line)) {
+            i++;
+            const std::vector<std::string> &lineElems = CsvLineToVector(line);
+            if (lineElems.size() <= 1) {
+                otbAppLogWARNING("The line at index " << i << " will be ignored as it contains no S2 raster!");
+                continue;
+            }
+
+            InputFileInfoType info;
+            info.inputImage = lineElems[0];
+            for(size_t j = 1; j<lineElems.size(); j++) {
+                info.s2MsksFiles.emplace_back(lineElems[j]);
+            }
+            retFilesInfos.emplace_back(info);
+        }
+        return retFilesInfos;
+    }
+
+    std::vector<std::string> CsvLineToVector(const std::string &line)
+    {
+        std::vector<std::string> results;
+        boost::algorithm::split(results, line, [](char c){return c == ';';});
+        return results;
     }
 
     private:
         bool m_bConvToDb;
+        int m_noDataValue;
         bool m_bOutputMinMax;
         std::string m_fieldName;
         otb::ogr::DataSource::Pointer m_vectors;
-        std::vector<std::string> m_imagesPaths;
+        bool m_bUseS2RasterMasks;
         ConcatenateImagesFilterType::Pointer m_concatenateImagesFilter;
         //ReadersListType::Pointer m_Readers;
         ImageReaderType::Pointer m_ImageReader;
@@ -725,10 +796,11 @@ private:
 
         AgricPracticesWriterType2::Pointer m_agricPracticesDataWriter;
 
-        std::vector<InputFileInfoType> m_s2MaskedInputFiles;
+        std::vector<InputFileInfoType> m_InputFilesInfos;
         IntensityToDbFilterType::Pointer        m_IntensityToDbFunctor;
 
         ImageResampler<FeatureImageType, FeatureImageType>  m_ImageResampler;
+        GenericRSImageResampler<FeatureImageType, FeatureImageType, ClassImageType>  m_genericRSImageResampler;
 
         bool m_bIndividualOutFilesForInputs;
 

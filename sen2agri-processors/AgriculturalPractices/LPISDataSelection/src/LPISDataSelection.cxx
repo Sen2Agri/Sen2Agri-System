@@ -190,7 +190,7 @@ private:
             if (!HasValue("year")) {
                 otbAppLogFATAL(<<"year is mandatory when extracting practices file!");
             }
-            m_pCountryInfos->SetVegStart(GetParameterAsString("vegstart"));
+            m_pCountryInfos->SetVegStart(trim(GetParameterAsString("vegstart")));
             m_year = this->GetParameterString("year");
 
             std::string practice;
@@ -200,8 +200,6 @@ private:
             std::string wPracticeEnd;
             if (HasValue("practice")) {
                 practice = GetParameterAsString("practice");
-            } else {
-                practice = "NA";
             }
             if (HasValue("pstart")) {
                 practiceStart = GetParameterAsString("pstart");
@@ -215,20 +213,20 @@ private:
             if (HasValue("wpend")) {
                 wPracticeEnd = GetParameterAsString("wpend");
             }
-            m_pCountryInfos->SetPractice(practice);
-            m_pCountryInfos->SetPStart(practiceStart);
-            m_pCountryInfos->SetPEnd(practiceEnd);
-            m_pCountryInfos->SetWinterPStart(wPracticeStart);
-            m_pCountryInfos->SetWinterPEnd(wPracticeEnd);
-            m_pCountryInfos->SetHStart(GetParameterAsString("hstart"));
-            m_pCountryInfos->SetHEnd(GetParameterAsString("hend"));
+            m_pCountryInfos->SetPractice(trim(practice));
+            m_pCountryInfos->SetPStart(trim(practiceStart));
+            m_pCountryInfos->SetPEnd(trim(practiceEnd));
+            m_pCountryInfos->SetWinterPStart(trim(wPracticeStart));
+            m_pCountryInfos->SetWinterPEnd(trim(wPracticeEnd));
+            m_pCountryInfos->SetHStart(trim(GetParameterAsString("hstart")));
+            m_pCountryInfos->SetHEnd(trim(GetParameterAsString("hend")));
 
             if (HasValue("hwinterstart")) {
-                m_pCountryInfos->SetHWinterStart(GetParameterAsString("hwinterstart"));
+                m_pCountryInfos->SetHWinterStart(trim(GetParameterAsString("hwinterstart")));
             }
         }
-
-        m_outPracticesFileStream.open(GetParameterAsString("out"), std::ios_base::trunc | std::ios_base::out );
+        const std::string &outFileName = GetParameterAsString("out");
+        m_outPracticesFileStream.open(outFileName, std::ios_base::trunc | std::ios_base::out );
         WritePracticesFileHeader();
 
         if (HasValue("addfiles")) {
@@ -236,6 +234,12 @@ private:
         }
 
         m_FieldFilters = LoadFilters();
+
+        otbAppLogINFO("#######################################");
+        otbAppLogINFO("Using input: " << inShpFile);
+        otbAppLogINFO("Method: " << (m_bWriteIdsOnlyFile ? "NewID ONLY" : " Full Practices Information"));
+        otbAppLogINFO("Output: " << outFileName);
+        otbAppLogINFO("#######################################");
 
         otb::ogr::DataSource::Pointer source = otb::ogr::DataSource::New(
             inShpFile, otb::ogr::DataSource::Modes::Read);
@@ -252,6 +256,7 @@ private:
                 ProcessFeature(*featIt);
             }
         }
+        otbAppLogINFO("Extraction DONE!");
     }
 
     void ProcessFeature(const ogr::Feature& feature) {
@@ -272,7 +277,8 @@ private:
             m_outPracticesFileStream << "SEQ_ID\n";
         } else {
             // # create result csv file for harvest and EFA practice evaluation
-            m_outPracticesFileStream << "FIELD_ID;SEQ_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;PRACTICE;P_TYPE;P_START;P_END\n";
+            m_outPracticesFileStream << "FIELD_ID;SEQ_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;PRACTICE;P_TYPE;P_START;P_END;"
+                                        "GeomValid;Duplic;Overlap;Area_meter;ShapeInd;CTnum;CT;LC;S1Pix;S2Pix\n";
         }
     }
 
@@ -301,7 +307,18 @@ private:
             m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetPractice(ogrFeat)).c_str() << ";";
             m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetPracticeType(ogrFeat)).c_str() << ";";
             m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetPStart(ogrFeat)).c_str() << ";";
-            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetPEnd(ogrFeat)).c_str() << "\n";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetPEnd(ogrFeat)).c_str() << ";";
+
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetGeomValid(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetDuplic(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetOverlap(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetArea_meter(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetShapeInd(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetCTnum(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetCT(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetLC(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetS1Pix(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetS2Pix(ogrFeat)).c_str() << "\n";
         }
     }
 

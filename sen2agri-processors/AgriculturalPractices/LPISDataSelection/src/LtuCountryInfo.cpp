@@ -6,12 +6,24 @@ LtuCountryInfo::LtuCountryInfo() {
 
 std::string LtuCountryInfo::GetName() { return "LTU"; }
 
+void LtuCountryInfo::InitializeIndexes(OGRFeature &firstOgrFeat)
+{
+    CountryInfoBase::InitializeIndexes(firstOgrFeat);
+
+    m_PSL_KODAS_FieldIdx = firstOgrFeat.GetFieldIndex("PSL_KODAS");
+    m_agg_id_FieldIdx = firstOgrFeat.GetFieldIndex("agg_id");
+
+    m_VALDOS_NR_FieldIdx = firstOgrFeat.GetFieldIndex("VALDOS_NR");
+    m_KZS_NR_FieldIdx = firstOgrFeat.GetFieldIndex("KZS_NR");
+    m_LAUKO_NR_FieldIdx = firstOgrFeat.GetFieldIndex("LAUKO_NR");
+}
+
 std::string LtuCountryInfo::GetUniqueId(OGRFeature &ogrFeat) {
     return GetGSAAUniqueId(ogrFeat);
 }
 
 std::string LtuCountryInfo::GetMainCrop(OGRFeature &ogrFeat) {
-    return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("PSL_KODAS"));
+    return ogrFeat.GetFieldAsString(m_PSL_KODAS_FieldIdx);
 }
 
 bool LtuCountryInfo::GetHasPractice(OGRFeature &ogrFeat, const std::string &practice) {
@@ -61,7 +73,7 @@ int LtuCountryInfo::HandleFileLine(const MapHdrIdx& header, const std::vector<st
     std::map<std::string, std::string> *pRefMap = NULL;
     switch(fileIdx) {
     case 0:
-        if (m_practice.size() == 0 || m_practice == CATCH_CROP_VAL) {
+        if (m_practice.size() == 0  || m_practice =="NA" || m_practice == CATCH_CROP_VAL) {
             // we have a ccPO file
             pRefMap = &m_ccPOMap;
         } else if (m_practice == FALLOW_LAND_VAL) {
@@ -72,7 +84,7 @@ int LtuCountryInfo::HandleFileLine(const MapHdrIdx& header, const std::vector<st
 
         break;
     case 1:
-        if (m_practice.size() == 0 || m_practice == CATCH_CROP_VAL) {
+        if (m_practice.size() == 0  || m_practice =="NA" || m_practice == CATCH_CROP_VAL) {
             // we have a ccIS file
             pRefMap = &m_ccISMap;
         } else if (m_practice == FALLOW_LAND_VAL) {
@@ -123,13 +135,12 @@ bool LtuCountryInfo::HasUid(const std::string &fid, const std::map<std::string, 
 
 std::string LtuCountryInfo::GetGSAAUniqueId(OGRFeature &ogrFeat)    {
     std::string gsaaId;
-    int aggId = ogrFeat.GetFieldIndex("agg_id");
-    if (aggId >= 0) {
-        gsaaId = ogrFeat.GetFieldAsString(aggId);
+    if (m_agg_id_FieldIdx >= 0) {
+        gsaaId = ogrFeat.GetFieldAsString(m_agg_id_FieldIdx);
     } else {
-        gsaaId = std::to_string(ogrFeat.GetFieldAsInteger(ogrFeat.GetFieldIndex("VALDOS_NR"))) + "-" +
-                ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("KZS_NR")) + "-" +
-                ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("LAUKO_NR"));
+        gsaaId = std::to_string(ogrFeat.GetFieldAsInteger(m_VALDOS_NR_FieldIdx)) + "-" +
+                ogrFeat.GetFieldAsString(m_KZS_NR_FieldIdx) + "-" +
+                ogrFeat.GetFieldAsString(m_LAUKO_NR_FieldIdx);
     }
 
     return gsaaId;

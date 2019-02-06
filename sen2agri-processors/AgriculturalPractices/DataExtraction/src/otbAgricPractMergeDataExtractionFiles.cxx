@@ -177,7 +177,8 @@ private:
 
 
         AddParameter(ParameterType_StringList, "il", "Input files");
-        SetParameterDescription("il", "Support list of files to be merged to output");
+        SetParameterDescription("il", "Support list of files to be merged to output. "
+                                      "If it is a directory, then all csv files from it will be used");
 
         AddParameter(ParameterType_OutputFilename, "out", "Output file (CSV or XML)");
         SetParameterDescription("out","Output file to store results. If the path is a folder and CSV is specified "
@@ -227,10 +228,7 @@ private:
 
     void DoExecute() override
     {
-        const std::vector<std::string> &inFilePaths = this->GetParameterStringList("il");
-        if(inFilePaths.size() == 0) {
-            otbAppLogFATAL(<<"No image was given as input!");
-        }
+        const std::vector<std::string> &inFilePaths = GetInputFilePaths();
         if (HasValue("sfilter")) {
             m_suffixFilter = GetParameterAsString("sfilter");
         }
@@ -488,10 +486,10 @@ private:
         for (auto &fidType: resultFidList) {
             auto comp = [] ( const FidInfosType& lhs, const FidInfosType& rhs ) {
                 // TODO: For now we keep the ones that have different mean values
-                return ((lhs.date == rhs.date) && (lhs.date2 == rhs.date2) &&
-                        (lhs.meanVal == rhs.meanVal));};
+                return ((lhs.date == rhs.date) && (lhs.date2 == rhs.date2)/*&&
+                        (lhs.meanVal == rhs.meanVal)*/);};
 
-            auto pred = []( const FidInfosType& lhs, const FidInfosType& rhs ) {return ((lhs.date.compare(rhs.date)) < 0);;};
+            auto pred = []( const FidInfosType& lhs, const FidInfosType& rhs ) {return ((lhs.date.compare(rhs.date)) < 0);};
             std::sort(fidType.infos.begin(), fidType.infos.end(),pred);
             auto last = std::unique(fidType.infos.begin(), fidType.infos.end(),comp);
             fidType.infos.erase(last, fidType.infos.end());
@@ -691,6 +689,50 @@ private:
       fileStream << ssStr.c_str();
       return ssStr.size();
   }
+
+  std::vector<std::string> GetInputFilePaths() {
+      std::vector<std::string> retFilePaths;
+      const std::vector<std::string> &inFilePaths = this->GetParameterStringList("il");
+      for (const std::string &inPath: inFilePaths) {
+          if ( !boost::filesystem::exists( inPath ) ) {
+              otbAppLogWARNING("The provided input path does not exists: " << inPath);
+              continue;
+          }
+          if (boost::filesystem::is_directory(inPath)) {
+              boost::filesystem::directory_iterator end_itr;
+
+              boost::filesystem::path dirPath(inPath);
+              // cycle through the directory
+              for (boost::filesystem::directory_iterator itr(dirPath); itr != end_itr; ++itr) {
+                  if (boost::filesystem::is_regular_file(itr->path())) {
+                      // assign current file name to current_file and echo it out to the console.
+                      boost::filesystem::path pathObj = itr->path();
+                      if (pathObj.has_extension()) {
+                          std::string fileExt = pathObj.extension().string();
+                          // Fetch the extension from path object and return
+                          if (boost::iequals(fileExt, ".csv")) {
+                              std::string current_file = pathObj.string();
+                              if (std::find(retFilePaths.begin(), retFilePaths.end(), current_file) == retFilePaths.end()) {
+                                  retFilePaths.push_back(current_file);
+                              }
+                          }
+                      }
+                  }
+              }
+          } else {
+              if (std::find(retFilePaths.begin(), retFilePaths.end(), inPath) == retFilePaths.end()) {
+                  retFilePaths.push_back(inPath);
+              }
+          }
+      }
+
+      if(retFilePaths.size() == 0) {
+          otbAppLogFATAL(<<"No image was given as input!");
+      }
+
+      return retFilePaths;
+  }
+
 
 private:
     FidInfosComparator  m_FidInfosComparator;

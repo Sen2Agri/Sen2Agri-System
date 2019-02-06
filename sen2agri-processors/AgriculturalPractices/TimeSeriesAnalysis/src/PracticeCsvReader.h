@@ -7,7 +7,7 @@
 #include "PracticeReaderBase.h"
 
 #define HEADER_SIZE                 11
-#define HEADER_SIZE_WITH_SEQ_ID     12
+#define HEADER_SIZE_WITH_SEQ_ID     22
 
 class PracticeCsvReader : public PracticeReaderBase
 {

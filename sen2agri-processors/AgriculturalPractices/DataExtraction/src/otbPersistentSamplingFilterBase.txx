@@ -376,6 +376,11 @@ PersistentSamplingFilterBase<TInputImage,TMaskImage>
   ogr::Layer::const_iterator featIt = layerForThread.begin();
   for(; featIt!=layerForThread.end(); ++featIt)
     {
+      // ignore features with no geometry available
+      if (!featIt->GetGeometry()) {
+          continue;
+      }
+
       if (m_FieldValueFilterIds.size() > 0) {
           // ignore values that are not in the filters map
           std::string className(featIt->ogr().GetFieldAsString(this->GetFieldIndex()));

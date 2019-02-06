@@ -46,6 +46,23 @@ inline void NormalizeFieldId(std::string &fieldId) {
     std::replace( fieldId.begin(), fieldId.end(), '/', '_');
 }
 
+inline std::string trim(std::string const& str, const std::string strChars="\"")
+{
+    if(str.empty())
+        return str;
+
+    int nbChars=strChars.length();
+    std::string retStr = str;
+    for(int i = 0; i<nbChars; i++) {
+        int curChar = strChars.at(i);
+        std::size_t firstScan = retStr.find_first_not_of(curChar);
+        std::size_t first     = firstScan == std::string::npos ? retStr.length() : firstScan;
+        std::size_t last      = retStr.find_last_not_of(curChar);
+        retStr = retStr.substr(first, last-first+1);
+    }
+    return retStr;
+}
+
 inline bool GetFileInfosFromName(const std::string &filePath, std::string &fileType, std::string & polarisation,
                           std::string & orbit, time_t &fileDate, time_t &additionalFileDate, bool useLatestNameFormat = true)
 {

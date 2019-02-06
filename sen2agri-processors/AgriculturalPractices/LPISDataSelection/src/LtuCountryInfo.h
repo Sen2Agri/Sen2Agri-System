@@ -15,6 +15,7 @@ public:
     LtuCountryInfo();
 
     virtual std::string GetName();
+    virtual void InitializeIndexes(OGRFeature &firstOgrFeat);
     virtual std::string GetUniqueId(OGRFeature &ogrFeat);
 
     virtual std::string GetMainCrop(OGRFeature &ogrFeat);
@@ -29,6 +30,13 @@ public:
 
 private:
     std::string GetGSAAUniqueId(OGRFeature &ogrFeat);
+
+    int m_PSL_KODAS_FieldIdx;
+    int m_agg_id_FieldIdx;
+
+    int m_VALDOS_NR_FieldIdx;
+    int m_KZS_NR_FieldIdx;
+    int m_LAUKO_NR_FieldIdx;
 };
 
 #endif

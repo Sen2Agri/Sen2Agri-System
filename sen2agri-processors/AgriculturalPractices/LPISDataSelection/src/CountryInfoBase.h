@@ -49,7 +49,20 @@ public:
 
     virtual bool IsMonitoringParcel(OGRFeature &ogrFeat);
 
+    inline std::string GetGeomValid(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_GeomValidIdx);}
+    inline std::string GetDuplic(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_DuplicIdx);}
+    inline std::string GetOverlap(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_OverlapIdx);}
+    inline std::string GetArea_meter(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_Area_meterIdx);}
+    inline std::string GetShapeInd(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_ShapeIndIdx);}
+    inline std::string GetCTnum(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_CTnumIdx);}
+    inline std::string GetCT(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_CTIdx);}
+    inline std::string GetLC(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_LandCoverFieldIdx);}
+    inline std::string GetS1Pix(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_S1PixIdx);}
+    inline std::string GetS2Pix(OGRFeature &ogrFeat) {return GetFieldOrNA(ogrFeat, m_S2PixIdx);}
+
 private:
+
+    std::string GetFieldOrNA(OGRFeature &ogrFeat, int idx);
 
     void ParseCsvFile(const std::string &filePath,
                       std::function<int(const MapHdrIdx&, const std::vector<std::string>&, int)> fnc);
@@ -76,7 +89,17 @@ protected:
     std::vector<std::string> m_additionalFiles;
 
     int m_SeqIdFieldIdx;
-    int m_CR_CAT_FieldIdx;
+    int m_LandCoverFieldIdx;
+
+    int m_GeomValidIdx;
+    int m_DuplicIdx;
+    int m_OverlapIdx;
+    int m_Area_meterIdx;
+    int m_ShapeIndIdx;
+    int m_CTnumIdx;
+    int m_CTIdx;
+    int m_S1PixIdx;
+    int m_S2PixIdx;
 
     std::function<int(const MapHdrIdx&, const std::vector<std::string>&, int)> m_LineHandlerFnc;
     std::function<int(OGRFeature&, int)> m_ShpFeatHandlerFnc;

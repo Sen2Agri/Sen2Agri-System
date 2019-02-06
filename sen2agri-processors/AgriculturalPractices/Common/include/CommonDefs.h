@@ -1,8 +1,9 @@
 #ifndef CommonDefs_h
 #define CommonDefs_h
 
-// TODO: To replace with "LC"
+// TODO: To remove the CR_CAT_VAL and all its references. LC should be used instead
 #define CR_CAT_VAL                      "CR_CAT"
+#define LC_VAL                          "LC"
 
 // The unique sequencial ID as it appears in the database or in the shapefile
 #define SEQ_UNIQUE_ID                       "NewID"

@@ -72,8 +72,10 @@ private:
     TimeSeriesAnalysis()
     {
         m_countryName = "UNKNOWN";
-        m_practiceName = "UNKNOWN";
+        m_practiceName = "NA";
         m_year = "UNKNOWN";
+        m_bAllowGaps = true;
+        m_bGapsFill = false;
 
         m_OpticalThrVegCycle = 550; //350;
 
@@ -113,6 +115,8 @@ private:
 
         m_UseStdDevInAmpThrValComp = false;
         m_OpticalThrBufDenominator = 6;
+        m_AmpThrBreakDenominator = 6;
+        m_AmpThrValDenominator = 2;
 
         m_CatchCropVal = CATCH_CROP_VAL;
         m_FallowLandVal = FALLOW_LAND_VAL;
@@ -160,8 +164,13 @@ private:
 
         AddParameter(ParameterType_Int, "allowgaps", "Allow week gaps in time series");
         SetParameterDescription("allowgaps", "Allow week gaps in  time series");
-        SetDefaultParameterInt("allowgaps", 0);
+        SetDefaultParameterInt("allowgaps", 1);
         MandatoryOff("allowgaps");
+
+        AddParameter(ParameterType_Int, "gapsfill", "Perform gaps filling when gaps are allowed");
+        SetParameterDescription("gapsfill", "Perform gaps filling when gaps are allowed");
+        SetDefaultParameterInt("gapsfill", 0);
+        MandatoryOff("gapsfill");
 
         AddParameter(ParameterType_String, "country", "The country to be used in the output file name");
         SetParameterDescription("country", "The country to be used in the output file name");
@@ -240,7 +249,7 @@ private:
 
         AddParameter(ParameterType_Float, "catchproportion", "Catch proportion");
         SetParameterDescription("catchproportion", "buffer threshold");
-        SetDefaultParameterInt("catchproportion", 1/3);
+        SetDefaultParameterFloat("catchproportion", 1/3);
         MandatoryOff("catchproportion");
 
         AddParameter(ParameterType_String, "catchperiodstart", "Catch period start");
@@ -292,6 +301,16 @@ private:
         SetDefaultParameterInt("optthrbufden", 6);
         MandatoryOff("optthrbufden");
 
+        AddParameter(ParameterType_Int, "ampthrbreakden", "Amplitude threshold break denomimator");
+        SetParameterDescription("ampthrbreakden", "Amplitude threshold break denomimator");
+        SetDefaultParameterInt("ampthrbreakden", 6);
+        MandatoryOff("ampthrbreakden");
+
+        AddParameter(ParameterType_Int, "ampthrvalden", "Amplitude threshold value denomimator");
+        SetParameterDescription("ampthrvalden", "Amplitude threshold value denomimator");
+        SetDefaultParameterInt("ampthrvalden", 2);
+        MandatoryOff("ampthrvalden");
+
         AddParameter(ParameterType_String, "flmarkstartdate", "Fallow land markers start date");
         SetParameterDescription("flmarkstartdate", "Fallow land markers start date");
         MandatoryOff("flmarkstartdate");
@@ -336,18 +355,19 @@ private:
     }
 
     void ExtractParameters() {
-        m_outputDir = GetParameterAsString("outdir");
+        m_outputDir = trim(GetParameterAsString("outdir"));
         m_bAllowGaps = GetParameterInt("allowgaps") != 0;
+        m_bGapsFill = GetParameterInt("gapsfill") != 0;
         m_bDebugMode = GetParameterInt("debug") != 0;
 
         if (HasValue("country")) {
-            m_countryName = GetParameterAsString("country");
+            m_countryName = trim(GetParameterAsString("country"));
         }
         if (HasValue("practice")) {
-            m_practiceName = GetParameterAsString("practice");
+            m_practiceName = trim(GetParameterAsString("practice"));
         }
         if (HasValue("year")) {
-            m_year = GetParameterAsString("year");
+            m_year = trim(GetParameterAsString("year"));
         }
         if (HasValue("catchcropval")) {
             m_CatchCropVal = GetParameterString("catchcropval");
@@ -429,6 +449,12 @@ private:
         }
         if (HasValue("optthrbufden")) {
             m_OpticalThrBufDenominator = GetParameterInt("optthrbufden");
+        }
+        if (HasValue("ampthrbreakden")) {
+            m_AmpThrBreakDenominator = GetParameterInt("ampthrbreakden");
+        }
+        if (HasValue("ampthrvalden")) {
+            m_AmpThrValDenominator = GetParameterInt("ampthrvalden");
         }
         if (HasValue("flmarkstartdate")) {
             m_flMarkersStartDateStr = GetParameterString("flmarkstartdate");
@@ -652,7 +678,8 @@ private:
     bool ExtractAmplitudeFilesInfos(FieldInfoType &fieldInfo)
     {
         std::map<std::string, std::vector<InputFileLineInfoType>> mapInfos;
-        if (!m_pAmpReader->GetEntriesForField(fieldInfo.fieldId, {"VV", "VH"}, mapInfos)) {
+        if (!m_pAmpReader->GetEntriesForField(fieldInfo.fieldSeqId, {"VV", "VH"}, mapInfos)) {
+        //if (!m_pAmpReader->GetEntriesForField(fieldInfo.fieldId, {"VV", "VH"}, mapInfos)) {
             otbAppLogWARNING("Cannot extract amplitude infos for the field " << fieldInfo.fieldId);
             return false;
         }
@@ -696,7 +723,8 @@ private:
     bool ExtractCoherenceFilesInfos(FieldInfoType &fieldInfo)
     {
         std::map<std::string, std::vector<InputFileLineInfoType>> mapInfos;
-        if (!m_pCoheReader->GetEntriesForField(fieldInfo.fieldId, /*{"VV", "VH"}*/{"VV"}, mapInfos)) {
+        //if (!m_pCoheReader->GetEntriesForField(fieldInfo.fieldId, /*{"VV", "VH"}*/{"VV"}, mapInfos)) {
+        if (!m_pCoheReader->GetEntriesForField(fieldInfo.fieldSeqId, /*{"VV", "VH"}*/{"VV"}, mapInfos)) {
             otbAppLogWARNING("Cannot extract coherence infos for the field " << fieldInfo.fieldId);
             return false;
         }
@@ -749,7 +777,8 @@ private:
 
     bool ExtractNdviFilesInfos(FieldInfoType &fieldInfo)
     {
-        if (!m_pNdviReader->GetEntriesForField(fieldInfo.fieldId, fieldInfo.ndviLines)) {
+        //if (!m_pNdviReader->GetEntriesForField(fieldInfo.fieldId, fieldInfo.ndviLines)) {
+        if (!m_pNdviReader->GetEntriesForField(fieldInfo.fieldSeqId, fieldInfo.ndviLines)) {
             otbAppLogWARNING("Cannot extract NDVI infos for the field " << fieldInfo.fieldId);
             return false;
         }
@@ -1224,6 +1253,44 @@ private:
             otbAppLogWARNING("Amplitude and coherence groups sizes differ when merging for field " << fieldInfos.fieldId <<
                              " Amp size: " << ampRatioGroups.size() << " Cohe size: " << coherenceGroups.size());
         }
+/*
+        // get the minimum and the maximum dates from the amp and cohe
+        time_t ttMinDate = (ampRatioGroups[0].ttDate < coherenceGroups[0].ttDate) ?
+                    ampRatioGroups[0].ttDate : coherenceGroups[0].ttDate;
+        time_t ttMaxDate = (ampRatioGroups[ampRatioGroups.size()-1].ttDate > coherenceGroups[coherenceGroups.size()-1].ttDate) ?
+                    ampRatioGroups[ampRatioGroups.size()-1].ttDate : coherenceGroups[coherenceGroups.size()-1].ttDate;
+        time_t curDate = ttMinDate;
+        while(curDate <= ttMaxDate) {
+            int ampIdx = -1;
+            for(size_t i = 0; i < ampRatioGroups.size(); i++) {
+                if (ampRatioGroups[i].ttDate == curDate) {
+                    ampIdx = i;
+                    break;
+                }
+            }
+            int coheIdx = -1;
+            for(size_t i = 0; i < coherenceGroups.size(); i++) {
+                if (coherenceGroups[i].ttDate == curDate) {
+                    coheIdx = i;
+                    break;
+                }
+            }
+            MergedAllValInfosType mergedVal;
+
+            mergedVal.ttDate = curDate;
+            mergedVal.ampMean = (ampIdx == -1) ? NOT_AVAILABLE : ampRatioGroups[ampIdx].meanVal;
+            mergedVal.ampMax = (ampIdx == -1) ? NOT_AVAILABLE : ampRatioGroups[ampIdx].maxVal;
+            mergedVal.ampChange = (ampIdx == -1) ? NOT_AVAILABLE : ampRatioGroups[ampIdx].ampChange;
+
+            mergedVal.cohChange = (coheIdx == -1) ? 0 : coherenceGroups[coheIdx].maxChangeVal;
+            mergedVal.cohMax = (coheIdx == -1) ? 0 : coherenceGroups[coheIdx].maxVal;
+
+            retAllMergedValues.push_back(mergedVal);
+
+            curDate += SEC_IN_WEEK;
+        }
+*/
+// ORIGINAL IMPLEMENTATION WORKING WITHOUT GAPS
 
         bool refListIsAmp = ampRatioGroups.size() <= coherenceGroups.size();
         size_t retListSize = refListIsAmp ? ampRatioGroups.size() : coherenceGroups.size();
@@ -1239,7 +1306,6 @@ private:
                     MergedAllValInfosType mergedVal;
                     const GroupedMeanValInfosType &ampItem = refListIsAmp ? refItem1 : refItem2;
                     const GroupedMeanValInfosType &coheItem = refListIsAmp ? refItem2 : refItem1;
-
                     mergedVal.ttDate = ampItem.ttDate;
                     mergedVal.ampMean = ampItem.meanVal;
                     mergedVal.ampMax = ampItem.maxVal;
@@ -1247,7 +1313,6 @@ private:
 
                     mergedVal.cohChange = coheItem.maxChangeVal;
                     mergedVal.cohMax = coheItem.maxVal;
-
                     retAllMergedValues.push_back(mergedVal);
                     break;
                 }
@@ -1255,7 +1320,7 @@ private:
         }
 
         // fill the gaps if allowed
-        FillAmpCoheGroupsGaps(ampRatioGroups, coherenceGroups, retAllMergedValues);
+//        FillAmpCoheGroupsGaps(ampRatioGroups, coherenceGroups, retAllMergedValues);
 
         //retAllMergedValues.resize(retListSize);
 
@@ -1274,108 +1339,6 @@ private:
 //        }
 
         return true;
-    }
-
-    bool FillAmpCoheGroupsGaps(const std::vector<GroupedMeanValInfosType> &ampRatioGroups,
-                               const std::vector<GroupedMeanValInfosType> &coherenceGroups,
-                               std::vector<MergedAllValInfosType> &retAllMergedValues) {
-        if(!m_bAllowGaps || retAllMergedValues.size() == 0) {
-            return false;
-        }
-        AddMissingGapEntries(ampRatioGroups, retAllMergedValues, true);
-        AddMissingGapEntries(coherenceGroups, retAllMergedValues, false);
-        FillNotAvailableGaps(retAllMergedValues);
-
-        return true;
-    }
-
-    void AddMissingGapEntries(const std::vector<GroupedMeanValInfosType> &groups,
-                           std::vector<MergedAllValInfosType> &retAllMergedValues, bool bIsAmp) {
-        for(size_t i = 0; i<groups.size(); i++) {
-            bool bFound = false;
-            for (size_t j = 0; j<retAllMergedValues.size(); j++) {
-                if (groups[i].ttDate == retAllMergedValues[j].ttDate) {
-                    bFound = true;
-                    break;
-                }
-            }
-            if (!bFound) {
-                MergedAllValInfosType mergedVal;
-                const GroupedMeanValInfosType &item = groups[i];
-
-                mergedVal.ttDate = item.ttDate;
-                mergedVal.ampMean = bIsAmp ? item.meanVal : NOT_AVAILABLE;
-                mergedVal.ampMax = bIsAmp ? item.maxVal : NOT_AVAILABLE;
-                mergedVal.ampChange = bIsAmp ? item.ampChange : NOT_AVAILABLE;
-
-                mergedVal.cohChange = bIsAmp ? NOT_AVAILABLE : item.maxChangeVal;
-                mergedVal.cohMax = bIsAmp ? NOT_AVAILABLE : item.maxVal;
-
-                // add it at the end, it will be sorted later
-                retAllMergedValues.push_back(mergedVal);
-            }
-        }
-        // Now sort by date retAllMergedValues
-        std::sort(retAllMergedValues.begin(), retAllMergedValues.end(),
-                  TimedValInfosComparator<MergedAllValInfosType>());
-    }
-
-    void FillNotAvailableGaps(std::vector<MergedAllValInfosType> &retAllMergedValues) {
-        int prevValidAmpIdx = -1;
-        int prevValidCoheIdx = -1;
-        for (size_t i = 0; i<retAllMergedValues.size(); i++) {
-            if (IsNA(retAllMergedValues[i].ampMean)) {
-                // we have a gap filled item for amplitude
-                if (prevValidAmpIdx != -1) {
-                    retAllMergedValues[i].ampMean = retAllMergedValues[prevValidAmpIdx].ampMean;
-                    retAllMergedValues[i].ampMax = retAllMergedValues[prevValidAmpIdx].ampMax;
-                    retAllMergedValues[i].ampChange = retAllMergedValues[prevValidAmpIdx].ampChange;
-                    prevValidAmpIdx = i;    // make it a valid one
-                }
-            } else {
-                // make it a valid one
-                prevValidAmpIdx = i;
-            }
-            if (IsNA(retAllMergedValues[i].cohChange)) {
-                if (prevValidCoheIdx != -1) {
-                    retAllMergedValues[i].cohChange = retAllMergedValues[prevValidCoheIdx].cohChange;
-                    retAllMergedValues[i].cohMax = retAllMergedValues[prevValidCoheIdx].cohMax;
-                    prevValidCoheIdx = i;    // make it a valid one
-                }
-            } else {
-                // make it a valid one
-                prevValidCoheIdx = i;
-            }
-        }
-
-        // second iteration to fill items that were not filled at the first iteration due to unavailable of prev
-        // now use next to fill the first ones
-        prevValidAmpIdx = -1;
-        prevValidCoheIdx = -1;
-        for (int i = (int)retAllMergedValues.size()-1; i >= 0; i--) {
-            if (IsNA(retAllMergedValues[i].ampMean)) {
-                if (prevValidAmpIdx != -1) {
-                    // normally, this should happen all the time
-                    retAllMergedValues[i].ampMean = retAllMergedValues[prevValidAmpIdx].ampMean;
-                    retAllMergedValues[i].ampMax = retAllMergedValues[prevValidAmpIdx].ampMax;
-                    retAllMergedValues[i].ampChange = retAllMergedValues[prevValidAmpIdx].ampChange;
-                    prevValidAmpIdx = i;    // make it a valid one
-                }
-            } else {
-                prevValidAmpIdx = i;    // make it a valid one
-            }
-            if (IsNA(retAllMergedValues[i].cohChange)) {
-                if (prevValidCoheIdx != -1) {
-                    // normally, this should happen all the time
-                    retAllMergedValues[i].cohChange = retAllMergedValues[prevValidCoheIdx].cohChange;
-                    retAllMergedValues[i].cohMax = retAllMergedValues[prevValidCoheIdx].cohMax;
-                    prevValidCoheIdx = i;    // make it a valid one
-                }
-            } else {
-                // make it a valid one
-                prevValidCoheIdx = i;
-            }
-        }
     }
 
     template <typename Value>
@@ -1660,6 +1623,10 @@ private:
                            HarvestInfoType &harvestInfos) {
         // TODO: This can be done using a flag in a structure encapsulating also retAllMergedValues
         //      in order to avoid this iteration (can be done in an iteration previously made)
+//        if (fieldInfos.fieldSeqId == "568110") {
+//            std::cout << "!!!! " << fieldInfos.fieldSeqId << " !!!!" << std::endl;
+//        }
+
         harvestInfos.harvestConfirmed = NOT_AVAILABLE;
         harvestInfos.evaluation.Initialize(fieldInfos);
 
@@ -2831,13 +2798,13 @@ private:
         }
 
         // # create result csv file for harvest and EFA practice evaluation
-        m_OutFileStream << "FIELD_ID;SEQ_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;"
+        m_OutFileStream << "FIELD_ID;ORIG_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;"
                    "PRACTICE;P_TYPE;P_START;P_END;M1;M2;M3;M4;M5;H_WEEK;M6;M7;M8;M9;M10;C_INDEX\n";
     }
 
     void WriteHarvestInfoToCsv(const FieldInfoType &fieldInfo, const HarvestInfoType &harvestInfo, const HarvestInfoType &efaHarvestInfo) {
         //"FIELD_ID;COUNTRY;YEAR;MAIN_CROP
-        m_OutFileStream << fieldInfo.fieldId << ";" << fieldInfo.fieldSeqId << ";" << fieldInfo.countryCode << ";" << ValueToString(fieldInfo.year) << ";" << fieldInfo.mainCrop << ";" <<
+        m_OutFileStream << fieldInfo.fieldSeqId << ";" << fieldInfo.fieldId << ";" << fieldInfo.countryCode << ";" << ValueToString(fieldInfo.year) << ";" << fieldInfo.mainCrop << ";" <<
                    // VEG_START;H_START;H_END;"
                    TimeToString(fieldInfo.ttVegStartTime) << ";" << TimeToString(fieldInfo.ttHarvestStartTime) << ";" << TimeToString(fieldInfo.ttHarvestEndTime) << ";" <<
                    // "PRACTICE;P_TYPE;P_START;P_END;
@@ -2855,6 +2822,7 @@ private:
                    ValueToString(efaHarvestInfo.evaluation.ndviNoLoss, true) << ";" << ValueToString(efaHarvestInfo.evaluation.ampNoLoss, true) << ";" <<
                     //M10;C_INDEX
                    ValueToString(efaHarvestInfo.evaluation.cohNoLoss, true) << ";" << efaHarvestInfo.evaluation.efaIndex << "\n";
+        m_OutFileStream.flush();
     }
 
     void CreateContinousProductFile(const std::string &practiceName, const std::string &countryCode, int year) {
@@ -2954,11 +2922,11 @@ private:
         //        grd.thr.value <- paste("grd.thr.value <- mean(grd.filtered)-sd(grd.filtered)/2")
         // or
         //        grd.thr.value <- paste("grd.thr.value <- mean(grd.filtered)
-        return meanVal - (m_UseStdDevInAmpThrValComp ? (stdDevVal / 2) : 0);
+        return meanVal - (m_UseStdDevInAmpThrValComp ? (stdDevVal / m_AmpThrValDenominator) : 0);
     }
 
     double ComputeAmplitudeThresholdBreak(double stdDevVal) {
-        double ampThrBreak = stdDevVal / 6;
+        double ampThrBreak = stdDevVal / m_AmpThrBreakDenominator;
         // minimum change
         if (IsLess(ampThrBreak, m_AmpThrMinimum)) {
             ampThrBreak = m_AmpThrMinimum;
@@ -3202,7 +3170,107 @@ private:
         }
     }
 
+    bool FillAmpCoheGroupsGaps(const std::vector<GroupedMeanValInfosType> &ampRatioGroups,
+                               const std::vector<GroupedMeanValInfosType> &coherenceGroups,
+                               std::vector<MergedAllValInfosType> &retAllMergedValues) {
+        if(!m_bAllowGaps || !m_bGapsFill || retAllMergedValues.size() == 0) {
+            return false;
+        }
+        AddMissingGapEntries(ampRatioGroups, retAllMergedValues, true);
+        AddMissingGapEntries(coherenceGroups, retAllMergedValues, false);
+        FillNotAvailableGaps(retAllMergedValues);
 
+        return true;
+    }
+
+    void AddMissingGapEntries(const std::vector<GroupedMeanValInfosType> &groups,
+                           std::vector<MergedAllValInfosType> &retAllMergedValues, bool bIsAmp) {
+        for(size_t i = 0; i<groups.size(); i++) {
+            bool bFound = false;
+            for (size_t j = 0; j<retAllMergedValues.size(); j++) {
+                if (groups[i].ttDate == retAllMergedValues[j].ttDate) {
+                    bFound = true;
+                    break;
+                }
+            }
+            if (!bFound) {
+                MergedAllValInfosType mergedVal;
+                const GroupedMeanValInfosType &item = groups[i];
+
+                mergedVal.ttDate = item.ttDate;
+                mergedVal.ampMean = bIsAmp ? item.meanVal : NOT_AVAILABLE;
+                mergedVal.ampMax = bIsAmp ? item.maxVal : NOT_AVAILABLE;
+                mergedVal.ampChange = bIsAmp ? item.ampChange : NOT_AVAILABLE;
+
+                mergedVal.cohChange = bIsAmp ? NOT_AVAILABLE : item.maxChangeVal;
+                mergedVal.cohMax = bIsAmp ? NOT_AVAILABLE : item.maxVal;
+
+                // add it at the end, it will be sorted later
+                retAllMergedValues.push_back(mergedVal);
+            }
+        }
+        // Now sort by date retAllMergedValues
+        std::sort(retAllMergedValues.begin(), retAllMergedValues.end(),
+                  TimedValInfosComparator<MergedAllValInfosType>());
+    }
+
+    void FillNotAvailableGaps(std::vector<MergedAllValInfosType> &retAllMergedValues) {
+        int prevValidAmpIdx = -1;
+        int prevValidCoheIdx = -1;
+        for (size_t i = 0; i<retAllMergedValues.size(); i++) {
+            if (IsNA(retAllMergedValues[i].ampMean)) {
+                // we have a gap filled item for amplitude
+                if (prevValidAmpIdx != -1) {
+                    retAllMergedValues[i].ampMean = retAllMergedValues[prevValidAmpIdx].ampMean;
+                    retAllMergedValues[i].ampMax = retAllMergedValues[prevValidAmpIdx].ampMax;
+                    retAllMergedValues[i].ampChange = retAllMergedValues[prevValidAmpIdx].ampChange;
+                    prevValidAmpIdx = i;    // make it a valid one
+                }
+            } else {
+                // make it a valid one
+                prevValidAmpIdx = i;
+            }
+            if (IsNA(retAllMergedValues[i].cohChange)) {
+                if (prevValidCoheIdx != -1) {
+                    retAllMergedValues[i].cohChange = retAllMergedValues[prevValidCoheIdx].cohChange;
+                    retAllMergedValues[i].cohMax = retAllMergedValues[prevValidCoheIdx].cohMax;
+                    prevValidCoheIdx = i;    // make it a valid one
+                }
+            } else {
+                // make it a valid one
+                prevValidCoheIdx = i;
+            }
+        }
+
+        // second iteration to fill items that were not filled at the first iteration due to unavailable of prev
+        // now use next to fill the first ones
+        prevValidAmpIdx = -1;
+        prevValidCoheIdx = -1;
+        for (int i = (int)retAllMergedValues.size()-1; i >= 0; i--) {
+            if (IsNA(retAllMergedValues[i].ampMean)) {
+                if (prevValidAmpIdx != -1) {
+                    // normally, this should happen all the time
+                    retAllMergedValues[i].ampMean = retAllMergedValues[prevValidAmpIdx].ampMean;
+                    retAllMergedValues[i].ampMax = retAllMergedValues[prevValidAmpIdx].ampMax;
+                    retAllMergedValues[i].ampChange = retAllMergedValues[prevValidAmpIdx].ampChange;
+                    prevValidAmpIdx = i;    // make it a valid one
+                }
+            } else {
+                prevValidAmpIdx = i;    // make it a valid one
+            }
+            if (IsNA(retAllMergedValues[i].cohChange)) {
+                if (prevValidCoheIdx != -1) {
+                    // normally, this should happen all the time
+                    retAllMergedValues[i].cohChange = retAllMergedValues[prevValidCoheIdx].cohChange;
+                    retAllMergedValues[i].cohMax = retAllMergedValues[prevValidCoheIdx].cohMax;
+                    prevValidCoheIdx = i;    // make it a valid one
+                }
+            } else {
+                // make it a valid one
+                prevValidCoheIdx = i;
+            }
+        }
+    }
 
 //    void TestBoostGregorian() {
 //        time_t ttTime = FloorWeekDate(2012, 1);
@@ -3321,8 +3389,10 @@ private:
     double m_EfaNdviMin;
     double m_EfaAmpThr;
 
-    bool m_UseStdDevInAmpThrValComp = false;
-    int m_OpticalThrBufDenominator = 6;
+    bool m_UseStdDevInAmpThrValComp;
+    int m_OpticalThrBufDenominator;
+    int m_AmpThrBreakDenominator;
+    int m_AmpThrValDenominator;
 
     std::string m_flMarkersStartDateStr;
     std::string m_flMarkersEndDateStr;
@@ -3337,6 +3407,7 @@ private:
     bool m_bResultContinuousProduct;
 
     bool m_bAllowGaps;
+    bool m_bGapsFill;
 
     bool m_bDebugMode;
 

@@ -62,6 +62,7 @@ public:
         m_ResamplersList = ResampleFilterListType::New();
         m_BCORadius = 2;
         m_fBCOAlpha = -0.5;
+        m_nNoDataValue = NO_DATA_VALUE;
     }
 
     void SetBicubicInterpolatorParameters(int BCORadius, float BCOAlpha = -0.5) {
@@ -69,6 +70,9 @@ public:
         m_fBCOAlpha = BCOAlpha;
     }
 
+    void SetNoDataValue(int noDataValue) {
+        m_nNoDataValue = noDataValue;
+    }
 
     ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWidth,
                           const int wantedHeight, Interpolator_Type interpolator=Interpolator_Linear)
@@ -178,7 +182,7 @@ public:
          ResamplerInputImgPixelType defaultValue;
          itk::NumericTraits<ResamplerInputImgPixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
          if(interpolatorType != Interpolator_NNeighbor) {
-             defaultValue = NO_DATA_VALUE;
+             defaultValue = m_nNoDataValue;
          }
          resampler->SetEdgePaddingValue(defaultValue);
 
@@ -191,6 +195,7 @@ private:
     ResampleFilterListTypePtr             m_ResamplersList;
     int     m_BCORadius;
     float   m_fBCOAlpha;
+    int     m_nNoDataValue;
 };
 
 #endif // IMAGE_RESAMPLER_H

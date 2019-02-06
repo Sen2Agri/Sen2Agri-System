@@ -5,7 +5,7 @@ std::string ItaCountryInfo::GetUniqueId(OGRFeature &ogrFeat) {
     return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("parcel_id"));
 }
 std::string ItaCountryInfo::GetMainCrop(OGRFeature &ogrFeat) {
-    if (m_practice.size() == 0) {
+    if (m_practice.size() == 0 || m_practice =="NA") {
         // If the practice is NA, then we should not write these items
         int efaCrop = std::atoi(ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("EFA_crop")));
         if (efaCrop != 0) {

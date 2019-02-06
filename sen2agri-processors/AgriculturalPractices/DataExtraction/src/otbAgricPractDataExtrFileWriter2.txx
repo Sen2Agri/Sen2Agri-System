@@ -35,7 +35,14 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
 ::AgricPractDataExtrFileWriter2(): m_TargetFileName(""),
     m_bOutputCsvFormat(true), m_bCsvCompactMode(true), m_bMultiFileMode(false), m_bUseLatestNamingFormat(true),
     m_bUseDate2(false), m_bUseMinMax(false)
-{}
+{
+    m_MeanPosInHeader = -1;
+    m_StdevPosInHeader = -1;
+    m_MinPosInHeader = -1;
+    m_MaxPosInHeader = -1;
+    m_ValidPixelsPosInHeader = -1;
+    m_InvalidPixelsPosInHeader = -1;
+}
 
 /*
 template < class TMeasurementVector >
@@ -60,10 +67,6 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
         m_bUseDate2 = true;
     }
 
-    // we exclude from the header the fid and the date
-    int meanPosInHeader = GetPositionInHeader("mean");
-    int stdevPosInHeader = GetPositionInHeader("stdev");
-
     typename MapType::const_iterator it;
     std::string fieldId;
     for ( it = mapMeans.begin() ; it != mapMeans.end() ; ++it)
@@ -83,8 +86,8 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
           fieldEntry.additionalFileDate = additionalFileDate;
           // we exclude from the header the fid and the date
           fieldEntry.values.resize(m_HeaderFields.size() - 2);
-          fieldEntry.values[meanPosInHeader] = meanVal;
-          fieldEntry.values[stdevPosInHeader] = stdDevVal;
+          fieldEntry.values[m_MeanPosInHeader] = meanVal;
+          fieldEntry.values[m_StdevPosInHeader] = stdDevVal;
           containerIt->second.fieldsEntries.push_back(fieldEntry);
 
       } else {
@@ -98,8 +101,8 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
           fieldEntry.additionalFileDate = additionalFileDate;
           // we exclude from the header the fid and the date
           fieldEntry.values.resize(m_HeaderFields.size() - 2);
-          fieldEntry.values[meanPosInHeader] = meanVal;
-          fieldEntry.values[stdevPosInHeader] = stdDevVal;
+          fieldEntry.values[m_MeanPosInHeader] = meanVal;
+          fieldEntry.values[m_StdevPosInHeader] = stdDevVal;
           fileFieldsInfoType.fieldsEntries.push_back(fieldEntry);
 
           m_FileFieldsContainer[uniqueId] = fileFieldsInfoType;
@@ -140,21 +143,9 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
         m_bUseDate2 = true;
     }
 
-    // we exclude from the header the fid and the date
-    int meanPosInHeader = GetPositionInHeader("mean");
-    int stdevPosInHeader = GetPositionInHeader("stdev");
-    int minPosInHeader = -1;
-    int maxPosInHeader = -1;
-    int validPixelsPosInHeader = -1;
-    int invalidPixelsPosInHeader = -1;
-
+    // We ensure that we have the same number of values for these maps as in the input map
     bool useMinMax = false;
     if (m_bUseMinMax) {
-        minPosInHeader = GetPositionInHeader("min");
-        maxPosInHeader = GetPositionInHeader("max");
-        validPixelsPosInHeader = GetPositionInHeader("valid_pixels_cnt");
-        invalidPixelsPosInHeader = GetPositionInHeader("invalid_pixels_cnt");
-
         if (map.size() == mapMins.size() && map.size() == mapMax.size() &&
                 map.size() == mapValidPixels.size() &&
                 map.size() == mapInvalidPixels.size()) {
@@ -191,14 +182,14 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
       fieldEntry.additionalFileDate = additionalFileDate;
       // we exclude from the header the fid and the date
       fieldEntry.values.resize(m_HeaderFields.size() - 2);
-      fieldEntry.values[meanPosInHeader] = meanVal;
-      fieldEntry.values[stdevPosInHeader] = stdDevVal;
-      if (useMinMax && minPosInHeader > 0 && maxPosInHeader > 0 &&
-              validPixelsPosInHeader > 0 && invalidPixelsPosInHeader > 0) {
-          fieldEntry.values[minPosInHeader] = itMin->second[0];
-          fieldEntry.values[maxPosInHeader] = itMax->second[0];
-          fieldEntry.values[validPixelsPosInHeader] = itValidPixelsCnt->second[0];
-          fieldEntry.values[invalidPixelsPosInHeader] = itInvalidPixelsCnt->second[0];
+      fieldEntry.values[m_MeanPosInHeader] = meanVal;
+      fieldEntry.values[m_StdevPosInHeader] = stdDevVal;
+      if (useMinMax && m_MinPosInHeader > 0 && m_MaxPosInHeader > 0 &&
+              m_ValidPixelsPosInHeader > 0 && m_InvalidPixelsPosInHeader > 0) {
+          fieldEntry.values[m_MinPosInHeader] = itMin->second[0];
+          fieldEntry.values[m_MaxPosInHeader] = itMax->second[0];
+          fieldEntry.values[m_ValidPixelsPosInHeader] = itValidPixelsCnt->second[0];
+          fieldEntry.values[m_InvalidPixelsPosInHeader] = itInvalidPixelsCnt->second[0];
       }
 
       if(containerIt != m_FileFieldsContainer.end()) {
@@ -312,8 +303,12 @@ void
 AgricPractDataExtrFileWriter2<TMeasurementVector>
 ::WriteEntriesToCsvOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos, bool writeSuffix)
 {
+    // Remove the duplicate items
+    RemoveDuplicates(fileFieldsInfos.fieldsEntries);
+
     // now sort the resVect
-    std::sort (fileFieldsInfos.fieldsEntries.begin(), fileFieldsInfos.fieldsEntries.end(), m_LinesComparator);
+    // Normaly this is not needed anymore as they are sorted during duplicates removal
+    // std::sort (fileFieldsInfos.fieldsEntries.begin(), fileFieldsInfos.fieldsEntries.end(), m_LinesComparator);
 
     outStream << fileFieldsInfos.fid.c_str() << ";";
     if (writeSuffix) {
@@ -337,6 +332,23 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
         outStream << (m_bCsvCompactMode ? ((i == fieldEntriesSize - 1) ? "\n" : "|") : "\n");
     }
 }
+
+template < class TMeasurementVector >
+void
+AgricPractDataExtrFileWriter2<TMeasurementVector>
+::RemoveDuplicates(std::vector<FieldEntriesType> &fieldsEntries) {
+
+    auto comp = [this] ( const FieldEntriesType& lhs, const FieldEntriesType& rhs ) {
+        // TODO: For now we keep the ones that have different mean values
+        return ((lhs.date == rhs.date) && (lhs.additionalFileDate == rhs.additionalFileDate)/* &&
+                (lhs.values[m_MeanPosInHeader] == rhs.values[m_MeanPosInHeader])*/);};
+
+    auto pred = []( const FieldEntriesType& lhs, const FieldEntriesType& rhs ) {return (lhs.date < rhs.date);};
+    std::sort(fieldsEntries.begin(), fieldsEntries.end(), pred);
+    auto last = std::unique(fieldsEntries.begin(), fieldsEntries.end(), comp);
+    fieldsEntries.erase(last, fieldsEntries.end());
+}
+
 
 template < class TMeasurementVector >
 void
@@ -397,7 +409,6 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
     std::vector<std::string>::iterator hdrIt = std::find(m_HeaderFields.begin(), m_HeaderFields.end(), name);
     if (hdrIt == m_HeaderFields.end())
     {
-        // TODO: log error here
         return -1;
     }
     // we exclude from the header the fid and the date

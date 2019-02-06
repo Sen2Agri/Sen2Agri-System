@@ -91,6 +91,7 @@ public:
   void WriteOutputCsvFormat();
   void WriteCsvHeader(std::ofstream &fileStream, bool individualFieldFile);
   void WriteEntriesToCsvOutputFile(std::ofstream &outStream, FileFieldsInfoType &fileFieldsInfos, bool writeSuffix);
+  void RemoveDuplicates(std::vector<FieldEntriesType> &fieldsEntries);
 
   /** Remove previously added inputs (vectors and maps) */
   void CleanInputs();
@@ -110,6 +111,12 @@ public:
   /** Set the header fields */
   inline void SetHeaderFields(const StringVectorType &vec) {
       this->m_HeaderFields = vec;
+      m_MeanPosInHeader = GetPositionInHeader("mean");
+      m_StdevPosInHeader = GetPositionInHeader("stdev");
+      m_MinPosInHeader = GetPositionInHeader("min");
+      m_MaxPosInHeader = GetPositionInHeader("max");
+      m_ValidPixelsPosInHeader = GetPositionInHeader("valid_pixels_cnt");
+      m_InvalidPixelsPosInHeader = GetPositionInHeader("invalid_pixels_cnt");
   }
   inline StringVectorType GetHeaderFields() {return this->m_HeaderFields;}
 
@@ -151,8 +158,8 @@ private:
             return (i.date < j.date);
         }
 
-  private:
-        int m_index;
+        private:
+            int m_index;
   } LinesComparator;
 
   LinesComparator m_LinesComparator;
@@ -173,6 +180,13 @@ private:
   bool                          m_bUseDate2;
   bool                          m_bUseMinMax;
 
+private:
+    int m_MeanPosInHeader;
+    int m_StdevPosInHeader;
+    int m_MinPosInHeader;
+    int m_MaxPosInHeader;
+    int m_ValidPixelsPosInHeader;
+    int m_InvalidPixelsPosInHeader;
 }; // end of class AgricPractDataExtrFileWriter2
 
 } // end of namespace otb

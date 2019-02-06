@@ -37,6 +37,11 @@
 #include <sys/stat.h>
 #include <errno.h>
 
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
+
+
 namespace otb
 {
 namespace Wrapper
@@ -58,7 +63,8 @@ public:
 
     IndexAgricPracticesXml()
     {
-        const std::string &regex = R"(\s?<fid id=\"(.*)\" name=\"(.*)\">)";
+        //const std::string &regex = R"(\s?<fid id=\"(.*)\" name=\"(.*)\">)";
+        const std::string &regex = R"(\s?<fid id=\"(.*)\">)";
         boost::regex regexExp {regex};
         m_startFidRegexExp = regexExp;
     }
@@ -78,9 +84,9 @@ public:
         AddDocTag(Tags::Learning);
 
 
-        AddParameter(ParameterType_String, "xml", "Input file");
-        SetParameterDescription("xml", "The input agricultural practices data extraction file to be indexed");
-
+        AddParameter(ParameterType_String, "in", "Input file");
+        SetParameterDescription("in", "The input agricultural practices data extraction file to be indexed");
+        MandatoryOff("in");
 
         AddRAMParameter();
 
@@ -98,12 +104,20 @@ public:
 
     void DoExecute() override
     {
-        const std::string &xmlFile = this->GetParameterString("xml");
-        if(xmlFile.size() == 0) {
-            otbAppLogFATAL(<<"No xml was given as input!");
+        const std::string &inFile = this->GetParameterString("in");
+        if(inFile.size() == 0) {
+            otbAppLogFATAL(<<"No file was given as input!");
         }
 
-        boost::filesystem::path path(xmlFile);
+        boost::filesystem::path path(inFile);
+        std::string ext = path.extension().string();
+        bool bIsCsv = false;
+        if (boost::iequals(ext, ".csv")) {
+            bIsCsv = true;
+        } else if (!boost::iequals(ext, ".xml")) {
+            otbAppLogFATAL(<<"Invalid extension of input files " << ext);
+        }
+
         std::ofstream xmlIndexFile;
         std::string outIdxPath = (path.parent_path() / path.filename()).string() + ".idx";
         xmlIndexFile.open(outIdxPath, std::ios_base::trunc | std::ios_base::out);
@@ -113,7 +127,7 @@ public:
         int fd, lineLen;
         char *line;
         // map the file
-        fd = open(xmlFile.c_str(), O_RDONLY);
+        fd = open(inFile.c_str(), O_RDONLY);
         fstat(fd, &sb);
         //// int pageSize;
         //// pageSize = getpagesize();
@@ -121,16 +135,16 @@ public:
         char *data = static_cast<char*>(mmap((caddr_t)0, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0));
 
         uintmax_t curLineStart;
-        uintmax_t curFidStart;
+        uintmax_t curFidStart = 0;
         // get lines
         std::string curFid;
         std::string curName;
-        while(cntr < sb.st_size) {
+        while(cntr < (uintmax_t)sb.st_size) {
             lineLen = 0;
             line = data;
             curLineStart = cntr;
             // find the next line
-            while(*data != '\n' && cntr < sb.st_size) {
+            while(*data != '\n' && cntr < (uintmax_t) sb.st_size) {
                 data++;
                 cntr++;
                 lineLen++;
@@ -140,17 +154,29 @@ public:
             buf[lineLen] = 0;
             std::string strLine(buf);
 
-            const std::string &regex = "<fid id=\"(.*)\" name=\"(.*)\">";
-            boost::regex regexExp {regex};
-            boost::smatch matches;
-            if (boost::regex_search(strLine,matches,regexExp)) {
-                curFidStart = curLineStart;
-                curFid = matches[1].str();
-                curName = matches[2].str();
-            } else if (strstr(buf, "</fid>")) {
-                // end of the tag
-                if (curFid.size() && curName.size()) {
-                    WriteIndexLine(xmlIndexFile, curFid, curName, curFidStart, cntr - curFidStart + 1);
+            if (bIsCsv) {
+                if (!strstr(buf, ";suffix;")) {
+                    curFidStart = curLineStart;
+                    const std::vector<std::string> &lineElems = split(strLine, ';');
+                    // get the first two elements
+                    curFid = lineElems[0] + ";" + lineElems[1];
+                    curFidStart = curLineStart;
+                    WriteIndexLine(xmlIndexFile, curFid, "", curFidStart, cntr - curFidStart + 1);
+                }
+            } else {
+                //const std::string &regex = "<fid id=\"(.*)\" name=\"(.*)\">";
+                const std::string &regex = "<fid id=\"(.*)\">";
+                boost::regex regexExp {regex};
+                boost::smatch matches;
+                if (boost::regex_search(strLine,matches,regexExp)) {
+                    curFidStart = curLineStart;
+                    curFid = matches[1].str();
+                    //curName = matches[2].str();
+                } else if (strstr(buf, "</fid>")) {
+                    // end of the tag
+                    if (curFid.size()/* && curName.size()*/) {
+                        WriteIndexLine(xmlIndexFile, curFid, curName, curFidStart, cntr - curFidStart + 1);
+                    }
                 }
             }
             // skip the found \n
@@ -161,8 +187,9 @@ public:
 
     void WriteIndexLine(std::ofstream &outIdxStream, const std::string &fid, const std::string &name,
                         const uintmax_t &curFileIdx, size_t byteToWrite) {
+        (void)name;
         if (outIdxStream.is_open()) {
-            outIdxStream << fid.c_str() << ";" << name.c_str() << ";" <<
+            outIdxStream << fid.c_str() << ";" /*<< name.c_str() << ";" */ <<
                             curFileIdx << ";" << byteToWrite <<"\n";
         }
     }
