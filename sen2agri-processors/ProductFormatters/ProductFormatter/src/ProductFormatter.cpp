@@ -88,6 +88,7 @@
 
 #define ORIGINATOR_SITE "CSRO"
 
+#define VECTOR_FOLDER_NAME          "VECTOR_DATA"
 #define TILES_FOLDER_NAME           "TILES"
 #define AUX_DATA_FOLDER_NAME        "AUX_DATA"
 #define LEGACY_DATA_FOLDER_NAME     "LEGACY_DATA"
@@ -96,6 +97,15 @@
 
 #define LANDSAT    "LANDSAT"
 #define SENTINEL   "SENTINEL"
+
+#define SEN2AGRI_L2A_PRD_LEVEL  "L2A"
+#define SEN2AGRI_L3A_PRD_LEVEL  "L3A"
+#define SEN2AGRI_L3B_PRD_LEVEL  "L3B"
+#define SEN2AGRI_L3C_PRD_LEVEL  "L3C"
+#define SEN2AGRI_L3D_PRD_LEVEL  "L3E"
+#define SEN2AGRI_L3E_PRD_LEVEL  "L3E"
+#define SEN2AGRI_L4A_PRD_LEVEL  "L4A"
+#define SEN2AGRI_L4B_PRD_LEVEL  "L4B"
 
 #define L2A_PRODUCT             "L2A product"
 #define COMPOSITE_PRODUCT       "Composite"
@@ -162,7 +172,8 @@ typedef enum{
     PHENO_RASTER,
     PHENO_FLAGS,
     CROP_MASK_FLAGS,
-    CROP_TYPE_FLAGS
+    CROP_TYPE_FLAGS,
+    UNKONW_RASTER_TYPE
 }rasterTypes;
 
 struct rasterInfo
@@ -278,6 +289,10 @@ private:
         AddChoice("processor.cropmask", "Crop mask product");
         SetParameterDescription("processor.cropmask", "Specifies a CropMask product");
 
+        AddChoice("processor.generic", "A generic product where files are copied as they are");
+        SetParameterDescription("processor.generic", "A generic product that will be simply created by copying "
+                                                    "input file and no other operation");
+
   //composite parameters
         AddParameter(ParameterType_InputFilenameList, "processor.composite.refls", "Reflectance raster files list for composite separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.composite.refls");
@@ -373,6 +388,11 @@ private:
         AddParameter(ParameterType_InputFilenameList, "processor.cropmask.flags", "CROP MASK flags files");
         MandatoryOff("processor.cropmask.flags");
 
+// Generic product
+        AddParameter(ParameterType_InputFilenameList, "processor.generic.files", "Generic product files");
+        MandatoryOff("processor.generic.files");
+
+// Other parameters
         AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
         MandatoryOff("il");
 
@@ -394,6 +414,10 @@ private:
         MandatoryOff("aggregatescale");
         SetDefaultParameterInt("aggregatescale", 60);
 
+        AddParameter(ParameterType_Int, "vectprd", "Specifies if the product is a vector or raster product");
+        MandatoryOff("vectprd");
+        SetDefaultParameterInt("vectprd", 0);
+
         SetDocExampleParameterValue("destroot", "/home/ata/sen2agri/sen2agri-processors-build/Testing/Temporary/Dest");
         SetDocExampleParameterValue("fileclass", "SVT1");
         SetDocExampleParameterValue("level", "L3A");
@@ -413,6 +437,8 @@ private:
   {
       // The Quicklook OTB app spawns thousands of threads, try to avoid that
       setenv("ITK_USE_THREADPOOL", "1", 0);
+
+      m_bVectPrd = (this->GetParameterInt("vectprd") != 0);
 
       // by default, we expect a "timeperiod" parameter
       m_bDynamicallyTimePeriod = false;
@@ -447,11 +473,13 @@ private:
 
       //read .xml or .HDR files to fill the metadata structures
       // Get the list of input files
-      std::vector<std::string> descriptors = this->GetParameterStringList("il");
-      LoadAllDescriptors(descriptors);
-      const std::string &strMinAcquisitionDate = *std::min_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
-      const std::string &strMaxAcquisitionDate = *std::max_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
-      if(m_strTimePeriod.empty()) {
+      if (HasValue("il")) {
+          const std::vector<std::string> &descriptors = this->GetParameterStringList("il");
+          LoadAllDescriptors(descriptors);
+      }
+      if(m_strTimePeriod.empty() && m_acquisitionDatesList.size() > 0) {
+          const std::string &strMinAcquisitionDate = *std::min_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
+          const std::string &strMaxAcquisitionDate = *std::max_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
           m_bDynamicallyTimePeriod = true;
           const std::string &minAcqDate = getDateFromAquisitionDateTime(strMinAcquisitionDate);
           const std::string &maxAcqDate = getDateFromAquisitionDateTime(strMaxAcquisitionDate);
@@ -476,171 +504,170 @@ private:
       bool bDirStructBuiltOk = createsAllFolders(strMainFolderFullPath);
 
       //if is composite read reflectance rasters, weights rasters, flags masks, dates masks
-      if (m_strProductLevel.compare("L3A") == 0)
-      {
-          std::vector<std::string> rastersList;
+      if (!m_bVectPrd) {
+          if (m_strProductLevel == SEN2AGRI_L3A_PRD_LEVEL)
+          {
+              std::vector<std::string> rastersList;
 
-           // Get reflectance raster file list
-          rastersList = this->GetParameterStringList("processor.composite.refls");
-          //unpack and add them in global raster list
-          UnpackRastersList(rastersList, COMPOSITE_REFLECTANCE_RASTER, false);
+               // Get reflectance raster file list
+              rastersList = this->GetParameterStringList("processor.composite.refls");
+              //unpack and add them in global raster list
+              UnpackRastersList(rastersList, COMPOSITE_REFLECTANCE_RASTER, false);
 
-          //get weights rasters list
-          rastersList = this->GetParameterStringList("processor.composite.weights");
-          UnpackRastersList(rastersList, COMPOSITE_WEIGHTS_RASTER, true, false);
+              //get weights rasters list
+              rastersList = this->GetParameterStringList("processor.composite.weights");
+              UnpackRastersList(rastersList, COMPOSITE_WEIGHTS_RASTER, true, false);
 
-          rastersList = this->GetParameterStringList("processor.composite.flags");
-          UnpackRastersList(rastersList, COMPOSITE_FLAGS_MASK, true);
+              rastersList = this->GetParameterStringList("processor.composite.flags");
+              UnpackRastersList(rastersList, COMPOSITE_FLAGS_MASK, true);
 
-          rastersList = this->GetParameterStringList("processor.composite.dates");
-          UnpackRastersList(rastersList, COMPOSITE_DATES_MASK, true);
+              rastersList = this->GetParameterStringList("processor.composite.dates");
+              UnpackRastersList(rastersList, COMPOSITE_DATES_MASK, true);
 
-          rastersList = this->GetParameterStringList("processor.composite.rgb");
-          std::string strTileID("");
+              rastersList = this->GetParameterStringList("processor.composite.rgb");
+              std::string strTileID("");
 
-          for (const auto &rasterFileEl : rastersList) {
-              if(rasterFileEl.compare(0, 5, "TILE_") == 0)
-              {
-                  //if is TILE separator, read tileID
-                  strTileID = rasterFileEl.substr(5, rasterFileEl.length() - 5);
+              for (const auto &rasterFileEl : rastersList) {
+                  if(rasterFileEl.compare(0, 5, "TILE_") == 0)
+                  {
+                      //if is TILE separator, read tileID
+                      strTileID = rasterFileEl.substr(5, rasterFileEl.length() - 5);
+                  }
+                  else
+                  {
+                      previewInfo previewInfoEl;
+                      previewInfoEl.strTileID = strTileID;
+                      previewInfoEl.strPreviewFileName = rasterFileEl;
+                      m_previewList.emplace_back(previewInfoEl);
+                  }
               }
-              else
-              {
-                  previewInfo previewInfoEl;
-                  previewInfoEl.strTileID = strTileID;
-                  previewInfoEl.strPreviewFileName = rasterFileEl;
-                  m_previewList.emplace_back(previewInfoEl);
-              }
+         }
+
+          // read LAI Mono-date raster files list
+          if (m_strProductLevel == SEN2AGRI_L3B_PRD_LEVEL) {
+              std::vector<std::string> rastersList;
+
+              rastersList = this->GetParameterStringList("processor.vegetation.laindvi");
+              UnpackRastersList(rastersList, LAI_NDVI_RASTER, false);
+              rastersList = this->GetParameterStringList("processor.vegetation.laimonodate");
+              UnpackRastersList(rastersList, LAI_MONO_DATE_RASTER, false);
+
+              rastersList = this->GetParameterStringList("processor.vegetation.faparmonodate");
+              UnpackRastersList(rastersList, FAPAR_MONO_DATE_RASTER, false);
+              rastersList = this->GetParameterStringList("processor.vegetation.fcovermonodate");
+              UnpackRastersList(rastersList, FCOVER_MONO_DATE_RASTER, false);
+
+              rastersList = this->GetParameterStringList("processor.vegetation.laimonodateerr");
+              UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, true, false);
+              rastersList = this->GetParameterStringList("processor.vegetation.laistatusflgs");
+              UnpackRastersList(rastersList, LAI_MONO_DATE_STATUS_FLAGS, true);
+
+              rastersList = this->GetParameterStringList("processor.vegetation.indomainflgs");
+              UnpackRastersList(rastersList, LAI_MONO_DATE_IN_DOMAIN_FLAGS, true);
+
+              rastersList = this->GetParameterStringList("processor.vegetation.laidomainflgs");
+              UnpackRastersList(rastersList, LAI_MONO_DATE_DOMAIN_FLAGS, true);
+
+              rastersList = this->GetParameterStringList("processor.vegetation.fapardomainflgs");
+              UnpackRastersList(rastersList, FAPAR_DOMAIN_FLAGS, true);
+
+              rastersList = this->GetParameterStringList("processor.vegetation.fcoverdomaniflgs");
+              UnpackRastersList(rastersList, FCOVER_DOMAIN_FLAGS, true);
           }
-     }
 
-      // read LAI Mono-date raster files list
-      if (m_strProductLevel.compare("L3B") == 0) {
-          std::vector<std::string> rastersList;
+          // read LAIREPR raster files list
+          if (m_strProductLevel == SEN2AGRI_L3C_PRD_LEVEL) {
+              std::vector<std::string> rastersList;
 
-          rastersList = this->GetParameterStringList("processor.vegetation.laindvi");
-          UnpackRastersList(rastersList, LAI_NDVI_RASTER, false);
-          rastersList = this->GetParameterStringList("processor.vegetation.laimonodate");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_RASTER, false);
+              // LAI Reprocessed raster files list
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireproc"));
+              UnpackRastersList(rastersList, LAI_REPR_RASTER, false);
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireprocflgs"));
+              UnpackRastersList(rastersList, LAI_REPROC_FLAGS, true);
+         }
 
-          rastersList = this->GetParameterStringList("processor.vegetation.faparmonodate");
-          UnpackRastersList(rastersList, FAPAR_MONO_DATE_RASTER, false);
-          rastersList = this->GetParameterStringList("processor.vegetation.fcovermonodate");
-          UnpackRastersList(rastersList, FCOVER_MONO_DATE_RASTER, false);
+          // read LAIFIT raster files list
+          if (m_strProductLevel == SEN2AGRI_L3D_PRD_LEVEL) {
+              std::vector<std::string> rastersList;
 
-          rastersList = this->GetParameterStringList("processor.vegetation.laimonodateerr");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, true, false);
-          rastersList = this->GetParameterStringList("processor.vegetation.laistatusflgs");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_STATUS_FLAGS, true);
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifit"));
+              UnpackRastersList(rastersList, LAI_FIT_RASTER, false);
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifitflgs"));
+              UnpackRastersList(rastersList, LAI_FITTED_FLAGS, true);
+         }
 
-          rastersList = this->GetParameterStringList("processor.vegetation.indomainflgs");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_IN_DOMAIN_FLAGS, true);
+          //read Phenological NDVI metrics raster files list
+          if (m_strProductLevel == SEN2AGRI_L3E_PRD_LEVEL) {
+              std::vector<std::string> rastersList;
+              rastersList = this->GetParameterStringList("processor.phenondvi.metrics");
+              UnpackRastersList(rastersList, PHENO_RASTER, false);
+              rastersList = this->GetParameterStringList("processor.phenondvi.flags");
+              UnpackRastersList(rastersList, PHENO_FLAGS, true);
+         }
 
-          rastersList = this->GetParameterStringList("processor.vegetation.laidomainflgs");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_DOMAIN_FLAGS, true);
+          //if is CROP MASK, read raster file
+          if (m_strProductLevel == SEN2AGRI_L4A_PRD_LEVEL)
+          {
 
-          rastersList = this->GetParameterStringList("processor.vegetation.fapardomainflgs");
-          UnpackRastersList(rastersList, FAPAR_DOMAIN_FLAGS, true);
+              std::vector<std::string> filesList;
+              filesList = this->GetParameterStringList("processor.cropmask.file");
+              UnpackRastersList(filesList, CROP_MASK_RASTER, false);
 
-          rastersList = this->GetParameterStringList("processor.vegetation.fcoverdomaniflgs");
-          UnpackRastersList(rastersList, FCOVER_DOMAIN_FLAGS, true);
+              filesList = this->GetParameterStringList("processor.cropmask.rawfile");
+              UnpackRastersList(filesList, RAW_CROP_MASK_RASTER, false);
+
+              //get quality file list
+              filesList = this->GetParameterStringList("processor.cropmask.quality");
+              UnpackQualityFlagsList(filesList);
+
+              // get the CropMask flags
+              filesList = this->GetParameterStringList("processor.cropmask.flags");
+              UnpackRastersList(filesList, CROP_MASK_FLAGS, true);
+          }
+
+          //if is CROP TYPE, read raster file
+          if (m_strProductLevel == SEN2AGRI_L4B_PRD_LEVEL)
+          {
+              // Get reflectance raster file list
+              std::vector<std::string> filesList;
+              filesList = this->GetParameterStringList("processor.croptype.file");
+              UnpackRastersList(filesList, CROP_TYPE_RASTER, false);
+
+              filesList = this->GetParameterStringList("processor.croptype.rawfile");
+              UnpackRastersList(filesList, CROP_TYPE_RAW_RASTER, false);
+
+              //get quality file list
+              filesList = this->GetParameterStringList("processor.croptype.quality");
+              UnpackQualityFlagsList(filesList);
+
+              // get the CropType flags
+              filesList = this->GetParameterStringList("processor.croptype.flags");
+              UnpackRastersList(filesList, CROP_TYPE_FLAGS, true);
+          }
+      } else {
+          const std::vector<std::string> &rastersList = this->GetParameterStringList("processor.generic.files");
+          TransferGenericVectorFiles(rastersList);
       }
-
-      // read LAIREPR raster files list
-      if (m_strProductLevel.compare("L3C") == 0) {
-          std::vector<std::string> rastersList;
-
-          // LAI Reprocessed raster files list
-          rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireproc"));
-          UnpackRastersList(rastersList, LAI_REPR_RASTER, false);
-          rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireprocflgs"));
-          UnpackRastersList(rastersList, LAI_REPROC_FLAGS, true);
-     }
-
-      // read LAIFIT raster files list
-      if (m_strProductLevel.compare("L3D") == 0) {
-          std::vector<std::string> rastersList;
-
-          rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifit"));
-          UnpackRastersList(rastersList, LAI_FIT_RASTER, false);
-          rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifitflgs"));
-          UnpackRastersList(rastersList, LAI_FITTED_FLAGS, true);
-     }
-
-      //read Phenological NDVI metrics raster files list
-      if (m_strProductLevel.compare("L3E") == 0) {
-          std::vector<std::string> rastersList;
-          rastersList = this->GetParameterStringList("processor.phenondvi.metrics");
-          UnpackRastersList(rastersList, PHENO_RASTER, false);
-          rastersList = this->GetParameterStringList("processor.phenondvi.flags");
-          UnpackRastersList(rastersList, PHENO_FLAGS, true);
-     }
-
-      //if is CROP MASK, read raster file
-      if (m_strProductLevel.compare("L4A") == 0)
-      {
-
-          std::vector<std::string> filesList;
-          filesList = this->GetParameterStringList("processor.cropmask.file");
-          UnpackRastersList(filesList, CROP_MASK_RASTER, false);
-
-          filesList = this->GetParameterStringList("processor.cropmask.rawfile");
-          UnpackRastersList(filesList, RAW_CROP_MASK_RASTER, false);
-
-          //get quality file list
-          filesList = this->GetParameterStringList("processor.cropmask.quality");
-          UnpackQualityFlagsList(filesList);
-
-          // get the CropMask flags
-          filesList = this->GetParameterStringList("processor.cropmask.flags");
-          UnpackRastersList(filesList, CROP_MASK_FLAGS, true);
-      }
-
-      //if is CROP TYPE, read raster file
-      if (m_strProductLevel.compare("L4B") == 0)
-      {
-          // Get reflectance raster file list
-          std::vector<std::string> filesList;
-          filesList = this->GetParameterStringList("processor.croptype.file");
-          UnpackRastersList(filesList, CROP_TYPE_RASTER, false);
-
-          filesList = this->GetParameterStringList("processor.croptype.rawfile");
-          UnpackRastersList(filesList, CROP_TYPE_RAW_RASTER, false);
-
-          //get quality file list
-          filesList = this->GetParameterStringList("processor.croptype.quality");
-          UnpackQualityFlagsList(filesList);
-
-          // get the CropType flags
-          filesList = this->GetParameterStringList("processor.croptype.flags");
-          UnpackRastersList(filesList, CROP_TYPE_FLAGS, true);
-      }
-
-      for (const auto &tileInfoEl : m_tileIDList ) {
-            std::cout << "TileID =" << tileInfoEl.strTileID << "  strTilePath =" << tileInfoEl.strTilePath  << std::endl;
-      }
-
       if(bDirStructBuiltOk)
       {
           for (tileInfo &tileEl : m_tileIDList) {
+              std::cout << "TileID =" << tileEl.strTileID << "  strTilePath =" << tileEl.strTilePath  << std::endl;
               CreateAndFillTile(tileEl, strMainFolderFullPath);
           }
 
-      }
-
-      if(bDirStructBuiltOk)
-      {
           TransferPreviewFiles();
           if (HasValue("lutqgis")) {
               TransferAndRenameLUTFile(GetParameterString("lutqgis"));
           }
           TransferAndRenameGIPPFiles();
           TransferAndRenameISDFiles();
-          const std::string strProductFileName = BuildFileName(METADATA_CATEG, "", ".xml");
+          const std::string &strProductFileName = BuildFileName(METADATA_CATEG, "", ".xml");
           generateProductMetadataFile(strMainFolderFullPath + "/" + strProductFileName);
-          bool bAgSuccess = ExecuteAgregateTiles(strMainFolderFullPath, this->GetParameterInt("aggregatescale"));
-          std::cout << "Aggregating tiles " << (bAgSuccess ? "SUCCESS!" : "FAILED!") << std::endl;
-          TransferMainProductPreviewFile();
+          if (!m_bVectPrd) {
+              bool bAgSuccess = ExecuteAgregateTiles(strMainFolderFullPath, this->GetParameterInt("aggregatescale"));
+              std::cout << "Aggregating tiles " << (bAgSuccess ? "SUCCESS!" : "FAILED!") << std::endl;
+              TransferMainProductPreviewFile();
+          }
       }
 
       // Perform the consistency check of the product. If the main folder is renamed, then
@@ -826,8 +853,9 @@ private:
           itkExceptionMacro("Fail to create destination directory " << strMainFolderPath);
       }
 
-      /* create TILES subfolder */
-      if(mkPath(strMainFolderPath + "/" + TILES_FOLDER_NAME) == false)
+      /* create TILES or VECTOR_DATA subfolder */
+      const std::string &folderName = m_bVectPrd ? VECTOR_FOLDER_NAME : TILES_FOLDER_NAME;
+      if(mkPath(strMainFolderPath + "/" + folderName) == false)
       {
            //fail to create TILES subfolder
           bResult = false;
@@ -889,27 +917,30 @@ private:
   {
       if (m_strProductLevel.compare("L2A") == 0)
          return L2A_PRODUCT;
-      if (m_strProductLevel.compare("L3A") == 0)
+      if (m_strProductLevel == SEN2AGRI_L3A_PRD_LEVEL)
          return COMPOSITE_PRODUCT;
-      if (m_strProductLevel.compare("L3B") == 0)
+      if (m_strProductLevel == SEN2AGRI_L3B_PRD_LEVEL)
          return LAI_MONO_DATE_PRODUCT;
-      if (m_strProductLevel.compare("L3C") == 0)
+      if (m_strProductLevel == SEN2AGRI_L3C_PRD_LEVEL)
          return LAI_REPROC_PRODUCT;
-      if (m_strProductLevel.compare("L3D") == 0)
+      if (m_strProductLevel == SEN2AGRI_L3D_PRD_LEVEL)
          return LAI_FITTED_PRODUCT;
-      if (m_strProductLevel.compare("L3E") == 0)
+      if (m_strProductLevel == SEN2AGRI_L3E_PRD_LEVEL)
          return PHENO_NDVI_PRODUCT;
-      if (m_strProductLevel.compare("L4A") == 0)
+      if (m_strProductLevel == SEN2AGRI_L4A_PRD_LEVEL)
          return CROP_MASK;
-      if (m_strProductLevel.compare("L4B") == 0)
+      if (m_strProductLevel == SEN2AGRI_L4B_PRD_LEVEL)
          return CROP_TYPE;
+      if (m_strProductLevel.size() > 0) {
+          return m_strProductLevel;
+      }
       return "Unknowkn product";
   }
 
   void FillBandList()
   {
       Band bandEl;
-      if (m_strProductLevel.compare("L3A") == 0)
+      if (m_strProductLevel == SEN2AGRI_L3A_PRD_LEVEL)
               //if is composite product, fill bands
       {
 
@@ -1372,8 +1403,8 @@ private:
       m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.GreenChannel = 0;
       m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.BlueChannel = 0;
 
-      if ((m_strProductLevel.compare("L2A") == 0) ||
-          (m_strProductLevel.compare("L3A") == 0))
+      if ((m_strProductLevel == SEN2AGRI_L2A_PRD_LEVEL) ||
+          (m_strProductLevel == SEN2AGRI_L3A_PRD_LEVEL))
       {
           std::cout << "Red, green and blue" << std::endl;
           m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.RedChannel = 3;
@@ -1750,8 +1781,8 @@ private:
       bool bIsRgbImg = false;
       bool bIsRangeMapFile = true;
 
-      if ((m_strProductLevel.compare("L2A") == 0) ||
-          (m_strProductLevel.compare("L3A") == 0))
+      if ((m_strProductLevel == SEN2AGRI_L2A_PRD_LEVEL) ||
+          (m_strProductLevel == SEN2AGRI_L3A_PRD_LEVEL))
       {
           iChannelNo = 3;
           if(m_strLutFile != "") {
@@ -1759,16 +1790,16 @@ private:
             bIsRgbImg = true;
           }
       }
-      if(((m_strProductLevel.compare("L3B") == 0) ||
-          (m_strProductLevel.compare("L3C") == 0) ||
-          (m_strProductLevel.compare("L3D") == 0) ||
-          (m_strProductLevel.compare("L4A") == 0) ||
-          (m_strProductLevel.compare("L4B") == 0)) &&
+      if(((m_strProductLevel == SEN2AGRI_L3B_PRD_LEVEL) ||
+          (m_strProductLevel == SEN2AGRI_L3C_PRD_LEVEL) ||
+          (m_strProductLevel == SEN2AGRI_L3D_PRD_LEVEL) ||
+          (m_strProductLevel == SEN2AGRI_L4A_PRD_LEVEL) ||
+          (m_strProductLevel == SEN2AGRI_L4B_PRD_LEVEL)) &&
           (m_strLutFile != ""))
       {
             iChannelNo = 3;
             bUseLut = true;
-            if(m_strProductLevel == "L4A" || m_strProductLevel == "L4B") {
+            if(m_strProductLevel == SEN2AGRI_L4A_PRD_LEVEL || m_strProductLevel == SEN2AGRI_L4B_PRD_LEVEL) {
                 bIsRangeMapFile = false;
             }
       }
@@ -1835,6 +1866,16 @@ private:
 
   }
 
+  void TransferGenericVectorFiles(const std::vector<std::string> &files)
+  {
+      for(const auto &file: files) {
+          std::string fileName = boost::filesystem::path(file).filename().c_str();
+          CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + fileName, file);
+      }
+  }
+
+
+
    void CopyFile(const std::string &strDest, const std::string &strSrc)
    {
        boost::system::error_code ec;
@@ -1894,7 +1935,7 @@ private:
       return (pos!= std::string::npos) ? acqDateTime.substr(0, pos) : acqDateTime;
   }
 
-  void LoadAllDescriptors(std::vector<std::string> descriptors)
+  void LoadAllDescriptors(const std::vector<std::string> &descriptors)
   {
       // load all descriptors
       MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
@@ -2196,6 +2237,8 @@ private:
 
     std::vector<std::string> m_acquisitionDatesList;
     bool m_bDynamicallyTimePeriod;
+
+    bool m_bVectPrd;
 
 };
 }
