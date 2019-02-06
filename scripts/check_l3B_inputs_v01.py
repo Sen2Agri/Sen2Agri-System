@@ -27,6 +27,11 @@ except ImportError:
 
 def parse_date(str):
     return datetime.strptime(str, "%Y-%m-%d").date()
+
+class L2AProduct(object):
+    def __init__(self, prdRelPath, prdFullPath):
+        self.prdRelPath =  prdRelPath;
+        self.prdFullPath = prdFullPath
     
 class Config(object):
     def __init__(self, args):
@@ -123,12 +128,16 @@ def get_aux_files_from_ndvi_products_from_db(config, conn):
         conn.commit()
 
         products = []
+        patternIppFile = re.compile("S2AGRI_L3B_IPP_A\d{8}T\d{6}\.xml$")
         for (dt, tiles, full_path) in results:
             ndviTilePath = os.path.join(full_path, "AUX_DATA")
             acq_date = dt.strftime("%Y%m%dT%H%M%S")
-            ndviTilePath = os.path.join(ndviTilePath, "S2AGRI_L3B_IPP_A{}.xml".format(acq_date))
-            s2HdrFiles = getFilesFromIPPFile(config, ndviTilePath)
-            products += s2HdrFiles
+            for file in os.listdir(ndviTilePath):
+                if patternIppFile.match(file) : 
+                    # ndviTilePath = os.path.join(ndviTilePath, "S2AGRI_L3B_IPP_A{}.xml".format(acq_date))
+                    ndviTilePath = os.path.join(ndviTilePath, file)
+                    s2HdrFiles = getFilesFromIPPFile(config, ndviTilePath)
+                    products += s2HdrFiles
 
         return products
 
@@ -150,6 +159,7 @@ def get_l2a_products_from_db(config, conn):
             )
             select products.date,
                     products.tiles,
+                    products.name,
                     products.full_path
             from products
             where date between {} and {}
@@ -169,18 +179,23 @@ def get_l2a_products_from_db(config, conn):
 
         products = []
         log_time=datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")  
-        for (dt, tiles, full_path) in results:
+        for (dt, tiles, prdName, full_path) in results:
             #print("Full path: {}".format(full_path))
-            files = os.listdir(full_path)
+            try:
+                files = os.listdir(full_path)
+            except:
+                print("Product {} found in DB but not on disk".format(full_path))
+                continue
             l2aTilePaths = fnmatch.filter(files, "S2*_OPER_SSC_L2VALD_*.HDR")
             if len(l2aTilePaths) == 0:
                 l2aTilePaths = fnmatch.filter(files, "L8_TEST_L8C_L2VALD_*.HDR")
                 
             for file in l2aTilePaths:
+                relHdrFilePath = os.path.join(prdName, file)
                 fullHdrFilePath = os.path.join(full_path, file)
                 #print("Full HDR file path: {}".format(fullHdrFilePath))
                 #config.logging.info('[%s] L2A HDR PATH from PRODUCT:[ %s ]',log_time,fullHdrFilePath)
-                products.append(fullHdrFilePath)
+                products.append(L2AProduct(relHdrFilePath, fullHdrFilePath))
             
         return products
         
@@ -193,23 +208,25 @@ def getFilesFromIPPFile(config, path) :
     #config.logging.info('[%s] prodName:[ %s ]',log_time,prdName)
     #config.logging.info('[%s] IPP XML File:[ %s ]',log_time,path)    
     for gDir in get_inputs_from_xml(path):
-        
-        if not os.path.isdir(config.path+"/"+gDir.split('/')[-2]):
+        pathComponents = gDir.split('/')
+        l2aHdrPaths.append(os.path.join(pathComponents[-2], pathComponents[-1]))
+        #l2aHdrPaths.append(gDir)        
+        #if not os.path.isdir(config.path+"/" + pathComponents[-2]):
             #print("L2A Product Name: {}".format(config.path + "/" + gDir.split('/')[-2]))
             #config.logging.info('[%s] InputName:[ %s ]',log_time,gDir.split('/')[-2])
             #config.logging.info('[%s] L3B IPP L2A InputPath:[ %s ]',log_time,gDir)
             #print("Full HDR file path from IPP: {}".format(gDir))
-            l2aHdrPaths.append(gDir)
+        
     
     return l2aHdrPaths
     
 def getMissingL2AProducts(config, allL2AHdrFiles, l3bInputs) :  
     log_time=datetime.datetime.now().strftime("%Y-%m-%d %H-%M-%S")         
-    missingS2Hdrs = [item for item in allL2AHdrFiles if item not in l3bInputs]
+    missingS2Hdrs = [item for item in allL2AHdrFiles if item.prdRelPath not in l3bInputs]
     missingProductPaths = []
     config.logging.info('[%s] MISSING PRODUCT PATHS : ',log_time)
     for missingHdr in missingS2Hdrs:
-        elements = missingHdr.split('/')
+        elements = missingHdr.prdFullPath.split('/')
         missingPrdPath = "/".join(elements[0:-1])
         missingPrdPath += "/"
         config.logging.info('%s',missingPrdPath)

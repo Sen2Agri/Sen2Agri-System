@@ -63,10 +63,12 @@ class Config(object):
 
         self.inputs_file = args.inputs_file
         self.file_type = args.file_type
+        self.polarisation = args.polarisation
         self.nf_2017 = args.nf_2017
         self.use_shapefile_only = args.use_shapefile_only
         self.gen_minmax = args.gen_minmax
         self.csvcompact = args.csvcompact
+        self.filter_ids = args.filter_ids
         
         self.prds_per_group = args.prds_per_group
         
@@ -200,7 +202,34 @@ def writeSortedProductsToFile(inputFile, sortedProducts) :
     with open(outFileName, 'w') as f:
         for s in sortedProducts:
             f.write(s.path + '\n')
-        
+
+def writeProductsToFile(config, file_idx, groups) :
+    targetTempPath = os.path.join(config.path, "product_to_rasterize_files")
+    if not os.path.exists(targetTempPath):
+        os.makedirs(targetTempPath)
+    
+    fileName = "product_to_rasterize_files_" + config.file_type
+    if config.polarisation != "" :
+        fileName += ("_" + config.polarisation)
+    if file_idx == -1 :
+        fileName += "_ALL"
+    else :
+        fileName += ("_" + str(file_idx))
+    fileName += ".csv"
+    outFileName = os.path.join(targetTempPath, fileName)
+    print("Writing to file {}".format(outFileName))
+    
+    with open(outFileName, 'w') as f:
+        for (product, tile_refs) in groups.iteritems():
+            tile_refs.sort()
+            print("S1 product: {}".format(product))
+            f.write(product)
+            for tile_ref in tile_refs:
+                f.write(';' + tile_ref)
+                print("\t\tRaster: {}".format(tile_ref))
+            f.write('\n')
+    return outFileName
+    
 def get_ndvi_products_from_db(config, conn, site_id):
     with conn.cursor() as cursor:
         query = SQL(
@@ -259,11 +288,11 @@ def get_radar_products(config, conn, site_id):
                     site_tiles.tile_id,
                     product.name,
                     case
-                        when substr(product.name, 37, 8) > substr(product.name, 53, 8) then substr(product.name, 37, 8)
-                        else substr(product.name, 53, 8)
+                        when substr(product.name, 17, 8) > substr(product.name, 33, 8) then substr(product.name, 17, 8)
+                        else substr(product.name, 33, 8)
                     end :: date as date,
                     coalesce(product.orbit_type_id, 1) as orbit_type_id,
-                    substr(product.name, 69, 2) as polarization,
+                    substr(product.name, 49, 2) as polarization,
                     product.processor_id,
                     product.product_type_id,
                     substr(product.name, length(product.name) - strpos(reverse(product.name), '_') + 2) as radar_product_type,
@@ -299,7 +328,9 @@ def get_radar_products(config, conn, site_id):
 
         products = []
         for (dt, tile_id, orbit_type_id, polarization, radar_product_type, full_path) in results:
-            products.append(RadarProduct(dt, tile_id, orbit_type_id, polarization, radar_product_type, full_path))
+            if config.file_type == radar_product_type : 
+                if config.polarisation == "" or config.polarisation == polarization : 
+                    products.append(RadarProduct(dt, tile_id, orbit_type_id, polarization, radar_product_type, full_path))
 
         return products
 
@@ -307,6 +338,15 @@ def process_ndvi(config, conn):
     products = []
     if not config.inputs_file : 
         products = get_ndvi_products_from_db(config, conn, config.site_id)
+
+        groups = defaultdict(list)
+        for product in products:
+            tile_ref = os.path.join(config.lpis_path, "{}_{}_S2.tif".format(config.lpis_name, product.tile_id))
+            groups[product.path].append(tile_ref)
+    
+        writeProductsToFile(config, -1, groups)
+        return groups
+
     else :
         products = get_products_from_file(config)
     return products
@@ -315,6 +355,18 @@ def process_radar(config, conn):
     products = []
     if not config.inputs_file : 
         products = get_radar_products(config, conn, config.site_id)
+
+        groups = defaultdict(list)
+        for product in products:
+            if product.path.endswith('.nc'):
+                continue
+            tile_ref = os.path.join(config.lpis_path, "{}_{}_S1.tif".format(config.lpis_name, product.tile_id))
+            #print("S1 Product: {}, Raster: {}".format(product.path, tile_ref))
+            groups[product.path].append(tile_ref)
+    
+        writeProductsToFile(config, -1, groups)
+        return groups
+
     else :
         products = get_products_from_file(config)
     return products        
@@ -355,54 +407,74 @@ def execute_data_extraction(config, products) :
         prds_per_group = len(products)
     prdsChunks = grouper(prds_per_group, products)
     commands = []
+    i = 0;
     for prdsChunk in prdsChunks:
-        tiffs = []
-        for prdInChunk in prdsChunk:
-            tiffs.append(prdInChunk.path)
-       
         command = []
         command += ["otbcli", "AgricPractDataExtraction", "./sen2agri-processors-build/"]
-        if config.file_type == "AMP" and config.gen_minmax == 0:
-            command += ["-convdb", 1]
+#        if config.file_type == "AMP" and config.gen_minmax == 0:
+#            command += ["-convdb", 1]
         if config.nf_2017 == 1 : 
             command += ["-oldnf", 1]
         if config.gen_minmax == 1 : 
             command += ["-minmax", 1]
         if config.csvcompact == 1 : 
             command += ["-csvcompact", 1]
-            
-        command += ["-vec", config.lpis_shp]
         command += ["-field", config.uid_field]
+        command += ["-prdtype", config.file_type]
         command += ["-outdir", config.path]
+        if config.filter_ids != "" : 
+            command += ["-filterids", config.filter_ids]            
+            
+        tiffs = []            
+        if not config.inputs_file : 
+            chunk_groups = defaultdict(list)
+            for prdInChunk in prdsChunk:
+                tile_refs = products.get(prdInChunk)
+                for tile_ref in tile_refs:
+                    chunk_groups[prdInChunk].append(tile_ref)
+                    
+            matchingFile = writeProductsToFile(config, i, chunk_groups)
+            tiffs.append(matchingFile)
+            i += 1
+        else :
+            command += ["-vec", config.lpis_shp]
+            for prdInChunk in prdsChunk:
+                tiffs.append(prdInChunk.path)
+                
         command += ["-il"] + tiffs
-        
-        # check if we should use S2 tiles as reference
-#        if not config.use_shapefile_only :
-#            groups = defaultdict(list)
-#            for product in prdInChunk:
-#                groups[product.path].append(product)
-#            groups = sorted(list(groups.items()))
-#            
-#            tile_refs = []
-#            tile_refs_cnts = []
-#            for (group, grpProducts) in groups:
-#                for product in grpProducts:
-#                    tile_ref = os.path.join(config.lpis_path, "{}_{}.tif".format(config.lpis_name, product.tile_id))
-#                    tile_refs.append(tile_ref)
-#                tile_refs_cnts.append(len(grpProducts)
-#                #print("Tile Ref: {}".format(tile_ref))
-#                #print("Tile: {}, TileRef: {}, Orbit: {}, Polarisation: {}, ProdType: {}, Path: {}".format(product.tile_id, tile_ref, product.orbit_type_id, product.polarization, product.radar_product_type, product.path))     
-#            #command += ["-s2il"] + tile_refs
-#            #command += ["-s2ilcnts"] + tile_refs_cnts
-
         commands.append(command)
         
+        print ("Executing command: {}".format(command))
+            
+            # check if we should use S2 tiles as reference
+    #        if not config.use_shapefile_only :
+    #            groups = defaultdict(list)
+    #            for product in prdInChunk:
+    #                groups[product.path].append(product)
+    #            groups = sorted(list(groups.items()))
+    #            
+    #            tile_refs = []
+    #            tile_refs_cnts = []
+    #            for (group, grpProducts) in groups:
+    #                for product in grpProducts:
+    #                    tile_ref = os.path.join(config.lpis_path, "{}_{}.tif".format(config.lpis_name, product.tile_id))
+    #                    tile_refs.append(tile_ref)
+    #                tile_refs_cnts.append(len(grpProducts)
+    #                #print("Tile Ref: {}".format(tile_ref))
+    #                #print("Tile: {}, TileRef: {}, Orbit: {}, Polarisation: {}, ProdType: {}, Path: {}".format(product.tile_id, tile_ref, product.orbit_type_id, product.polarization, product.radar_product_type, product.path))     
+    #            #command += ["-s2il"] + tile_refs
+    #            #command += ["-s2ilcnts"] + tile_refs_cnts
+
+
+################## TODO: UNCOMMENT ##########################            
     pool = multiprocessing.Pool(config.pool_size)
     
     results = []
     run_command_x=partial(run_command, allCmds=commands)
     r = pool.map_async(run_command_x, commands, callback=results.append)
     r.wait() 
+################## END: UNCOMMENT ##########################    
+    
     #print(results)
 #    for command in commands:
 #        run_command(command)
@@ -431,6 +503,7 @@ def main():
     parser.add_argument('--lpis-path', help="Path to the rasterized LPIS")
     parser.add_argument('--lpis-shp', help="Input LPIS shapefiles")
     parser.add_argument('--file-type', help="File type to be processed")
+    parser.add_argument('--polarisation', default='', help="Polarisation (optionally) for radar products")
     parser.add_argument('--prds-per-group', type=int, default=20, help="Number of products to be grouped during a data extraction execution")
     parser.add_argument('--inputs-file', help="Use this list of files instead of the using the site products")
     parser.add_argument('--use-shapefile-only', default=1, type=int, help="Use only shapefile without tiles images")
@@ -440,6 +513,7 @@ def main():
     parser.add_argument('--nf-2017', default=0, type=int, help="Use the 2017 naming format")
     parser.add_argument('--gen-minmax', default=0, type=int, help="Generates also the minimum and maximum for each parcel")
     parser.add_argument('--csvcompact', default=1, type=int, help="Generates the output CSV file in a compact form (each parcel on one line in CSV)")
+    parser.add_argument('--filter-ids', default='', help="File containing the parcel ids filters")
     args = parser.parse_args()
 
     if args.path :
