@@ -222,7 +222,11 @@ enum class ProductType {
     L4BProductTypeId = 6,
     L1CProductTypeId = 7,
     L3CProductTypeId = 8,
-    L3DProductTypeId = 9
+    L3DProductTypeId = 9,
+    S4CS1L2AmpProductTypeId = 10,
+    S4CS1L2CoheProductTypeId = 11,
+    S4CL4BProductTypeId = 12,
+    S4CL4CProductTypeId = 13
 };
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);
