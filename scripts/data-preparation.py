@@ -1,0 +1,338 @@
+#!/usr/bin/env python
+from __future__ import print_function
+
+import argparse
+import csv
+from collections import defaultdict
+from glob import glob
+import math
+import multiprocessing.dummy
+import os
+import os.path
+from osgeo import osr
+from osgeo import ogr
+from gdal import gdalconst
+import pipes
+import psycopg2
+from psycopg2.sql import SQL, Literal, Identifier
+import psycopg2.extras
+import subprocess
+
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser
+
+
+class Config(object):
+    def __init__(self, args):
+        parser = ConfigParser()
+        parser.read([args.config_file])
+
+        self.host = parser.get("Database", "HostName")
+        #self.port = parser.get("Database", "Port", 5432)
+        self.port = 5432
+        self.dbname = parser.get("Database", "DatabaseName")
+        self.user = parser.get("Database", "UserName")
+        self.password = parser.get("Database", "Password")
+
+        self.site_id = args.site_id
+        self.path = args.path
+        self.tiles = args.tiles
+
+
+class RasterizeDatasetCommand(object):
+    def __init__(self, input, output, tile, resolution, sql, field, srs, dst_xmin, dst_ymin, dst_xmax, dst_ymax):
+        self.input = input
+        self.output = output
+        self.tile = tile
+        self.resolution = resolution
+        self.sql = sql
+        self.field = field
+        self.srs = srs
+        self.dst_xmin = dst_xmin
+        self.dst_ymin = dst_ymin
+        self.dst_xmax = dst_xmax
+        self.dst_ymax = dst_ymax
+
+    def run(self):
+        command = []
+        command += ["gdal_rasterize", "-q"]
+        command += ["-a", self.field]
+        command += ["-a_srs", self.srs]
+        command += ["-te", self.dst_xmin, self.dst_ymin, self.dst_xmax, self.dst_ymax]
+        command += ["-tr", self.resolution, self.resolution]
+        command += ["-sql", self.sql]
+        command += ["-ot", "Int32"]
+        command += ["-co", "COMPRESS=DEFLATE"]
+        command += ["-co", "PREDICTOR=2"]
+        command += [self.input, self.output]
+        run_command(command)
+
+
+class ComputeClassCountsCommand(object):
+    def __init__(self, input, output):
+        self.input = input
+        self.output = output
+
+    def run(self):
+        command = []
+        command += ["otbcli", "ComputeClassCounts", "."]
+        command += ["-in", self.input]
+        command += ["-out", self.output]
+        run_command(command)
+
+
+class MergeClassCountsCommand(object):
+    def __init__(self, inputs, output):
+        self.inputs = inputs
+        self.output = output
+
+    def run(self):
+        command = []
+        command += ["./merge-counts"]
+        command += [self.output]
+        command += self.inputs
+        run_command(command)
+
+
+def run_command(args, env=None):
+    args = list(map(str, args))
+    cmd_line = " ".join(map(pipes.quote, args))
+    print(cmd_line)
+    subprocess.call(args, env=env)
+
+
+class Tile(object):
+    def __init__(self, tile_id, epsg_code, tile_extent):
+        self.tile_id = tile_id
+        self.epsg_code = epsg_code
+        self.tile_extent = tile_extent
+
+
+def prepare_lpis(conn, lpis_table, lut_table):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+            select sp_prepare_lpis({}, {})
+            """
+        )
+
+        query = query.format(Literal(lpis_table), Literal(lut_table))
+        print(query.as_string(conn))
+        cursor.execute(query)
+        conn.commit()
+
+
+def get_site_tiles(conn, site_id):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+            select shape_tiles_s2.tile_id,
+                   shape_tiles_s2.epsg_code,
+                   ST_AsBinary(ST_SnapToGrid(ST_Transform(shape_tiles_s2.geom, shape_tiles_s2.epsg_code), 1)) as tile_extent
+            from sp_get_site_tiles({} :: smallint, 1 :: smallint) site_tiles
+            inner join shape_tiles_s2 on shape_tiles_s2.tile_id = site_tiles.tile_id;
+            """
+        )
+
+        site = Literal(site_id)
+
+        query = query.format(site)
+        print(query.as_string(conn))
+        cursor.execute(query)
+
+        rows = cursor.fetchall()
+        conn.commit()
+
+        result = []
+        for (tile_id, epsg_code, tile_extent) in rows:
+            tile_extent = ogr.CreateGeometryFromWkb(bytes(tile_extent))
+            result.append(Tile(tile_id, epsg_code, tile_extent))
+            print(tile_id)
+            print(epsg_code)
+            print(tile_extent)
+
+        return result
+
+
+def read_counts_csv(path):
+    counts = {}
+
+    with open(path, "r") as file:
+        reader = csv.reader(file)
+
+        for row in reader:
+            seq_id = int(row[0])
+            count = int(row[1])
+
+            counts[seq_id] = count
+
+    return counts
+
+
+def get_import_table_command(destination, source, *options):
+    command = []
+    command += ["ogr2ogr"]
+    command += options
+    command += [destination, source]
+    return command
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Crops and recompresses S1 L2A products")
+    parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
+    parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
+    parser.add_argument('-p', '--path', default='.', help="working path")
+    parser.add_argument('-f', '--field', help="field name", default="seq_id")
+    parser.add_argument('--force', help="overwrite field", action='store_true')
+    parser.add_argument('--tiles', nargs='+', help="tile filter")
+    parser.add_argument('input', default='.', help="declarations")
+
+    args = parser.parse_args()
+
+    config = Config(args)
+    pool = multiprocessing.dummy.Pool(8)
+
+    pg_path = 'PG:dbname={} host={} port={} user={} password={}'.format(config.dbname, config.host,
+                                                                        config.port, config.user, config.password)
+
+    schema = 'public'
+    table = os.path.splitext(os.path.basename(args.input))[0].lower()
+    dir = os.path.dirname(args.input)
+    column = 'wkb_geometry'
+    print(table)
+
+    lut = glob(os.path.join(dir, "*.csv"))[0]
+    print(lut)
+
+    commands = []
+    commands.append(get_import_table_command(pg_path, args.input, "-lco", "UNLOGGED=YES", "-lco", "SPATIAL_INDEX=OFF", "-nlt", "MULTIPOLYGON"))
+    commands.append(get_import_table_command(pg_path, lut))
+    for command in commands:
+        run_command(command)
+
+    with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
+        print("Preparing LPIS...")
+        lut_table = os.path.splitext(os.path.basename(lut))[0].lower()
+        prepare_lpis(conn, table, lut_table)
+
+        print("Retrieving site tiles...")
+        tiles = get_site_tiles(conn, config.site_id)
+
+    if config.tiles is not None:
+        tiles = [tile for tile in tiles if tile.tile_id in config.tiles]
+
+    print("Rasterizing LPIS data...")
+    commands = []
+    class_counts = []
+    class_counts_20m = []
+    base = table
+    field = 'NewID'
+
+    for tile in tiles:
+        for resolution in [10, 20]:
+            if resolution == 10:
+                satellite = "S2"
+            else:
+                satellite = "S1"
+
+            output = "{}_{}_{}.tif".format(base, tile.tile_id, satellite)
+            output = os.path.join(args.path, output)
+
+            zone_srs = osr.SpatialReference()
+            zone_srs.ImportFromEPSG(tile.epsg_code)
+
+            (dst_xmin, dst_xmax, dst_ymin, dst_ymax) = tile.tile_extent.GetEnvelope()
+
+            sql = SQL(
+                """
+                with transformed as (
+                    select epsg_code, ST_Transform(shape_tiles_s2.geom, Find_SRID({}, {}, {})) as geom
+                    from shape_tiles_s2
+                    where tile_id = {}
+                )
+                select {}, ST_Buffer(ST_Transform({}, epsg_code), {})
+                from {}, transformed
+                where ST_Intersects({}, transformed.geom);
+                """)
+            sql = sql.format(Literal(schema),
+                             Literal(table), Literal(column), Literal(tile.tile_id), Identifier(field),
+                             Identifier(column), Literal(int(-resolution / 2)),
+                             Identifier(table), Identifier(column))
+            sql = sql.as_string(conn)
+
+            rasterize_dataset = RasterizeDatasetCommand(pg_path, output, tile.tile_id, resolution,
+                                                        sql, field, "EPSG:{}".format(tile.epsg_code),
+                                                        int(dst_xmin), int(dst_ymin), int(dst_xmax), int(dst_ymax))
+            commands.append(rasterize_dataset)
+
+    pool.map(lambda c: c.run(), commands)
+
+    commands = []
+    class_counts = []
+    class_counts_20m = []
+    for tile in tiles:
+        output = "{}_{}_S2.tif".format(base, tile.tile_id)
+        output = os.path.join(args.path, output)
+
+        counts = "counts_{}.csv".format(tile.tile_id)
+        counts = os.path.join(args.path, counts)
+        class_counts.append(counts)
+
+        output_20m = "{}_{}_S1.tif".format(base, tile.tile_id)
+        output_20m = os.path.join(args.path, output_20m)
+
+        counts_20m = "counts_{}_20m.csv".format(tile.tile_id)
+        counts_20m = os.path.join(args.path, counts_20m)
+        class_counts_20m.append(counts_20m)
+
+        compute_class_counts = ComputeClassCountsCommand(output, counts)
+        commands.append(compute_class_counts)
+        compute_class_counts = ComputeClassCountsCommand(output_20m, counts_20m)
+        commands.append(compute_class_counts)
+
+    pool.map(lambda c: c.run(), commands)
+
+    print("Merging pixel counts...")
+    commands = []
+    counts = "counts.csv"
+    counts = os.path.join(args.path, counts)
+
+    counts_20m = "counts_20m.csv"
+    counts_20m = os.path.join(args.path, counts_20m)
+
+    merge_class_counts = MergeClassCountsCommand(class_counts, counts)
+    commands.append(merge_class_counts)
+    merge_class_counts = MergeClassCountsCommand(class_counts_20m, counts_20m)
+    commands.append(merge_class_counts)
+
+    pool.map(lambda c: c.run(), commands)
+
+    print("Updating pixel counts...")
+    class_counts = read_counts_csv(counts)
+    class_counts_20m = read_counts_csv(counts_20m)
+    counts = defaultdict(lambda: (0, 0))
+    for (id, count) in class_counts.items():
+        counts[id] = (count, counts[id][1])
+    for (id, count) in class_counts_20m.items():
+        counts[id] = (counts[id][0], count)
+
+    sql = SQL(
+        """
+        update {}
+        set "S2Pix" = %s,
+            "S1Pix" = %s
+        where {} = %s
+        """)
+    sql = sql.format(Identifier(table), Identifier(field))
+    sql = sql.as_string(conn)
+
+    with conn.cursor() as cursor:
+        args = [(s2pix, s1pix, id) for (id, (s2pix, s1pix)) in counts.items()]
+        psycopg2.extras.execute_batch(cursor, sql, args, page_size=1000)
+        conn.commit()
+
+
+if __name__ == "__main__":
+    main()
