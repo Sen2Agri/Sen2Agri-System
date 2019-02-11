@@ -28,6 +28,7 @@ add_subdirectory(ProductReaders)
 add_subdirectory(AgriculturalPractices)
 add_subdirectory(Sen4CAP)
 #add_subdirectory(AppDimensionalityReduction)
+add_subdirectory(merge-statistics)
 
 install(FILES ../scripts/sen2agri_common.py
               ../scripts/split_shapefile.py
