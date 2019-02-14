@@ -1,0 +1,473 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>The Sen2-Agri Database</title>
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/black.css">
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <script>
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = window.location.search.match(/print-pdf/gi) ? 'css/print/pdf.css' : 'css/print/paper.css';
+        document.getElementsByTagName('head')[0].appendChild(link);
+    </script>
+</head>
+
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section>
+                <h1>The Sen2Agri System Database</h1>
+            </section>
+            <section>
+                <h2>Who?</h2>
+                <ul>
+                    <li>Laurențiu Nicola, CS Romania</li>
+                    <li class="fragment">Sentinel-2 for Agriculture developer</li>
+                    <li class="fragment">
+                        <a href="mailto:laurentiu.nicola@c-s.ro">laurentiu.nicola@c-s.ro</a>,
+                        <a href="mailto:lnicola@c-s.ro">lnicola@c-s.ro</a>
+                    </li>
+                    <li class="fragment">
+                        <a href="http://forum.esa-sen2agri.org/">http://forum.esa-sen2agri.org/</a>
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <h2>What?</h2>
+                <ul>
+                    <li>We'll cover the most important database tables</li>
+                    <li class="fragment">You shouldn't need to look into it</li>
+                    <li class="fragment">You might still need to</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Platform</h2>
+                <ul>
+                    <li>PostgreSQL 9.4 (not in CentOS 7 / EPEL)</li>
+                    <li class="fragment">Should be compatible with future Postgres versions</li>
+                    <li class="fragment">PostGIS</li>
+                    <li class="fragment">Some headaches about binary compatibility</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Sites</h2>
+                <ul>
+                    <li>
+                        <em>Sites</em> are areas of interest</li>
+                    <li class="fragment">
+                        <code>MULTIPOLYGON</code>
+                    </li>
+                    <li class="fragment">You can split a site to get around system limitations</li>
+                    <li class="fragment">Download and processing are per-site</li>
+                    <li class="fragment">Beware of overlaps</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Sites</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table site(
+                        id smallserial not null primary key,
+                        name character varying not null,
+                        short_name character varying,
+                        geog geography(multipolygon) not null,
+                        enabled boolean not null
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">
+                        <code>name</code> used for display</li>
+                    <li class="fragment">
+                        <code>short_name</code> used for disk paths</li>
+                    <li class="fragment">Disabling a site stops all future processing</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Seasons</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table season(
+                        id smallserial not null primary key,
+                        site_id smallserial not null,
+                        name text not null,
+                        start_date date not null,
+                        end_date date not null,
+                        mid_date date not null,
+                        enabled boolean not null,
+                        unique (site_id, name)
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">
+                        <code>name</code> is used for display</li>
+                    <li class="fragment">Dates are used to scheduling the processing</li>
+                    <li class="fragment">Download starts in advance (for L2A initialization)</li>
+                    <li class="fragment">Beware of overlaps</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Configuration</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table config_metadata(
+                        key character varying not null primary key,
+                        is_advanced boolean not null
+                        -- [...]
+                    );
+                    create table config(
+                        id serial not null primary key,
+                        key character varying not null,
+                        site_id smallint,
+                        value character varying not null
+                        -- [...]
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">Simple key-value mapping</li>
+                    <li class="fragment">Per-site settings, fallback to global if not configured</li>
+                    <li class="fragment">Use
+                        <code>sen2agri-config</code>
+                    </li>
+                    <li class="fragment">
+                        <em>Advanced</em> parameters are read-only</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Tile definitions</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table shape_tiles_s2(
+                        tile_id character(5) not null,
+                        geog geography not null
+                        -- [...]
+                    );
+                    create table shape_tiles_l8(
+                        pr int,
+                        geog geography not null
+                        -- [...]
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">Dumps of
+                        <code>S2</code> and
+                        <code>L8</code> tile definitions</li>
+                    <li class="fragment">Used to determine site tiles</li>
+                    <li class="fragment">Beware of overlaps</li>
+                    <li class="fragment">Beware of changes</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Site tiles</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table site_tiles(
+                        site_id smallint not null,
+                        satellite_id int not null references satellite(id),
+                        tiles text[]
+                    );
+                    create table satellite(
+                        id int not null primary key,
+                        satellite_name varchar not null,
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">You
+                        <em>want</em> to manually customize the tile list</li>
+                    <li class="fragment">Not available in the GUI, unfortunately</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Downloads</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table downloader_history(
+                        id serial not null primary key,
+                        site_id smallint not null,
+                        satellite_id smallint not null,
+                        product_name character varying not null,
+                        full_path character varying not null,
+                        created_timestamp timestamp with time zone not null,
+                        status_id smallint not null,
+                        no_of_retries smallint not null,
+                        product_date timestamp with time zone not null,
+                        orbit_id int not null
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">Shows
+                        <code>L1</code> download and processing status</li>
+                    <li class="fragment">Useful to trigger re-download or reprocessing</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Products</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table product(
+                        id serial not null primary key,
+                        product_type_id smallint not null,
+                        processor_id smallint not null,
+                        site_id smallint not null,
+                        full_path character varying not null,
+                        name character varying(512),
+                        job_id integer references job(id),
+                        geog geography,
+                        satellite_id integer,
+                        tiles character varying[] not null
+                        -- [...]
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">Contains
+                        <code>L2</code> to
+                        <code>L4</code> products</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Jobs</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table job(
+                        id serial not null primary key,
+                        processor_id smallint not null,
+                        site_id smallint not null,
+                        start_type_id smallint not null,
+                        parameters json,
+                        submit_timestamp timestamp with time zone not null,
+                        start_timestamp timestamp with time zone,
+                        end_timestamp timestamp with time zone,
+                        status_id smallint not null
+                            references activity_status(id),
+                        status_timestamp timestamp with time zone not null
+                    )
+                </code></pre>
+                <ul>
+                    <li class="fragment">A job is a (non-
+                        <code>L2A</code>) processor invocation</li>
+                    <li class="fragment">Jobs are submitted when runnable (not schedueld)</li>
+                    <li class="fragment">Jobs may create multiple output products</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Tasks, steps</h2>
+                <ul>
+                    <li>These are artefacts of our parallelization method</li>
+                    <li class="fragment">Jobs are heterogenous, have one or more tasks</li>
+                    <li class="fragment">Tasks are homogenous, have one or more steps</li>
+                    <li class="fragment">Steps only differ in input parameters (e.g. tiles)</li>
+                    <li class="fragment">You'll hopefully never deal with these</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Step resource usage</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table step_resource_log(
+                        step_name character varying not null,
+                        task_id int not null,
+                        node_name character varying not null,
+                        entry_timestamp timestamp with time zone not null,
+                        duration_ms bigint,
+                        user_cpu_ms bigint,
+                        stdout_text character varying not null,
+                        stderr_text character varying not null,
+                        primary key (step_name, task_id)
+                        -- [...]
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">System resource usage for each
+                        <code>step</code>
+                    </li>
+                    <li class="fragment">Includes console messages</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Node resource usage</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table node_resource_log(
+                        node_name character varying not null,
+                        cpu_user smallint not null,
+                        mem_used_kb int not null,
+                        swap_used_kb int not null,
+                        load_avg_1m int not null,
+                        disk_used_bytes bigint not null,
+                        "timestamp" timestamp without time zone not null
+                        -- [...]
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">Node (computer) resource usage</li>
+                    <li class="fragment">Displayed in the GUI</li>
+                    <li class="fragment">Consider using an off-the-shelf monitoring solution</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Scheduled tasks</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table scheduled_task(
+                        id smallserial not null primary key,
+                        name character varying not null,
+                        processor_id smallint not null,
+                        site_id smallint not null,
+                        season_id smallint not null,
+                        processor_params character varying,
+                        repeat_type smallint,
+                        first_run_time character varying
+                        -- [...]
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">Automatic (non-custom) processor executions</li>
+                    <li class="fragment">Configured in the GUI</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Scheduled tasks</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table scheduled_task_status(
+                        id smallserial not null primary key,
+                        task_id smallint not null,
+                        next_schedule character varying,
+                        last_scheduled_run character varying,
+                        last_run_timestamp character varying,
+                        last_retry_timestamp character varying,
+                        estimated_next_run_time character varying
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">Status of scheduled tasks</li>
+                    <li class="fragment">The columns above are timestamps</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Users</h2>
+                <pre><code class="hljs lang-sql" data-trim>
+                    create table "user"(
+                        id smallint not null primary key,
+                        login character varying(50) not null,
+                        email character varying(100) not null,
+                        role_id smallint not null references role(id),
+                        site_id smallint references site(id),
+                        password text not null,
+                        unique (login)
+                    );
+                </code></pre>
+                <ul>
+                    <li class="fragment">User accounts for the GUI</li>
+                    <li class="fragment">These
+                        <em>should</em> be editable directly</li>
+                </ul>
+            </section>
+            <section>
+                <h2>Why?</h2>
+                <ul>
+                    <li>Change system settings
+                        <ul>
+                            <li class="fragment">
+                                <code>site_tiles</code>
+                            </li>
+                            <li class="fragment">
+                                <code>config</code>
+                                <span class="fragment"> (consider using
+                                    <code>sen2agri-config</code>)</span>
+                            </li>
+                            <li class="fragment">
+                                <code>site</code>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="fragment">Monitor/alter downloads
+                        <span class="fragment">:
+                            <code>downloader_history</code>
+                        </span>
+                    </li>
+                    <li class="fragment">Check product list
+                        <span class="fragment">:
+                            <code>product</code>
+                        </span>
+                    </li>
+                    <li class="fragment">Debug job execution
+                        <span class="fragment">:
+                            <code>job</code>,
+                            <code>task</code>,
+                            <code>step</code>,
+                            <code>event</code>
+                        </span>
+                    </li>
+                    <li class="fragment">Some examples in the FAQ document</li>
+                </ul>
+            </section>
+            <section>
+                <h2>
+                    <code>sen2agri-config</code>
+                </h2>
+                <ul>
+                    <li>Use
+                        <code>sen2agri-config</code> to change system settings</li>
+                    <li class="fragment">Must be executed locally or over
+                        <code>X11</code> forwarding</li>
+                    <li class="fragment">Some settings will be read-only</li>
+                    <li class="fragment">Some settings will not be available
+                        <ul>
+                            <li class="fragment">tile filtering for sites</li>
+                            <li class="fragment">user management</li>
+                            <li class="fragment">site footprints</li>
+                        </ul>
+                    </li>
+                    <li class="fragment">See user manual for parameter descriptions</li>
+                </ul>
+            </section>
+            <section>
+                <img src="images/sen2agri-config.png" style="background:none; border:none; box-shadow:none;" />
+            </section>
+            <section>
+                <h2>Other stuff</h2>
+                <ul>
+                    <li>Migrations on updates (version in the
+                        <code>meta</code> table)</li>
+                    <li class="fragment">You may want to truncate the resource log tables</li>
+                    <li class="fragment">System log (
+                        <code>journal</code>) also tends to grows</li>
+                    <li class="fragment">
+                        <code>SLURM</code> needs a database, we install MariaDB</li>
+                    <li class="fragment">We are switching to a new downloader in
+                        <code>1.8</code>
+                        <ul>
+                            <li class="fragment">Heads-up: things might work differently</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+            <section>
+                <h1>Questions?</h1>
+                <ul>
+                    <li>Or ask on the
+                        <a href="http://forum.esa-sen2agri.org/">forum</a>
+                    </li>
+                    <li>Or write us an
+                        <a href="mailto:lnicola@c-s.ro">email</a>
+                    </li>
+                </ul>
+            </section>
+        </div>
+    </div>
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+
+    <script>
+        Reveal.initialize({
+            history: true,
+            transition: 'none',
+            dependencies: [{
+                src: 'plugin/highlight/highlight.js',
+                async: true,
+                callback: function () {
+                    hljs.initHighlightingOnLoad();
+                }
+            }, ]
+        });
+    </script>
+</body>
+
+</html>
