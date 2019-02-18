@@ -106,8 +106,9 @@ int main(int argc, char *argv[])
         auto mean = argv[i];
         auto dev = argv[i + 1];
         auto count = argv[i + 2];
-        statistics_readers.emplace_back(std::ifstream(mean), std::ifstream(dev),
-                                        std::ifstream(count));
+        statistics_readers.emplace_back(std::make_unique<std::ifstream>(mean),
+                                        std::make_unique<std::ifstream>(dev),
+                                        std::make_unique<std::ifstream>(count));
     }
 
     for (auto &statistics_reader : statistics_readers) {

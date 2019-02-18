@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <fstream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -12,13 +13,13 @@
 template <typename T>
 class reader
 {
-    std::ifstream file_;
+    std::unique_ptr<std::ifstream> file_;
     std::int64_t key_;
     entry<T> entry_;
     bool is_finished_;
 
 public:
-    reader(std::ifstream file);
+    reader(std::unique_ptr<std::ifstream> file);
 
     void next(std::string &line);
     bool is_finished() const;
@@ -34,7 +35,7 @@ using reader_real = reader<double>;
 using reader_count = reader<uint64_t>;
 
 template <typename T>
-reader<T>::reader(std::ifstream file) : file_(std::move(file)), is_finished_()
+reader<T>::reader(std::unique_ptr<std::ifstream> file) : file_(std::move(file)), is_finished_()
 {
 }
 
@@ -73,7 +74,7 @@ const entry<T> &reader<T>::current() const
 template <typename T>
 bool reader<T>::read_entry(std::string &line)
 {
-    if (!std::getline(file_, line)) {
+    if (!std::getline(*file_, line)) {
         return false;
     }
     std::stringstream ss(line);

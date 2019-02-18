@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -36,8 +37,9 @@ int main(int argc, char *argv[])
         auto mean = argv[i];
         auto dev = argv[i + 1];
         auto count = argv[i + 2];
-        statistics_readers.emplace_back(std::ifstream(mean), std::ifstream(dev),
-                                        std::ifstream(count));
+        statistics_readers.emplace_back(std::make_unique<std::ifstream>(mean),
+                                        std::make_unique<std::ifstream>(dev),
+                                        std::make_unique<std::ifstream>(count));
     }
 
     auto num_readers = statistics_readers.size();
