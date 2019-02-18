@@ -6,9 +6,9 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <utility>
 
 #include "entry.h"
+#include "make_unique.hpp"
 
 template <typename T>
 class reader

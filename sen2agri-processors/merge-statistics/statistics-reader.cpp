@@ -1,6 +1,6 @@
 #include <stdexcept>
-#include <utility>
 
+#include "make_unique.hpp"
 #include "statistics-reader.h"
 
 statistics_reader::statistics_reader(reader_real reader_mean,
@@ -37,32 +37,14 @@ void statistics_reader::next()
     }
 }
 
-bool statistics_reader::is_finished() const
-{
-    return is_finished_;
-}
+bool statistics_reader::is_finished() const { return is_finished_; }
 
-const int64_t statistics_reader::key() const
-{
-    return key_;
-}
+const int64_t statistics_reader::key() const { return key_; }
 
-const size_t statistics_reader::columns() const
-{
-    return reader_mean_.columns();
-}
+const size_t statistics_reader::columns() const { return reader_mean_.columns(); }
 
-const entry_real &statistics_reader::mean() const
-{
-    return reader_mean_.current();
-}
+const entry_real &statistics_reader::mean() const { return reader_mean_.current(); }
 
-const entry_real &statistics_reader::dev() const
-{
-    return reader_dev_.current();
-}
+const entry_real &statistics_reader::dev() const { return reader_dev_.current(); }
 
-const entry_count &statistics_reader::count() const
-{
-    return reader_count_.current();
-}
+const entry_count &statistics_reader::count() const { return reader_count_.current(); }
