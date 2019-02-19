@@ -4,6 +4,7 @@ from __future__ import print_function
 import argparse
 import csv
 from collections import defaultdict
+from datetime import date
 from glob import glob
 import math
 import multiprocessing.dummy
@@ -110,18 +111,210 @@ class Tile(object):
         self.tile_extent = tile_extent
 
 
-def prepare_lpis(conn, lpis_table, lut_table):
+def prepare_lpis(conn, lpis_table, lut_table, tiles):
     with conn.cursor() as cursor:
+        idx_name = Identifier("idx_{}_wkb_geometry".format(lpis_table))
+        lpis_table_str = Literal(lpis_table)
+        lpis_table = Identifier(lpis_table)
+        lut_table = Identifier(lut_table)
+
+        pkey_name = Identifier("{}_pkey".format(lut_table))
         query = SQL(
             """
-            select sp_prepare_lpis({}, {})
+            alter table {}
+            drop column ogc_fid,
+            add constraint {} primary key(ori_crop)
             """
-        )
-
-        query = query.format(Literal(lpis_table), Literal(lut_table))
+        ).format(lut_table, pkey_name)
         print(query.as_string(conn))
         cursor.execute(query)
         conn.commit()
+
+        query = SQL(
+            """
+            alter table {}
+            add column "NewID" bigint,
+            add column "HoldID" bigint
+            """
+        ).format(lpis_table)
+        print(query.as_string(conn))
+        cursor.execute(query)
+        conn.commit()
+
+        query = SQL(
+            """
+            update {}
+            set "NewID" = t.new_id,
+                "HoldID" = t.hold_id
+            from (
+                select ogc_fid,
+                        row_number() over (order by ogc_fid) as new_id,
+                        row_number() over (order by ori_hold) as hold_id
+                from {}
+            ) t
+            where t.ogc_fid = {}.ogc_fid
+            """
+        ).format(lpis_table, lpis_table, lpis_table)
+        print(query.as_string(conn))
+        cursor.execute(query)
+        conn.commit()
+
+        pkey_name = Identifier("{}_pkey".format(lpis_table))
+        query = SQL(
+            """
+            alter table {}
+            alter column "NewID" set not null,
+            alter column "HoldID" set not null,
+            drop column ogc_fid,
+            add constraint {} primary key("NewID")
+            """
+        ).format(lpis_table, pkey_name)
+        print(query.as_string(conn))
+        cursor.execute(query)
+        conn.commit()
+
+        query = SQL(
+            """
+            create index {} on {} using gist(wkb_geometry);
+            """
+        ).format(idx_name, lpis_table)
+        print(query.as_string(conn))
+        cursor.execute(query)
+        conn.commit()
+
+        query = SQL(
+            """
+            alter table {}
+            add column "GeomValid" boolean,
+            add column "Duplic" boolean,
+            add column "Overlap" boolean,
+            add column "Area_meters" real,
+            add column "ShapeInd" real,
+            add column "CTnum" int,
+            add column "CT" text,
+            add column "LC" int,
+            add column "S1Pix" int,
+            add column "S2Pix" int
+            """
+        ).format(lpis_table)
+        print(query.as_string(conn))
+        cursor.execute(query)
+        conn.commit()
+
+        query = SQL(
+            """
+            update {}
+            set "GeomValid" = ST_IsValid(wkb_geometry),
+                "Overlap" = false,
+                "Area_meters" = ST_Area(ST_Transform(wkb_geometry, 4326) :: geography),
+                "ShapeInd" = ST_Perimeter(ST_Transform(wkb_geometry, 4326) :: geography) / (2 * sqrt(pi() * nullif(ST_Area(ST_Transform(wkb_geometry, 4326) :: geography), 0)))
+            """
+        ).format(lpis_table)
+        print(query.as_string(conn))
+        cursor.execute(query)
+        conn.commit()
+
+        for tile in tiles:
+            tile_id = Literal(tile.tile_id)
+            query = SQL(
+                """
+                with tile as (
+                    select ST_Transform(geom, Find_SRID('public', {}, 'wkb_geometry')) as geom
+                    from shape_tiles_s2
+                    where tile_id = {}
+                )
+                update {}
+                set "Overlap" = true
+                from tile
+                where "GeomValid"
+                  and exists (
+                        select 1
+                          from {} t
+                          where t."NewID" != {}."NewID"
+                           and t."GeomValid"
+                           and ST_Intersects(t.wkb_geometry, tile.geom)
+                           and ST_Intersects(t.wkb_geometry, {}.wkb_geometry)
+                           having sum(ST_Area(ST_Transform(ST_Intersection(t.wkb_geometry, {}.wkb_geometry), 4326) :: geography)) / nullif({}."Area_meters", 0) > 0.1
+                      )
+                  and ST_Intersects({}.wkb_geometry, tile.geom)
+                """
+            ).format(lpis_table_str, tile_id, lpis_table, lpis_table, lpis_table, lpis_table, lpis_table, lpis_table, lpis_table)
+            print(query.as_string(conn))
+            cursor.execute(query)
+            conn.commit()
+
+        for tile in tiles:
+            tile_id = Literal(tile.tile_id)
+            query = SQL(
+                """
+                with tile as (
+                    select ST_Transform(geom, Find_SRID('public', {}, 'wkb_geometry')) as geom
+                    from shape_tiles_s2
+                    where tile_id = {}
+                )
+                update {}
+                set "Duplic" = "NewID" in (
+                    select "NewID"
+                    from (
+                        select "NewID",
+                                count(*) over(partition by wkb_geometry) as count
+                        from {}, tile
+                        where ST_Intersects(wkb_geometry, tile.geom)
+                    ) t where count > 1
+                )
+                from tile
+                where ST_Intersects({}.wkb_geometry, tile.geom)
+                """
+            ).format(lpis_table_str, tile_id, lpis_table, lpis_table, lpis_table)
+            print(query.as_string(conn))
+            cursor.execute(query)
+            conn.commit()
+
+        query = SQL(
+            """
+            update {}
+            set "CTnum" = {}.ctnum :: int,
+                "CT" = {}.ct,
+                "LC" = {}.lc :: int
+            from {}
+            where {}.ori_crop = {}.ori_crop
+            """
+        ).format(lpis_table, lut_table, lut_table, lut_table, lut_table, lut_table, lpis_table)
+        print(query.as_string(conn))
+        cursor.execute(query)
+        conn.commit()
+
+        query = SQL(
+            """
+            alter table {}
+            alter column "GeomValid" set not null,
+            alter column "Duplic" set not null,
+            alter column "Overlap" set not null,
+            alter column "Area_meters" set not null
+            """
+        ).format(lpis_table)
+        print(query.as_string(conn))
+        cursor.execute(query)
+        conn.commit()
+
+
+def get_site_name(conn, site_id):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+            select short_name
+            from site
+            where id = {}
+            """
+        )
+        site = Literal(site_id)
+        query = query.format(site)
+        print(query.as_string(conn))
+
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        conn.commit()
+        return rows[0][0]
 
 
 def get_site_tiles(conn, site_id):
@@ -147,11 +340,9 @@ def get_site_tiles(conn, site_id):
 
         result = []
         for (tile_id, epsg_code, tile_extent) in rows:
+            print(tile_id)
             tile_extent = ogr.CreateGeometryFromWkb(bytes(tile_extent))
             result.append(Tile(tile_id, epsg_code, tile_extent))
-            print(tile_id)
-            print(epsg_code)
-            print(tile_extent)
 
         return result
 
@@ -179,12 +370,40 @@ def get_import_table_command(destination, source, *options):
     return command
 
 
+def export_parcels(conn, lpis_table, lut_table, outfile):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+            select lpis."NewID",
+                   lpis."Area_meters" as "AREA",
+                   lut."ctnuml4a" as "CTnum",
+                   lpis."LC"
+            from {} lpis
+            inner join {} lut on lut.ctnum :: int = lpis."CTnum"
+            where lpis."LC" in (1, 2, 3, 4)
+              and lpis."S2Pix" > 2
+            order by "NewID"
+            """)
+        query = query.format(Identifier(lpis_table), Identifier(lut_table))
+        print(query.as_string(conn))
+
+        with open(outfile, 'wb') as csvfile:
+            writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
+
+            cursor.execute(query)
+            writer.writerow(['NewID', 'AREA', 'CTnum', 'LC'])
+            for row in cursor:
+                writer.writerow(row)
+
+        conn.commit()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Crops and recompresses S1 L2A products")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
     parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
     parser.add_argument('-p', '--path', default='.', help="working path")
-    parser.add_argument('-f', '--field', help="field name", default="seq_id")
+    parser.add_argument('-y', '--year', help="year")
     parser.add_argument('--force', help="overwrite field", action='store_true')
     parser.add_argument('--tiles', nargs='+', help="tile filter")
     parser.add_argument('input', default='.', help="declarations")
@@ -198,27 +417,29 @@ def main():
                                                                         config.port, config.user, config.password)
 
     schema = 'public'
-    table = os.path.splitext(os.path.basename(args.input))[0].lower()
     dir = os.path.dirname(args.input)
     column = 'wkb_geometry'
-    print(table)
 
     lut = glob(os.path.join(dir, "*.csv"))[0]
-    print(lut)
-
-    commands = []
-    commands.append(get_import_table_command(pg_path, args.input, "-lco", "UNLOGGED=YES", "-lco", "SPATIAL_INDEX=OFF", "-nlt", "MULTIPOLYGON"))
-    commands.append(get_import_table_command(pg_path, lut))
-    for command in commands:
-        run_command(command)
 
     with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
-        print("Preparing LPIS...")
-        lut_table = os.path.splitext(os.path.basename(lut))[0].lower()
-        prepare_lpis(conn, table, lut_table)
+        site_name = get_site_name(conn, config.site_id)
+        year = args.year or date.today().year
+        lpis_table = "decl_{}_{}".format(site_name, year)
+        lut_table = "lut_{}_{}".format(site_name, year)
+
+        print("Importing LPIS...")
+        commands = []
+        commands.append(get_import_table_command(pg_path, args.input, "-lco", "UNLOGGED=YES", "-lco", "SPATIAL_INDEX=OFF", "-nlt", "MULTIPOLYGON", "-nln", lpis_table))
+        commands.append(get_import_table_command(pg_path, lut, "-nln", lut_table))
+        for command in commands:
+            run_command(command)
 
         print("Retrieving site tiles...")
         tiles = get_site_tiles(conn, config.site_id)
+
+        print("Preparing LPIS...")
+        prepare_lpis(conn, lpis_table, lut_table, tiles)
 
     if config.tiles is not None:
         tiles = [tile for tile in tiles if tile.tile_id in config.tiles]
@@ -227,7 +448,7 @@ def main():
     commands = []
     class_counts = []
     class_counts_20m = []
-    base = table
+    base = lpis_table
     field = 'NewID'
 
     for tile in tiles:
@@ -257,9 +478,9 @@ def main():
                 where ST_Intersects({}, transformed.geom);
                 """)
             sql = sql.format(Literal(schema),
-                             Literal(table), Literal(column), Literal(tile.tile_id), Identifier(field),
+                             Literal(lpis_table), Literal(column), Literal(tile.tile_id), Identifier(field),
                              Identifier(column), Literal(int(-resolution / 2)),
-                             Identifier(table), Identifier(column))
+                             Identifier(lpis_table), Identifier(column))
             sql = sql.as_string(conn)
 
             rasterize_dataset = RasterizeDatasetCommand(pg_path, output, tile.tile_id, resolution,
@@ -317,6 +538,7 @@ def main():
         counts[id] = (count, counts[id][1])
     for (id, count) in class_counts_20m.items():
         counts[id] = (counts[id][0], count)
+    del counts[0]
 
     sql = SQL(
         """
@@ -325,13 +547,16 @@ def main():
             "S1Pix" = %s
         where {} = %s
         """)
-    sql = sql.format(Identifier(table), Identifier(field))
+    sql = sql.format(Identifier(lpis_table), Identifier(field))
     sql = sql.as_string(conn)
 
     with conn.cursor() as cursor:
         args = [(s2pix, s1pix, id) for (id, (s2pix, s1pix)) in counts.items()]
         psycopg2.extras.execute_batch(cursor, sql, args, page_size=1000)
         conn.commit()
+
+    print("Exporting parcel list...")
+    export_parcels(conn, lpis_table, lut_table, "parcels.csv")
 
 
 if __name__ == "__main__":
