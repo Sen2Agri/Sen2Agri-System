@@ -1,23 +1,7 @@
-#ifndef PHENONDVIHANDLER_HPP
-#define PHENONDVIHANDLER_HPP
+#ifndef AGRICPRACTICESHANDLER_HPP
+#define AGRICPRACTICESHANDLER_HPP
 
 #include "processorhandler.hpp"
-
-typedef struct {
-
-    NewStepList steps;
-    QList<std::reference_wrapper<const TaskToSubmit>> parentsTasksRef;
-    // args
-    QString metricsParamsImg;
-    QString metricsFlagsImg;
-    QString tileId;
-} PhenoProductFormatterParams;
-
-typedef struct {
-    QList<TaskToSubmit> allTasksList;
-    NewStepList allStepsList;
-    PhenoProductFormatterParams prodFormatParams;
-} PhenoGlobalExecutionInfos;
 
 typedef struct {
     QString vegStart;
@@ -28,6 +12,7 @@ typedef struct {
     QString pend;
     QString pstartw;
     QString pendw;
+    QStringList additionalFiles;
 } PracticesTableExtractionParams;
 
 typedef struct {
@@ -49,6 +34,8 @@ typedef struct {
     QString efaampthr;
     QString stddevinampthr;
     QString optthrbufden;
+    QString ampthrbreakden;
+    QString ampthrvalueden;
 
     QString catchmain;
     QString catchperiod;
@@ -60,19 +47,18 @@ typedef struct {
     QString flmarkstenddate;
 } TsaPracticeParams;
 
-typedef struct {
+typedef struct AgricPracticesSiteCfg {
+    AgricPracticesSiteCfg() {
+        prdsPerGroup = 0;
+    }
     // Common parameters
     QString country;
     QString year;
     QString fullShapePath;
-    QString idsGeomShapePath;
+    QString ndviIdsGeomShapePath;
+    QString ampCoheIdsGeomShapePath;
 
     // Parameters used for practices tables extraction
-    QStringList ccAdditionalFiles;
-    QStringList flAdditionalFiles;
-    QStringList nfcAdditionalFiles;
-    QStringList naAdditionalFiles;
-
     PracticesTableExtractionParams ccPracticeParams;
     PracticesTableExtractionParams flPracticeParams;
     PracticesTableExtractionParams nfcPracticeParams;
@@ -101,11 +87,11 @@ private:
     void CreateTasks(const AgricPracticesSiteCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList, const QStringList &ndviPrds, const QStringList &ampPrds, const QStringList &cohePrds);
     void CreateSteps(EventProcessingContext &ctx, const JobSubmittedEvent &event, QList<TaskToSubmit> &allTasksList,
                      const AgricPracticesSiteCfg &siteCfg, const QStringList &ndviPrds, const QStringList &ampPrds,
-                     const QStringList &cohePrds, NewStepList &steps);
+                     const QStringList &cohePrds, NewStepList &steps, const QDateTime &minDate, const QDateTime &maxDate);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                  const QStringList &listProducts);
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                        const QStringList &listFiles);
+                                        const QStringList &listFiles, const QDateTime &minDate, const QDateTime &maxDate);
 
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
@@ -114,15 +100,15 @@ private:
     QString GetSiteConfigFilePath(const QString &siteName, const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     AgricPracticesSiteCfg LoadSiteConfigFile(const QString &siteCfgFilePath);
 
-    QStringList ExtractNdviFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event);
-    QStringList ExtractAmpFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event);
-    QStringList ExtractCoheFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event);
+    QStringList ExtractNdviFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event, QDateTime &minDate, QDateTime &maxDate);
+    QStringList ExtractAmpFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event, QDateTime &minDate, QDateTime &maxDate);
+    QStringList ExtractCoheFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event, QDateTime &minDate, QDateTime &maxDate);
     QStringList GetIdsExtractorArgs(const AgricPracticesSiteCfg &siteCfg, const QString &outFile);
     QStringList GetPracticesExtractionArgs(const AgricPracticesSiteCfg &siteCfg, const QString &outFile, const QString &practice);
     QStringList GetDataExtractionArgs(const AgricPracticesSiteCfg &siteCfg, const QString &filterIdsFile, const QString &prdType, const QString &uidField, const QStringList &inputFiles,
                                       const QString &outDir);
     QStringList GetFilesMergeArgs(const QStringList &listInputPaths, const QString &outFileName);
-    QStringList GetTimeSeriesAnalysisArgs(const AgricPracticesSiteCfg &siteCfg, const QString &practice,
+    QStringList GetTimeSeriesAnalysisArgs(const AgricPracticesSiteCfg &siteCfg, const QString &practice, const QString &practicesFile,
                                           const QString &inNdviFile, const QString &inAmpFile, const QString &inCoheFile,
                                           const QString &outDir);
     QString BuildMergeResultFileName(const AgricPracticesSiteCfg &siteCfg, const QString &prdsType);
@@ -139,8 +125,20 @@ private:
                                               const QString &ndviMergedFile, const QString &ampMergedFile, const QString &coheMergedFile,
                                               NewStepList &steps, QList<TaskToSubmit> &allTasksList, int &curTaskIdx);
 
-    QStringList GetInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, const ProductType &prdType);
+    QStringList GetInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, const ProductType &prdType,
+                                 QDateTime &minDate, QDateTime &maxDate);
     QString FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QString &path);
+
+    PracticesTableExtractionParams LoadPracticesParams(const QSettings &settings, const QString &practicePrefix);
+    void UpdatePracticesParams(const PracticesTableExtractionParams &defVals, PracticesTableExtractionParams &sectionVals);
+    TsaPracticeParams LoadTsaParams(const QSettings &settings, const QString &practicePrefix);
+    void UpdateTsaParams(const TsaPracticeParams &defVals, TsaPracticeParams &sectionVals);
+
+    QStringList GetListValue(const QSettings &settings, const QString &key);
+    QString GetTsaExpectedPractice(const QString &practice);
+    QDateTime GetNdviProductTime(const QString &prdPath);
+    QDateTime GetS1L2AProductTime(const QString &prdPath);
+    void UpdateMinMaxTimes(const QDateTime &newTime, QDateTime &minTime, QDateTime &maxTime);
 };
 
-#endif // PHENONDVIHANDLER_HPP
+#endif // AGRICPRACTICESHANDLER_HPP
