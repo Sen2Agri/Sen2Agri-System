@@ -83,35 +83,44 @@ public:
             return;
         }
 
+//        auto resampledBands = getResampledBand2<otb::Wrapper::Int16VectorImageType>(reader2->GetOutput(), td, false);
         ExtractChannelFilterType::Pointer channelExtractor;
 
         int b5Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B5");
         channelExtractor = ExtractChannelFilterType::New();
         channelExtractor->SetInput(reader2->GetOutput());
+//        channelExtractor->SetInput(resampledBands);
         channelExtractor->SetIndex(b5Index - 1);
         m_Filters->PushBack(channelExtractor);
         auto b5Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+//        auto b5Band = channelExtractor->GetOutput();
 
         int b6Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B6");
         channelExtractor = ExtractChannelFilterType::New();
         channelExtractor->SetInput(reader2->GetOutput());
+//        channelExtractor->SetInput(resampledBands);
         channelExtractor->SetIndex(b6Index - 1);
         m_Filters->PushBack(channelExtractor);
         auto b6Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+//        auto b6Band = channelExtractor->GetOutput();
 
         int b7Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B7");
         channelExtractor = ExtractChannelFilterType::New();
         channelExtractor->SetInput(reader2->GetOutput());
+//        channelExtractor->SetInput(resampledBands);
         channelExtractor->SetIndex(b7Index - 1);
         m_Filters->PushBack(channelExtractor);
         auto b7Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+//        auto b7Band = channelExtractor->GetOutput();
 
         int b8aIndex = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B8A");
         channelExtractor = ExtractChannelFilterType::New();
         channelExtractor->SetInput(reader2->GetOutput());
+//        channelExtractor->SetInput(resampledBands);
         channelExtractor->SetIndex(b8aIndex - 1);
         m_Filters->PushBack(channelExtractor);
         auto b8aBand = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+//        auto b8aBand = channelExtractor->GetOutput();
 
         descriptor.bands.push_back(b5Band);
         descriptor.bands.push_back(b6Band);
