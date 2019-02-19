@@ -445,7 +445,13 @@ void RessourceManagerItf::HandleProcessorEndedMsg(RequestParamsExecutionInfos *p
         jobExecInfos.strExecutionDuration = executionDuration;
         jobExecInfos.strJobStatus = ProcessorExecutionInfos::g_strFinished;
         jobExecInfos.strStdOutText = pReqParams->GetStdOutText();
+        if (jobExecInfos.strStdOutText.size() == 0) {
+            jobExecInfos.strStdOutText = "empty log";
+        }
         jobExecInfos.strStdErrText = pReqParams->GetStdErrText();
+        if (jobExecInfos.strStdErrText.size() == 0) {
+            jobExecInfos.strStdErrText = "empty err log";
+        }
         jobExecInfos.strExitCode = QString::number(nExitCode);
         // Send the statistic infos to the persistence interface module
         if (PersistenceItfModule::GetInstance()->MarkStepFinished(nTaskId, strStepName,
