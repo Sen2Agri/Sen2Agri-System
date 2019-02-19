@@ -314,6 +314,11 @@ private:
         AddParameter(ParameterType_Float, "srcwin.lry", "Lower right Y");
         SetParameterDescription("srcwin.lry","Cartographic Y coordinate of lower-right corner (meters for cartographic projections, degrees for geographic ones)");
 
+        MandatoryOff("srcwin.ulx");
+        MandatoryOff("srcwin.uly");
+        MandatoryOff("srcwin.lrx");
+        MandatoryOff("srcwin.lry");
+
         // Add the output parameters in a group
         AddParameter(ParameterType_Group, "outputs", "Output Image Grid");
         SetParameterDescription("outputs","This group of parameters allows one to define the grid on which the input image will be resampled.");
@@ -513,20 +518,20 @@ private:
 
             const auto inImage = reader->GetOutput();
 
-            itk::Point<float, 2> ulp;
-            itk::Point<float, 2> lrp;
-            ulp[0] = GetParameterFloat("srcwin.ulx");
-            ulp[1] = GetParameterFloat("srcwin.uly");
-            lrp[0] = GetParameterFloat("srcwin.lrx");
-            lrp[1] = GetParameterFloat("srcwin.lry");
+//            itk::Point<float, 2> ulp;
+//            itk::Point<float, 2> lrp;
+//            ulp[0] = GetParameterFloat("srcwin.ulx");
+//            ulp[1] = GetParameterFloat("srcwin.uly");
+//            lrp[0] = GetParameterFloat("srcwin.lrx");
+//            lrp[1] = GetParameterFloat("srcwin.lry");
 
-            InputImageType::IndexType uli;
-            InputImageType::IndexType lri;
-            inImage->TransformPhysicalPointToIndex(ulp, uli);
-            inImage->TransformPhysicalPointToIndex(lrp, lri);
+//            InputImageType::IndexType uli;
+//            InputImageType::IndexType lri;
+//            inImage->TransformPhysicalPointToIndex(ulp, uli);
+//            inImage->TransformPhysicalPointToIndex(lrp, lri);
 
-            std::cout << uli << '\n';
-            std::cout << lri << '\n';
+//            std::cout << uli << '\n';
+//            std::cout << lri << '\n';
 
 //            auto extractROIFilter = ExtractROIFilterType::New();
 //            extractROIFilter->SetInput(inImage);
