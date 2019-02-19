@@ -207,7 +207,7 @@ def extract_optical_features(path, satellite_id, tile, products, ref, dates_file
     env["OTB_MAX_RAM_HINT"] = str(256)
 
     command = []
-    command += ["otbcli", "OpticalFeatures", "."]
+    command += ["otbcli", "OpticalFeatures"]
     command += ["-il"] + hdrs
     command += ["-pixsize", resolution]
     command += ["-mission", satellite]
@@ -320,7 +320,7 @@ def process_optical(config, conn, pool, satellite_id):
         pool.map(lambda g: extract_optical_features(*g), work)
 
         command = []
-        command += ["./merge-statistics"]
+        command += ["merge-statistics"]
         command += ["mean.csv", "dev.csv"]
         for tile, _ in tiles.items():
             mean = "mean-{}.csv".format(tile)
@@ -678,7 +678,7 @@ def get_statistics_invocation(input, ref):
     (mean, dev, count) = get_statistics_file_names(input)
 
     command = []
-    command += ["otbcli", "ClassStatistics", "."]
+    command += ["otbcli", "ClassStatistics"]
     command += ["-in", input]
     command += ["-ref", ref]
     command += ["-bv", 0]
@@ -706,7 +706,7 @@ class WeeklyComposite(object):
         env["OTB_MAX_RAM_HINT"] = str(1024)
 
         command = []
-        command += ["otbcli", "Composite", "."]
+        command += ["otbcli", "Composite"]
         command += ["-out", self.output]
         command += ["-ref", self.tile_ref]
         command += ["-srcwin.ulx", self.xmin]
@@ -744,7 +744,7 @@ class WeeklyRatioStatistics(object):
         (mean, dev, count) = get_statistics_file_names(self.output)
 
         command = []
-        command += ["otbcli", "ClassStatisticsRatio", "."]
+        command += ["otbcli", "ClassStatisticsRatio"]
         command += ["-in.vv", self.vv]
         command += ["-in.vh", self.vh]
         command += ["-ref", self.tile_ref]
@@ -770,7 +770,7 @@ class BackscatterMonthlyComposite(object):
         env["OTB_MAX_RAM_HINT"] = str(1024)
 
         command = []
-        command += ["otbcli", "BackscatterTemporalFeatures", "."]
+        command += ["otbcli", "BackscatterTemporalFeatures"]
         command += ["-out", self.output_extended]
         command += ["-mode", self.mode]
         command += ["-il"] + self.inputs
@@ -800,7 +800,7 @@ class CoherenceMonthlyComposite(object):
         env["OTB_MAX_RAM_HINT"] = str(1024)
 
         command = []
-        command += ["otbcli", "CoherenceMonthlyFeatures", "."]
+        command += ["otbcli", "CoherenceMonthlyFeatures"]
         command += ["-out", self.output_extended]
         command += ["-il"] + self.inputs
         run_command(command, env)
@@ -829,7 +829,7 @@ class CoherenceSeasonComposite(object):
         env["OTB_MAX_RAM_HINT"] = str(1024)
 
         command = []
-        command += ["otbcli", "StandardDeviation", "."]
+        command += ["otbcli", "StandardDeviation"]
         command += ["-out", self.output_extended]
         command += ["-il"] + self.inputs
         run_command(command, env)

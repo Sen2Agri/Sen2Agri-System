@@ -78,7 +78,7 @@ class ComputeClassCountsCommand(object):
 
     def run(self):
         command = []
-        command += ["otbcli", "ComputeClassCounts", "."]
+        command += ["otbcli", "ComputeClassCounts"]
         command += ["-in", self.input]
         command += ["-out", self.output]
         run_command(command)
@@ -91,7 +91,7 @@ class MergeClassCountsCommand(object):
 
     def run(self):
         command = []
-        command += ["./merge-counts"]
+        command += ["merge-counts"]
         command += [self.output]
         command += self.inputs
         run_command(command)

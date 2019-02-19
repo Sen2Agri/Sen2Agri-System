@@ -2,17 +2,8 @@
 from __future__ import print_function
 
 import argparse
-import csv
-from collections import defaultdict
 from datetime import date
-from glob import glob
-import math
 import multiprocessing.dummy
-import os
-import os.path
-from osgeo import osr
-from osgeo import ogr
-from gdal import gdalconst
 import pipes
 import psycopg2
 from psycopg2.sql import SQL, Literal, Identifier

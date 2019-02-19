@@ -314,7 +314,7 @@ def main():
                     files += [mean, dev, count]
 
                 command = []
-                command += ["./gapfill-statistics"]
+                command += ["gapfill-statistics"]
                 command += [out_mean, out_dev, out_count]
                 command += files
 
@@ -341,7 +341,7 @@ def main():
             tile_statistics += [out_mean, out_dev, out_count]
 
             command = []
-            command += ["./cat-columns"]
+            command += ["cat-columns"]
             command += [out_mean, out_dev, out_count]
             command += files
 
@@ -349,7 +349,7 @@ def main():
     pool.map(run_command, merge_commands)
 
     command = []
-    command += ["./merge-statistics"]
+    command += ["merge-statistics"]
     command += ["mean-sar.csv", "dev-sar.csv"]
     command += tile_statistics
     run_command(command)
