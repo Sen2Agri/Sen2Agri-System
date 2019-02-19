@@ -295,7 +295,7 @@ private:
         m_StandardDeviationFilter = StandardDeviationFilterType::New();
         m_StandardDeviationFilter->SetInput(m_ImageList);
 
-        if (HasUserValue("bv"))
+        if (HasValue("bv"))
         {
           m_StandardDeviationFilter->UseNoDataValueOn();
           m_StandardDeviationFilter->SetNoDataValue(GetParameterFloat("bv"));

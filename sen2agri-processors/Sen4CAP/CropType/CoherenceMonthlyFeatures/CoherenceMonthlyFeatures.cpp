@@ -325,7 +325,7 @@ private:
         m_CoherenceMonthlyFeaturesFilter = CoherenceMonthlyFeaturesFilterType::New();
         m_CoherenceMonthlyFeaturesFilter->SetInput(m_ImageList);
 
-        if (HasUserValue("bv"))
+        if (HasValue("bv"))
         {
           m_CoherenceMonthlyFeaturesFilter->UseNoDataValueOn();
           m_CoherenceMonthlyFeaturesFilter->SetNoDataValue(GetParameterFloat("bv"));

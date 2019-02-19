@@ -806,7 +806,7 @@ private:
 ////              m_ReprojectedImages->PushBack(resampleFilter->GetOutput());
 //          }
 
-        if (HasUserValue("bv"))
+        if (HasValue("bv"))
           {
           m_CompositeFilter->UseNoDataValueOn();
           m_CompositeFilter->SetNoDataValue(GetParameterFloat("bv"));
