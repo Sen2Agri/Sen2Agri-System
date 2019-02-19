@@ -181,12 +181,15 @@ typedef struct FieldInfoType {
         vegStartWeekNo = NOT_AVAILABLE;
         harvestStartWeekNo = NOT_AVAILABLE;
         coheVVMaxValue = NOT_AVAILABLE;
+        gapsInfos = NOT_AVAILABLE;
     }
     std::string fieldId;
     std::string fieldSeqId;
     std::string countryCode;
     std::string mainCrop;
     std::string practiceType;
+    std::string s1PixValue;
+    int gapsInfos;
 
     int year;                                   // TODO: Check that it is extracted from the YEAR field of the shape
     time_t ttVegStartTime;
@@ -222,19 +225,30 @@ typedef struct FieldInfoType {
 } FieldInfoType;
 
 typedef struct HarvestEvaluationType {
-    HarvestEvaluationType() {
-        ndviPresence = NOT_AVAILABLE;               // M1 / M6
-        candidateOptical = NOT_AVAILABLE;           // M2
-        candidateAmplitude = NOT_AVAILABLE;         // M3
-        amplitudePresence = NOT_AVAILABLE;          // M4
-        candidateCoherence = NOT_AVAILABLE;         // M5
-        harvestConfirmWeek = NOT_AVAILABLE;          // WEEK
+    HarvestEvaluationType(bool initializeMarkersWithNR = false) {
+        int naInitVal = initializeMarkersWithNR ? NR : NOT_AVAILABLE;
+        fieldId = "NA";
+        year = NOT_AVAILABLE;
+        mainCrop = NOT_AVAILABLE;
+        ttVegStartTime = 0;
+        ttHarvestStartTime = 0;
+        ttHarvestEndTime = 0;
+        ttPracticeStartTime = 0;
+        ttPracticeEndTime = 0;
 
-        efaIndex = "NA";                            // C_INDEX
-        ndviGrowth = NOT_AVAILABLE;                 // M7
-        ndviNoLoss = NOT_AVAILABLE;                 // M8
-        ampNoLoss = NOT_AVAILABLE;                  // M9
-        cohNoLoss = NOT_AVAILABLE;                  // M10
+        ndviPresence = naInitVal;               // M1 / M6
+        candidateOptical = naInitVal;           // M2
+        candidateAmplitude = naInitVal;         // M3
+        amplitudePresence = naInitVal;          // M4
+        candidateCoherence = naInitVal;         // M5
+        harvestConfirmWeek = naInitVal;         // WEEK
+        ttHarvestConfirmWeekStart = naInitVal;          //  WEEK start as date
+
+        efaIndex = initializeMarkersWithNR ? "NR" : "NA"; // C_INDEX
+        ndviGrowth = naInitVal;                 // M7
+        ndviNoLoss = naInitVal;                 // M8
+        ampNoLoss = naInitVal;                  // M9
+        cohNoLoss = naInitVal;                  // M10
     }
 
     void Initialize(const FieldInfoType &fieldInfos) {
@@ -262,6 +276,7 @@ typedef struct HarvestEvaluationType {
     short amplitudePresence;         // M4
     short candidateCoherence;        // M5
     short harvestConfirmWeek;       // WEEK
+    time_t ttHarvestConfirmWeekStart; // WEEK start as date
 
     std::string efaIndex;           // C_INDEX
     short ndviGrowth;               // M7
@@ -272,8 +287,10 @@ typedef struct HarvestEvaluationType {
 } HarvestEvaluationType;
 
 typedef struct HarvestInfoType {
-    HarvestInfoType() {
-        harvestConfirmed = NOT_AVAILABLE;
+    HarvestInfoType(bool initializeMarkersWithNR = false) :
+        evaluation(initializeMarkersWithNR)
+    {
+        harvestConfirmed = initializeMarkersWithNR ? NR : NOT_AVAILABLE;
     }
     time_t harvestConfirmed;
     HarvestEvaluationType evaluation;

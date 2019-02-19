@@ -5,10 +5,15 @@
 bool PracticeCsvReader::ExtractFeatures(std::function<bool (const FeatureDescription&)> fnc)
 {
     std::ifstream fStream(m_source);
+    if (!fStream.is_open()) {
+        std::cout << "Error opennig file " << m_source << std::endl;
+        return false;
+    }
     std::string line;
     if (std::getline(fStream, line)) {
         CsvFeatureDescription feature;
         if (!feature.ExtractHeaderInfos(line)) {
+            std::cout << "Error header infos from file " << m_source << std::endl;
             return false;
         }
         while (std::getline(fStream, line)) {
@@ -16,9 +21,8 @@ bool PracticeCsvReader::ExtractFeatures(std::function<bool (const FeatureDescrip
                 fnc(feature);
             }
         }
-        return true;
     }
-    return false;
+    return true;
 }
 
 std::vector<std::string> PracticeCsvReader::CsvFeatureDescription::LineToVector(const std::string &line)
@@ -48,6 +52,7 @@ bool PracticeCsvReader::CsvFeatureDescription::ExtractHeaderInfos(const std::str
     m_PracticeTypeFieldIdx = GetPosInHeader("P_TYPE");
     m_PracticeStartFieldIdx = GetPosInHeader("P_START");
     m_PracticeEndFieldIdx = GetPosInHeader("P_END");
+    m_S1PixIdx = GetPosInHeader("S1Pix");
     if (m_FieldIdFieldIdx == -1 || m_CountryFieldIdx == -1 ||
             m_YearFieldIdx == -1 || m_MainCropFieldIdx == -1 ||
             m_VegStartFieldIdx == -1 || m_HarvestStartFieldIdx == -1 ||
@@ -89,6 +94,10 @@ bool PracticeCsvReader::CsvFeatureDescription::ExtractLineInfos(const std::strin
         if (m_SeqFieldIdFieldIdx != -1) {
             m_SeqFieldIdVal = lineEntries[m_SeqFieldIdFieldIdx];
         }
+        if (m_S1PixIdx != -1) {
+            m_S1Pix = lineEntries[m_S1PixIdx];
+        }
+
         m_bIsValid = true;
         return true;
     }
@@ -154,4 +163,9 @@ std::string PracticeCsvReader::CsvFeatureDescription::GetPracticeStart() const
 std::string PracticeCsvReader::CsvFeatureDescription::GetPracticeEnd() const
 {
     return m_PracticeEndVal;
+}
+
+std::string PracticeCsvReader::CsvFeatureDescription::GetS1Pix() const
+{
+    return m_S1Pix;
 }

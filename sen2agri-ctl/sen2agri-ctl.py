@@ -11,9 +11,10 @@ import psycopg2.extras
 
 class Site(object):
 
-    def __init__(self, site_id, name):
+    def __init__(self, site_id, name, short_name):
         self.site_id = site_id
         self.name = name
+        self.short_name = short_name
 
     def __cmp__(self, other):
         if hasattr(other, 'site_id'):
@@ -54,7 +55,7 @@ class Sen2AgriClient(object):
 
         sites = []
         for row in rows:
-            sites.append(Site(row['id'], row['name']))
+            sites.append(Site(row['id'], row['name'], row['short_name']))
 
         return sorted(sites)
 
@@ -214,12 +215,36 @@ class Sen2AgriCtl(object):
             metavar=('KEY', 'VALUE'), help="override configuration parameter")
         parser_crop_type.set_defaults(func=self.submit_crop_type)
 
+        parser_agric_pract = parser_submit_job_subparsers.add_parser(
+            'agric_practices', help="Submits a new agricultural practices job")
+        parser_agric_pract.add_argument('-ndvi', '--ndvi-inputs',
+                                      nargs='+', required=False,
+                                      help="input NDVI products")
+        parser_agric_pract.add_argument('-amp', '--amp-inputs',
+                                      nargs='+', required=False,
+                                      help="input Amplitude products")
+        parser_agric_pract.add_argument('-cohe', '--cohe-inputs',
+                                      nargs='+', required=False,
+                                      help="input Coherence products")
+        parser_agric_pract.add_argument('-s', '--start-date',
+            required=False, help="start date in case inputs are not given")
+        parser_agric_pract.add_argument('-e', '--end-date',
+            required=False, help="end date in case inputs are not given")
+            
+        parser_agric_pract.add_argument('-cfg', '--config-path',
+                                      required=False,
+                                      help="Site parameters configuration file path")
+            
+        parser_agric_pract.add_argument('-p', '--parameter', action='append', nargs=2,
+            metavar=('KEY', 'VALUE'), help="override configuration parameter")
+        parser_agric_pract.set_defaults(func=self.submit_agricultural_practices)
+        
         args = parser.parse_args(sys.argv[1:])
         args.func(args)
 
     def list_sites(self, args):
         for site in self.client.get_sites():
-            print("{} {}".format(site.site_id, site.name))
+            print("Id: {}, Full Name: {}, Short name: {}".format(site.site_id, site.name, site.short_name))
 
     def submit_composite(self, args):
         parameters = {'input_products': args.input,
@@ -276,6 +301,25 @@ class Sen2AgriCtl(object):
             parameters['strata_shape'] = args.strata_shape
         self.submit_job('l4b', parameters, args)
 
+    def submit_agricultural_practices(self, args):
+        parameters = {}
+        if args.ndvi_inputs:
+            parameters['ndvi_input_products'] = args.ndvi_inputs
+        if args.amp_inputs:
+            parameters['amp_input_products'] = args.amp_inputs
+        if args.cohe_inputs:
+            parameters['cohe_input_products'] = args.cohe_inputs
+
+        if args.start_date:
+            parameters['start_date'] = args.start_date
+        if args.end_date:
+            parameters['end_date'] = args.end_date
+
+        if args.config_path:
+            parameters['config_path'] = args.config_path
+            
+        self.submit_job('s4c_l4c', parameters, args)
+        
     def create_job(self, processor_id, parameters, args):
         config = config_from_parameters(args.parameter)
 
@@ -304,7 +348,7 @@ class Sen2AgriCtl(object):
 
         sites = self.client.get_sites()
         for site in sites:
-            if site.name == name:
+            if site.name == name or site.short_name == name:
                 return site.site_id
         
         

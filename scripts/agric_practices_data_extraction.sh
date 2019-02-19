@@ -61,7 +61,7 @@ case "$1" in
         INSITU_REL_PATH="ltu_2018_32635_buf_${INSITU_BUFFER_SIZE}.shp"
         ;;
     ESP)
-        INSITU_REL_PATH="TODO.shp"
+        INSITU_REL_PATH="gsaa2018_32629_full_buf_${INSITU_BUFFER_SIZE}.shp"
         ;;
     ITA)
         INSITU_REL_PATH="TODO.shp"

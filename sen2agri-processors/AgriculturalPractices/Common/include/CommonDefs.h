@@ -1,6 +1,9 @@
 #ifndef CommonDefs_h
 #define CommonDefs_h
 
+#define NOT_AVAILABLE               -10000
+#define NR                          -10001
+
 // TODO: To remove the CR_CAT_VAL and all its references. LC should be used instead
 #define CR_CAT_VAL                      "CR_CAT"
 #define LC_VAL                          "LC"

@@ -20,6 +20,7 @@ private:
     {
         CsvFeatureDescription() : m_bIsValid(false) {
             m_SeqFieldIdFieldIdx = -1;
+            m_S1PixIdx = -1;
         }
         virtual std::string GetFieldId() const;
         virtual std::string GetFieldSeqId() const;
@@ -33,6 +34,8 @@ private:
         virtual std::string GetPracticeType() const;
         virtual std::string GetPracticeStart() const;
         virtual std::string GetPracticeEnd() const;
+        virtual std::string GetS1Pix() const;
+
     private:
 
         int GetPosInHeader(const std::string &item);
@@ -56,6 +59,7 @@ private:
         int m_PracticeTypeFieldIdx;
         int m_PracticeStartFieldIdx;
         int m_PracticeEndFieldIdx;
+        int m_S1PixIdx;
 
         std::string m_FieldIdVal;
         std::string m_SeqFieldIdVal;
@@ -69,6 +73,7 @@ private:
         std::string m_PracticeTypeVal;
         std::string m_PracticeStartVal;
         std::string m_PracticeEndVal;
+        std::string m_S1Pix;
 
         bool m_bIsValid;
         std::string m_source;

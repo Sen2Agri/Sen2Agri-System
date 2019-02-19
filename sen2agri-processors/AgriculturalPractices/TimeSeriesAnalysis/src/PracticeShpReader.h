@@ -26,6 +26,7 @@ private:
             m_PracticeTypeFieldName = "P_TYPE";
             m_PracticeStartFieldName = "P_START";
             m_PracticeEndFieldName = "P_END";
+            m_S1PixFieldName = "S1Pix";
         }
         virtual std::string GetFieldId() const;
         virtual std::string GetFieldSeqId() const;
@@ -39,6 +40,7 @@ private:
         virtual std::string GetPracticeType() const;
         virtual std::string GetPracticeStart() const;
         virtual std::string GetPracticeEnd() const;
+        virtual std::string GetS1Pix() const;
     private:
         otb::ogr::Layer::const_iterator featIt;
 
@@ -53,6 +55,7 @@ private:
         std::string m_PracticeTypeFieldName;
         std::string m_PracticeStartFieldName;
         std::string m_PracticeEndFieldName;
+        std::string m_S1PixFieldName;
 
         friend class PracticeShpReader;
     };

@@ -1,4 +1,5 @@
 #include "LtuCountryInfo.h"
+
 LtuCountryInfo::LtuCountryInfo() {
     using namespace std::placeholders;
     m_LineHandlerFnc = std::bind(&LtuCountryInfo::HandleFileLine, this, _1, _2, _3);

@@ -151,6 +151,10 @@ private:
         SetParameterDescription("filters","Filter field ids");
         MandatoryOff("filters");
 
+        AddParameter(ParameterType_String, "ignoredids", "File containing the list of field ids that will be ignored from the extraction");
+        SetParameterDescription("ignoredids","File containing the list of field ids that will be ignored from the extraction");
+        MandatoryOff("ignoredids");
+
         AddRAMParameter();
 
         // Doc example parameter settings
@@ -233,7 +237,8 @@ private:
             m_pCountryInfos->SetAdditionalFiles(GetParameterStringList("addfiles"));
         }
 
-        m_FieldFilters = LoadFilters();
+        m_FieldFilters = LoadIdsFile("filters");
+        m_IgnoredIds = LoadIdsFile("ignoredids");
 
         otbAppLogINFO("#######################################");
         otbAppLogINFO("Using input: " << inShpFile);
@@ -330,13 +335,17 @@ private:
     }
 
     bool FilterFeature(OGRFeature &ogrFeat) {
-        if (!m_pCountryInfos->IsMonitoringParcel(ogrFeat)) {
-            return false;
-        }
         // if we have filters and we did not find the id
         std::string uid = m_pCountryInfos->GetUniqueId(ogrFeat);
         NormalizeFieldId(uid);
         if(m_FieldFilters.size() != 0 && m_FieldFilters.find(uid) == m_FieldFilters.end()) {
+            return false;
+        }
+        if(m_IgnoredIds.size() != 0 && m_IgnoredIds.find(uid) != m_IgnoredIds.end()) {
+            return false;
+        }
+
+        if (!m_pCountryInfos->IsMonitoringParcel(ogrFeat)) {
             return false;
         }
 
@@ -363,25 +372,18 @@ private:
         return ret;
     }
 
-    std::map<std::string, int> LoadFilters() {
+    std::map<std::string, int> LoadIdsFile(const std::string &paramName) {
         std::map<std::string, int> filters;
-        if (HasValue("filters")) {
-            const std::string &filtersFile = GetParameterAsString("filters");
+        if (HasValue(paramName)) {
+            const std::string &filtersFile = trim(GetParameterAsString(paramName));
             std::ifstream fStream(filtersFile);
+            if (!fStream.is_open()) {
+                otbAppLogFATAL("Cannot load the specified filters file: " << filtersFile);
+            }
             std::string line;
-            int lineIdx = 0;
             while (std::getline(fStream, line)) {
-                if (lineIdx == 0) {
-                    // skip header
-                    lineIdx++;
-                    continue;
-                }
                 NormalizeFieldId(line);
                 filters[line] = 1;
-                if (lineIdx < 10) {
-                    otbAppLogINFO("Extracted filter: " << line);
-                }
-                lineIdx++;
             }
             otbAppLogINFO("Found a number of " << filters.size() << " filters!")
         }
@@ -391,6 +393,7 @@ private:
 private:
     std::string m_year;
     std::map<std::string, int> m_FieldFilters;
+    std::map<std::string, int> m_IgnoredIds;
 
     std::string m_country;
     std::string m_practice;
