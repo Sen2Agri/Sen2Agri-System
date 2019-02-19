@@ -258,17 +258,6 @@ def process_optical(config, conn, pool, satellite_id):
     with conn.cursor() as cursor:
         query = SQL(
             """
-            select start_date,
-                   end_date
-            from season
-            where satellite_id = {}
-              and product_type_id = 1
-            limit 1
-            """
-        )
-
-        query = SQL(
-            """
             select site_id,
                    full_path,
                    tiles,
