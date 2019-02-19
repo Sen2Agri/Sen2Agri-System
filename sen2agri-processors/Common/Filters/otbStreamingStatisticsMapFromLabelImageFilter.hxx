@@ -206,8 +206,16 @@ PersistentStreamingStatisticsMapFromLabelImageFilter<TInputVectorImage, TLabelIm
         {
         mean[band] /= count;
         // Unbiased standard deviation (not sure unbiased is usefull here)
-        const double variance = (sqSum[band] - (sum[band] * mean[band])) / (count - 1);
-        std[band] = std::sqrt(variance);
+        if (count > 1)
+          {
+          const double variance = (sqSum[band] - (sum[band] * mean[band])) / (count - 1);
+          std[band] = std::sqrt(variance);
+          }
+          else
+          {
+          const double variance = sqSum[band] - (sum[band] * mean[band]);
+          std[band] = std::sqrt(variance);
+          }
         }
         else
         {
