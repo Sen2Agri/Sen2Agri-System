@@ -1,6 +1,7 @@
 otb_create_application(
 	NAME           BackscatterTemporalFeatures
-	SOURCES        BackscatterTemporalFeatures.cpp
+        SOURCES        BackscatterTemporalFeatures.cpp
+		       ../../../Common/Filters/RatioFilterVector.hxx
 	LINK_LIBRARIES ${OTB_LIBRARIES}
 )
 
