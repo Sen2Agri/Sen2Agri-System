@@ -40,6 +40,10 @@ install(FILES ../scripts/insert_l2a_product_to_db.py
               ../sen2agri-ctl/sen2agri-ctl.py
               ../scripts/filter_site_download_tiles.py
               ../scripts/optimize_gtiff.py
+              ../scripts/export-lpis.py
+              ../scripts/crop-type-parcels.py
+              ../scripts/data-preparation.py
+              ../scripts/merge-sar.py
         DESTINATION usr/bin/
 	    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                     GROUP_READ GROUP_EXECUTE
