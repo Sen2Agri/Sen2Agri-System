@@ -226,7 +226,8 @@ enum class ProductType {
     S4CS1L2AmpProductTypeId = 10,
     S4CS1L2CoheProductTypeId = 11,
     S4CL4BProductTypeId = 12,
-    S4CL4CProductTypeId = 13
+    S4CL4CProductTypeId = 13,
+    S4CLPISProductTypeId = 14,
 };
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);
@@ -267,7 +268,8 @@ enum class Satellite
 {
     Invalid = 0,
     Sentinel2 = 1,
-    Landsat8 = 2
+    Landsat8 = 2,
+    Sentinel1 = 3,
 };
 
 class Tile

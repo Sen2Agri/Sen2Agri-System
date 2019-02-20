@@ -28,3 +28,7 @@ INSERT INTO processor
 VALUES
 (6, 'L4B Crop Type','l4b', 'L4B &mdash; Crop Type Map');
 
+INSERT INTO processor
+(id, name, short_name, label)
+VALUES
+(8, 'LPIS/GSAA', 'lpis', 'LPIS / GSAA Processor');
