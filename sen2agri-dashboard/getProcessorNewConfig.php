@@ -169,234 +169,253 @@ function insertjob($name, $description, $processor_short_name, $site_id, $start_
 	}
 }
 
-if (isset ( $_POST ['l3a'] )) {
-	$processor_short_name = "l3a";
+// sen2agri
+if ($isSen2Agri) {
+	if (isset ( $_POST ['l3a'] )) {
+		$processor_short_name = "l3a";
 
-	// default parameters
-	$siteId           = $_POST ['siteId'];
-	$input_products   = $_POST ['inputFiles'];
-	$synthDate        = $_POST ['synthDate'];
-	$halfSynthesis    = $_POST ['halfSynthesis'];
-	$resolution       = $_POST ['resolution'];
+		// default parameters
+		$siteId           = $_POST ['siteId'];
+		$input_products   = $_POST ['inputFiles'];
+		$synthDate        = $_POST ['synthDate'];
+		$halfSynthesis    = $_POST ['halfSynthesis'];
+		$resolution       = $_POST ['resolution'];
 
-	// advanced parameters
-	$maxaot           = $_POST ['maxaot'];
-	$minweight        = $_POST ['minweight'];
-	$maxweight        = $_POST ['maxweight'];
-	$sigmasmall       = $_POST ['sigmasmall'];
-	$sigmalarge       = $_POST ['sigmalarge'];
-	$coarseresolution = $_POST ['coarseresolution'];
-	$weightdatemin    = $_POST ['weightdatemin'];
+		// advanced parameters
+		$maxaot           = $_POST ['maxaot'];
+		$minweight        = $_POST ['minweight'];
+		$maxweight        = $_POST ['maxweight'];
+		$sigmasmall       = $_POST ['sigmasmall'];
+		$sigmalarge       = $_POST ['sigmalarge'];
+		$coarseresolution = $_POST ['coarseresolution'];
+		$weightdatemin    = $_POST ['weightdatemin'];
 
-	$config = array (
-		array ( "key"   => "processor.l3a.weight.aot.maxaot",
-				"value" => $maxaot ),
-		array ( "key"   => "processor.l3a.weight.aot.minweight",
-				"value" => $minweight ),
-		array ( "key"   => "processor.l3a.weight.aot.maxweight",
-				"value" => $maxweight ),
-		array ( "key"   => "processor.l3a.weight.cloud.sigmasmall",
-				"value" => $sigmasmall ),
-		array ( "key"   => "processor.l3a.weight.cloud.sigmalarge",
-				"value" => $sigmalarge ),
-		array ( "key"   => "processor.l3a.weight.cloud.coarseresolution",
-				"value" => $coarseresolution ),
-		array ( "key"   => "processor.l3a.weight.total.weightdatemin",
-				"value" => $weightdatemin ),
-		array ( "key"   => "processor.l3a.half_synthesis",
-				"value" => $halfSynthesis )
-	);
+		$config = array (
+			array ( "key"   => "processor.l3a.weight.aot.maxaot",
+					"value" => $maxaot ),
+			array ( "key"   => "processor.l3a.weight.aot.minweight",
+					"value" => $minweight ),
+			array ( "key"   => "processor.l3a.weight.aot.maxweight",
+					"value" => $maxweight ),
+			array ( "key"   => "processor.l3a.weight.cloud.sigmasmall",
+					"value" => $sigmasmall ),
+			array ( "key"   => "processor.l3a.weight.cloud.sigmalarge",
+					"value" => $sigmalarge ),
+			array ( "key"   => "processor.l3a.weight.cloud.coarseresolution",
+					"value" => $coarseresolution ),
+			array ( "key"   => "processor.l3a.weight.total.weightdatemin",
+					"value" => $weightdatemin ),
+			array ( "key"   => "processor.l3a.half_synthesis",
+					"value" => $halfSynthesis )
+		);
 
-	// generate json_config (skip configuration parameters with empty values)
-	$fconfig = array();
-	foreach($config as $cfg) {
-		if ($cfg["value"] != "") {
-			array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+		// generate json_config (skip configuration parameters with empty values)
+		$fconfig = array();
+		foreach($config as $cfg) {
+			if ($cfg["value"] != "") {
+				array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+			}
 		}
-	}
-	$json_config = json_encode( $fconfig );
+		$json_config = json_encode( $fconfig );
 
-	// generate json_param (skip parameters with empty values)
-	$params = array (	"resolution" => $resolution,
-						"input_products" => $input_products,
-						"synthesis_date" => $synthDate
-					);
-	$json_param = json_encode( array_filter($params) );
+		// generate json_param (skip parameters with empty values)
+		$params = array (	"resolution" => $resolution,
+							"input_products" => $input_products,
+							"synthesis_date" => $synthDate
+						);
+		$json_param = json_encode( array_filter($params) );
 
-	// set job name and description and save job
-	$name = "l3a_processor" . date ( "m.d.y" );
-	$description = "generated new configuration from site for ".$processor_short_name;
-	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
-	redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
-} /* -------------------------------------------------------l3b_lai------------------------------------------------------ */
-elseif (isset ( $_POST ['l3b_lai'] )) {
-	$processor_short_name = "l3b_lai";
+		// set job name and description and save job
+		$name = "l3a_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
+		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
+	} /* -------------------------------------------------------l3b_lai------------------------------------------------------ */
+	elseif (isset ( $_POST ['l3b_lai'] )) {
+		$processor_short_name = "l3b_lai";
 
-	// default parameters
-	$siteId         = $_POST ['siteId'];
-	$input_products = $_POST ['inputFiles'];
-	$resolution     = $_POST ['resolution'];
-	$monolai        = isset($_POST['lai']) && ($_POST['lai'] == 'monolai') ? 1 : 0;
-	$reproc         = isset($_POST['lai']) && ($_POST['lai'] == 'reproc')  ? 1 : 0;
-	$fitted         = isset($_POST['lai']) && ($_POST['lai'] == 'fitted')  ? 1 : 0;
-	$bwr            = $_POST ['bwr'];
-	$fwr            = $_POST ['fwr'];
+		// default parameters
+		$siteId         = $_POST ['siteId'];
+		$input_products = $_POST ['inputFiles'];
+		$resolution     = $_POST ['resolution'];
+		$monolai        = isset($_POST['lai']) && ($_POST['lai'] == 'monolai') ? 1 : 0;
+		$reproc         = isset($_POST['lai']) && ($_POST['lai'] == 'reproc')  ? 1 : 0;
+		$fitted         = isset($_POST['lai']) && ($_POST['lai'] == 'fitted')  ? 1 : 0;
+		$bwr            = $_POST ['bwr'];
+		$fwr            = $_POST ['fwr'];
 
-	// advanced parameters
-	$genmodel = $_POST ['genmodel'];
+		// advanced parameters
+		$genmodel = $_POST ['genmodel'];
 
-	$config = array (
-		array ( "key"   => "processor.l3b.lai.localwnd.bwr",
-				"value" => $bwr ),
-		array ( "key"   => "processor.l3b.lai.localwnd.fwr",
-				"value" => $fwr ),
-		array ( "key"   => "processor.l3b.generate_models",
-				"value" => $genmodel ),
-		array ( "key"   => "processor.l3b.reprocess",
-				"value" => $reproc ),
-		array ( "key"   => "processor.l3b.fitted",
-				"value" => $fitted ),
-		array ( "key"   => "processor.l3b.mono_date_lai",
-				"value" => $monolai )
-	);
+		$config = array (
+			array ( "key"   => "processor.l3b.lai.localwnd.bwr",
+					"value" => $bwr ),
+			array ( "key"   => "processor.l3b.lai.localwnd.fwr",
+					"value" => $fwr ),
+			array ( "key"   => "processor.l3b.generate_models",
+					"value" => $genmodel ),
+			array ( "key"   => "processor.l3b.reprocess",
+					"value" => $reproc ),
+			array ( "key"   => "processor.l3b.fitted",
+					"value" => $fitted ),
+			array ( "key"   => "processor.l3b.mono_date_lai",
+					"value" => $monolai )
+		);
 
-	// generate json_config (skip configuration parameters with empty values)
-	$fconfig = array();
-	foreach($config as $cfg) {
-		if ($cfg["value"] != "") {
-			array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+		// generate json_config (skip configuration parameters with empty values)
+		$fconfig = array();
+		foreach($config as $cfg) {
+			if ($cfg["value"] != "") {
+				array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+			}
 		}
-	}
-	$json_config = json_encode( $fconfig );
+		$json_config = json_encode( $fconfig );
 
-	// generate json_param (skip parameters with empty values)
-	$params = array (	"resolution"     => $resolution,
-						"input_products" => $input_products
-					);
-	$json_param = json_encode( array_filter($params) );
+		// generate json_param (skip parameters with empty values)
+		$params = array (	"resolution"     => $resolution,
+							"input_products" => $input_products
+						);
+		$json_param = json_encode( array_filter($params) );
 
-	// set job name and description and save job
-	$name = "l3b_processor" . date ( "m.d.y" );
-	$description = "generated new configuration from site for ".$processor_short_name;
-	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
-	redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
-} /* -------------------------------------------------------l3e_pheno------------------------------------------------------ */
-elseif (isset ( $_POST ['l3e_pheno'] )) {
-	$processor_short_name = "l3e_pheno";
+		// set job name and description and save job
+		$name = "l3b_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
+		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
+	} /* -------------------------------------------------------l3e_pheno------------------------------------------------------ */
+	elseif (isset ( $_POST ['l3e_pheno'] )) {
+		$processor_short_name = "l3e_pheno";
 
-	// default parameters
-	$siteId         = $_POST ['siteId'];
-	$input_products = $_POST ['inputFiles'];
-	$resolution     = $_POST ['resolution'];
+		// default parameters
+		$siteId         = $_POST ['siteId'];
+		$input_products = $_POST ['inputFiles'];
+		$resolution     = $_POST ['resolution'];
 
-	$json_config = json_encode ( array (
-		array ( "key"   => "",
-				"value" => "" )
-	) );
+		$json_config = json_encode ( array (
+			array ( "key"   => "",
+					"value" => "" )
+		) );
 
-	// generate json_param (skip parameters with empty values)
-	$params = array (	"resolution"     => $resolution,
-						"input_products" => $input_products
-					);
-	$json_param = json_encode( array_filter($params) );
+		// generate json_param (skip parameters with empty values)
+		$params = array (	"resolution"     => $resolution,
+							"input_products" => $input_products
+						);
+		$json_param = json_encode( array_filter($params) );
 
-	// set job name and description and save job
-	$name = "l3e_pheno_processor" . date ( "m.d.y" );
-	$description = "generated new configuration from site for ".$processor_short_name;
-	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
-	redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
-} /* -------------------------------------------------------l4a------------------------------------------------------ */
-elseif (isset ( $_POST ['l4a'] ) || isset ( $_POST ['l4a_wo'] )) {
-	$processor_short_name = "l4a";
+		// set job name and description and save job
+		$name = "l3e_pheno_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
+		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
+	} /* -------------------------------------------------------l4a------------------------------------------------------ */
+	elseif (isset ( $_POST ['l4a'] ) || isset ( $_POST ['l4a_wo'] )) {
+		$processor_short_name = "l4a";
 
-	// default parameters
-	$siteId         = $_POST ['siteId'];
-	$input_products = $_POST ['inputFiles'];
-	$resolution     = $_POST ['resolution'];
-	$ratio          = $_POST ['ratio'];
+		// default parameters
+		$siteId         = $_POST ['siteId'];
+		$input_products = $_POST ['inputFiles'];
+		$resolution     = $_POST ['resolution'];
+		$ratio          = $_POST ['ratio'];
 
-	// advanced parameters
-	$field      = $_POST ['field'];
-	$radius     = $_POST ['radius'];
-	$nbtrsample = $_POST ['nbtrsample'];
-	$rseed      = $_POST ['rseed'];
-	$window     = $_POST ['window'];
-	$lmbd       = $_POST ['lmbd'];
-	$weight     = $_POST ['weight'];
-	$nbcomp     = $_POST ['nbcomp'];
-	$spatialr   = $_POST ['spatialr'];
-	$ranger     = $_POST ['ranger'];
-	$minsize    = $_POST ['minsize'];
-	$eroderad   = $_POST ['eroderad'];
-	$alpha      = $_POST ['alpha'];
-	$classifier = $_POST ['classifier'];
-	$rfnbtrees  = $_POST ['rfnbtrees'];
-	$rfmax      = $_POST ['rfmax'];
-	$rfmin      = $_POST ['rfmin'];
-	$minarea    = $_POST ['minarea'];
+		// advanced parameters
+		$field      = $_POST ['field'];
+		$radius     = $_POST ['radius'];
+		$nbtrsample = $_POST ['nbtrsample'];
+		$rseed      = $_POST ['rseed'];
+		$window     = $_POST ['window'];
+		$lmbd       = $_POST ['lmbd'];
+		$weight     = $_POST ['weight'];
+		$nbcomp     = $_POST ['nbcomp'];
+		$spatialr   = $_POST ['spatialr'];
+		$ranger     = $_POST ['ranger'];
+		$minsize    = $_POST ['minsize'];
+		$eroderad   = $_POST ['eroderad'];
+		$alpha      = $_POST ['alpha'];
+		$classifier = $_POST ['classifier'];
+		$rfnbtrees  = $_POST ['rfnbtrees'];
+		$rfmax      = $_POST ['rfmax'];
+		$rfmin      = $_POST ['rfmin'];
+		$minarea    = $_POST ['minarea'];
 
-	$config = array (
-		array ( "key"   => "processor.l4a.sample-ratio",
-				"value" => $ratio ),
-		array ( "key"   => "processor.l4a.radius",
-				"value" => $radius ),
-		array ( "key"   => "processor.l4a.training-samples-number",
-				"value" => $nbtrsample ),
-		array ( "key"   => "processor.l4a.random_seed",
-				"value" => $rseed ),
-		array ( "key"   => "processor.l4a.window",
-				"value" => $window ),
-		array ( "key"   => "processor.l4a.smoothing-lambda",
-				"value" => $lmbd ),
-		array ( "key"   => "processor.l4a.weight",
-				"value" => $weight ),
-		array ( "key"   => "processor.l4a.nbcomp",
-				"value" => $nbcomp ),
-		array ( "key"   => "processor.l4a.segmentation-spatial-radius",
-				"value" => $spatialr ),
-		array ( "key"   => "processor.l4a.range-radius",
-				"value" => $ranger ),
-		array ( "key"   => "processor.l4a.segmentation-minsize",
-				"value" => $minsize ),
-		array ( "key"   => "processor.l4a.erode-radius",
-				"value" => $eroderad ),
-		array ( "key"   => "processor.l4a.mahalanobis-alpha",
-				"value" => $alpha ),
-		array ( "key"   => "processor.l4a.classifier",
-				"value" => $classifier ),
-		array ( "key"   => "processor.l4a.classifier.field",
-				"value" => $field ),
-		array ( "key"   => "processor.l4a.classifier.rf.nbtrees",
-				"value" => $rfnbtrees ),
-		array ( "key"   => "processor.l4a.classifier.rf.max",
-				"value" => $rfmax ),
-		array ( "key"   => "processor.l4a.classifier.rf.min",
-				"value" => $rfmin ),
-		array ( "key"   => "processor.l4a.min-area",
-				"value" => $minarea )
-	);
+		$config = array (
+			array ( "key"   => "processor.l4a.sample-ratio",
+					"value" => $ratio ),
+			array ( "key"   => "processor.l4a.radius",
+					"value" => $radius ),
+			array ( "key"   => "processor.l4a.training-samples-number",
+					"value" => $nbtrsample ),
+			array ( "key"   => "processor.l4a.random_seed",
+					"value" => $rseed ),
+			array ( "key"   => "processor.l4a.window",
+					"value" => $window ),
+			array ( "key"   => "processor.l4a.smoothing-lambda",
+					"value" => $lmbd ),
+			array ( "key"   => "processor.l4a.weight",
+					"value" => $weight ),
+			array ( "key"   => "processor.l4a.nbcomp",
+					"value" => $nbcomp ),
+			array ( "key"   => "processor.l4a.segmentation-spatial-radius",
+					"value" => $spatialr ),
+			array ( "key"   => "processor.l4a.range-radius",
+					"value" => $ranger ),
+			array ( "key"   => "processor.l4a.segmentation-minsize",
+					"value" => $minsize ),
+			array ( "key"   => "processor.l4a.erode-radius",
+					"value" => $eroderad ),
+			array ( "key"   => "processor.l4a.mahalanobis-alpha",
+					"value" => $alpha ),
+			array ( "key"   => "processor.l4a.classifier",
+					"value" => $classifier ),
+			array ( "key"   => "processor.l4a.classifier.field",
+					"value" => $field ),
+			array ( "key"   => "processor.l4a.classifier.rf.nbtrees",
+					"value" => $rfnbtrees ),
+			array ( "key"   => "processor.l4a.classifier.rf.max",
+					"value" => $rfmax ),
+			array ( "key"   => "processor.l4a.classifier.rf.min",
+					"value" => $rfmin ),
+			array ( "key"   => "processor.l4a.min-area",
+					"value" => $minarea )
+		);
 
-	// generate json_config (skip configuration parameters with empty values)
-	$fconfig = array();
-	foreach($config as $cfg) {
-		if ($cfg["value"] != "") {
-			array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+		// generate json_config (skip configuration parameters with empty values)
+		$fconfig = array();
+		foreach($config as $cfg) {
+			if ($cfg["value"] != "") {
+				array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+			}
 		}
-	}
-	$json_config = json_encode( $fconfig );
+		$json_config = json_encode( $fconfig );
 
-	$date = date_create();
-	$timestamp = date_timestamp_get($date);
-	if (isset($_POST['l4a'])) {
-		// l4a with in-situ
-		$upload        = upload_reference_polygons($siteId, $timestamp);
-		$polygons_file = $upload['polygons_file'];
-		$result        = $upload['result'];
-		$message       = $upload['message'];
-		if ($polygons_file) {
-			$params = array (	"resolution"         => $resolution,
-								"input_products"     => $input_products,
-								"reference_polygons" => $polygons_file
+		$date = date_create();
+		$timestamp = date_timestamp_get($date);
+		if (isset($_POST['l4a'])) {
+			// l4a with in-situ
+			$upload        = upload_reference_polygons($siteId, $timestamp);
+			$polygons_file = $upload['polygons_file'];
+			$result        = $upload['result'];
+			$message       = $upload['message'];
+			if ($polygons_file) {
+				$params = array (	"resolution"         => $resolution,
+									"input_products"     => $input_products,
+									"reference_polygons" => $polygons_file
+								);
+				$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
+
+				// set job name and description and save job
+				$name = "l4a_processor" . date ( "m.d.y" );
+				$description = "generated new configuration from site for ".$processor_short_name;
+				insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+				redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
+			} else {
+				redirect_page("l4a", "NOK", $result." (".$message.")");
+			}
+		} else {
+			// l4a w/o in-situ
+			$raster_file = upload_reference_raster($siteId, $timestamp);
+			$params = array (	"resolution"       => $resolution,
+								"input_products"   => $input_products,
+								"reference_raster" => $raster_file
 							);
 			$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
 
@@ -404,96 +423,212 @@ elseif (isset ( $_POST ['l4a'] ) || isset ( $_POST ['l4a_wo'] )) {
 			$name = "l4a_processor" . date ( "m.d.y" );
 			$description = "generated new configuration from site for ".$processor_short_name;
 			insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+			redirect_page("l4a_wo", "OK", "Your job has been successfully submitted!");
+		}
+	} /* -------------------------------------------------------l4b------------------------------------------------------ */
+	elseif (isset ( $_POST ['l4b'] )) {
+		$processor_short_name = "l4b";
+
+		// default parameters
+		$siteId         = $_POST ['siteId'];
+		$resolution     = $_POST ['resolution'];
+		$input_products = $_POST ['inputFiles'];
+		$crop_mask      = $_POST ['cropMask'];
+		$ratio          = $_POST ['ratio'];
+
+		// advanced parameters
+		$field      = $_POST ['field'];
+		$rseed      = $_POST ['rseed'];
+		$classifier = $_POST ['classifier'];
+		$rfnbtrees  = $_POST ['rfnbtrees'];
+		$rfmax      = $_POST ['rfmax'];
+		$rfmin      = $_POST ['rfmin'];
+
+		$config = array (
+			array ( "key"   => "processor.l4b.sample-ratio",
+					"value" => $ratio ),
+			array ( "key"   => "processor.l4b.random_seed",
+					"value" => $rseed ),
+			array ( "key"   => "processor.l4b.classifier",
+					"value" => $classifier ),
+			array ( "key"   => "processor.l4b.classifier.field",
+					"value" => $field ),
+			array ( "key"   => "processor.l4b.classifier.rf.nbtrees",
+					"value" => $rfnbtrees ),
+			array ( "key"   => "processor.l4b.classifier.rf.max",
+					"value" => $rfmax ),
+			array ( "key"   => "processor.l4b.classifier.rf.min",
+					"value" => $rfmin )
+		);
+
+		// generate json_config (skip configuration parameters with empty values)
+		$fconfig = array();
+		foreach($config as $cfg) {
+			if ($cfg["value"] != "") {
+				array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+			}
+		}
+		$json_config = json_encode( $fconfig );
+
+		// upload polygons
+		$date          = date_create();
+		$timestamp     = date_timestamp_get($date);
+		$upload        = upload_reference_polygons($siteId, $timestamp);
+		$polygons_file = $upload['polygons_file'];
+		$result        = $upload['result'];
+		$message       = $upload['message'];
+
+		// generate json_param (skip parameters with empty values)
+		if ($polygons_file) {
+			$params = array (	"resolution"         => $resolution,
+								"input_products"     => $input_products,
+								"reference_polygons" => $polygons_file
+							);
+			if (!empty($crop_mask)) {
+				$params["crop_mask"] = $crop_mask;
+			}
+			$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
+
+			// set job name and description and save job
+			$name = "l4b_processor" . date ( "m.d.y" );
+			$description = "generated new configuration from site for ".$processor_short_name;
+			insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 			redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
 		} else {
-			redirect_page("l4a", "NOK", $result." (".$message.")");
+			redirect_page($processor_short_name, "NOK", $result." (".$message.")");
 		}
-	} else {
-		// l4a w/o in-situ
-		$raster_file = upload_reference_raster($siteId, $timestamp);
-		$params = array (	"resolution"       => $resolution,
-							"input_products"   => $input_products,
-							"reference_raster" => $raster_file
+	}
+}
+// sen4cap
+else {
+	if (isset($_POST['l3a'])) {
+		$processor_short_name = "l3a";
+		
+		// default parameters
+		$siteId           = $_POST['siteId'];
+		$input_products   = $_POST['inputFiles'];
+		$half_synthesis   = $_POST['half_synthesis_l3a'];
+		$resolution       = $_POST['resolution'];
+		
+		// advanced parameters
+		$maxaot           = $_POST['maxaot_l3a'];
+		$minweight        = $_POST['minweight_l3a'];
+		$maxweight        = $_POST['maxweight_l3a'];
+		$sigmasmall       = $_POST['sigmasmall_l3a'];
+		$sigmalarge       = $_POST['sigmalarge_l3a'];
+		$coarseresolution = $_POST['coarseresolution_l3a'];
+		$weightdatemin    = $_POST['weightdatemin_l3a'];
+		
+		$config = array (
+			array ( "key"   => "processor.l3a.weight.aot.maxaot",
+					"value" => $maxaot ),
+			array ( "key"   => "processor.l3a.weight.aot.minweight",
+					"value" => $minweight ),
+			array ( "key"   => "processor.l3a.weight.aot.maxweight",
+					"value" => $maxweight ),
+			array ( "key"   => "processor.l3a.weight.cloud.sigmasmall",
+					"value" => $sigmasmall ),
+			array ( "key"   => "processor.l3a.weight.cloud.sigmalarge",
+					"value" => $sigmalarge ),
+			array ( "key"   => "processor.l3a.weight.cloud.coarseresolution",
+					"value" => $coarseresolution ),
+			array ( "key"   => "processor.l3a.weight.total.weightdatemin",
+					"value" => $weightdatemin ),
+			array ( "key"   => "processor.l3a.half_synthesis",
+					"value" => $half_synthesis )
+		);
+		
+		// generate json_config (skip configuration parameters with empty values)
+		$fconfig = array();
+		foreach($config as $cfg) {
+			if ($cfg["value"] != "") {
+				array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+			}
+		}
+		$json_config = json_encode( $fconfig );
+		
+		// generate json_param (skip parameters with empty values)
+		$params = array (	"resolution" => $resolution,
+							"input_products" => $input_products
 						);
-		$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
-
+		$json_param = json_encode(array_filter($params));
+		
 		// set job name and description and save job
-		$name = "l4a_processor" . date ( "m.d.y" );
+		$name = "l3a_processor" . date ( "m.d.y" );
 		$description = "generated new configuration from site for ".$processor_short_name;
-		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
-		redirect_page("l4a_wo", "OK", "Your job has been successfully submitted!");
-	}
-} /* -------------------------------------------------------l4b------------------------------------------------------ */
-elseif (isset ( $_POST ['l4b'] )) {
-	$processor_short_name = "l4b";
-
-	// default parameters
-	$siteId         = $_POST ['siteId'];
-	$resolution     = $_POST ['resolution'];
-	$input_products = $_POST ['inputFiles'];
-	$crop_mask      = $_POST ['cropMask'];
-	$ratio          = $_POST ['ratio'];
-
-	// advanced parameters
-	$field      = $_POST ['field'];
-	$rseed      = $_POST ['rseed'];
-	$classifier = $_POST ['classifier'];
-	$rfnbtrees  = $_POST ['rfnbtrees'];
-	$rfmax      = $_POST ['rfmax'];
-	$rfmin      = $_POST ['rfmin'];
-
-	$config = array (
-		array ( "key"   => "processor.l4b.sample-ratio",
-				"value" => $ratio ),
-		array ( "key"   => "processor.l4b.random_seed",
-				"value" => $rseed ),
-		array ( "key"   => "processor.l4b.classifier",
-				"value" => $classifier ),
-		array ( "key"   => "processor.l4b.classifier.field",
-				"value" => $field ),
-		array ( "key"   => "processor.l4b.classifier.rf.nbtrees",
-				"value" => $rfnbtrees ),
-		array ( "key"   => "processor.l4b.classifier.rf.max",
-				"value" => $rfmax ),
-		array ( "key"   => "processor.l4b.classifier.rf.min",
-				"value" => $rfmin )
-	);
-
-	// generate json_config (skip configuration parameters with empty values)
-	$fconfig = array();
-	foreach($config as $cfg) {
-		if ($cfg["value"] != "") {
-			array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
-		}
-	}
-	$json_config = json_encode( $fconfig );
-
-	// upload polygons
-	$date          = date_create();
-	$timestamp     = date_timestamp_get($date);
-	$upload        = upload_reference_polygons($siteId, $timestamp);
-	$polygons_file = $upload['polygons_file'];
-	$result        = $upload['result'];
-	$message       = $upload['message'];
-
-	// generate json_param (skip parameters with empty values)
-	if ($polygons_file) {
-		$params = array (	"resolution"         => $resolution,
-							"input_products"     => $input_products,
-							"reference_polygons" => $polygons_file
-                        );
-        if (!empty($crop_mask)) {
-            $params["crop_mask"] = $crop_mask;
-        }
-		$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
-
-		// set job name and description and save job
-		$name = "l4b_processor" . date ( "m.d.y" );
-		$description = "generated new configuration from site for ".$processor_short_name;
-		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+		
+		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
-	} else {
-		redirect_page($processor_short_name, "NOK", $result." (".$message.")");
+	}
+	elseif (isset($_POST['s4c_l4a'])) {
+		$processor_short_name = "s4c_l4a";
+		
+		// default parameters
+		$siteId         = $_POST['siteId'];
+		$input_products = $_POST['inputFiles'];
+		
+		$fconfig = array();
+		$json_config = json_encode( array_filter($fconfig) );
+		
+		// generate json_param (skip parameters with empty values)
+		$params = array ("input_products" => $input_products);
+		$json_param = json_encode(array_filter($params));
+		
+		// set job name and description and save job
+		$name = "s4c_l4a_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
+		
+		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!", $params);
+	}
+	elseif (isset($_POST['s4c_l4b'])) {
+		$processor_short_name = "s4c_l4b";
+		
+		// default parameters
+		$siteId     = $_POST['siteId'];
+		$input_COHE = $_POST['inputFiles_COHE'];
+		$input_AMP  = $_POST['inputFiles_AMP'];
+		$input_NDVI = $_POST['inputFiles_NDVI'];
+		
+		$fconfig = array();
+		$json_config = json_encode( array_filter($fconfig) );
+		
+		// generate json_param (skip parameters with empty values)
+		$params = array ("input_COHE" => $input_COHE, "input_AMP"  => $input_AMP, "input_NDVI" => $input_NDVI);
+		$json_param = json_encode(array_filter($params));
+		
+		// set job name and description and save job
+		$name = "s4c_l4a_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
+		
+		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!", $params);
+	}
+	elseif (isset($_POST['s4c_l4c'])) {
+		$processor_short_name = "s4c_l4c";
+		
+		// default parameters
+		$siteId     = $_POST['siteId'];
+		$input_COHE = $_POST['inputFiles_COHE'];
+		$input_AMP  = $_POST['inputFiles_AMP'];
+		$input_NDVI = $_POST['inputFiles_NDVI'];
+		
+		$fconfig = array();
+		$json_config = json_encode( array_filter($fconfig) );
+		
+		// generate json_param (skip parameters with empty values)
+		$params = array ("input_COHE" => $input_COHE, "input_AMP"  => $input_AMP, "input_NDVI" => $input_NDVI);
+		$json_param = json_encode(array_filter($params));
+		
+		// set job name and description and save job
+		$name = "s4c_l4a_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
+		
+		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!", $params);
+	}
+	else {
+		echo "Under Construction";
 	}
 }
 ?>

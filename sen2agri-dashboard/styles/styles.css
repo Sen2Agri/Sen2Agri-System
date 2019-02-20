@@ -979,7 +979,7 @@ div.for-table table.table tr td a:hover{color:#5CB85C}
 /* ---------------- END PAGINATION ---------------- */
 
 /* --------------- custom jobs -------------------- */
-.invalidTilesL8,.invalidTilesS2{
+.invalidTilesL8,.invalidTilesS2,.invalidTilesS1{
 	color:red;
 }
 /* -------------- end custom jobs------------------ */

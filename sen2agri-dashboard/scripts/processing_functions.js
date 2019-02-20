@@ -529,7 +529,7 @@ function fill_key_value_table(parent, list) {
 	}
 
 	list.forEach(function(item) {
-		var new_row = "<tr class=\"to_be_refreshed\">" +
+		var new_row = "<tr class='to_be_refreshed" + (item[1] == "N/A" ? " hidden" : "") + "'>" +
 		"<th>" + item[0] + "</th>" +
 		"<td>" + item[1] + "</td>" +
 		"</tr>";
@@ -764,7 +764,10 @@ function add_events(){
 			var formId = event.target.form.id;
 			$(this).attr('disabled',true);
 			
-			get_products($("#"+formId+" select#siteId").val(), $("#"+formId+" select#inputFiles"),formId);
+			var productsEls = $("#"+formId+" select.input-files");
+			$.each(productsEls, function (index, product) {
+				get_products($("#"+formId+" select#siteId").val(), $(product), formId);
+			});
 			
 			get_tiles($("#"+formId+" select#siteId").val(), formId);
 			
@@ -792,7 +795,6 @@ function filter_input_files(formId){
 	var tilesL8NotValid = '';var tilesS2NotValid = '';var tilesS1NotValid = new Array();
 	
 	var siteId = $("#"+formId+" select#siteId").val();
-	var productEl = $("#"+formId+" select#inputFiles");
 	
 	var data = {};
 	var season_id = $("#"+formId+" select#choose_season").find(":selected").val();
@@ -879,12 +881,16 @@ function filter_input_files(formId){
 		//make available the button to reset the filter
 		$("#"+formId+" button[name='btnResetFilter']").prop('disabled',false);
 		
-		get_products(siteId, productEl, formId, data);
+		var productsEls = $("#"+formId+" select.input-files");
+		$.each(productsEls, function (index, product) {
+			get_products(siteId, $(product), formId, data);
+		});
 	}
 	
 }
 
 function get_tiles(siteId, formId){
+	// Sentinel 2
 	$.ajax({
 		url: "processing.php",
 		type: "GET",
@@ -899,7 +905,24 @@ function get_tiles(siteId, formId){
 			update_sites(new Array());
 		}
 	});
-	
+	/*
+	// Sentinel 1
+	$.ajax({
+		url: "processing.php",
+		type: "GET",
+		crossDomain: true,
+		dataType: "json",
+		data: {action: 'getTiles', siteId:siteId, satelliteId:'3'},
+		success:function(jsonData){
+			$('#'+formId+' textarea[name="S1Tiles"]').val(jsonData);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			update_sites(new Array());
+		}
+	});
+	*/
+	// Landsat 8
 	$.ajax({
 		url: "processing.php",
 		type: "GET",
@@ -1001,17 +1024,17 @@ function update_sites(json_data) {
 		
 		siteEl.change(function (event) {
 			var siteEl = event.target;
-			//var sentinel2TilesEl = $("#"+siteEl.form.id+" select#sentinel2Tiles");
-			//var landsatTilesEl = $("#"+siteEl.form.id+" select#landsatTiles");
-			var productsEl = $("#"+siteEl.form.id+" select#inputFiles");
-			var cropMaskEl = $("#"+siteEl.form.id+" select[name='cropMask']");
-			var seasonEl =  $("#"+siteEl.form.id+" select#choose_season");
-			var btnFilterEl =  $("#"+siteEl.form.id+" button[name='btnFilter']");
-		
+			var cropMaskEl  = $("#"+siteEl.form.id+" select[name='cropMask']");
+			var seasonEl    = $("#"+siteEl.form.id+" select#choose_season");
+			var btnFilterEl = $("#"+siteEl.form.id+" button[name='btnFilter']");
+			var productsEls = $("#"+siteEl.form.id+" select.input-files");
+			
 			if(siteEl.selectedIndex > 0) {
-				//get_sentinel2_tiles(siteEl.options[siteEl.selectedIndex].value, sentinel2TilesEl);
-				//get_landsat_tiles(siteEl.options[siteEl.selectedIndex].value, landsatTilesEl);
-				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl, siteEl.form.id);
+				//get products for all product types in category
+				$.each(productsEls, function (index, product) {
+					get_products(siteEl.options[siteEl.selectedIndex].value, $(product), siteEl.form.id);
+				});
+				
 				get_crop_mask(siteEl.options[siteEl.selectedIndex].value, cropMaskEl);
 				
 				//get seasons for the selected site
@@ -1025,9 +1048,10 @@ function update_sites(json_data) {
 				
 				$(btnFilterEl).removeAttr('disabled');
 			} else {
-				//update_sentinel2_tiles(new Array(), sentinel2TilesEl);
-				//update_landsat_tiles(new Array(), landsatTilesEl);
-				update_products(new Array(), productsEl);
+				//update products for all product types in category
+				$.each(productsEls, function () {
+					update_products(new Array(), $(this));
+				});
 				update_crop_mask(new Array(), cropMaskEl);
 				
 				$(btnFilterEl).attr('disabled',true);
@@ -1092,7 +1116,7 @@ function get_crop_mask(siteId, cropMaskEl) {
 		data: {
 			action: "getDashboardProducts",
 			siteId: siteId,
-			processorId: l4a_proc_id
+			productTypeId: l4a_proc_id
 		},
 		success: function(json_data)
 		{
@@ -1116,7 +1140,9 @@ function update_crop_mask(json_data, cropMaskEl) {
 }
 
 function get_products(siteId, productsEl, formId, filter) {
-	var data = {action: "getDashboardProducts",	siteId: siteId,	processorId: l2a_proc_id};
+	var productTypeId = (productsEl && productsEl.data("product_type_id")) ? productsEl.data("product_type_id") : l2a_proc_id;
+	
+	var data = {action: "getDashboardProducts",	siteId: siteId,	productTypeId: productTypeId};
 	if(filter !== undefined){
 		data = Object.assign({}, data, filter);
 	}
@@ -1124,9 +1150,9 @@ function get_products(siteId, productsEl, formId, filter) {
 	var satS2Checked =  $("#"+formId+" input#"+formId+"_chkS2").is(':checked');
 	var satL8Checked =  $("#"+formId+" input#"+formId+"_chkL8").is(':checked');
 	
-	if(data.tiles!=undefined && data.tiles.length==0 && (satS2Checked || satL8Checked || satS1Checked)){		
-		if(satS2Checked && satL8Checked && satS1Checked){ }
-		else{
+	if (data.tiles != undefined && data.tiles.length == 0 && (satS2Checked || satL8Checked || satS1Checked)) {
+		if (satS2Checked && satL8Checked && satS1Checked) {
+		} else {
 			data.satellite_id = new Array();
 			if(satS1Checked){
 				data.satellite_id.push(3);
@@ -1140,10 +1166,7 @@ function get_products(siteId, productsEl, formId, filter) {
 				data.satellite_id.push(2);
 			}
 		}
-			
-		
 	}
-
 	
 	$.ajax({
 		//url: get_products_url,
@@ -1171,6 +1194,11 @@ function update_products(json_data, productsEl) {
 		// select S2 products
 		var chkS2 = $("#"+productsEl[0].form.id+" .chkS2");
 		if (((chkS2.length == 0) || chkS2.is(":checked")) && productObj.satellite_id == 1) {
+			productsEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');	
+		}
+		// select S1 products
+		var chkS1 = $("#"+productsEl[0].form.id+" .chkS1");
+		if (((chkS1.length == 0) || chkS1.is(":checked")) && productObj.satellite_id == 3) {
 			productsEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');	
 		}
 		// select L8 products

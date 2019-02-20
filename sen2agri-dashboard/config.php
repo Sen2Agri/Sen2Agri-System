@@ -9,22 +9,20 @@ function getParameters($current_processor_name, $adv){
         switch ($current_processor_name){
             case "l4a_wo": $current_processor_name ='l4a';break;
             case "l3b_lai": $current_processor_name ='l3b';break;
-            
         }
     }
-    
     $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
     $sql = "SELECT cm.*,reverse(split_part(reverse(cm.key),'.',1)) as param_name, cf.value as param_value
             FROM config_metadata cm
             INNER JOIN config_category cfc ON cm.config_category_id = cfc.id
             LEFT JOIN config cf ON cf.key = cm.key
-            WHERE cfc.id IN (3,4,5,6,18) AND cm.Key ilike 'processor.{$current_processor_name}.%' AND is_site_visible=true 
+            WHERE cfc.id IN (3,4,5,6,18,19,20,21) AND cm.Key ilike 'processor.{$current_processor_name}.%' AND is_site_visible=true 
             AND is_advanced='".$adv."' 
             ORDER BY cfc.display_order";
-
+	
     $res = pg_query($db, $sql) or die();
     $processors_advance_params = pg_fetch_all($res);
-
+	
     return $processors_advance_params;
 }
 
@@ -87,17 +85,20 @@ $processors = pg_fetch_all($res);
 											</div>
 										
 											<!-- Filter criteria for input files -->
-
 											<?php $prefix = $processor['short_name'];
 											include "filterInputFiles.php"?>
 											<!-- End Filter criteria for input files -->
-
-											<div class="form-group form-group-sm required">
-												<label class="control-label" for="inputFiles">Available input files:</label>
-												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
-												<span class="help-block">The list of products descriptors (xml files).</span>
-											</div>
+                                            <?php if($processor['short_name'] != "s4c_l4b" && $processor['short_name'] != "s4c_l4c"){?> 
+												<div class="form-group form-group-sm required">
+													<label class="control-label" for="inputFiles">Available input files:</label>
+													<select multiple class="form-control input-files" id="inputFiles" name="inputFiles[]" size="7"></select>
+													<span class="help-block">The list of products descriptors (xml files).</span>
+												</div>
+												
+                                            <?php } ?>
+											<span id="specificParam_<?=$processor['short_name']?>"></span>		
 											
+											<?php if($processor['short_name'] == "l3a" || $isSen2Agri){?> 
 											<div class="form-group form-group-sm ">
 												<label class="control-label" for="resolution">Resolution:</label>
 												<select class="form-control" id="resolution" name="resolution">
@@ -109,8 +110,7 @@ $processors = pg_fetch_all($res);
 												</select>
 												<span class="help-block">Resolution of the output image (in meters).</span>
 											</div>
-											
-											 <span id="specificParam_<?=$processor['short_name']?>"></span>		
+											<?php } ?>
 											
 											<!-- Specific parameters -->
 											<?php if($processor['short_name'] == "l3a" && $isSen2Agri){?> 
@@ -121,47 +121,48 @@ $processors = pg_fetch_all($res);
 											</div>										
 											<?php }?>
 											
+											
 											<?php if($processor['short_name'] == "l3b_lai" && $isSen2Agri){?> 
-											<div class="subgroup lai">
-												<label class="control-label">Generate LAI mono-dates:</label>
-												<div class="form-group form-group-sm">
-													<input class="form-control" id="monolai" type="radio" name="lai" value="monolai" checked="checked">
-													<label class="control-label" for="monolai">Generate LAI mono-dates</label>
-													<span class="help-block">(Generate LAI mono-dates)</span>
+												<div class="subgroup lai">
+													<label class="control-label">Generate LAI mono-dates:</label>
+													<div class="form-group form-group-sm">
+														<input class="form-control" id="monolai" type="radio" name="lai" value="monolai" checked="checked">
+														<label class="control-label" for="monolai">Generate LAI mono-dates</label>
+														<span class="help-block">(Generate LAI mono-dates)</span>
+													</div>
+													<div class="form-group form-group-sm">
+														<input class="form-control" id="reproc" type="radio" name="lai" value="reproc">
+														<label class="control-label" for="reproc">Reprocessing with the last N-Days</label>
+														<span class="help-block">(Performe reprocessing with the last N-Days)</span>
+													</div>
+													<div class="form-group form-group-sm">
+														<input class="form-control" id="fitted" type="radio" name="lai" value="fitted">
+														<label class="control-label" for="fitted">LAI time series fitting at the end of the season</label>
+														<span class="help-block">(Performe reprocessing at the end of the season)</span>
+													</div>
 												</div>
-												<div class="form-group form-group-sm">
-													<input class="form-control" id="reproc" type="radio" name="lai" value="reproc">
-													<label class="control-label" for="reproc">Reprocessing with the last N-Days</label>
-													<span class="help-block">(Performe reprocessing with the last N-Days)</span>
-												</div>
-												<div class="form-group form-group-sm">
-													<input class="form-control" id="fitted" type="radio" name="lai" value="fitted">
-													<label class="control-label" for="fitted">LAI time series fitting at the end of the season</label>
-													<span class="help-block">(Performe reprocessing at the end of the season)</span>
-												</div>
-											</div>
 
-											<div class="form-group form-group-sm">
-												<label class="control-label" for="bwr">Backward window:</label>
-												<input type="number" class="form-control" id="bwr" name="bwr" value="2">
-												<span class="help-block">Backward window for LAI N-Day reprocessing</span>
-											</div>
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="bwr">Backward window:</label>
+													<input type="number" class="form-control" id="bwr" name="bwr" value="2">
+													<span class="help-block">Backward window for LAI N-Day reprocessing</span>
+												</div>
 											<?php }?>
 											
 											<?php if(($processor['short_name'] == "l4a" || $processor['short_name'] == "l4b") && $isSen2Agri){?> 
-											<div class="form-group form-group-sm required">
-												<label class="control-label" for="refp">Reference polygons:</label>
-												<input type="file" class="form-control" id="refp" name="refp" onchange="$(this).trigger('blur');">
-												<span class="help-block">The reference polygons. A .zip file containing the shapefile is expected. See Software User Manual for the format of the shapefile. Take care of the header of the columns.</span>
-											</div>
+												<div class="form-group form-group-sm required">
+													<label class="control-label" for="refp">Reference polygons:</label>
+													<input type="file" class="form-control" id="refp" name="refp" onchange="$(this).trigger('blur');">
+													<span class="help-block">The reference polygons. A .zip file containing the shapefile is expected. See Software User Manual for the format of the shapefile. Take care of the header of the columns.</span>
+												</div>
 											<?php }?>
 											
 											<?php if($processor['short_name'] == "l4a_wo" && $isSen2Agri){?> 										
-											<div class="form-group form-group-sm ">
-												<label class="control-label" for="refr">Reference raster:</label>
-												<input type="file" class="form-control" id="refr" name="refr" onchange="$(this).trigger('blur');">
-												<span class="help-block">The reference raster when in situ data is not available.</span>
-											</div>
+												<div class="form-group form-group-sm ">
+													<label class="control-label" for="refr">Reference raster:</label>
+													<input type="file" class="form-control" id="refr" name="refr" onchange="$(this).trigger('blur');">
+													<span class="help-block">The reference raster when in situ data is not available.</span>
+												</div>
 											<?php }?>
 										   <!-- End Particular parameters -->
 										   
@@ -263,6 +264,9 @@ $processors = pg_fetch_all($res);
     				break;
     			case 'directory':
     				var newElem = $('<input />').attr({  type: "file", class: "form-control"});
+					break;
+    			case 'select':
+    				var newElem = $('<select multiple=""></select>').attr({  size: "7", class: "form-control input-files"});
     				break;
     		}
     		return newElem;
@@ -278,10 +282,12 @@ $processors = pg_fetch_all($res);
 			newElem.attr({id: data.param_name+'_'+processor, name: elemName});
 			if(newElem.is('input')){
 				newElem.attr({value:data.param_value});
+			} else if (newElem.is('select') && !$.isEmptyObject(values) && values.hasOwnProperty('product_type_id')) {
+				$(newElem).data('product_type_id', values['product_type_id']);
 			}
 			
 			var span = '';
-			if(data.frendly_name !=""){
+			if(data.friendly_name !=""){
 				var span = $('<span/>').attr({class:"help-block"}).text(data.friendly_name);
 				}
 									
@@ -363,11 +369,10 @@ $processors = pg_fetch_all($res);
     				// hide all advanced parameters
     				$('.advanced').addClass("hidden");
 	    		}
-				if(data.hasOwnProperty('specific') && !$.isEmptyObject(data.specific)){
-					$.each(data.specific,function(param){ 
-    					 displaySpecificParameter(data.specific[param], current_processor);   				
-    					});
-					
+				if (data.hasOwnProperty('specific') && !$.isEmptyObject(data.specific)) {
+					$.each(data.specific, function (param) {
+						displaySpecificParameter(data.specific[param], current_processor);   				
+					});
 				}
 				}).fail( function (responseData, textStatus, errorThrown) {
 	    			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
@@ -440,7 +445,6 @@ $processors = pg_fetch_all($res);
 			$(this).validate({
 				rules: {
 					siteId:			{ required: true },
-					'inputFiles[]': { required: true },
 					synthDate:		{ required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])" },
 					genmodel:		{ pattern: "[0-1]{1}" }, //for l3b LAI
 					refp:           { required: true },// for l4a
@@ -462,6 +466,11 @@ $processors = pg_fetch_all($res);
 					label.remove();
 				},
 			});
+			if ($("select[name*='inputFiles']", this).length > 0) {
+				$.each($("select[name*='inputFiles']", this), function () {
+					$(this).rules("add", { required: true });
+				});
+			}
 		});
 
 

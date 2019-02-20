@@ -25,36 +25,42 @@ $db = pg_connect(ConfigParams::getConnection())
     $result = pg_query_params($db, 'SELECT * FROM sp_get_job_output($1)', array($jobId))
                 or die ("Could not execute query.");
 
-    $output = '<table>' .
+    $output = '<div class="for-table">' .
+			'<table class="table table-striped" style="border:1px solid #dadada">' .
                 '<thead>' .
                   '<tr>' .
-                    '<td>Step name</td>' .
-                    '<td>Command</td>' .
-                    '<td>Output</td>' .
-                    '<td>Errors</td>' .
-                    '<td>Exit code</td>' .
+                    '<th>Step name</th>' .
+                    '<th>Command</th>' .
+                    '<th>Output</th>' .
+                    '<th>Errors</th>' .
+                    '<th>Exit code</th>' .
                   '</tr>' .
                 '</thead>' .
-                '<tbody id="log">';
-
-    while ($row = pg_fetch_row($result)) {
-        $status = $row[4];
-        if ($status !== '0') {
-            $status .= '⚠️️';
-        }
-        $status = htmlentities($status);
-        $tr = '<tr>'.
-                '<td>' . htmlentities($row[0]) . '</td>'.
-                '<td><a class="copy-link">[Copy to clipboard]</a><textarea class="hidden">' . htmlentities($row[1]) . '</textarea></td>'.
-                '<td><a class="copy-link">[Copy to clipboard]</a><textarea class="hidden">' . htmlentities($row[2]) . '</textarea></td>'.
-                '<td><a class="copy-link">[Copy to clipboard]</a><textarea class="hidden">' . htmlentities($row[3]) . '</textarea></td>'.
-                '<td>' . $status  . '</td>'.
-              '</tr>';
-        $output .= $tr;
-    }
-    $output .= '</tbody>' .
-        '</table>';
-
+                '<tbody id="log" style="background-color:white;font-size:1em">';
+					$rows = 0;
+					while ($row = pg_fetch_row($result)) {
+						$rows ++;
+						$status = $row[4];
+						if ($status !== '0') { $status .= '⚠️️'; }
+						$status = htmlentities($status);
+						$tr =	'<tr>'.
+									'<td>' . htmlentities($row[0]) . '</td>'.
+									'<td><a class="copy-link">[Copy to clipboard]</a><textarea class="hidden">' . htmlentities($row[1]) . '</textarea></td>'.
+									'<td><a class="copy-link">[Copy to clipboard]</a><textarea class="hidden">' . htmlentities($row[2]) . '</textarea></td>'.
+									'<td><a class="copy-link">[Copy to clipboard]</a><textarea class="hidden">' . htmlentities($row[3]) . '</textarea></td>'.
+									'<td>' . $status  . '</td>'.
+								'</tr>';
+						$output .= $tr;
+					}
+					if ($rows == 0) {
+						$tr =	'<tr style="background-color:#fffbd3;color:#868686">'.
+									'<td colspan="5"><i>No jobs to be displayed</i></td>'.
+								'</tr>';
+						$output .= $tr;
+					}
+					$output .= '</tbody>' .
+			'</table>'.
+		'</div>';
     echo $output;
 ?>
 		</div>
