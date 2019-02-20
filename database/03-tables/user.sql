@@ -5,7 +5,7 @@
   email character varying(100) NOT NULL,
   role_id smallint NOT NULL,
   site_id integer[],
-  password text NOT NULL,
+  password text,
   CONSTRAINT user_pkey PRIMARY KEY (id),
   CONSTRAINT user_fk FOREIGN KEY (role_id)
       REFERENCES role (id) MATCH SIMPLE
