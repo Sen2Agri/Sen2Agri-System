@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION sp_adduser(
     email character varying, 
     pwd text, 
     "roleId" smallint DEFAULT 2, 
-    "siteId" smallint DEFAULT NULL::smallint)
+    "siteId" integer[] DEFAULT NULL::integer[])
   RETURNS smallint AS
 $BODY$INSERT INTO "user"(
             id, login, email, role_id, site_id, password)
