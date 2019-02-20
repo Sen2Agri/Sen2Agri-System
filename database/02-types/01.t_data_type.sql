@@ -5,4 +5,5 @@
     'int',
     'file',
     'directory',
-    'string');
+    'string',
+    'select');
