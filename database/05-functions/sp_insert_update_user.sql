@@ -9,22 +9,17 @@ $BODY$
 BEGIN
 
     IF _id IS NOT NULL THEN
-        UPDATE "user"
+        UPDATE public.user
 	    SET login = _username,
 	    email = _email,
 	    role_id = _roleid,
 	    site_id = _siteid
 	    WHERE id = _id ;
     ELSE 
-	    INSERT INTO "user"(id, login, email, role_id, site_id)
+	    INSERT INTO public.user (id, login, email, role_id, site_id)
 	    VALUES (COALESCE((SELECT MAX(id) FROM public.user) :: integer, 0) + 1, 
 	    _username, _email, _roleid, _siteid);
     END IF;
 END;
 $BODY$
   LANGUAGE plpgsql VOLATILE;
-
-
-
-
-  
