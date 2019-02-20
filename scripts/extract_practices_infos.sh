@@ -70,6 +70,13 @@ NA_PSTARTW=""
 NA_PENDW=""
 NA_ADD_FILES=""
 
+IGNORED_IDS_FILE=""
+CC_IGNORED_IDS_FILE=""
+NFC_IGNORED_IDS_FILE=""
+FL_IGNORED_IDS_FILE=""
+NA_IGNORED_IDS_FILE=""
+
+
 case "$COUNTRY" in
     NLD)
         COUNTRY="NL"
@@ -103,21 +110,21 @@ case "$COUNTRY" in
         CC_PENDW="2018-10-31"
         CC_ADD_FILES="${INSITU_ROOT}/CZ_SubsidyApplication_2018.csv ${INSITU_ROOT}/CZ_EFA_2018.csv"
 
-        NFC_VEG_START="2018-03-01"
-        NFC_HSTART="2018-03-01"
+        NFC_HSTART="2018-05-01"
         NFC_HEND="2018-10-31"
-        NFC_PSTART="2018-03-01"
+        NFC_PSTART="2018-06-01"
         NFC_PEND="2018-07-15"
         NFC_ADD_FILES="${INSITU_ROOT}/CZ_SubsidyApplication_2018.csv ${INSITU_ROOT}/CZ_EFA_2018.csv"
 
-        FL_HSTART="2018-05-01"
+        FL_VEG_START="2018-03-01"
+        FL_HSTART="2018-03-01"
         FL_HEND="2018-10-31"
-        FL_PSTART="2018-06-01"
+        FL_PSTART="2018-03-01"
         FL_PEND="2018-07-15"
         FL_ADD_FILES="${INSITU_ROOT}/CZ_SubsidyApplication_2018.csv ${INSITU_ROOT}/CZ_EFA_2018.csv"
 
         NA_HSTART="2018-05-01"
-        NA_HEND="2018-10-31"
+        NA_HEND="2018-12-15"
         NA_ADD_FILES="${INSITU_ROOT}/CZ_SubsidyApplication_2018.csv ${INSITU_ROOT}/CZ_EFA_2018.csv"
 
         ;;
@@ -131,6 +138,7 @@ case "$COUNTRY" in
         CC_PSTART="2018-09-01"
         CC_PEND="2018-10-14"
         CC_ADD_FILES="${INSITU_ROOT}/ApplicationsEFA_2018_Catch_crops_PO.csv ${INSITU_ROOT}/ApplicationsEFA_2018_Catch_crops_IS.csv"
+        CC_IGNORED_IDS_FILE="${INSITU_ROOT}/CC_Ignored_Orig_IDs.csv"
 
         NFC_HSTART="2018-06-01"
         NFC_HEND="2018-10-31"
@@ -144,6 +152,7 @@ case "$COUNTRY" in
         FL_PEND="2018-09-30"
         FL_PENDW="2018-09-15"
         FL_ADD_FILES="${INSITU_ROOT}/ApplicationsEFA_2018_Black_fallow.csv ${INSITU_ROOT}/ApplicationsEFA_2018_Green_fallow.csv"
+        FL_IGNORED_IDS_FILE="${INSITU_ROOT}/FL_Ignored_Orig_IDs.csv"
 
         NA_HSTART="2018-06-01"
         NA_HEND="2018-09-30"
@@ -202,6 +211,7 @@ case "$COUNTRY" in
         NFC_PSTART="2018-04-02"
         NFC_PEND="2018-07-29"
         NFC_ADD_FILES="${INSITU_ROOT}/Sen4CAP_L4C_NFC_ROU_2018.csv"
+        # TODO: Here handle the other dates according to the specified fields
 
         NA_HSTART="2018-04-02"
         NA_HEND="2018-10-31"
@@ -260,6 +270,12 @@ if [ -n "$NA_PSTARTW" ]; then NA_PSTARTW="-wpstart \"$NA_PSTARTW\" " ; fi
 if [ -n "$NA_PENDW" ]; then NA_PENDW="-wpend \"$NA_PENDW\" " ; fi
 if [ -n "$NA_ADD_FILES" ]; then NA_ADD_FILES="-addfiles $NA_ADD_FILES " ; fi
 
+if [ -n "$IGNORED_IDS_FILE" ]; then IGNORED_IDS_FILE="-ignoredids \"$IGNORED_IDS_FILE\" " ; fi
+if [ -n "$CC_IGNORED_IDS_FILE" ]; then CC_IGNORED_IDS_FILE="-ignoredids \"$CC_IGNORED_IDS_FILE\" " ; fi
+if [ -n "$NFC_IGNORED_IDS_FILE" ]; then NFC_IGNORED_IDS_FILE="-ignoredids \"$NFC_IGNORED_IDS_FILE\" " ; fi
+if [ -n "$FL_IGNORED_IDS_FILE" ]; then FL_IGNORED_IDS_FILE="-ignoredids \"$FL_IGNORED_IDS_FILE\" " ; fi
+if [ -n "$NA_IGNORED_IDS_FILE" ]; then NA_IGNORED_IDS_FILE="-ignoredids \"$NA_IGNORED_IDS_FILE\" " ; fi
+
 mkdir -p "$OUT_DIR"
 
 echo "Veg start: $VEG_START"
@@ -272,31 +288,32 @@ echo "CC winter pstart: $CC_PSTARTW"
 echo "CC winter pend: $CC_PENDW"
 
 # Extract the unique IDs
-otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH -country $COUNTRY -seqidsonly 1 $NA_ADD_FILES -out $FILTER_IDS_FILE
+echo "Executing otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH -country $COUNTRY -seqidsonly 1 $NA_ADD_FILES $IGNORED_IDS_FILE -out $FILTER_IDS_FILE"
+otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH -country $COUNTRY -seqidsonly 1 $NA_ADD_FILES $IGNORED_IDS_FILE -out $FILTER_IDS_FILE
 
 # Extract the Practiced information for parcels with CC
 if [ ! -z "$CC_HSTART" ] ; then
-    echo "Executing: otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $CC_ADD_FILES -practice CatchCrop -country $COUNTRY -year $YEAR $VEG_START $CC_HSTART $CC_HEND $CC_HSTARTW $CC_PSTART $CC_PEND $CC_PSTARTW $CC_PENDW -out $CC_OUT_FILE"
+    echo "Executing: otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $CC_ADD_FILES -practice CatchCrop -country $COUNTRY -year $YEAR $VEG_START $CC_HSTART $CC_HEND $CC_HSTARTW $CC_PSTART $CC_PEND $CC_PSTARTW $CC_PENDW $CC_IGNORED_IDS_FILE -out $CC_OUT_FILE"
 
-    otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $CC_ADD_FILES -practice CatchCrop -country $COUNTRY -year $YEAR $CC_VEG_START $CC_HSTART $CC_HEND $CC_HSTARTW $CC_PSTART $CC_PEND $CC_PSTARTW $CC_PENDW -out $CC_OUT_FILE
+    otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $CC_ADD_FILES -practice CatchCrop -country $COUNTRY -year $YEAR $CC_VEG_START $CC_HSTART $CC_HEND $CC_HSTARTW $CC_PSTART $CC_PEND $CC_PSTARTW $CC_PENDW $CC_IGNORED_IDS_FILE -out $CC_OUT_FILE
 fi
 
 # Extract the Practiced information for parcels with NFC
 if [ ! -z "$NFC_HSTART" ] ; then
-    echo "Executing: otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NFC_ADD_FILES -practice NFC -country $COUNTRY -year $YEAR $VEG_START $NFC_HSTART $NFC_HEND $NFC_HSTARTW $NFC_PSTART $NFC_PEND $NFC_PSTARTW $NFC_PENDW -out $NFC_OUT_FILE"
+    echo "Executing: otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NFC_ADD_FILES -practice NFC -country $COUNTRY -year $YEAR $VEG_START $NFC_HSTART $NFC_HEND $NFC_HSTARTW $NFC_PSTART $NFC_PEND $NFC_PSTARTW $NFC_PENDW $NFC_IGNORED_IDS_FILE -out $NFC_OUT_FILE"
 
-    otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NFC_ADD_FILES -practice NFC -country $COUNTRY -year $YEAR $NFC_VEG_START $NFC_HSTART $NFC_HEND $NFC_HSTARTW $NFC_PSTART $NFC_PEND $NFC_PSTARTW $NFC_PENDW -out $NFC_OUT_FILE
+    otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NFC_ADD_FILES -practice NFC -country $COUNTRY -year $YEAR $NFC_VEG_START $NFC_HSTART $NFC_HEND $NFC_HSTARTW $NFC_PSTART $NFC_PEND $NFC_PSTARTW $NFC_PENDW $NFC_IGNORED_IDS_FILE -out $NFC_OUT_FILE
 fi
     
 # Extract the Practiced information for parcels with Fallow Land
 if [ ! -z "$FL_HSTART" ] ; then
-    echo "Executing: otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $FL_ADD_FILES -practice Fallow -country $COUNTRY -year $YEAR $VEG_START $FL_HSTART $FL_HEND $FL_HSTARTW $FL_PSTART $FL_PEND $FL_PSTARTW $FL_PENDW -out $FL_OUT_FILE"
+    echo "Executing: otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $FL_ADD_FILES -practice Fallow -country $COUNTRY -year $YEAR $VEG_START $FL_HSTART $FL_HEND $FL_HSTARTW $FL_PSTART $FL_PEND $FL_PSTARTW $FL_PENDW $FL_IGNORED_IDS_FILE -out $FL_OUT_FILE"
 
-    otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $FL_ADD_FILES -practice Fallow -country $COUNTRY -year $YEAR $FL_VEG_START $FL_HSTART $FL_HEND $FL_HSTARTW $FL_PSTART $FL_PEND $FL_PSTARTW $FL_PENDW -out $FL_OUT_FILE
+    otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $FL_ADD_FILES -practice Fallow -country $COUNTRY -year $YEAR $FL_VEG_START $FL_HSTART $FL_HEND $FL_HSTARTW $FL_PSTART $FL_PEND $FL_PSTARTW $FL_PENDW $FL_IGNORED_IDS_FILE -out $FL_OUT_FILE
 fi
     
 # Extract the Practiced information for parcels witout EFA
-echo "Executing: otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NA_ADD_FILES -practice NA -country $COUNTRY -year $YEAR $VEG_START $NA_HSTART $NA_HEND $NA_HSTARTW $NA_PSTART $NA_PEND $NA_PSTARTW $NA_PENDW -out $NA_OUT_FILE"
+echo "Executing: otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NA_ADD_FILES -practice NA -country $COUNTRY -year $YEAR $VEG_START $NA_HSTART $NA_HEND $NA_HSTARTW $NA_PSTART $NA_PEND $NA_PSTARTW $NA_PENDW $NA_IGNORED_IDS_FILE -out $NA_OUT_FILE"
 
-otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NA_ADD_FILES -practice "NA" -country $COUNTRY -year $YEAR $NA_VEG_START $NA_HSTART $NA_HEND $NA_HSTARTW $NA_PSTART $NA_PEND $NA_PSTARTW $NA_PENDW -out $NA_OUT_FILE
+otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NA_ADD_FILES -practice "NA" -country $COUNTRY -year $YEAR $NA_VEG_START $NA_HSTART $NA_HEND $NA_HSTARTW $NA_PSTART $NA_PEND $NA_PSTARTW $NA_PENDW $NA_IGNORED_IDS_FILE -out $NA_OUT_FILE
 

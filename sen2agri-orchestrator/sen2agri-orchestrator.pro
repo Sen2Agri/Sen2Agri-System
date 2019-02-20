@@ -41,7 +41,8 @@ SOURCES += main.cpp \
     schedulingcontext.cpp \
     processor/ndvihandler.cpp \
     processor/lairetrievalhandler_l3b_new.cpp \
-    processor/agricpracticeshandler.cpp
+    processor/agricpracticeshandler.cpp \
+    processor/grasslandmowinghandler.cpp
 
 HEADERS += \
     pch.hpp \
@@ -62,7 +63,8 @@ HEADERS += \
     schedulingcontext.h \
     processor/ndvihandler.hpp \
     processor/lairetrievalhandler_l3b_new.hpp \
-    processor/agricpracticeshandler.hpp
+    processor/agricpracticeshandler.hpp \
+    processor/grasslandmowinghandler.hpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \

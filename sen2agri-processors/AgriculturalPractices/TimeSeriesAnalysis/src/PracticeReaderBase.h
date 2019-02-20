@@ -20,6 +20,7 @@ public:
     virtual std::string GetPracticeType() const = 0;
     virtual std::string GetPracticeStart() const = 0;
     virtual std::string GetPracticeEnd() const = 0;
+    virtual std::string GetS1Pix() const = 0;
 };
 
 class PracticeReaderBase

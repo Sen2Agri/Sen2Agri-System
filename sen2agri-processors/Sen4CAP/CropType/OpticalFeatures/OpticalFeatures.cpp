@@ -217,26 +217,45 @@ private:
         const auto &stdDevValues = m_StatisticsFilter->GetStandardDeviationValueMap();
         const auto &countValues = m_StatisticsFilter->GetPixelCountMap();
 
-        std::ofstream fmean(GetParameterString("outmean"));
-        std::ofstream fdev(GetParameterString("outdev"));
-        std::ofstream fcount(GetParameterString("outcount"));
+        const auto &outmean = GetParameterString("outmean");
+        const auto &outdev = GetParameterString("outdev");
+        const auto &outcount = GetParameterString("outcount");
+
+        std::ofstream fmean(outmean);
+        std::ofstream fdev(outdev);
+        std::ofstream fcount(outcount);
+
         for (auto it = meanValues.begin(); it != meanValues.end(); ++it) {
             fmean << it->first;
             for (unsigned int i = 0; i < it->second.Size(); i++)
                 fmean << ',' << it->second[i];
             fmean << '\n';
         }
+        fmean.close();
+        if (!fmean) {
+            itkGenericExceptionMacro("Unable to save " + outmean);
+        }
+
         for (auto it = stdDevValues.begin(); it != stdDevValues.end(); ++it) {
             fdev << it->first;
             for (unsigned int i = 0; i < it->second.Size(); i++)
                 fdev << ',' << it->second[i];
             fdev << '\n';
         }
+        fdev.close();
+        if (!fdev) {
+            itkGenericExceptionMacro("Unable to save " + outdev);
+        }
+
         for (auto it = countValues.begin(); it != countValues.end(); ++it) {
             fcount << it->first;
             for (unsigned int i = 0; i < it->second.Size(); i++)
                 fcount << ',' << it->second[i];
             fcount << '\n';
+        }
+        fcount.close();
+        if (!fcount) {
+            itkGenericExceptionMacro("Unable to save " + outcount);
         }
     }
 

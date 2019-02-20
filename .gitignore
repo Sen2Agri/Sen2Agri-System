@@ -6,6 +6,8 @@ build-*
 
 # Build script output
 packaging/Sen2AgriPlatform/
+packaging/Sen2AgriProcessors/
+packaging/Sen2AgriRPM/
 
 # rendered FAQ
 FAQ.html

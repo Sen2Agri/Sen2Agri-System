@@ -12,6 +12,7 @@
 #include "processor/compositehandler.hpp"
 #include "processor/lairetrievalhandler.hpp"
 #include "processor/phenondvihandler.hpp"
+#include "processor/agricpracticeshandler.hpp"
 #include "json_conversions.hpp"
 #include "schedulingcontext.h"
 #include "logger.hpp"
@@ -35,6 +36,8 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
             handlersMap.emplace(procDescr.processorId, std::make_unique<CropMaskHandler>());
         } else if(procDescr.shortName == "l4b") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<CropTypeHandler>());
+        } else if(procDescr.shortName == "s4c_l4c") {
+            handlersMap.emplace(procDescr.processorId, std::make_unique<AgricPracticesHandler>());
         } else {
             bAdded = false;
             Logger::error(QStringLiteral("Invalid processor configuration found in database: %1, "

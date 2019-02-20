@@ -89,3 +89,9 @@ std::string PracticeShpReader::OgrFeatureDescription::GetPracticeEnd() const
     OGRFeature &ogrFeat = (*featIt).ogr();
     return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex(this->m_PracticeEndFieldName.c_str()));
 }
+
+std::string PracticeShpReader::OgrFeatureDescription::GetS1Pix() const
+{
+    OGRFeature &ogrFeat = (*featIt).ogr();
+    return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex(this->m_S1PixFieldName.c_str()));
+}

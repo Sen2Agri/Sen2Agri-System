@@ -16,6 +16,9 @@ laurentiu.nicola@c-s.ro, 2018-09-24
   * Python 3 compatibility
   * don't crash on black images
   * don't crash on missing or unreadable inputs
+
+laurentiu.nicola@c-s.ro, 2019-02-18
+  * use 0 as no data if unset
 '''
 from __future__ import print_function
 import os
@@ -97,7 +100,7 @@ def write_raster(template, array, transform, filename):
     driver = gdal.GetDriverByName('GTiff')
     num_bands = template.RasterCount
     band = template.GetRasterBand(1)
-    nodata = band.GetNoDataValue()
+    nodata = band.GetNoDataValue() or 0
     rows, cols = array.shape
 
     predictor = 3 if band.DataType in (gdalconst.GDT_Float32, gdalconst.GDT_Float64) else 2

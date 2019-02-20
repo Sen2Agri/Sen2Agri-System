@@ -279,7 +279,10 @@ protected:
 
         std::string inputProjection = image->GetProjectionRef();
         bool sameProjection = inputProjection == td.m_projection;
+//        std::cerr << image->GetOrigin() << '\n';
+//        std::cerr << td.m_imageOrigin << '\n';
         bool sameOrigin = image->GetOrigin() == td.m_imageOrigin;
+//        std::cerr << sameOrigin << '\n';
         if (imageSize == recomputedSize && sameOrigin && sameProjection)
         {
             return image;
@@ -355,6 +358,103 @@ protected:
 
                 output = resampler->GetOutput();
             }
+        }
+        else
+        {
+            typedef otb::GenericRSResampleImageFilter<ImageType, ImageType>     ReprojectResampleFilterType;
+
+            typename ReprojectResampleFilterType::Pointer resampler = ReprojectResampleFilterType::New();
+            m_Filters->PushBack(resampler);
+
+            resampler->SetInput(image);
+            resampler->SetInputProjectionRef(inputProjection);
+            resampler->SetOutputProjectionRef(td.m_projection);
+            resampler->SetInputKeywordList(image->GetImageKeywordlist());
+            resampler->SetInterpolator(interpolator);
+            resampler->SetOutputSpacing(outputSpacing);
+            resampler->SetDisplacementFieldSpacing(outputSpacing * 20);
+            resampler->SetOutputOrigin(td.m_imageOrigin);
+            resampler->SetOutputSize(recomputedSize);
+            resampler->SetEdgePaddingValue(edgePixel);
+
+            output = resampler->GetOutput();
+        }
+        return output;
+    }
+
+    template<typename ImageType>
+    typename ImageType::Pointer getResampledBand2(const typename ImageType::Pointer& image, const TileData& td, bool isMask)
+    {
+        image->UpdateOutputInformation();
+        auto imageSize = image->GetLargestPossibleRegion().GetSize();
+
+
+        // Evaluate size
+        typename ImageType::SizeType recomputedSize;
+        recomputedSize[0] = td.m_imageWidth;
+        recomputedSize[1] = td.m_imageHeight;
+
+        std::string inputProjection = image->GetProjectionRef();
+        bool sameProjection = inputProjection == td.m_projection;
+        std::cerr << image->GetOrigin() << '\n';
+        std::cerr << td.m_imageOrigin << '\n';
+        bool sameOrigin = image->GetOrigin() == td.m_imageOrigin;
+        std::cerr << sameOrigin << '\n';
+        if (imageSize == recomputedSize && sameOrigin && sameProjection)
+        {
+            return image;
+        }
+
+        // Evaluate spacing
+        typename ImageType::SpacingType outputSpacing;
+        outputSpacing[0] = m_pixSize;
+        outputSpacing[1] = -m_pixSize;
+
+
+        typedef typename itk::InterpolateImageFunction<ImageType, double>     InterpolateImageFunctionType;
+
+        typename InterpolateImageFunctionType::Pointer interpolator;
+
+        // Set the interpolator
+        typedef itk::NearestNeighborInterpolateImageFunction<ImageType, double>             NearestNeighborInterpolationType;
+        typedef otb::BCOInterpolateImageFunction<ImageType, double>                         BicubicInterpolationType;
+
+        float edgeValue;
+        if (isMask)
+        {
+            interpolator = NearestNeighborInterpolationType::New();
+            edgeValue = 1;
+        }
+        else
+        {
+            interpolator = BicubicInterpolationType::New();
+            edgeValue = -10000;
+        }
+
+        typedef typename ImageType::PixelType PixelType;
+
+        PixelType edgePixel;
+        itk::NumericTraits<PixelType>::SetLength(edgePixel, image->GetNumberOfComponentsPerPixel());
+        edgePixel = edgeValue * itk::NumericTraits<PixelType>::OneValue(edgePixel);
+
+        typename ImageType::Pointer output;
+        if (sameProjection)
+        {
+            typedef otb::GridResampleImageFilter<ImageType, ImageType, double>  ResampleFilterType;
+
+            typename ResampleFilterType::Pointer resampler = ResampleFilterType::New();
+            m_Filters->PushBack(resampler);
+
+            resampler->SetInput(image);
+            resampler->SetInterpolator(interpolator);
+            resampler->SetOutputParametersFromImage(image);
+            resampler->SetOutputSpacing(outputSpacing);
+            resampler->SetOutputOrigin(td.m_imageOrigin);
+            resampler->SetOutputSize(recomputedSize);
+            resampler->SetEdgePaddingValue(edgePixel);
+            resampler->SetCheckOutputBounds(false);
+
+            output = resampler->GetOutput();
         }
         else
         {

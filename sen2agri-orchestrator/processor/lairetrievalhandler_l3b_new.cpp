@@ -335,8 +335,7 @@ int LaiRetrievalHandlerL3BNew::GetStepsForMonoDateBI(QList<TaskToSubmit> &allTas
 
 int LaiRetrievalHandlerL3BNew::GetStepsForInDomainFlags(QList<TaskToSubmit> &allTasksList, int curTaskIdx,
                             const QString &laiCfgFile, TileResultFiles &tileResultFileInfo, NewStepList &steps,
-                            QStringList &cleanupTemporaryFilesList) {
-    (void)cleanupTemporaryFilesList;
+                            QStringList &) {
     TaskToSubmit &inputDomainTask = allTasksList[curTaskIdx++];
     tileResultFileInfo.inDomainFlagsFile = inputDomainTask.GetFilePath("Input_domain_flags.tif");
     const QStringList &inDomainFlagsArgs = GetGenerateInputDomainFlagsArgs(tileResultFileInfo.tileFile,

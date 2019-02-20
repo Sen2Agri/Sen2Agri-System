@@ -162,12 +162,13 @@ bool StatisticsInfosSingleCsvReader::ExtractLinesFromStream(std::istream &inStre
     }
     // sort the entries and check for the needed input size
     std::map<std::string, std::vector<InputFileLineInfoType>>::iterator itMap;
+    bool hasValidValues = false;
     for (itMap = retMap.begin(); itMap != retMap.end(); ++itMap) {
 
-        if (m_minReqEntries > 0 && (int)itMap->second.size() < m_minReqEntries) {
-            // if one of the filters has less values than needed - we ignore it but not return error
-            return true;
+        if (m_minReqEntries == 0 || (int)itMap->second.size() >= m_minReqEntries) {
+            hasValidValues = true;
         }
+
         // sort the read lines information
         std::sort (itMap->second.begin(), itMap->second.end(), InputFileLineInfoComparator());
 
@@ -175,13 +176,20 @@ bool StatisticsInfosSingleCsvReader::ExtractLinesFromStream(std::istream &inStre
         // TODO: needed only by the coherence
         for (size_t i = 0; i<itMap->second.size(); i++) {
             if (i >=1) {
-                double diff = itMap->second[i].meanVal - itMap->second[i-1].meanVal;
-                itMap->second[i].meanValChange = (diff < 0 ? 0 : diff);
+                if ((itMap->second[i].ttDate - itMap->second[i-1].ttDate) <= 6 * SEC_IN_DAY) {
+                    double diff = itMap->second[i].meanVal - itMap->second[i-1].meanVal;
+                    itMap->second[i].meanValChange = (diff < 0 ? 0 : diff);
+                } else {
+                    //if we have more than 6 days difference between products, set the change to 0
+                    itMap->second[i].meanValChange = 0;
+                }
             }
         }
     }
-
-    return true;
+    if (!hasValidValues) {
+        std::cout << "Error extracting data. Input files are short" << std::endl;
+    }
+    return hasValidValues;
 }
 
 std::vector<std::string> StatisticsInfosSingleCsvReader::GetInputFileLineElements(const std::string &line) {

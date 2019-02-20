@@ -32,8 +32,10 @@ inline time_t to_time_t(const boost::gregorian::date& date ){
 }
 
 inline std::string TimeToString(time_t ttTime) {
-    if (ttTime == 0) {
+    if (ttTime == 0 || ttTime == NOT_AVAILABLE) {
         return "NA";
+    } else if (ttTime == NR) {
+        return "NR";
     }
     std::tm * ptm = std::gmtime(&ttTime);
     char buffer[20];
