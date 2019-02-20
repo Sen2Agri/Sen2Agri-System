@@ -197,17 +197,18 @@ def split_file(file, pos, out1, out2):
 
 def main():
     parser = argparse.ArgumentParser(description="Combine SAR statistics")
-    parser.add_argument('path', default='.', help="statistics path")
+    parser.add_argument('input_path', default='.', help="input statistics path")
+    parser.add_argument('output_path', default='.', help="output statistics path")
     args = parser.parse_args()
 
     regex = re.compile(r"(SEN4CAP_L2A_\w+_S\d+)_([MWS])(\d+)?_T([A-Z0-9]+)_(?:(\w+)?_)?(\w+)_(\w+)_\w+.csv")
     all_groups = set()
     tile_groups = defaultdict(list)
-    for file in glob(os.path.join(args.path, "*_MEAN.csv")):
+    for file in glob(os.path.join(args.input_path, "*_MEAN.csv")):
         name = os.path.basename(file)
         m = regex.match(name)
         if m:
-            name = file.replace("_MEAN.csv", "")
+            name = name.replace("_MEAN.csv", "")
             prefix = m.group(1)
             period_type = get_period_type(m.group(2))
             period = get_period(m.group(3))
@@ -238,6 +239,9 @@ def main():
             print(tile_id, len(groups))
             selected_groups &= groups
 
+    sar_features = os.path.join(args.output_path, "sar-features.csv")
+    sar_temporal = os.path.join(args.output_path, "sar-temporal.csv")
+
     simple_features_columns = []
     temporal_features_columns = []
     for group in sorted(list(selected_groups)):
@@ -261,7 +265,7 @@ def main():
     for col in simple_features_columns:
         all_columns.append("XX_" + col + "_DEV")
 
-    with open("sar-features.csv", 'wb') as out_file:
+    with open(sar_features, 'wb') as out_file:
         writer = csv.writer(out_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerow(all_columns)
 
@@ -271,7 +275,7 @@ def main():
     for col in temporal_features_columns:
         all_columns.append("XX_" + col + "_DEV")
 
-    with open("sar-temporal.csv", 'wb') as out_file:
+    with open(sar_temporal, 'wb') as out_file:
         writer = csv.writer(out_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerow(all_columns)
 
@@ -306,11 +310,20 @@ def main():
                 out_dev = pat.format(name, "DEV")
                 out_count = pat.format(name, "COUNT")
 
+                out_mean = os.path.join(args.output_path, out_mean)
+                out_dev = os.path.join(args.output_path, out_dev)
+                out_count = os.path.join(args.output_path, out_count)
+
                 files = []
                 for group in groups:
                     mean = group.name + "_MEAN.csv"
                     dev = group.name + "_DEV.csv"
                     count = group.name + "_COUNT.csv"
+
+                    mean = os.path.join(args.input_path, mean)
+                    dev = os.path.join(args.input_path, dev)
+                    count = os.path.join(args.input_path, count)
+
                     files += [mean, dev, count]
 
                 command = []
@@ -328,6 +341,10 @@ def main():
             out_mean = pat.format(name, "MEAN")
             out_dev = pat.format(name, "DEV")
             out_count = pat.format(name, "COUNT")
+
+            out_mean = os.path.join(args.output_path, out_mean)
+            out_dev = os.path.join(args.output_path, out_dev)
+            out_count = os.path.join(args.output_path, out_count)
             print(name)
 
             files = []
@@ -335,6 +352,10 @@ def main():
                 mean = group.name + "_MEAN.csv"
                 dev = group.name + "_DEV.csv"
                 count = group.name + "_COUNT.csv"
+
+                mean = os.path.join(args.output_path, mean)
+                dev = os.path.join(args.output_path, dev)
+                count = os.path.join(args.output_path, count)
 
                 files += [mean, dev, count]
 
@@ -348,17 +369,25 @@ def main():
             merge_commands.append(command)
     pool.map(run_command, merge_commands)
 
+    mean_sar = os.path.join(args.output_path, "mean-sar.csv")
+    dev_sar = os.path.join(args.output_path, "dev-sar.csv")
+
+    mean_simple_sar = os.path.join(args.output_path, "mean-simple-sar.csv")
+    dev_simple_sar = os.path.join(args.output_path, "dev-simple-sar.csv")
+    mean_temporal_sar = os.path.join(args.output_path, "mean-temporal-sar.csv")
+    dev_temporal_sar = os.path.join(args.output_path, "dev-temporal-sar.csv")
+
     command = []
     command += ["merge-statistics"]
-    command += ["mean-sar.csv", "dev-sar.csv"]
+    command += [mean_sar, dev_sar]
     command += tile_statistics
     run_command(command)
 
-    split_file("mean-sar.csv", simple_features_count, "mean-simple-sar.csv", "mean-temporal-sar.csv")
-    split_file("dev-sar.csv", simple_features_count, "dev-simple-sar.csv", "dev-temporal-sar.csv")
+    split_file(mean_sar, simple_features_count, mean_simple_sar, mean_temporal_sar)
+    split_file(dev_sar, simple_features_count, dev_simple_sar, dev_temporal_sar)
 
-    paste_files("mean-simple-sar.csv", "dev-simple-sar.csv", "sar-features.csv")
-    paste_files("mean-temporal-sar.csv", "dev-temporal-sar.csv", "sar-temporal.csv")
+    paste_files(mean_simple_sar, dev_simple_sar, sar_features)
+    paste_files(mean_temporal_sar, dev_temporal_sar, sar_temporal)
 
 
 if __name__ == "__main__":
