@@ -5,12 +5,14 @@ require_once ("ConfigParams.php");
 $isSen2Agri = ConfigParams::isSen2Agri();
 
 function getParameters($current_processor_name, $adv){
+    if ($current_processor_name == "l3b_lai") {
+        $current_processor_name ='l3b';
+    }
     if($GLOBALS['isSen2Agri']){
         switch ($current_processor_name){
             case "l4a_wo": $current_processor_name ='l4a';break;
-            case "l3b_lai": $current_processor_name ='l3b';break;
         }
-    }
+    } 
     $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
     $sql = "SELECT cm.*,reverse(split_part(reverse(cm.key),'.',1)) as param_name, cf.value as param_value
             FROM config_metadata cm
@@ -122,47 +124,49 @@ $processors = pg_fetch_all($res);
 											<?php }?>
 											
 											
-											<?php if($processor['short_name'] == "l3b_lai" && $isSen2Agri){?> 
-												<div class="subgroup lai">
-													<label class="control-label">Generate LAI mono-dates:</label>
-													<div class="form-group form-group-sm">
-														<input class="form-control" id="monolai" type="radio" name="lai" value="monolai" checked="checked">
-														<label class="control-label" for="monolai">Generate LAI mono-dates</label>
-														<span class="help-block">(Generate LAI mono-dates)</span>
-													</div>
-													<div class="form-group form-group-sm">
-														<input class="form-control" id="reproc" type="radio" name="lai" value="reproc">
-														<label class="control-label" for="reproc">Reprocessing with the last N-Days</label>
-														<span class="help-block">(Performe reprocessing with the last N-Days)</span>
-													</div>
-													<div class="form-group form-group-sm">
-														<input class="form-control" id="fitted" type="radio" name="lai" value="fitted">
-														<label class="control-label" for="fitted">LAI time series fitting at the end of the season</label>
-														<span class="help-block">(Performe reprocessing at the end of the season)</span>
-													</div>
-												</div>
-
+											<?php if($processor['short_name'] == "l3b_lai"){?> 
+											<div class="subgroup lai">
+												<label class="control-label">Generate LAI mono-dates:</label>
 												<div class="form-group form-group-sm">
-													<label class="control-label" for="bwr">Backward window:</label>
-													<input type="number" class="form-control" id="bwr" name="bwr" value="2">
-													<span class="help-block">Backward window for LAI N-Day reprocessing</span>
+													<input class="form-control" id="monolai" type="radio" name="lai" value="monolai" checked="checked">
+													<label class="control-label" for="monolai">Generate LAI mono-dates</label>
+													<span class="help-block">(Generate LAI mono-dates)</span>
 												</div>
+												<div class="form-group form-group-sm">
+													<input class="form-control" id="reproc" type="radio" name="lai" value="reproc">
+													<label class="control-label" for="reproc">Reprocessing with the last N-Days</label>
+													<span class="help-block">(Performe reprocessing with the last N-Days)</span>
+												</div>
+                                                <?php if($isSen2Agri){?> 
+                                                    <div class="form-group form-group-sm">
+                                                        <input class="form-control" id="fitted" type="radio" name="lai" value="fitted">
+                                                        <label class="control-label" for="fitted">LAI time series fitting at the end of the season</label>
+                                                        <span class="help-block">(Performe reprocessing at the end of the season)</span>
+                                                    </div>
+                                                <?php }?>
+											</div>
+
+											<div class="form-group form-group-sm">
+												<label class="control-label" for="bwr">Backward window:</label>
+												<input type="number" class="form-control" id="bwr" name="bwr" value="2">
+												<span class="help-block">Backward window for LAI N-Day reprocessing</span>
+											</div>
 											<?php }?>
 											
 											<?php if(($processor['short_name'] == "l4a" || $processor['short_name'] == "l4b") && $isSen2Agri){?> 
-												<div class="form-group form-group-sm required">
-													<label class="control-label" for="refp">Reference polygons:</label>
-													<input type="file" class="form-control" id="refp" name="refp" onchange="$(this).trigger('blur');">
-													<span class="help-block">The reference polygons. A .zip file containing the shapefile is expected. See Software User Manual for the format of the shapefile. Take care of the header of the columns.</span>
-												</div>
+											<div class="form-group form-group-sm required">
+												<label class="control-label" for="refp">Reference polygons:</label>
+												<input type="file" class="form-control" id="refp" name="refp" onchange="$(this).trigger('blur');">
+												<span class="help-block">The reference polygons. A .zip file containing the shapefile is expected. See Software User Manual for the format of the shapefile. Take care of the header of the columns.</span>
+											</div>
 											<?php }?>
 											
 											<?php if($processor['short_name'] == "l4a_wo" && $isSen2Agri){?> 										
-												<div class="form-group form-group-sm ">
-													<label class="control-label" for="refr">Reference raster:</label>
-													<input type="file" class="form-control" id="refr" name="refr" onchange="$(this).trigger('blur');">
-													<span class="help-block">The reference raster when in situ data is not available.</span>
-												</div>
+											<div class="form-group form-group-sm ">
+												<label class="control-label" for="refr">Reference raster:</label>
+												<input type="file" class="form-control" id="refr" name="refr" onchange="$(this).trigger('blur');">
+												<span class="help-block">The reference raster when in situ data is not available.</span>
+											</div>
 											<?php }?>
 										   <!-- End Particular parameters -->
 										   

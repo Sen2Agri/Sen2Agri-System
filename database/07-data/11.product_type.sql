@@ -43,22 +43,3 @@ INSERT INTO product_type
 VALUES
 (6, 'l4b','L4B Crop type product');
 
-INSERT INTO product_type
-(id, name, description)
-VALUES
-(10, 's1_l2a_amp','Sentinel 1 L2 Amplitude product');
-
-INSERT INTO product_type
-(id, name, description)
-VALUES
-(11, 's1_l2a_cohe','Sentinel 1 L2 Coherence product');
-
-INSERT INTO product_type
-(id, name, description)
-VALUES
-(12, 's4cap_l4b','Sen4CAP Grassland Mowing product');
-
-INSERT INTO product_type
-(id, name, description)
-VALUES
-(13, 's4cap_l4c','Sen4CAP Agricultural Practices product');

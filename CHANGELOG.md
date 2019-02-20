@@ -18,6 +18,26 @@
 
 # Change Log
 
+## [1.8.3]
+
+### Added
+  - New flags for LAI monodate implementing INRA algorithm
+  - Users management from the system IHM
+  - Data sources configuration from the system IHM
+  - Filtering products by tile, season or time interval for the Products and Custom Jobs in IHM.
+
+### Changed
+ - The map presenting the products in the IHM
+ - The default data source for downloading S2 products is now SciHub and not AWS (after AWS introduced Requester Pays)
+ - Updated the SciHub query datasource according to the changes performed by ESA in the requests API
+ - The monitoring page to present statistics about the downloaded, downloading or estimated number of products to be downloaded.
+ 
+
+### Fixed
+ - Issues during downloading from SciHub or USGS.
+ - The issue with configuring a new logging level in application.properties.
+
+ 
 ## [Patch for 1.8 & 1.8.1 version]
 ### Fixed
  - Handling of multi-polygons site extent geometry

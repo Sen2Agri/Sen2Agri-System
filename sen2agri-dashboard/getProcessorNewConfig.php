@@ -501,43 +501,38 @@ if ($isSen2Agri) {
 }
 // sen4cap
 else {
-	if (isset($_POST['l3a'])) {
-		$processor_short_name = "l3a";
-		
+/* -------------------------------------------------------l3b_lai------------------------------------------------------ */
+	if (isset ( $_POST ['l3b_lai'] )) {
+		$processor_short_name = "l3b_lai";
+
 		// default parameters
-		$siteId           = $_POST['siteId'];
-		$input_products   = $_POST['inputFiles'];
-		$half_synthesis   = $_POST['half_synthesis_l3a'];
-		$resolution       = $_POST['resolution'];
-		
+		$siteId         = $_POST ['siteId'];
+		$input_products = $_POST ['inputFiles'];
+		$resolution     = $_POST ['resolution'];
+		$monolai        = isset($_POST['lai']) && ($_POST['lai'] == 'monolai') ? 1 : 0;
+		$reproc         = isset($_POST['lai']) && ($_POST['lai'] == 'reproc')  ? 1 : 0;
+		$fitted         = isset($_POST['lai']) && ($_POST['lai'] == 'fitted')  ? 1 : 0;
+		$bwr            = $_POST ['bwr'];
+		$fwr            = $_POST ['fwr'];
+
 		// advanced parameters
-		$maxaot           = $_POST['maxaot_l3a'];
-		$minweight        = $_POST['minweight_l3a'];
-		$maxweight        = $_POST['maxweight_l3a'];
-		$sigmasmall       = $_POST['sigmasmall_l3a'];
-		$sigmalarge       = $_POST['sigmalarge_l3a'];
-		$coarseresolution = $_POST['coarseresolution_l3a'];
-		$weightdatemin    = $_POST['weightdatemin_l3a'];
-		
+		$genmodel = $_POST ['genmodel'];
+
 		$config = array (
-			array ( "key"   => "processor.l3a.weight.aot.maxaot",
-					"value" => $maxaot ),
-			array ( "key"   => "processor.l3a.weight.aot.minweight",
-					"value" => $minweight ),
-			array ( "key"   => "processor.l3a.weight.aot.maxweight",
-					"value" => $maxweight ),
-			array ( "key"   => "processor.l3a.weight.cloud.sigmasmall",
-					"value" => $sigmasmall ),
-			array ( "key"   => "processor.l3a.weight.cloud.sigmalarge",
-					"value" => $sigmalarge ),
-			array ( "key"   => "processor.l3a.weight.cloud.coarseresolution",
-					"value" => $coarseresolution ),
-			array ( "key"   => "processor.l3a.weight.total.weightdatemin",
-					"value" => $weightdatemin ),
-			array ( "key"   => "processor.l3a.half_synthesis",
-					"value" => $half_synthesis )
+			array ( "key"   => "processor.l3b.lai.localwnd.bwr",
+					"value" => $bwr ),
+			array ( "key"   => "processor.l3b.lai.localwnd.fwr",
+					"value" => $fwr ),
+			array ( "key"   => "processor.l3b.generate_models",
+					"value" => $genmodel ),
+			array ( "key"   => "processor.l3b.reprocess",
+					"value" => $reproc ),
+			array ( "key"   => "processor.l3b.fitted",
+					"value" => $fitted ),
+			array ( "key"   => "processor.l3b.mono_date_lai",
+					"value" => $monolai )
 		);
-		
+
 		// generate json_config (skip configuration parameters with empty values)
 		$fconfig = array();
 		foreach($config as $cfg) {
@@ -546,20 +541,19 @@ else {
 			}
 		}
 		$json_config = json_encode( $fconfig );
-		
+
 		// generate json_param (skip parameters with empty values)
-		$params = array (	"resolution" => $resolution,
+		$params = array (	"resolution"     => $resolution,
 							"input_products" => $input_products
 						);
-		$json_param = json_encode(array_filter($params));
-		
+		$json_param = json_encode( array_filter($params) );
+
 		// set job name and description and save job
-		$name = "l3a_processor" . date ( "m.d.y" );
+		$name = "l3b_processor" . date ( "m.d.y" );
 		$description = "generated new configuration from site for ".$processor_short_name;
-		
-		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
+		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
-	}
+    }
 	elseif (isset($_POST['s4c_l4a'])) {
 		$processor_short_name = "s4c_l4a";
 		
