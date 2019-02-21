@@ -58,7 +58,6 @@ class Config(object):
         self.password = parser.get("Database", "Password")
 
         self.site_id = args.site_id
-        self.path = args.path
         self.tiles = args.tiles
 
         self.season_start = parse_date(args.season_start)
@@ -96,7 +95,8 @@ def main():
     parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
     parser.add_argument('--season-start', help="season start date")
     parser.add_argument('--season-end', help="season end date")
-    parser.add_argument('-p', '--path', default='.', help="working path")
+    parser.add_argument('--out-path', default='.', help="output path")
+    parser.add_argument('--working-path', default='.', help="working path")
     parser.add_argument('--tiles', default=None, nargs="+", help="tile filter")
     parser.add_argument('--training-ratio', type=int, help="training/total samples ratio", default=0.5)
     parser.add_argument('--num-trees', type=int, help="number of RF trees", default=300)
@@ -114,7 +114,7 @@ def main():
         lpis_path = get_lpis_path(conn, config.site_id, config.season_end)
         print("Using LPIS from {}".format(lpis_path))
 
-    os.chdir(config.path)
+    os.chdir(args.working_path)
     try:
         os.mkdir("optical")
     except OSError:
@@ -146,7 +146,7 @@ def main():
     command += ["--lpis-path", lpis_path]
     command += ["--tiles"] + config.tiles
 
-    # run_command(command)
+    run_command(command)
 
     os.chdir("../sar")
     command = []
@@ -159,22 +159,22 @@ def main():
     if config.tiles:
         command += ["--tiles"] + config.tiles
 
-    # run_command(command)
+    run_command(command)
 
     os.chdir("..")
     command = []
     command += ["merge-sar.py"]
     command += ["sar", "sar-merged"]
 
-    # run_command(command)
+    run_command(command)
 
-    #os.rename("optical/optical-features.csv", "features/optical-features.csv")
-    #os.rename("sar-merged/sar-features.csv", "features/sar-features.csv")
-    #os.rename("sar-merged/sar-temporal.csv", "features/sar-temporal.csv")
+    os.rename("optical/optical-features.csv", "features/optical-features.csv")
+    os.rename("sar-merged/sar-features.csv", "features/sar-features.csv")
+    os.rename("sar-merged/sar-temporal.csv", "features/sar-temporal.csv")
 
     command = []
     command += ["crop_type.R"]
-    command += ["classification/"]
+    command += [args.out_path]
     command += ["features/sar-features.csv"]
     command += ["features/optical-features.csv"]
     command += ["features/sar-temporal.csv"]
