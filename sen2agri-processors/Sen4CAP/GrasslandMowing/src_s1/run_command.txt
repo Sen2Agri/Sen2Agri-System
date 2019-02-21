@@ -1,0 +1,29 @@
+Command line to run processing on S1 data
+
+\> cd <directory with python src files> 
+\> python ./S1_main.py config_file input_shape_file output_data_dir new_acq_date older_acq_date tile_list_file seg_parcel_id_attribute outputShapeFile do_cmpl
+   python ./S1_main.py config_file input_shape_file output_data_dir new_acq_date older_acq_date tile_list_file seg_parcel_id_attribute outputShapeFile do_cmpl
+
+where:
+1) config_file             : config file containing processing parameters, input data directories, and so on. (See config.ini in src_ini/)
+2) input_shape_file        : input shape file used to extract parcel geometries and the segmentation raster through the gdal rasterization process
+3) output_data_dir         : output dir where results are written (it is automatically generated if it does not exist)
+4) new_acq_date            : date of the last acqsuistion (yyyymmdd)
+5) older_acq_date          : date of the older acqsuistion (yyyymmdd) (for run-time processing, it is equal to new_acq_date, else, for reanalysis it is a data previous new_acq_date)
+6) tile_list_file          : file with the list of the orbits to be considered. (See S1_orbit_list.ini in src_ini/)
+7) seg_parcel_id_attribute : attribute name (string) used in input_shape_file for the parcel identifiers 
+8) outputShapeFile         : output shape file generated/updated to report the mowing detections and the compliances
+9) do_cmpl                 : True or False. "True" to perform finally the compliance analysis, "False" to skip the compliance 
+
+Two use cases:
+- a new tile is acquired and triggers the mowing detection and the compliancy analysis on it:
+\> python ./S1_main.py /d8/egeos/2018/italy/config.ini /d8/egeos/2018/input_SHP/GSAA_2018_IT_3857_INPUT2.shp /d8/egeos/2018/italy/output/ 20180810 20180810 /d8/egeos/2018/italy/S1_orbit_list.ini parcel_id /d8/egeos/2018/italy/output/output.shp True
+
+- re-analysis from 1st April 2018 to 15th August 2018 performing mowing detection and complinacy analysis
+\> python ./S1_main.py /d8/egeos/2018/italy/config.ini /d8/egeos/2018/input_SHP/GSAA_2018_IT_3857_INPUT2.shp /d8/egeos/2018/italy/output/ 20180401 20180815 /d8/egeos/2018/italy/S1_orbit_list.ini parcel_id /d8/egeos/2018/italy/output/output.shp True
+
+Config files:
+There are two config files to set before the running:
+- config.ini containing parameters and directories where input data are stored. Use config.ini in src_ini/, as an example.
+- S1_orbit_list.ini containing orbits to be processed. It is just sufficient to use S1_orbit_list.ini in src_ini/, which contains the orbits for each countries, by removing comments prefix ";"
+
