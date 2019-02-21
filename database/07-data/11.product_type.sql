@@ -43,3 +43,7 @@ INSERT INTO product_type
 VALUES
 (6, 'l4b','L4B Crop type product');
 
+INSERT INTO product_type
+(id, name, description)
+VALUES
+(14, 'lpis', 'LPIS raster product');
