@@ -211,10 +211,8 @@ print(sample_size)
 
 # remove non-features columns
 #print(names(data_calib))
-data_calib_red <- data_calib[c(1, 5:ncol(data_calib), 3)]
-#print(names(data_calib_red))
-#data_calib_red <- data_calib %>% dplyr:: select(union(starts_with("NewID"),union(starts_with("XX"),starts_with("TARGET"))))
-#print(names(data_calib_red))
+#data_calib_red <- data_calib[c(1, 5:ncol(data_calib), 3)]
+data_calib_red <- data_calib %>% dplyr:: select(union(starts_with("NewID"),union(starts_with("XX"),starts_with("TARGET"))))
 # print(mem_used())
 
 #data=cbind(cid=data_calib$CROPDIVNUM,data)
@@ -666,8 +664,8 @@ if ( samplingmethod=="Random") {
 #data_red=data_red[,-2]
 
 #validation set
-data_valid_red <- data_valid[c(-1, -2, -4)]
-#data_valid_red <- data_valid %>% dplyr:: select(union(starts_with("TARGET"),starts_with("XX")))
+#data_valid_red <- data_valid[c(-1, -2, -4)]
+data_valid_red <- data_valid %>% dplyr:: select(union(starts_with("TARGET"),starts_with("XX")))
 
 if(samplingmethod!="Random"){
   grp_data=group_by(data_valid_red,TARGET)
@@ -681,9 +679,8 @@ if(samplingmethod!="Random"){
 #data_valid_red=valid_red[,-2]
 
 ###classification
-data_model <- data_calib_red[c(ncol(data_calib_red), 2:(ncol(data_calib_red) - 3))]
-#data_model <- data_calib_red %>% dplyr:: select(union(starts_with("TARGET"),starts_with("XX")))
-#print(names(data_model))
+#data_model <- data_calib_red[c(ncol(data_calib_red), 2:(ncol(data_calib_red) - 3))]
+data_model <- data_calib_red %>% dplyr:: select(union(starts_with("TARGET"),starts_with("XX")))
 rm(data_calib_red)
 
 #print(mem_used())
@@ -796,8 +793,8 @@ rm(data_joined)
 
 #print(head(data_predict))
 # remove non-features columns
-data_predict_red <- data_predict[c(-1:-4)]
-#data_predict_red <- data_predict %>% dplyr:: select(starts_with("XX"))
+#data_predict_red <- data_predict[c(-1:-4)]
+data_predict_red <- data_predict %>% dplyr:: select(starts_with("XX"))
 #print(head(data_predict_red))
 
 print("Start prediction...")
