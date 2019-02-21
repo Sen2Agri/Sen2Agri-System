@@ -114,6 +114,7 @@ def main():
         lpis_path = get_lpis_path(conn, config.site_id, config.season_end)
         print("Using LPIS from {}".format(lpis_path))
 
+    current_path = os.getcwd()
     os.chdir(args.working_path)
     try:
         os.mkdir("optical")
@@ -129,10 +130,6 @@ def main():
         pass
     try:
         os.mkdir("features")
-    except OSError:
-        pass
-    try:
-        os.mkdir("classification")
     except OSError:
         pass
 
@@ -172,12 +169,14 @@ def main():
     os.rename("sar-merged/sar-features.csv", "features/sar-features.csv")
     os.rename("sar-merged/sar-temporal.csv", "features/sar-temporal.csv")
 
+    os.chdir(current_path)
+
     command = []
     command += ["crop_type.R"]
-    command += [args.out_path]
-    command += ["features/sar-features.csv"]
-    command += ["features/optical-features.csv"]
-    command += ["features/sar-temporal.csv"]
+    command += [args.out_path + "/"]
+    command += [os.path.join(args.working_path, "features/sar-features.csv")]
+    command += [os.path.join(args.working_path, "features/optical-features.csv")]
+    command += [os.path.join(args.working_path, "features/sar-temporal.csv")]
     command += [os.path.join(lpis_path, "parcels.csv")]
     command += [args.training_ratio]
     command += ["Smote"]
