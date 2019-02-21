@@ -763,6 +763,9 @@ resultname=paste("Results_Ranger",sample_size,samplingmethod,count_thresh,numtre
 saveRDS(Results_Ranger, paste(workdir,resultname,".rds",sep=""))
 print(Results_Ranger$overall)
 
+metrics_name=paste("Metrics",sample_size,samplingmethod,count_thresh,numtrees,format(Sys.time(), "%m%d-%H%M"),sep="_")
+write.csv(t(Results_Ranger$overall), file = paste0(workdir, metrics_name, ".csv"), row.names = FALSE, quote = FALSE)
+
 Results_ranger <- readRDS(paste(workdir,resultname,".rds",sep=""))
 
 df <- data.frame(x=factor(c("Overall accuracy","Kappa",names(Results_ranger$byClass[,"F1"])),levels=(c("Overall accuracy","Kappa",names(Results_ranger$byClass[order(Results_ranger$byClass[,"Prevalence"],decreasing = TRUE),"F1"])))),y=c(Results_ranger$overall[1],Results_ranger$overall[2],Results_ranger$byClass[,"F1"]),prevalence=c(Results_ranger$overall[1],Results_ranger$overall[2],Results_ranger$byClass[,"Prevalence"]))
