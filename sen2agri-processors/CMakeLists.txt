@@ -42,6 +42,7 @@ install(FILES ../scripts/insert_l2a_product_to_db.py
               ../scripts/optimize_gtiff.py
               ../scripts/export-lpis.py
               ../scripts/crop-type-parcels.py
+              ../scripts/crop-type-wrapper.py
               ../scripts/data-preparation.py
               ../scripts/merge-sar.py
         DESTINATION usr/bin/
