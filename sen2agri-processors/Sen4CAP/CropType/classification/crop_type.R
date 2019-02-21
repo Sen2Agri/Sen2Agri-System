@@ -15,17 +15,18 @@ InputSAR <- variable[2]
 InputOpt <- variable[3]
 InputSAR_tempStats <- variable[4]
 Shape_filename <- variable[5]
-samplingmethod <-variable[6]
+training_ratio <- as.numeric(variable[6])
+samplingmethod <-variable[7]
+numtrees <- as.numeric(variable[8])
+sample_size <- as.numeric(variable[9])
+count_thresh <- as.numeric(variable[10])
+count_min <- as.numeric(variable[11])
+smotesize <- as.numeric(variable[12])
+k <- as.numeric(variable[13])
+
 if (!(samplingmethod %in% c("Random","Areaweighted","Overareaweighted","Overunderareaweighted","Smote","Fixunder"))) {
   stop('Wrong argument: choose out of "Random","Areaweighted","Overareaweighted","Overunderareaweighted","Smote","Fixunder"', call.=FALSE)
 }
-numtrees <- as.numeric(variable[7])
-sample_size <- as.numeric(variable[8])
-count_thresh <- as.numeric(variable[9])
-count_min <- as.numeric(variable[10])
-smotesize <- as.numeric(variable[11])
-k <- as.numeric(variable[12])
-
 # 
 # samplingmethod=c("Random","Areaweighted","Overareaweighted","Overunderareaweighted","Smote")
 # samplingmethod=samplingmethod[1]
@@ -197,16 +198,17 @@ rm(SAR_features,Opt_features, SAR_tempStats)
 # create calibration and validation datasets
 print('Internal validation')
 set.seed(42)
-trainindex=createDataPartition(data_joined$TARGET, times = 1, p = 0.5, list = FALSE)
+trainindex=createDataPartition(data_joined$TARGET, times = 1, p = training_ratio, list = FALSE)
 data_valid=data_joined[-trainindex,]
 data_calib=data_joined[trainindex,]
+print(dim(data_valid))
+print(dim(data_calib))
 
+print(paste('Dimensions data_calib:',dim(data_calib)))
+print(paste('Dimensions data_valid:',dim(data_valid)))
 
 if(sample_size==0) sample_size=nrow(data_calib) else sample_size=sample_size
-print(paste('Dimensions data_calib:',dim(data_calib)))
-
 if(sample_size>0 & sample_size<=1) sample_size=round(sample_size*nrow(data_joined)) else sample_size=sample_size
-print(paste('Dimensions data_calib:',dim(data_calib)))
 print(sample_size)
 
 # remove non-features columns
