@@ -556,13 +556,27 @@ else {
     }
 	elseif (isset($_POST['s4c_l4a'])) {
 		$processor_short_name = "s4c_l4a";
+        $processor_cfg_prefix = "processor.s4c_l4a.";
 		
+        // print_r($_POST);
+        // exit();
 		// default parameters
 		$siteId         = $_POST['siteId'];
 		$input_products = $_POST['inputFiles'];
-		
-		$fconfig = array();
-		$json_config = json_encode( array_filter($fconfig) );
+
+		// advanced parameters	- dynamically get the 
+        $fconfig = array();        
+        foreach ($_POST as $key => $value) {
+            if ($value != "") {
+                $suffix = "_".$processor_short_name;
+                if (endsWith($key, $suffix))  {
+                    $realKeyName = substr($key, 0, strrpos($key, $suffix));
+                    $cfgKeyToSend = $processor_cfg_prefix . $realKeyName;
+                    array_push($fconfig, array ( "key"   => $cfgKeyToSend, "value" => $value ));
+                }
+            }
+        }
+		$json_config = json_encode( $fconfig );
 		
 		// generate json_param (skip parameters with empty values)
 		$params = array ("input_products" => $input_products);
@@ -592,7 +606,7 @@ else {
 		$json_param = json_encode(array_filter($params));
 		
 		// set job name and description and save job
-		$name = "s4c_l4a_processor" . date ( "m.d.y" );
+		$name = "s4c_l4b_processor" . date ( "m.d.y" );
 		$description = "generated new configuration from site for ".$processor_short_name;
 		
 		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
@@ -615,7 +629,7 @@ else {
 		$json_param = json_encode(array_filter($params));
 		
 		// set job name and description and save job
-		$name = "s4c_l4a_processor" . date ( "m.d.y" );
+		$name = "s4c_l4c_processor" . date ( "m.d.y" );
 		$description = "generated new configuration from site for ".$processor_short_name;
 		
 		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
