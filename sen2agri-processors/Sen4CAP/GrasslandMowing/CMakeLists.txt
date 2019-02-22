@@ -3,7 +3,7 @@ install(FILES   src_ini/config.ini
                 src_ini/S2_granule.ini
                 src_s1/compliancy.py
                 src_s1/fusion.py
-                src_s1/run_command.py
+                src_s1/run_command.txt
                 src_s1/S1_gmd.py
                 src_s1/S1_main.py
                 src_s2/compliancy.py
