@@ -616,6 +616,8 @@ else {
                 }
             }
         }
+        
+        $json_config = json_encode( $fconfig );
 		
 		// generate json_param (skip parameters with empty values)
 		$params = array ("input_COHE" => $input_COHE, "input_AMP"  => $input_AMP, "input_NDVI" => $input_NDVI);
@@ -650,6 +652,8 @@ else {
                 }
             }
         }
+        
+        $json_config = json_encode( $fconfig );
 		
 		// generate json_param (skip parameters with empty values)
 		$params = array ("input_COHE" => $input_COHE, "input_AMP"  => $input_AMP, "input_NDVI" => $input_NDVI);
