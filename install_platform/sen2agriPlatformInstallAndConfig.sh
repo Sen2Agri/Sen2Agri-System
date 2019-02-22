@@ -352,13 +352,14 @@ function install_and_config_postgresql()
     if [ -z "$DB_NAME" ]; then
         DB_NAME="sen2agri"
     fi
+    SEN2AGRI_DATABASE_NAME=${DB_NAME}
 
-    if ! [[ "$DB_NAME" == "sen2agri" ]] ; then
-        echo "Using database '$DB_NAME'"
-        sed -i -- "s/-- DataBase Create: sen2agri/-- DataBase Create: $DB_NAME/g" ./database/00-database/sen2agri.sql
-        sed -i -- "s/CREATE DATABASE sen2agri/CREATE DATABASE $DB_NAME/g" ./database/00-database/sen2agri.sql
-        sed -i -- "s/-- Privileges: sen2agri/-- Privileges: $DB_NAME/g" ./database/09-privileges/privileges.sql
-        sed -i -- "s/GRANT ALL PRIVILEGES ON DATABASE sen2agri/GRANT ALL PRIVILEGES ON DATABASE $DB_NAME/g" ./database/09-privileges/privileges.sql
+    if ! [[ "${SEN2AGRI_DATABASE_NAME}" == "sen2agri" ]] ; then
+        echo "Using database '${SEN2AGRI_DATABASE_NAME}'"
+        sed -i -- "s/-- DataBase Create: sen2agri/-- DataBase Create: ${SEN2AGRI_DATABASE_NAME}/g" ./database/00-database/sen2agri.sql
+        sed -i -- "s/CREATE DATABASE sen2agri/CREATE DATABASE ${SEN2AGRI_DATABASE_NAME}/g" ./database/00-database/sen2agri.sql
+        sed -i -- "s/-- Privileges: sen2agri/-- Privileges: ${SEN2AGRI_DATABASE_NAME}/g" ./database/09-privileges/privileges.sql
+        sed -i -- "s/GRANT ALL PRIVILEGES ON DATABASE sen2agri/GRANT ALL PRIVILEGES ON DATABASE ${SEN2AGRI_DATABASE_NAME}/g" ./database/09-privileges/privileges.sql
     fi
    
    # first, the database is created. the privileges will be set after all
@@ -391,12 +392,21 @@ function install_and_config_postgresql()
 function populate_from_scripts()
 {
    local curPath=$1
+   local customDbPath=${curPath}/${SEN2AGRI_DATABASE_NAME}
    #for each sql scripts found in this folder
    for scriptName in "$curPath"/*.sql
       do
+        scriptToExecute=${scriptName}
+        if [ -d "$customDbPath" ]; then
+            scriptFileName=$(basename -- "$scriptName")
+            
+            if [ -f ${customDbPath}/${scriptFileName} ]; then
+                scriptToExecute=${customDbPath}/${scriptFileName}
+            fi
+        fi
          ## perform execution of each sql script
-         echo "Executing SQL script: $scriptName"
-         cat "$scriptName" | su - postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
+         echo "Executing SQL script: $scriptToExecute"
+         cat "$scriptToExecute" | su - postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
       done
 }
 #-----------------------------------------------------------#
