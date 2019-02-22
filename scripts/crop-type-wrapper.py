@@ -98,7 +98,7 @@ def main():
     parser.add_argument('--out-path', default='.', help="output path")
     parser.add_argument('--working-path', default='.', help="working path")
     parser.add_argument('--tiles', default=None, nargs="+", help="tile filter")
-    parser.add_argument('--training-ratio', type=int, help="training/total samples ratio", default=0.5)
+    parser.add_argument('--training-ratio', type=float, help="training/total samples ratio", default=0.5)
     parser.add_argument('--num-trees', type=int, help="number of RF trees", default=300)
     parser.add_argument('--sample-size', type=float, help="sample size", default=0.2)
     parser.add_argument('--count-threshold', type=int, help="count threshold", default=1000)

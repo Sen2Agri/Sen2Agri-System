@@ -272,14 +272,50 @@ def prepare_lpis(conn, lpis_table, lut_table, tiles):
 
         query = SQL(
             """
-            update {}
-            set "CTnum" = {}.ctnum :: int,
-                "CT" = {}.ct,
-                "LC" = {}.lc :: int
-            from {}
-            where {}.ori_crop = {}.ori_crop
+            select data_type
+            from information_schema.columns
+            where table_name = {}
+            and column_name = 'ori_crop'
             """
-        ).format(lpis_table, lut_table, lut_table, lut_table, lut_table, lut_table, lpis_table)
+        ).format(lpis_table_str)
+        print(query.as_string(conn))
+        cursor.execute(query)
+        col_type = cursor.fetchone()[0]
+        conn.commit()
+
+        if col_type == 'numeric':
+            query = SQL(
+                """
+                alter table {}
+                alter column ori_crop type integer
+                """
+            ).format(lpis_table)
+            print(query.as_string(conn))
+            cursor.execute(query)
+
+        if col_type != 'text':
+            query = SQL(
+                """
+                update {}
+                set "CTnum" = {}.ctnum :: int,
+                    "CT" = {}.ct,
+                    "LC" = {}.lc :: int
+                from {}
+                where {}.ori_crop = {}.ori_crop :: text
+                """
+            ).format(lpis_table, lut_table, lut_table, lut_table, lut_table, lut_table, lpis_table)
+        else:
+            query = SQL(
+                """
+                update {}
+                set "CTnum" = {}.ctnum :: int,
+                    "CT" = {}.ct,
+                    "LC" = {}.lc :: int
+                from {}
+                where {}.ori_crop = {}.ori_crop
+                """
+            ).format(lpis_table, lut_table, lut_table, lut_table, lut_table, lut_table, lpis_table)
+
         print(query.as_string(conn))
         cursor.execute(query)
         conn.commit()
@@ -288,7 +324,6 @@ def prepare_lpis(conn, lpis_table, lut_table, tiles):
             """
             alter table {}
             alter column "GeomValid" set not null,
-            alter column "Duplic" set not null,
             alter column "Overlap" set not null,
             alter column "Area_meters" set not null
             """
