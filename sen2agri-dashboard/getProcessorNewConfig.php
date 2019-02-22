@@ -503,6 +503,7 @@ if ($isSen2Agri) {
 else {
 /* -------------------------------------------------------l3b_lai------------------------------------------------------ */
 	if (isset ( $_POST ['l3b_lai'] )) {
+        // TODO: A lot of Duplicated code with the previous ifs. To be made more generic
 		$processor_short_name = "l3b_lai";
 
 		// default parameters
@@ -555,8 +556,12 @@ else {
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
     }
 	elseif (isset($_POST['s4c_l4a'])) {
+        // TODO: A lot of Duplicated code with the previous ifs. To be made more generic
 		$processor_short_name = "s4c_l4a";
-        $processor_cfg_prefix = "processor.s4c_l4a.";
+        $processor_cfg_prefix = "processor." . $processor_short_name . ".";
+		// set job name and description and save job
+		$name = $processor_short_name . "_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
 		
         // print_r($_POST);
         // exit();
@@ -582,15 +587,16 @@ else {
 		$params = array ("input_products" => $input_products);
 		$json_param = json_encode(array_filter($params));
 		
-		// set job name and description and save job
-		$name = "s4c_l4a_processor" . date ( "m.d.y" );
-		$description = "generated new configuration from site for ".$processor_short_name;
-		
 		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!", $params);
 	}
 	elseif (isset($_POST['s4c_l4b'])) {
+        // TODO: A lot of Duplicated code with the previous ifs. To be made more generic
 		$processor_short_name = "s4c_l4b";
+        $processor_cfg_prefix = "processor." . $processor_short_name . ".";
+		// set job name and description and save job
+		$name = $processor_short_name . "_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
 		
 		// default parameters
 		$siteId     = $_POST['siteId'];
@@ -598,22 +604,33 @@ else {
 		$input_AMP  = $_POST['inputFiles_AMP'];
 		$input_NDVI = $_POST['inputFiles_NDVI'];
 		
-		$fconfig = array();
-		$json_config = json_encode( array_filter($fconfig) );
+		// advanced parameters	- dynamically get the 
+        $fconfig = array();        
+        foreach ($_POST as $key => $value) {
+            if ($value != "") {
+                $suffix = "_".$processor_short_name;
+                if (endsWith($key, $suffix))  {
+                    $realKeyName = substr($key, 0, strrpos($key, $suffix));
+                    $cfgKeyToSend = $processor_cfg_prefix . $realKeyName;
+                    array_push($fconfig, array ( "key"   => $cfgKeyToSend, "value" => $value ));
+                }
+            }
+        }
 		
 		// generate json_param (skip parameters with empty values)
 		$params = array ("input_COHE" => $input_COHE, "input_AMP"  => $input_AMP, "input_NDVI" => $input_NDVI);
 		$json_param = json_encode(array_filter($params));
-		
-		// set job name and description and save job
-		$name = "s4c_l4b_processor" . date ( "m.d.y" );
-		$description = "generated new configuration from site for ".$processor_short_name;
 		
 		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!", $params);
 	}
 	elseif (isset($_POST['s4c_l4c'])) {
+        // TODO: A lot of Duplicated code with the previous ifs. To be made more generic
 		$processor_short_name = "s4c_l4c";
+        $processor_cfg_prefix = "processor." . $processor_short_name . ".";
+		// set job name and description and save job
+		$name = $processor_short_name . "_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
 		
 		// default parameters
 		$siteId     = $_POST['siteId'];
@@ -621,16 +638,22 @@ else {
 		$input_AMP  = $_POST['inputFiles_AMP'];
 		$input_NDVI = $_POST['inputFiles_NDVI'];
 		
-		$fconfig = array();
-		$json_config = json_encode( array_filter($fconfig) );
+		// advanced parameters	- dynamically get the 
+        $fconfig = array();        
+        foreach ($_POST as $key => $value) {
+            if ($value != "") {
+                $suffix = "_".$processor_short_name;
+                if (endsWith($key, $suffix))  {
+                    $realKeyName = substr($key, 0, strrpos($key, $suffix));
+                    $cfgKeyToSend = $processor_cfg_prefix . $realKeyName;
+                    array_push($fconfig, array ( "key"   => $cfgKeyToSend, "value" => $value ));
+                }
+            }
+        }
 		
 		// generate json_param (skip parameters with empty values)
 		$params = array ("input_COHE" => $input_COHE, "input_AMP"  => $input_AMP, "input_NDVI" => $input_NDVI);
 		$json_param = json_encode(array_filter($params));
-		
-		// set job name and description and save job
-		$name = "s4c_l4c_processor" . date ( "m.d.y" );
-		$description = "generated new configuration from site for ".$processor_short_name;
 		
 		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!", $params);
