@@ -155,26 +155,26 @@ case "$COUNTRY" in
         FL_IGNORED_IDS_FILE="${INSITU_ROOT}/FL_Ignored_Orig_IDs.csv"
 
         NA_HSTART="2018-06-01"
-        NA_HEND="2018-09-30"
+        NA_HEND="2018-12-15"
         NA_ADD_FILES="${INSITU_ROOT}/ApplicationsEFA_2018_Catch_crops_PO.csv ${INSITU_ROOT}/ApplicationsEFA_2018_Catch_crops_IS.csv ${INSITU_ROOT}/ApplicationsEFA_2018_Black_fallow.csv ${INSITU_ROOT}/ApplicationsEFA_2018_Green_fallow.csv ${INSITU_ROOT}/ApplicationsEFA_2018_Nitrogen_fixing.csv"
         ;;
     ESP)
         IN_SHP_NAME="ESP_2018_DeclSTD_quality_indic.shp"
         
-        VEG_START="2018-01-01"
+        VEG_START="2018-04-02"
 
         NFC_HSTART="2018-04-02"
-        NFC_HEND="2018-09-30"
+        NFC_HEND="2018-08-15"
         NFC_PSTART="2018-03-01"
         NFC_PEND="2018-08-31"
 
-        FL_HSTART="2018-01-01"
-        FL_HEND="2018-09-30"
+        FL_HSTART="2018-04-02"
+        FL_HEND="2018-08-15"
         FL_PSTART="2018-02-01"
         FL_PEND="2018-06-30"
 
-        NA_HSTART="2018-02-05"
-        NA_HEND="2018-09-30"
+        NA_HSTART="2018-04-02"
+        NA_HEND="2018-08-15"
         ;;
     ITA)
         IN_SHP_NAME="ITA_2018_DeclSTD_quality_indic.shp"
