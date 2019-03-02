@@ -1,7 +1,11 @@
 #include "processorhandlerhelper.h"
 #include "qdiriterator.h"
+#include <QRegularExpression>
 
 #include "qdatetime.h"
+
+#define NDVI_PRD_NAME_REGEX R"(S2AGRI_L3B_SNDVI_A(\d{8}T\d{6})_.+\.TIF)"
+#define S1_L2A_PRD_NAME_REGEX   R"(SEN4CAP_L2A_.+_V(\d{8}T\d{6})_(\d{8}T\d{6})_.+\.tif)"
 
 #define EMPTY_TILE_ID           "00000"
 #define INVALID_FILE_SEQUENCE   "!&"
@@ -913,3 +917,45 @@ ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::ConvertSatellite
     }
 }
 
+QDateTime ProcessorHandlerHelper::GetNdviProductTime(const QString &prdPath)
+{
+    static QRegularExpression rex(QStringLiteral(NDVI_PRD_NAME_REGEX));
+    QRegularExpression re(rex);
+    const QString &fileName = QFileInfo(prdPath).fileName();
+    const QRegularExpressionMatch &match = re.match(fileName);
+    if (match.hasMatch()) {
+        const QString &timestamp = match.captured(1);
+        return QDateTime::fromString(timestamp, "yyyyMMddTHHmmss");
+    }
+    return QDateTime();
+}
+
+QDateTime ProcessorHandlerHelper::GetS1L2AProductTime(const QString &prdPath)
+{
+    const QString &fileName = QFileInfo(prdPath).fileName();
+    static QRegularExpression rex(QStringLiteral(S1_L2A_PRD_NAME_REGEX));
+    QRegularExpression re(rex);
+    const QRegularExpressionMatch &match = re.match(fileName);
+    if (match.hasMatch()) {
+        const QString &timestamp1 = match.captured(1);
+        const QString &timestamp2 = match.captured(2);
+        const QDateTime &qDateTime1 = QDateTime::fromString(timestamp1, "yyyyMMddTHHmmss");
+        const QDateTime &qDateTime2 = QDateTime::fromString(timestamp2, "yyyyMMddTHHmmss");
+        return qDateTime1 < qDateTime2 ? qDateTime1 : qDateTime2;
+    }
+    return QDateTime();
+}
+
+void ProcessorHandlerHelper::UpdateMinMaxTimes(const QDateTime &newTime, QDateTime &minTime, QDateTime &maxTime)
+{
+    if (newTime.isValid()) {
+        if (!minTime.isValid() && !maxTime.isValid()) {
+            minTime = newTime;
+            maxTime = newTime;
+        } else if (newTime < minTime) {
+            minTime = newTime;
+        } else if (newTime > maxTime) {
+            maxTime = newTime;
+        }
+    }
+}

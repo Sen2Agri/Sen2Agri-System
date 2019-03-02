@@ -11,6 +11,8 @@
 #define NDVI_PRD_NAME_REGEX R"(S2AGRI_L3B_SNDVI_A(\d{8}T\d{6})_.+\.TIF)"
 #define S1_L2A_PRD_NAME_REGEX   R"(SEN4CAP_L2A_.+_V(\d{8}T\d{6})_(\d{8}T\d{6})_.+\.tif)"
 
+#define L4C_AP_CFG_PREFIX   "processor.s4c_l3c."
+
 void AgricPracticesHandler::CreateTasks(const AgricPracticesSiteCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList,
                                                       const QStringList &ndviPrds, const QStringList &ampPrds, const QStringList &cohePrds)
 {
@@ -169,7 +171,7 @@ void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4c.");
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.s4c_l4c.");
     const QString &siteName = ctx.GetSiteShortName(event.siteId);
     const QString &siteCfgFilePath = GetSiteConfigFilePath(siteName, parameters, configParameters);
     if (siteCfgFilePath == "") {
@@ -179,7 +181,7 @@ void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     QDateTime minDate, maxDate;
-    const AgricPracticesSiteCfg &siteCfg = LoadSiteConfigFile(siteCfgFilePath);
+    const AgricPracticesSiteCfg &siteCfg = LoadSiteConfigFile(siteCfgFilePath, parameters, configParameters);
     const QStringList &ndviFiles = ExtractNdviFiles(ctx, event, minDate, maxDate);
     if (ndviFiles.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
@@ -221,13 +223,13 @@ void AgricPracticesHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
         QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
-        if(prodName != "" && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
+        if(prodName != "") {
             QString quicklook = GetProductFormatterQuicklook(ctx, event);
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
             QDateTime minDate, maxDate;
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
-            ctx.InsertProduct({ ProductType::L3EProductTypeId, event.processorId, event.siteId,
+            ctx.InsertProduct({ ProductType::S4CL4CProductTypeId, event.processorId, event.siteId,
                                 event.jobId, productFolder, maxDate,
                                 prodName, quicklook, footPrint, std::experimental::nullopt, TileIdList() });
 
@@ -329,11 +331,11 @@ QString AgricPracticesHandler::GetSiteConfigFilePath(const QString &siteName, co
     }
     // if not provided in parameters, check if exists in the db config
     if (strCfgPath.isEmpty()) {
-        strCfgPath = configParameters["processor.l4c.config_path"];
+        strCfgPath = configParameters["processor.s4c_l4c.config_path"];
     }
     // otherwise, check if it is in the default location
     if (strCfgPath.isEmpty()) {
-        const QString &strCfgRoot = configParameters["processor.l4c.config_root"];
+        const QString &strCfgRoot = configParameters["processor.s4c_l4c.config_root"];
         QDir dir(strCfgRoot);
         if (!dir.exists()) {
             strCfgPath = dir.filePath("S4C_L4C_Config_" + siteName + ".cfg");
@@ -348,13 +350,16 @@ QString AgricPracticesHandler::GetSiteConfigFilePath(const QString &siteName, co
     return strCfgPath;
 }
 
-AgricPracticesSiteCfg AgricPracticesHandler::LoadSiteConfigFile(const QString &siteCfgFilePath)
+AgricPracticesSiteCfg AgricPracticesHandler::LoadSiteConfigFile(const QString &siteCfgFilePath,
+                                                                const QJsonObject &parameters,
+                                                                std::map<QString, QString> &configParameters)
 {
     AgricPracticesSiteCfg cfg;
 
     QSettings settings(siteCfgFilePath, QSettings::IniFormat);
     QString cmnSectionKey("COMMON/");
 
+    cfg.prdsPerGroup = GetBoolConfigValue(parameters, configParameters, "prds_per_group", L4C_AP_CFG_PREFIX);
     cfg.country = settings.value( cmnSectionKey + "COUNTRY").toString();
     cfg.year = settings.value( cmnSectionKey + "YEAR").toString();
     cfg.fullShapePath = settings.value( cmnSectionKey + "FULL_SHP").toString();
@@ -775,20 +780,17 @@ QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
     std::string prodsInputKey;
     switch(prdType) {
         case ProductType::L3BProductTypeId:
-            prodsInputKey = "ndvi_input_products";
+            prodsInputKey = "input_NDVI";
             break;
         case ProductType::S4CS1L2AmpProductTypeId:
-            prodsInputKey = "amp_input_products";
+            prodsInputKey = "input_AMP";
             break;
         case ProductType::S4CS1L2CoheProductTypeId:
-            prodsInputKey = "cohe_input_products";
+            prodsInputKey = "input_COHE";
             break;
         default:
-            throw std::runtime_error(
-                QStringLiteral(
-                    "Unsupported product type %1.")
-                    .arg((int)prdType)
-                    .toStdString());
+            Logger::error(QStringLiteral("Unsupported product type %1.").arg((int)prdType));
+            return QStringList();
     }
     const auto &inputProducts = parameters[prodsInputKey.c_str()].toArray();
     QStringList listProducts;
@@ -816,25 +818,24 @@ QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
         for (const auto &inputProduct : inputProducts) {
             // if the product is an LAI, we need to extract the TIFF file for the NDVI
             if (prdType == ProductType::L3BProductTypeId) {
-                const QString &tiffFile = FindNdviProductTiffFile(ctx, event, inputProduct.toString());
-                if (tiffFile.size() > 0) {
-                    listProducts.append(tiffFile);
-                    const QDateTime &ndviTime = GetNdviProductTime(tiffFile);
-                    UpdateMinMaxTimes(ndviTime, minDate, maxDate);
+                const QStringList &tiffFiles = FindNdviProductTiffFile(ctx, event, inputProduct.toString());
+                if (tiffFiles.size() > 0) {
+                    listProducts.append(tiffFiles);
+                    for (const auto &tiffFile: tiffFiles) {
+                        const QDateTime &ndviTime = ProcessorHandlerHelper::GetNdviProductTime(tiffFile);
+                        ProcessorHandlerHelper::UpdateMinMaxTimes(ndviTime, minDate, maxDate);
+                    }
                 }
             } else {
                 // the S1 AMP and COHE products have directly the path of the tiff in the product table
                 const QString &prdPath = ctx.GetProductAbsolutePath(event.siteId, inputProduct.toString());
                 if (prdPath.size() > 0) {
                     listProducts.append(prdPath);
-                    const QDateTime &s1Time = GetS1L2AProductTime(prdPath);
-                    UpdateMinMaxTimes(s1Time, minDate, maxDate);
+                    const QDateTime &s1Time = ProcessorHandlerHelper::GetS1L2AProductTime(prdPath);
+                    ProcessorHandlerHelper::UpdateMinMaxTimes(s1Time, minDate, maxDate);
                 } else {
-                    throw std::runtime_error(
-                        QStringLiteral(
-                            "The product path does not exists %1.")
-                            .arg(inputProduct.toString())
-                            .toStdString());
+                    Logger::error(QStringLiteral("The product path does not exists %1.").arg(inputProduct.toString()));
+                    return QStringList();
                 }
             }
         }
@@ -843,13 +844,13 @@ QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
     return listProducts;
 }
 
-QString AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QString &path)
+QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QString &path)
 {
     QFileInfo fileInfo(path);
     if (!fileInfo.isDir()) {
         const QString &fileName = fileInfo.fileName();
         if (fileName.contains("S2AGRI_L3B_SNDVI_A") && fileName.endsWith(".TIF")) {
-            return path;
+            return QStringList(path);
         }
     }
     QString absPath = path;
@@ -857,16 +858,20 @@ QString AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContext &c
         // if we have the product name, we need to get the product path from the database
         absPath = ctx.GetProductAbsolutePath(event.siteId, path);
     }
-    const QString &laiFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(absPath, "SNDVI");
-
-    if (laiFileName.isEmpty()) {
-        throw std::runtime_error(
-            QStringLiteral(
-                "Unable to find the TIFF file for the given input product %1.")
-                .arg(absPath)
-                .toStdString());
+    const QString &tilesPath = QDir(absPath).filePath("TILES");
+    QStringList retList;
+    for (const auto &subDir : QDir(tilesPath).entryList(QDir::NoDotAndDotDot | QDir::Dirs)) {
+        const QString &tileDir = QDir(tilesPath).filePath(subDir);
+        const QString &laiFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(tileDir, "SNDVI");
+        if (laiFileName.size() > 0) {
+            retList.append(laiFileName);
+        }
     }
-    return laiFileName;
+
+    if (retList.size() == 0) {
+        Logger::error(QStringLiteral("Unable to find any TIFF file for the given input product %1.").arg(absPath));
+    }
+    return retList;
 }
 
 PracticesTableExtractionParams AgricPracticesHandler::LoadPracticesParams(const QSettings &settings, const QString &practicePrefix) {

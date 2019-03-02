@@ -41,6 +41,7 @@ SOURCES += main.cpp \
     schedulingcontext.cpp \
     processor/ndvihandler.cpp \
     processor/lairetrievalhandler_l3b_new.cpp \
+    processor/s4c_croptypehandler.cpp \
     processor/agricpracticeshandler.cpp \
     processor/grasslandmowinghandler.cpp
 
@@ -63,6 +64,7 @@ HEADERS += \
     schedulingcontext.h \
     processor/ndvihandler.hpp \
     processor/lairetrievalhandler_l3b_new.hpp \
+    processor/s4c_croptypehandler.hpp \
     processor/agricpracticeshandler.hpp \
     processor/grasslandmowinghandler.hpp
 

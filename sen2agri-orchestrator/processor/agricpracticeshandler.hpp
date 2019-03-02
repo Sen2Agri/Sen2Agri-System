@@ -98,7 +98,8 @@ private:
 
 private:
     QString GetSiteConfigFilePath(const QString &siteName, const QJsonObject &parameters, std::map<QString, QString> &configParameters);
-    AgricPracticesSiteCfg LoadSiteConfigFile(const QString &siteCfgFilePath);
+    AgricPracticesSiteCfg LoadSiteConfigFile(const QString &siteCfgFilePath, const QJsonObject &parameters,
+                                             std::map<QString, QString> &configParameters);
 
     QStringList ExtractNdviFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event, QDateTime &minDate, QDateTime &maxDate);
     QStringList ExtractAmpFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event, QDateTime &minDate, QDateTime &maxDate);
@@ -127,7 +128,7 @@ private:
 
     QStringList GetInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, const ProductType &prdType,
                                  QDateTime &minDate, QDateTime &maxDate);
-    QString FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QString &path);
+    QStringList FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QString &path);
 
     PracticesTableExtractionParams LoadPracticesParams(const QSettings &settings, const QString &practicePrefix);
     void UpdatePracticesParams(const PracticesTableExtractionParams &defVals, PracticesTableExtractionParams &sectionVals);

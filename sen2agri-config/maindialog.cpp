@@ -367,6 +367,7 @@ QWidget *MainDialog::createEditRow(int categoryId,
 
     if (parameter.dataType == QLatin1String("int") ||
         parameter.dataType == QLatin1String("float") ||
+        parameter.dataType == QLatin1String("select") ||
         parameter.dataType == QLatin1String("string")) {
         auto widget = new QLineEdit(container);
         editWidget = widget;

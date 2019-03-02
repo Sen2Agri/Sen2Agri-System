@@ -62,6 +62,12 @@ protected:
                                                                            const QString &tileId);
     bool IsCloudOptimizedGeotiff(const std::map<QString, QString> &configParameters);
     QString GetMapValue(const std::map<QString, QString> &configParameters, const QString &key, const QString &defVal = "");
+    bool GetBoolConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                            const QString &key, const QString &cfgPrefix);
+    int GetIntConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                          const QString &key, const QString &cfgPrefix);
+    QString GetStringConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                            const QString &key, const QString &cfgPrefix);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

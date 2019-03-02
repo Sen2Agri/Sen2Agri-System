@@ -12,6 +12,8 @@
 #include "processor/compositehandler.hpp"
 #include "processor/lairetrievalhandler.hpp"
 #include "processor/phenondvihandler.hpp"
+#include "processor/s4c_croptypehandler.hpp"
+#include "processor/grasslandmowinghandler.hpp"
 #include "processor/agricpracticeshandler.hpp"
 #include "json_conversions.hpp"
 #include "schedulingcontext.h"
@@ -36,6 +38,10 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
             handlersMap.emplace(procDescr.processorId, std::make_unique<CropMaskHandler>());
         } else if(procDescr.shortName == "l4b") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<CropTypeHandler>());
+        } else if(procDescr.shortName == "s4c_l4a") {
+            handlersMap.emplace(procDescr.processorId, std::make_unique<S4CCropTypeHandler>());
+        } else if(procDescr.shortName == "s4c_l4b") {
+            handlersMap.emplace(procDescr.processorId, std::make_unique<GrasslandMowingHandler>());
         } else if(procDescr.shortName == "s4c_l4c") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<AgricPracticesHandler>());
         } else {

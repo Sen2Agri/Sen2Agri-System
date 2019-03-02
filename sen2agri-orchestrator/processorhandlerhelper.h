@@ -111,6 +111,11 @@ public:
     static void TrimLeftSecondarySatellite(QStringList &productsList, QMap<QString, TileTemporalFilesInfo> mapTiles);
     static SatelliteIdType ConvertSatelliteType(Satellite satId);
 
+    static QDateTime GetNdviProductTime(const QString &prdPath);
+    static QDateTime GetS1L2AProductTime(const QString &prdPath);
+    static void UpdateMinMaxTimes(const QDateTime &newTime, QDateTime &minTime, QDateTime &maxTime);
+
+
 private:
     static QMap<QString, L2MetaTileNameInfos> m_mapSensorL2ATileMetaFileInfos;
     static QMap<QString, ProductType> m_mapHighLevelProductTypeInfos;

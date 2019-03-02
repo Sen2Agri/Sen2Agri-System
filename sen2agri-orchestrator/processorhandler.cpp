@@ -495,6 +495,31 @@ QString ProcessorHandler::GetMapValue(const std::map<QString, QString> &configPa
     return defVal;
 }
 
+bool ProcessorHandler::GetBoolConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                const QString &key, const QString &cfgPrefix) {
+    return (GetIntConfigValue(parameters, configParameters, key, cfgPrefix) != 0);
+}
+
+int ProcessorHandler::GetIntConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                const QString &key, const QString &cfgPrefix) {
+    return GetStringConfigValue(parameters, configParameters, key, cfgPrefix).toInt();
+}
+
+QString ProcessorHandler::GetStringConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                const QString &key, const QString &cfgPrefix) {
+    QString fullKey(cfgPrefix);
+    fullKey += key;
+
+    QString retVal;
+    if(parameters.contains(key)) {
+        retVal = parameters[key].toInt();
+    } else {
+        retVal = GetMapValue(configParameters, fullKey);
+    }
+    return retVal;
+}
+
+
 /*
 ProductList GetInsertedOrCreatedProducts(int siteId, const ProductType &productType, const QDateTime &startDate, const QDateTime &endDate,
                                          const QDateTime &seasonStartDate, const QDateTime &seasonEndDate)
