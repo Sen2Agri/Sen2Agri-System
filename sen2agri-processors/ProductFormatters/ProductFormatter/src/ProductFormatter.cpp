@@ -1869,8 +1869,18 @@ private:
   void TransferGenericVectorFiles(const std::vector<std::string> &files)
   {
       for(const auto &file: files) {
-          std::string fileName = boost::filesystem::path(file).filename().c_str();
-          CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + fileName, file);
+          boost::filesystem::path filePath(file);
+          if (boost::filesystem::is_directory(filePath)) {
+              for(const boost::filesystem::directory_entry& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(filePath), {})) {
+                //std::cout << entry.path(). << "\n";
+                std::string fileName = entry.path().filename().c_str();
+                CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + fileName, entry.path().string());
+
+              }
+          } else {
+              std::string fileName = filePath.filename().c_str();
+              CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + fileName, file);
+          }
       }
   }
 

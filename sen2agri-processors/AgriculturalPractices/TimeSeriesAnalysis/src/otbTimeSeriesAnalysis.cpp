@@ -594,7 +594,7 @@ private:
 //            return false;
 //        }
 
-//        if (fieldId != "527113602/5") {
+//        if (fieldId != "05300282100145") {
 //            return false;
 //        }
 
@@ -1671,7 +1671,7 @@ private:
         harvestInfos.harvestConfirmed = NOT_AVAILABLE;
         harvestInfos.evaluation.Initialize(fieldInfos);
 
-        if (!HasValidNdviValues(retAllMergedValues, m_OpticalThrVegCycle)) {
+        if (!HasValidNdviValues(retAllMergedValues, m_OpticalThrVegCycle, true)) {
             harvestInfos.evaluation.ndviPresence = false;               // M1
             harvestInfos.evaluation.candidateOptical = NR;           // M2
             harvestInfos.evaluation.candidateAmplitude = NR;         // M3
@@ -2138,7 +2138,7 @@ private:
     }
 
     bool FallowLandPracticeAnalysis(const FieldInfoType &fieldInfos, std::vector<MergedAllValInfosType> &retAllMergedValues,
-                                        const HarvestInfoType &harvestInfos, HarvestInfoType &flHarvestInfos) {
+                                        HarvestInfoType &harvestInfos, HarvestInfoType &flHarvestInfos) {
         flHarvestInfos = harvestInfos;
 
         flHarvestInfos.evaluation.ndviPresence = NR;                        // M6
@@ -2174,14 +2174,16 @@ private:
         if (fieldInfos.countryCode == "LTU") {
             // for Lithuania there is a special case
             bool efaCoh = false;
-            if (efaMarkers.size() > 9) {
+            //time_t ttCohStableWeek = 0;
+            if (efaMarkers.size() >= 9) {
                 // is there loss in coherence (FALSE value) in 9 subsequent weeks
                 int cohStableCnt = 0;
                 for (int i = (efaMarkers.size() - 1); i>= 0; i--) {
                     if (efaMarkers[i].cohNoLoss == true) {
                         cohStableCnt++;
-                        if (cohStableCnt == 9) {
+                        if (cohStableCnt >= 9) {
                             efaCoh = true;
+                            //ttCohStableWeek = efaMarkers[i].ttDate;
                             break;
                         }
                     } else {
@@ -2193,12 +2195,18 @@ private:
                 if (!efaCoh) {
                     flHarvestInfos.evaluation.efaIndex = "STRONG";
                     // # harvest is not evaluated for the confirmed black fallow as it is not expected
+                    harvestInfos.evaluation.harvestConfirmWeek = NR;
+                    harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
                     flHarvestInfos.evaluation.harvestConfirmWeek = NR;
                     flHarvestInfos.evaluation.ttHarvestConfirmWeekStart = 0;
                 } else {
                     // # if there is no-loss of coherence in all the 9 subsequent
                     // weeks (if M10 is TRUE) - return WEAK evaluation for the black fallow practice
                     flHarvestInfos.evaluation.efaIndex = "WEAK";
+
+                    // NOTE: Code Just for testing in the R code.
+                    //flHarvestInfos.evaluation.ttPracticeStartTime = ttCohStableWeek;
+                    //flHarvestInfos.evaluation.ttPracticeEndTime = ttCohStableWeek + 62 * SEC_IN_DAY;
                 }
                 // M6 is not used - return "NR"
                 flHarvestInfos.evaluation.ndviPresence = NR;
@@ -2209,27 +2217,28 @@ private:
                     // # if there is a loss in all the 9 subsequent weeks (if M10 is FALSE) - return WEAK evaluation
                     // # in such case harvest is not evaluated
                     flHarvestInfos.evaluation.efaIndex = "WEAK";
-                    flHarvestInfos.evaluation.harvestConfirmWeek = NR;
-                    flHarvestInfos.evaluation.ttHarvestConfirmWeekStart = 0;
-                } else if (flHarvestInfos.evaluation.ndviPresence == false ||
-                           IsNA(flHarvestInfos.evaluation.harvestConfirmWeek)) {
+                    //flHarvestInfos.evaluation.harvestConfirmWeek = NR;
+                    //flHarvestInfos.evaluation.ttHarvestConfirmWeekStart = 0;
+                } else if (flHarvestInfos.evaluation.ndviPresence == false) {
                     // # if there is no evidence of vegetation in NDVI - return WEAK evaluation for the green fallow practice
                     // # green fallow shall be inserted to soil up to the end of the efa period - harvest shall be detected
                     // # if harvest is not detected - return WEAK evaluation
                     flHarvestInfos.evaluation.efaIndex = "WEAK";
+                } else if (IsNA(flHarvestInfos.evaluation.harvestConfirmWeek)) {
+                    flHarvestInfos.evaluation.efaIndex = "MODERATE";
                 } else {
                     // # if harvest is detected
                     // # set the first day of the harvest week
                     flHarvestInfos.harvestConfirmed = flHarvestInfos.evaluation.ttHarvestConfirmWeekStart;
-                    if (flHarvestInfos.harvestConfirmed >= weekB - 62 * SEC_IN_DAY) {
+                    if (flHarvestInfos.harvestConfirmed <= (weekB - 62 * SEC_IN_DAY)) {
                         // # too early - return MODERATE evaluation
                         flHarvestInfos.evaluation.efaIndex = "MODERATE";
-                    } else if (flHarvestInfos.harvestConfirmed <= weekB + 7 * SEC_IN_DAY) {
+                    } else if (flHarvestInfos.harvestConfirmed <= (weekB + 7 * SEC_IN_DAY)) {
                         // # before the end of the efa period - return STRONG evaluation
                         flHarvestInfos.evaluation.efaIndex = "STRONG";
                     } else {
                         // # too late - return WEAK evaluation
-                        flHarvestInfos.evaluation.efaIndex = "WEAK";
+                        flHarvestInfos.evaluation.efaIndex = "MODERATE";
                     }
                 }
 
@@ -2275,13 +2284,14 @@ private:
                         efaMarkers2[i].ndviNoLoss = efaMarkers2[i+1].ndviNoLoss;
                     }
                 }
+
                 // # if there is evidence of loss in NDVI in the period - M8(noloss) is FALSE
                 bool ndviNoLossFalseFound = false;
                 for (size_t i = 0; i<efaMarkers2.size(); i++) {
                     if (IsNA(efaMarkers2[i].ndviNoLoss)) {
                         continue;
                     }
-                    if (efaMarkers2[i].ttDate >= weekC && efaMarkers2[i].ttDate <= weekD + 7 * SEC_IN_DAY) {
+                    if ((efaMarkers2[i].ttDate >= weekC) && (efaMarkers2[i].ttDate <= (weekD + SEC_IN_WEEK))) {
                         if (efaMarkers2[i].ndviNoLoss == false) {
                             ndviNoLossFalseFound = true;
                             break;
@@ -2367,7 +2377,11 @@ private:
         if (fieldInfos.countryCode != "CZE") {
             if (!ncHarvestInfos.evaluation.ndviPresence) {
                 // # no evidence of vegetation in the whole vegetation season - no evidence of NFC - return WEAK evaluation
-                ncHarvestInfos.evaluation.efaIndex = "WEAK";
+                if (fieldInfos.countryCode == "ESP") {
+                    ncHarvestInfos.evaluation.efaIndex = "POOR";
+                } else {
+                    ncHarvestInfos.evaluation.efaIndex = "WEAK";
+                }
             } else if(IsNA(ncHarvestInfos.evaluation.harvestConfirmWeek)) {
                 // vegetation is present, harvest was not detected - NFC is considered ok - return MODERATE evaluation
                 ncHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
@@ -2532,6 +2546,7 @@ private:
 //        PrintEfaMarkers(allMergedValues, efaMarkers);
 //      DEBUG
 
+/*
         const std::vector<MergedDateAmplitude> &ampFilteredRawValues = FilterValuesByDates(
                     mergedAmpInfos, ttStartTime, ttEndTime);
 
@@ -2557,7 +2572,7 @@ private:
         if (maxWeek == -1 || IsNA(maxWeek)) {
             maxWeek = GetWeekFromDate(allMergedValues[allMergedValues.size()-1].ttDate) - 1;
         }
-
+*/
         std::vector<int> allWeeks;
         allWeeks.reserve(mergedAmpInfos.size());
         std::transform(mergedAmpInfos.begin(), mergedAmpInfos.end(),
@@ -2577,8 +2592,9 @@ private:
         if (allWeeksUniques.size() >= 3) {
             // linear fitting for +/- 2 weeks
             int curWeek;
-            for (int i = minWeek; i<=maxWeek; i++) {
-                curWeek = i;
+            for (size_t i = 1; i< efaMarkers.size() - 1; i++) {
+                curWeek = GetWeekFromDate(efaMarkers[i].ttDate);
+                //curWeek = i;
                 // extract from the amplitude vectors , the weeks
                 std::vector<double> subsetAmpTimes;
                 std::vector<double> subsetAmpValues;
@@ -2606,24 +2622,26 @@ private:
 
                 double slope;
                 bool res = ComputeSlope(subsetAmpTimes, subsetAmpValues, slope);
-                //std::cout << "Slope: " << slope << std::endl;
+                // std::cout << "Slope: " << slope << std::endl;
                 if (res) {
                     // compute the marker to be updated
-                    int idx = curWeek - minWeek + 1;
-                    if (idx >= 0 && idx < (int)ampSlopeVec.size()) {
-                        ampSlopeVec[idx] = slope;
-                    }
+//                    int idx = curWeek - minWeek + 1;
+//                    if (idx >= 0 && idx < (int)ampSlopeVec.size()) {
+//                        ampSlopeVec[idx] = slope;
+//                    }
+                     ampSlopeVec[i] = slope;
                 }
 
                 double pValue;
                 res = ComputePValue(subsetAmpTimes, subsetAmpValues, pValue);
-                //std::cout << "p-Value: " << pValue << std::endl;
+                // std::cout << "p-Value: " << pValue << std::endl;
                 if (res) {
                     // compute the marker to be updated
-                    int idx = curWeek - minWeek + 1;
-                    if (idx >= 0 && idx < (int)ampPValueVec.size()) {
-                        ampPValueVec[idx] = pValue;
-                    }
+//                    int idx = curWeek - minWeek + 1;
+//                    if (idx >= 0 && idx < (int)ampPValueVec.size()) {
+//                        ampPValueVec[idx] = pValue;
+//                    }
+                    ampPValueVec[i] = pValue;
                 }
 
 
@@ -2706,9 +2724,12 @@ private:
         return hasValidNdvi;
     }
 
-    bool HasValidNdviValues(const std::vector<MergedAllValInfosType> &values, double thrVal = NOT_AVAILABLE) {
+    bool HasValidNdviValues(const std::vector<MergedAllValInfosType> &values, double thrVal = NOT_AVAILABLE, bool filterVegWeeks = false) {
         bool hasValidNdvi = false;
         for(size_t i = 0; i<values.size(); i++) {
+            if (filterVegWeeks && values[i].vegWeeks != true) {
+                continue;
+            }
             if (IsNA(values[i].ndviMeanVal)) {
                 continue;
             }
@@ -2772,8 +2793,15 @@ private:
     void UpdateGapsInformation(const std::vector<MergedAllValInfosType> &values, FieldInfoType &fieldInfos) {
         int sum = 0;
         int diffInDays;
-        for(size_t i = 1; i<values.size(); i++) {
-            diffInDays = (values[i].ttDate - values[i-1].ttDate) / SEC_IN_DAY;
+
+        // according to ISO calendar, the first week of the year is the one that contains 4th of January
+        time_t ttFirstWeekStart = GetTimeFromString(std::to_string(fieldInfos.year).append("-01-01"));
+        time_t ttPrevDate = ttFirstWeekStart;
+        for(size_t i = 0; i<values.size(); i++) {
+            if (i > 0) {
+                ttPrevDate = values[i-1].ttDate;
+            }
+            diffInDays = (values[i].ttDate - ttPrevDate) / SEC_IN_DAY;
             if (diffInDays > 7) {
                 sum += (diffInDays / 7) - 1;
             }
@@ -2889,7 +2917,15 @@ private:
         const std::string &fullPath = GetPlotsFilePath(practiceName, countryCode, year);
         otbAppLogINFO("Creating plot file " << fullPath);
         m_OutPlotsFileStream.open(fullPath, std::ios_base::trunc | std::ios_base::out);
-        m_OutPlotsFileStream << "<plots>\n";
+        std::string plotsStart("<plots>\n");
+        m_OutPlotsFileStream << plotsStart.c_str();
+
+        std::string outIdxPath;
+        boost::filesystem::path path(fullPath);
+        outIdxPath = (path.parent_path() / path.filename()).string() + ".idx";
+        m_OutPlotsIdxFileStream.open(outIdxPath, std::ios_base::trunc | std::ios_base::out);
+        // initialize also the index
+        m_OutPlotsIdxCurIdx = plotsStart.size();
     }
 
     void ClosePlotsFile() {
@@ -2900,6 +2936,9 @@ private:
         m_OutPlotsFileStream << "</plots>\n";
         m_OutPlotsFileStream.flush();
         m_OutPlotsFileStream.close();
+
+        m_OutPlotsIdxFileStream.flush();
+        m_OutPlotsIdxFileStream.close();
     }
 
     void WritePlotEntry(const FieldInfoType &fieldInfos, const HarvestInfoType &harvestInfo) {
@@ -2907,29 +2946,40 @@ private:
             return;
         }
 
-        m_OutPlotsFileStream << " <fid id=\"" << fieldInfos.fieldId.c_str() << "\">\n";
-        m_OutPlotsFileStream << " <harvest ps=\"" << TimeToString(harvestInfo.evaluation.ttHarvestStartTime).c_str() <<
+        std::stringstream ss;
+
+        ss << " <fid id=\"" << fieldInfos.fieldId.c_str() << "\">\n";
+        ss << " <harvest ps=\"" << TimeToString(harvestInfo.evaluation.ttHarvestStartTime).c_str() <<
                                 "\" pe=\"" << TimeToString(harvestInfo.evaluation.ttHarvestEndTime).c_str() <<
                                 "\" w=\"" << ValueToString(harvestInfo.evaluation.harvestConfirmWeek).c_str() <<
                                 "\"/>\n";
-        m_OutPlotsFileStream << "  <ndvis>\n";
+        ss << "  <ndvis>\n";
         for (size_t i = 0; i<fieldInfos.ndviLines.size(); i++) {
-            m_OutPlotsFileStream << "   <ndvi date=\"" << fieldInfos.ndviLines[i].strDate.c_str() <<
+            ss << "   <ndvi date=\"" << fieldInfos.ndviLines[i].strDate.c_str() <<
                                     "\" val=\"" << ValueToString(fieldInfos.ndviLines[i].meanVal).c_str() << "\"/>\n";
         }
-        m_OutPlotsFileStream << "  </ndvis>\n";
-        m_OutPlotsFileStream << "  <amps>\n";
-        for (size_t i = 0; i<fieldInfos.ampVVLines.size(); i++) {
-            m_OutPlotsFileStream << "   <amp date=\"" << fieldInfos.ampVVLines[i].strDate.c_str() <<
-                                    "\" val=\"" << ValueToString(fieldInfos.ampVVLines[i].meanVal).c_str() << "\"/>\n";
+        ss << "  </ndvis>\n";
+        ss << "  <amps>\n";
+        for (size_t i = 0; i<fieldInfos.ampRatioGroups.size(); i++) {
+            ss << "   <amp date=\"" << TimeToString(fieldInfos.ampRatioGroups[i].ttDate).c_str() <<
+                                    "\" val=\"" << ValueToString(fieldInfos.ampRatioGroups[i].meanVal).c_str() << "\"/>\n";
         }
-        m_OutPlotsFileStream << "  </amps>\n";
-        m_OutPlotsFileStream << "  <cohs>\n";
+        ss << "  </amps>\n";
+        ss << "  <cohs>\n";
         for (size_t i = 0; i<fieldInfos.coheVVLines.size(); i++) {
-            m_OutPlotsFileStream << "   <coh date=\"" << fieldInfos.coheVVLines[i].strDate.c_str() <<
+            ss << "   <coh date=\"" << fieldInfos.coheVVLines[i].strDate.c_str() <<
                                     "\" val=\"" << ValueToString(fieldInfos.coheVVLines[i].meanVal).c_str() << "\"/>\n";
         }
-        m_OutPlotsFileStream << "  </cohs>\n</fid>\n";
+        ss << "  </cohs>\n</fid>\n";
+
+        const std::string &ssStr = ss.str();
+        size_t byteToWrite = ssStr.size();
+        if (m_OutPlotsIdxFileStream.is_open()) {
+            m_OutPlotsIdxFileStream << fieldInfos.fieldId.c_str() << ";" << m_OutPlotsIdxCurIdx << ";" << byteToWrite <<"\n";
+        }
+        m_OutPlotsIdxCurIdx += byteToWrite;
+        m_OutPlotsFileStream << ssStr.c_str();
+
     }
 
     double ComputeOpticalThresholdBuffer(int nVegWeeksCnt, double maxMeanNdviDropVal, double OpticalThresholdValue) {
@@ -3375,6 +3425,8 @@ private:
     std::string m_year;
 
     std::ofstream m_OutPlotsFileStream;
+    std::ofstream m_OutPlotsIdxFileStream;
+    uintmax_t m_OutPlotsIdxCurIdx;
 
 
 

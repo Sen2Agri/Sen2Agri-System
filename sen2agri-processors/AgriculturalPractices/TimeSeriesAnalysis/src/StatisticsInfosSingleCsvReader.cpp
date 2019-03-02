@@ -96,6 +96,7 @@ bool StatisticsInfosSingleCsvReader::GetEntriesForField(const std::string &fid, 
     } else {
         IdxMapType::const_iterator it = m_IdxMap.find(fieldId);
         if (it != m_IdxMap.end()) {
+            bool dataOk = false;
             // search the indexed infos filtered
             for (const FieldIndexInfos &info: it->second) {
                 for (const std::string & filter: findFilters) {
@@ -106,11 +107,15 @@ bool StatisticsInfosSingleCsvReader::GetEntriesForField(const std::string &fid, 
                         buff[info.len] = 0;
                         std::istringstream siStream(buff);
                         // read only from this section of the file
-                        if (!ExtractLinesFromStream(siStream, fid, findFilters, mapInfos)) {
-                            return false;
+                        if (ExtractLinesFromStream(siStream, fid, findFilters, mapInfos)) {
+                            dataOk = true;
                         }
                     }
                 }
+            }
+            // none of the orbits was OK
+            if (!dataOk) {
+                return false;
             }
         }
     }
@@ -163,10 +168,14 @@ bool StatisticsInfosSingleCsvReader::ExtractLinesFromStream(std::istream &inStre
     // sort the entries and check for the needed input size
     std::map<std::string, std::vector<InputFileLineInfoType>>::iterator itMap;
     bool hasValidValues = false;
+    std::string shortOrbits;
     for (itMap = retMap.begin(); itMap != retMap.end(); ++itMap) {
 
         if (m_minReqEntries == 0 || (int)itMap->second.size() >= m_minReqEntries) {
             hasValidValues = true;
+        } else {
+            shortOrbits.append(", ").append(itMap->first).
+                    append(" : ").append(std::to_string(itMap->second.size()));
         }
 
         // sort the read lines information
@@ -187,7 +196,7 @@ bool StatisticsInfosSingleCsvReader::ExtractLinesFromStream(std::istream &inStre
         }
     }
     if (!hasValidValues) {
-        std::cout << "Error extracting data. Input files are short" << std::endl;
+        std::cout << "Error extracting data. Input files are short" << shortOrbits << std::endl;
     }
     return hasValidValues;
 }
