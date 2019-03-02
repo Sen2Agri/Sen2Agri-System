@@ -576,7 +576,6 @@ QStringList LaiRetrievalHandlerL3B::GetBvErrImageInvArgs(const QString &ftsFile,
 
 QStringList LaiRetrievalHandlerL3B::GetQuantifyImageArgs(const std::map<QString, QString> &,
                                                          const QString &inFileName, const QString &outFileName)  {
-    (void)configParams;
     return { "QuantifyImage",
         "-in", inFileName,
         "-out", outFileName
