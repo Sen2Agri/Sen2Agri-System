@@ -141,7 +141,8 @@ def main():
     command += ["--season-start", format_date(config.season_start)]
     command += ["--season-end", format_date(config.season_end)]
     command += ["--lpis-path", lpis_path]
-    command += ["--tiles"] + config.tiles
+    if config.tiles:
+        command += ["--tiles"] + config.tiles
 
     run_command(command)
 
