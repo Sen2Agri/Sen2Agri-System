@@ -191,7 +191,8 @@ def extract_optical_features(path, satellite_id, tile, products, ref, dates_file
     hdrs = []
     for product in products:
         hdr = get_tile_hdr(tile, product.path)
-        hdrs.append(hdr)
+        if hdr:
+            hdrs.append(hdr)
 
     mean = "mean-{}.csv".format(tile)
     dev = "dev-{}.csv".format(tile)
