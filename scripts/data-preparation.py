@@ -417,7 +417,11 @@ def export_parcels(conn, lpis_table, lut_table, outfile):
             from {} lpis
             inner join {} lut on lut.ctnum :: int = lpis."CTnum"
             where lpis."LC" in (1, 2, 3, 4)
+              and lpis."S1Pix" > 0
               and lpis."S2Pix" > 2
+              and "GeomValid"
+              and not "Duplic"
+              and not "Overlap"
             order by "NewID"
             """)
         query = query.format(Identifier(lpis_table), Identifier(lut_table))
