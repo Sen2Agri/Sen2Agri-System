@@ -113,19 +113,20 @@ class Tile(object):
 
 def prepare_lpis(conn, lpis_table, lut_table, tiles):
     with conn.cursor() as cursor:
+        lpis_pkey_name = Identifier("{}_pkey".format(lpis_table))
+        lut_pkey_name = Identifier("{}_pkey".format(lut_table))
         idx_name = Identifier("idx_{}_wkb_geometry".format(lpis_table))
         lpis_table_str = Literal(lpis_table)
         lpis_table = Identifier(lpis_table)
         lut_table = Identifier(lut_table)
 
-        pkey_name = Identifier("{}_pkey".format(lut_table))
         query = SQL(
             """
             alter table {}
             drop column ogc_fid,
             add constraint {} primary key(ori_crop)
             """
-        ).format(lut_table, pkey_name)
+        ).format(lut_table, lut_pkey_name)
         print(query.as_string(conn))
         cursor.execute(query)
         conn.commit()
@@ -159,7 +160,7 @@ def prepare_lpis(conn, lpis_table, lut_table, tiles):
         cursor.execute(query)
         conn.commit()
 
-        pkey_name = Identifier("{}_pkey".format(lpis_table))
+        lpis_pkey_name = Identifier("{}_pkey".format(lpis_table))
         query = SQL(
             """
             alter table {}
@@ -168,7 +169,7 @@ def prepare_lpis(conn, lpis_table, lut_table, tiles):
             drop column ogc_fid,
             add constraint {} primary key("NewID")
             """
-        ).format(lpis_table, pkey_name)
+        ).format(lpis_table, lpis_pkey_name)
         print(query.as_string(conn))
         cursor.execute(query)
         conn.commit()
