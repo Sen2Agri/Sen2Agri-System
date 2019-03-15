@@ -42,7 +42,7 @@ if (!(samplingmethod %in% c("Random","Areaweighted","Overareaweighted","Overunde
 
 #import shapefile (nrow = nrow(Features)) as CSV
 print("Importing shapefile...")
-Shapefile=read_csv(Shape_filename)
+Shapefile=read_csv(Shape_filename, col_types = "idii")
 
     if (length(which(names(Shapefile) %in% c("AREA","CTnum","NewID")))!=3) {
       stop('Wrong argument: Shapefile names do not contain "AREA","CTnum" and/or "NewID"', call.=FALSE)
@@ -61,7 +61,8 @@ if (InputSAR==0 & InputOpt!=0) {
   print("Optical only")
 
   print("Importing Opt_Features...")
-  Opt_features=read_csv(InputOpt)
+  ncol_Optcsv=system(paste("head -1",InputOpt,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
+  Opt_features=read_csv(InputOpt,col_types=paste0("i",paste(rep("d",as.numeric(ncol_Optcsv)-1),collapse="")))
 
   Opt_features[Opt_features==0] <- NA
 
@@ -82,26 +83,17 @@ if (InputSAR==0 & InputOpt!=0) {
 #  print(mem_used())
   print("Optical, SAR and SAR_tempStats ")
 
-  #print("Importing SAR_Features...")
-  #ncol_SARcsv=system(paste("head -1",InputSAR,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
-  #SAR_features=read_csv(InputSAR,col_types=paste0("i",paste(rep("d",as.numeric(ncol_SARcsv)-1),collapse=""),collapse=""))
-
-  #print("Importing Opt_Features...")
-  #ncol_Optcsv=system(paste("head -1",InputOpt,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
-  #Opt_features=read_csv(InputOpt,col_types=paste0("i",paste(rep("d",as.numeric(ncol_Optcsv)-1),collapse=""),collapse=""))
-
-  #print("Importing SAR Temporal Features...")
-  #ncol_SARcsv=system(paste("head -1",InputSAR_tempStats,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
-  #SAR_tempStats=read_csv(InputSAR_tempStats,col_types=paste0("i",paste(rep("d",as.numeric(ncol_SARcsv)-1),collapse=""),collapse=""))
-
   print("Importing Opt_Features...")
-  Opt_features=read_csv(InputOpt)
+  ncol_Optcsv=system(paste("head -1",InputOpt,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
+  Opt_features=read_csv(InputOpt,col_types=paste0("i",paste(rep("d",as.numeric(ncol_Optcsv)-1),collapse="")))
 
   print("Importing SAR_Features...")
-  SAR_features=read_csv(InputSAR)
+  ncol_SARcsv=system(paste("head -1",InputSAR,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
+  SAR_features=read_csv(InputSAR,col_types=paste0("i",paste(rep("d",as.numeric(ncol_SARcsv)-1),collapse="")))
 
   print("Importing SAR Temporal Features...")
-  SAR_tempStats=read_csv(InputSAR_tempStats)
+  ncol_SARcsv=system(paste("head -1",InputSAR_tempStats,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
+  SAR_tempStats=read_csv(InputSAR_tempStats,col_types=paste0("i",paste(rep("d",as.numeric(ncol_SARcsv)-1),collapse="")))
 
   print("SAR, Optical and SAR temporal features imported successfully")
   #print("SAR and Optical features imported successfully")
