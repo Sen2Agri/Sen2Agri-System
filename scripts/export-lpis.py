@@ -132,11 +132,11 @@ def main():
                                  Identifier(lpis_table))
                 sql = sql.as_string(conn)
 
-            command = []
-            command += ["ogr2ogr"]
-            command += [output, pg_path]
-            command += ["-sql", sql]
-            commands.append(command)
+                command = []
+                command += ["ogr2ogr"]
+                command += [output, pg_path]
+                command += ["-sql", sql]
+                commands.append(command)
 
         pool.map(lambda c: run_command(c), commands)
 
