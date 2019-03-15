@@ -114,6 +114,11 @@ def main():
         lpis_path = get_lpis_path(conn, config.site_id, config.season_end)
         print("Using LPIS from {}".format(lpis_path))
 
+    if args.config_file:
+        config_file = os.path.realpath(args.config_file)
+    else:
+        config_file = None
+
     current_path = os.getcwd()
     os.chdir(args.working_path)
     try:
@@ -134,6 +139,7 @@ def main():
         pass
 
     os.chdir("optical")
+
     command = []
     command += ["crop-type-parcels.py"]
     command += ["-m", "optical"]
@@ -143,6 +149,8 @@ def main():
     command += ["--lpis-path", lpis_path]
     if config.tiles:
         command += ["--tiles"] + config.tiles
+    if config_file:
+        command += ["-c", config_file]
 
     run_command(command)
 
@@ -156,6 +164,8 @@ def main():
     command += ["--lpis-path", lpis_path]
     if config.tiles:
         command += ["--tiles"] + config.tiles
+    if config_file:
+        command += ["-c", config_file]
 
     run_command(command)
 
