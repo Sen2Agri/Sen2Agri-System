@@ -6,13 +6,11 @@ import csv
 from collections import defaultdict
 from datetime import date
 from glob import glob
-import math
 import multiprocessing.dummy
 import os
 import os.path
 from osgeo import osr
 from osgeo import ogr
-from gdal import gdalconst
 import pipes
 import psycopg2
 from psycopg2.sql import SQL, Literal, Identifier
@@ -405,38 +403,6 @@ def get_import_table_command(destination, source, *options):
     return command
 
 
-def export_parcels(conn, lpis_table, lut_table, outfile):
-    with conn.cursor() as cursor:
-        query = SQL(
-            """
-            select lpis."NewID",
-                   lpis."Area_meters" as "AREA",
-                   lut."ctnuml4a" as "CTnum",
-                   lpis."LC"
-            from {} lpis
-            inner join {} lut on lut.ctnum :: int = lpis."CTnum"
-            where lpis."LC" in (1, 2, 3, 4)
-              and lpis."S1Pix" > 0
-              and lpis."S2Pix" > 2
-              and "GeomValid"
-              and not "Duplic"
-              and not "Overlap"
-            order by "NewID"
-            """)
-        query = query.format(Identifier(lpis_table), Identifier(lut_table))
-        print(query.as_string(conn))
-
-        with open(outfile, 'wb') as csvfile:
-            writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
-
-            cursor.execute(query)
-            writer.writerow(['NewID', 'AREA', 'CTnum', 'LC'])
-            for row in cursor:
-                writer.writerow(row)
-
-        conn.commit()
-
-
 def main():
     parser = argparse.ArgumentParser(description="Crops and recompresses S1 L2A products")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
@@ -593,9 +559,6 @@ def main():
         args = [(s2pix, s1pix, id) for (id, (s2pix, s1pix)) in counts.items()]
         psycopg2.extras.execute_batch(cursor, sql, args, page_size=1000)
         conn.commit()
-
-    print("Exporting parcel list...")
-    export_parcels(conn, lpis_table, lut_table, "parcels.csv")
 
 
 if __name__ == "__main__":
