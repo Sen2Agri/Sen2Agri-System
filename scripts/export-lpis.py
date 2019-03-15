@@ -109,17 +109,16 @@ def main():
         year = args.year or date.today().year
         lpis_table = "decl_{}_{}".format(site_name, year)
 
-        print("Exporting full LPIS...")
+        commands = []
+
         gpkg_name = "{}.gpkg".format(lpis_table)
         command = []
         command += ["ogr2ogr"]
         command += [gpkg_name]
         command += [pg_path, lpis_table]
-        run_command(command)
+        commands.append(command)
 
-        print("Exporting buffered LPIS...")
         epsg_codes = get_site_epsg_codes(conn, config.site_id)
-        commands = []
         for epsg_code in epsg_codes:
             for buf in [5, 10]:
                 output = "{}_{}_buf_{}m.shp".format(lpis_table, epsg_code, buf)
