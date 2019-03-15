@@ -27,6 +27,7 @@ class Config(object):
         parser.read([args.config_file])
 
         self.host = parser.get("Database", "HostName")
+        self.port = int(parser.get("Database", "Port", vars={"Port": "5432"}))
         self.dbname = parser.get("Database", "DatabaseName")
         self.user = parser.get("Database", "UserName")
         self.password = parser.get("Database", "Password")
@@ -403,7 +404,7 @@ def main():
     config = Config(args)
     pool = multiprocessing.dummy.Pool(8)
 
-    with psycopg2.connect(host=config.host, dbname=config.dbname, user=config.user, password=config.password) as conn:
+    with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
         if args.fix_geog:
             fix_footprints(config, conn)
 

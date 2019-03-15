@@ -31,8 +31,7 @@ class Config(object):
         parser.read([args.config_file])
 
         self.host = parser.get("Database", "HostName")
-        #self.port = parser.get("Database", "Port", 5432)
-        self.port = 5432
+        self.port = int(parser.get("Database", "Port", vars={"Port": "5432"}))
         self.dbname = parser.get("Database", "DatabaseName")
         self.user = parser.get("Database", "UserName")
         self.password = parser.get("Database", "Password")
