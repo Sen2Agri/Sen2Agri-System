@@ -692,20 +692,24 @@ def get_statistics_invocation(input, ref):
 
 
 class WeeklyComposite(object):
-    def __init__(self, output, tile_ref, xmin, xmax, ymin, ymax, hdrs):
+    def __init__(self, output, tile_ref, xmin, xmax, ymin, ymax, inputs):
         self.output = output
         self.tile_ref = tile_ref
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
         self.ymax = ymax
-        self.hdrs = hdrs
+        self.inputs = inputs
 
     def run(self):
         env = {}
         env["ITK_USE_THREADPOOL"] = str(1)
         env["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(2)
         env["OTB_MAX_RAM_HINT"] = str(1024)
+
+        if os.path.exists(self.output):
+            return
+        self.inputs = filter(os.path.exists, self.inputs)
 
         command = []
         command += ["otbcli", "Composite"]
@@ -716,7 +720,7 @@ class WeeklyComposite(object):
         command += ["-srcwin.uly", self.ymax]
         command += ["-srcwin.lrx", self.xmax]
         command += ["-srcwin.lry", self.ymin]
-        command += ["-il"] + self.hdrs
+        command += ["-il"] + self.inputs
         command += ["-bv", 0]
         command += ["-opt.gridspacing", 240]
         run_command(command, env)
@@ -746,6 +750,9 @@ class WeeklyRatioStatistics(object):
 
         (mean, dev, count) = get_statistics_file_names(self.output)
 
+        if os.path.exists(mean) and os.path.exists(dev) and os.path.exists(count):
+            return
+
         command = []
         command += ["otbcli", "ClassStatisticsRatio"]
         command += ["-in.vv", self.vv]
@@ -771,6 +778,10 @@ class BackscatterMonthlyComposite(object):
         env["ITK_USE_THREADPOOL"] = str(1)
         env["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(2)
         env["OTB_MAX_RAM_HINT"] = str(1024)
+
+        if os.path.exists(self.output):
+            return
+        self.inputs = filter(os.path.exists, self.inputs)
 
         command = []
         command += ["otbcli", "BackscatterTemporalFeatures"]
@@ -803,6 +814,10 @@ class CoherenceMonthlyComposite(object):
         env["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(2)
         env["OTB_MAX_RAM_HINT"] = str(1024)
 
+        if os.path.exists(self.output):
+            return
+        self.inputs = filter(os.path.exists, self.inputs)
+
         command = []
         command += ["otbcli", "CoherenceMonthlyFeatures"]
         command += ["-progress", "false"]
@@ -832,6 +847,10 @@ class CoherenceSeasonComposite(object):
         env["ITK_USE_THREADPOOL"] = str(1)
         env["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(2)
         env["OTB_MAX_RAM_HINT"] = str(1024)
+
+        if os.path.exists(self.output):
+            return
+        self.inputs = filter(os.path.exists, self.inputs)
 
         command = []
         command += ["otbcli", "StandardDeviation"]
