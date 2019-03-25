@@ -18,9 +18,9 @@ declare _prev_l2a_path text;
 declare _site_id int;
 declare _product_date timestamp;
 begin
-	if (select current_setting('transaction_isolation') not ilike 'serializable') then
-		raise exception 'Please set the transaction isolation level to serializable.' using errcode = 'UE001';
-	end if;
+    if (select current_setting('transaction_isolation') not ilike 'serializable') then
+        raise exception 'Please set the transaction isolation level to serializable.' using errcode = 'UE001';
+    end if;
 
     select l1_tile_history.satellite_id,
            l1_tile_history.orbit_id,
@@ -50,7 +50,7 @@ begin
         update l1_tile_history
         set status_id = 1, -- processing
             status_timestamp = now()
-        where (l1_tile_history.satellite_id, l1_tile_history.orbit_id, l1_tile_history.tile_id) = (_satellite_id, _orbit_id, _tile_id);
+        where (l1_tile_history.downloader_history_id, l1_tile_history.tile_id) = (_downloader_history_id, _tile_id);
     else
         select distinct
             downloader_history.satellite_id,
