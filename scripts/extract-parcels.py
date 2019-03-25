@@ -25,7 +25,6 @@ class Config(object):
         self.password = parser.get("Database", "Password")
 
         self.site_id = args.site_id
-        self.path = args.path
 
 
 def get_site_name(conn, site_id):
@@ -51,8 +50,11 @@ def main():
     parser = argparse.ArgumentParser(description="Crops and recompresses S1 L2A products")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
     parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
-    parser.add_argument('-p', '--path', default='.', help="working path")
     parser.add_argument('-y', '--year', help="year")
+    parser.add_argument('--lc', help="LC values", nargs='+', type=int, default=[1, 2, 3, 4])
+    parser.add_argument('--min-s1-pix', help="minimum number of S1 pixels", type=int, default=1)
+    parser.add_argument('--min-s2-pix', help="minimum number of S2 pixels", type=int, default=3)
+    parser.add_argument('output', help="output file", default="parcels.csv")
 
     args = parser.parse_args()
 
@@ -73,19 +75,18 @@ def main():
                     lpis."LC"
                 from {} lpis
                 inner join {} lut on lut.ctnum :: int = lpis."CTnum"
-                where lpis."LC" in (1, 2, 3, 4)
-                and lpis."S1Pix" > 0
-                and lpis."S2Pix" > 2
+                where lpis."LC" = any({})
+                and lpis."S1Pix" >= {}
+                and lpis."S2Pix" >= {}
                 and "GeomValid"
                 and not "Duplic"
                 and not "Overlap"
                 order by "NewID"
                 """)
-            query = query.format(Identifier(lpis_table), Identifier(lut_table))
+            query = query.format(Identifier(lpis_table), Identifier(lut_table), Literal(args.lc), Literal(args.min_s1_pix), Literal(args.min_s2_pix))
             print(query.as_string(conn))
 
-            outfile = "parcels.csv"
-            with open(outfile, 'wb') as csvfile:
+            with open(args.output, 'wb') as csvfile:
                 writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
 
                 cursor.execute(query)
