@@ -709,6 +709,7 @@ class WeeklyComposite(object):
 
         command = []
         command += ["otbcli", "Composite"]
+        command += ["-progress", "false"]
         command += ["-out", self.output]
         command += ["-ref", self.tile_ref]
         command += ["-srcwin.ulx", self.xmin]
@@ -773,6 +774,7 @@ class BackscatterMonthlyComposite(object):
 
         command = []
         command += ["otbcli", "BackscatterTemporalFeatures"]
+        command += ["-progress", "false"]
         command += ["-out", self.output_extended]
         command += ["-mode", self.mode]
         command += ["-il"] + self.inputs
@@ -803,6 +805,7 @@ class CoherenceMonthlyComposite(object):
 
         command = []
         command += ["otbcli", "CoherenceMonthlyFeatures"]
+        command += ["-progress", "false"]
         command += ["-out", self.output_extended]
         command += ["-il"] + self.inputs
         run_command(command, env)
@@ -832,6 +835,7 @@ class CoherenceSeasonComposite(object):
 
         command = []
         command += ["otbcli", "StandardDeviation"]
+        command += ["-progress", "false"]
         command += ["-out", self.output_extended]
         command += ["-il"] + self.inputs
         run_command(command, env)
@@ -924,7 +928,6 @@ def process_radar(config, conn, pool):
 
         output = os.path.join(config.path, group.format(config.site_id))
         output_extended = get_otb_extended_filename_with_tiling(output)
-        print(output, output_extended)
 
         composite = BackscatterMonthlyComposite(tile_ref, output, output_extended, "simple", products)
         backscatter_composites.append(composite)
@@ -940,7 +943,6 @@ def process_radar(config, conn, pool):
             continue
 
         output = os.path.join(config.path, group.format(config.site_id))
-        print(output)
 
         statistics = WeeklyRatioStatistics(output, pair.vv, pair.vh, tile_ref)
         backscater_ratio_statistics.append(statistics)
@@ -953,7 +955,6 @@ def process_radar(config, conn, pool):
 
         output = os.path.join(config.path, group.format(config.site_id))
         output_extended = get_otb_extended_filename_with_tiling(output)
-        print(output, output_extended)
 
         pair.vv.sort()
         pair.vh.sort()
