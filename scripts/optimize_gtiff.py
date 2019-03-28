@@ -76,7 +76,7 @@ def main():
     else:
         run_command(['gdal_edit.py', '-unsetnodata', args.input])
 
-    run_command(['gdaladdo', '-clean', args.input])
+    run_command(['gdaladdo', '-q', '-clean', args.input])
 
     env = {}
     if args.threaded:
@@ -84,9 +84,10 @@ def main():
 
     dataset = gdal.Open(args.input, gdal.gdalconst.GA_ReadOnly)
 
-    # why?!
-    # command = ['gdal_translate', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave, '-a_nodata', args.no_data]
-    command = ['gdal_translate', '-co', 'INTERLEAVE=' + args.interleave]
+    # why?
+    # command = ['gdal_translate', '-q', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave, '-a_nodata', args.no_data]
+    command = ['gdal_translate', '-q', '-co', 'BIGTIFF=NO', '-co', 'INTERLEAVE=' + args.interleave]
+
     if args.bigtiff:
         command += ['-co', 'BIGTIFF=YES']
 
@@ -96,7 +97,7 @@ def main():
         size = (dataset.RasterXSize, dataset.RasterYSize)
         levels = get_overview_levels(max(size[0], size[1]), args.min_size)
         if levels:
-            run_command(['gdaladdo', '-r', args.resampler, args.input] + levels, env)
+            run_command(['gdaladdo', '-q', '-r', args.resampler, args.input] + levels, env)
 
     parts = os.path.splitext(args.input)
     temp = parts[0] + ".tmpcog.tif"
