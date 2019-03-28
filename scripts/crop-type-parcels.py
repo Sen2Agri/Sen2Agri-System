@@ -142,7 +142,20 @@ def get_tile_hdr(tile, path):
     if len(entries) == 0:
         print("No HDR found for tile {} in {}".format(tile, path))
         return None
-    return entries[0]
+    hdr = entries[0]
+    entries = glob(os.path.join(path, "*_SSC_*_{}_*.DBL.DIR/*.TIF".format(tile)))
+    for raster_type in ["FRE", "CLD", "MSK", "QLT"]:
+        for res in ["R1", "R2"]:
+            pat = "_{}_{}.DBL.TIF".format(raster_type, res)
+            ok = False
+            for entry in entries:
+                if entry.endswith(pat):
+                    ok = True
+                    break
+            if not ok:
+                print("No {} raster found for tile {} in {}".format(pat, tile, path))
+                return None
+    return hdr
 
 
 def date_to_epoch_days(dt):
