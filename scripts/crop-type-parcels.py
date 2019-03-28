@@ -1079,7 +1079,7 @@ def main():
     else:
         pool = multiprocessing.dummy.Pool(cpu_count)
 
-    with psycopg2.connect(host=config.host, dbname=config.dbname, user=config.user, password=config.password) as conn:
+    with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
         if config.mode == 'optical':
             process_optical(config, conn, pool, SATELLITE_ID_SENTINEL2)
         else:
