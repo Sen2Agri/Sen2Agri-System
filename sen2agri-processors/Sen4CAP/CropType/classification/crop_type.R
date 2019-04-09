@@ -654,6 +654,19 @@ if ( samplingmethod=="Random") {
   } else
   print("Sampling not properly defined")
 
+parcels_predict = data.frame(data_joined$NewID, data_joined$AREA, data_joined$TARGET)
+colnames(parcels_predict)=c("NewID", "AREA", "TARGET")
+parcels_predict_name = paste("Parcels_predict", format(Sys.time(), "%m%d-%H%M"), sep = "_")
+saveRDS(parcels_predict, paste0(workdir, parcels_predict_name, ".rds"))
+rm(parcels_predict)
+
+# remove non-features columns
+data_predict_red <- data_joined %>% dplyr:: select(starts_with("XX"))
+data_predict_red_name = paste("Data_predict", sample_size, format(Sys.time(), "%m%d-%H%M"), sep="_")
+saveRDS(data_predict_red, paste0(workdir,data_predict_red_name,".rds"))
+rm(data_joined, data_predict_red)
+gc()
+
 # remove NULL and NA values (see above)
 #data_calib_red=na.omit(data_calib_red)
 #data_red=data_red[,-2]
@@ -683,9 +696,15 @@ grp_data=group_by(data_valid,TARGET)
 areatot=sum(as.numeric(data_valid$AREA))
 Declarations_summary = summarise(grp_data, count=n(),arearatio=sum(as.numeric(AREA))/areatot)
 rm(data_valid, grp_data)
+
 #print(mem_used())
 print(paste('Dimensions sample for training:',dim(data_model)))
 print(paste('Dimensions sample for validation:',dim(data_valid_red)))
+
+data_valid_red_name = paste("Data_valid", sample_size, format(Sys.time(), "%m%d-%H%M"), sep="_")
+saveRDS(data_valid_red, paste0(workdir, data_valid_red_name, ".rds"))
+rm(data_valid_red)
+gc()
 
 # grp_data=group_by(data_model,TARGET)
 # Declarations_summary = summarise(grp_data, count=n())
@@ -708,6 +727,8 @@ Ranger_trees = ranger(TARGET ~ ., data = droplevels(data_model), write.forest = 
 end.time <- Sys.time()
 time.taken <- end.time - start.time
 time.taken
+rm(data_model)
+gc()
 Ranger_trees$time.taken=time.taken
 Ranger_trees$inputs=list(variable)
 print(Ranger_trees)
@@ -718,8 +739,7 @@ modelname=paste("Ranger",sample_size,format(Sys.time(), "%m%d-%H%M"),sep="_")
 saveRDS(Ranger_trees, paste(workdir,modelname,".rds",sep=""))
 
 ###Prediction
-remove(Ranger_trees)
-Ranger_trees <- readRDS(paste(workdir,modelname,".rds",sep=""))
+data_valid_red <- readRDS(paste0(workdir, data_valid_red_name, ".rds"))
 
 start.time <- Sys.time()
 predict_Ranger_trees=predict(Ranger_trees,data_valid_red)
@@ -734,8 +754,6 @@ saveRDS(predict_Ranger_trees, paste(workdir,predictname,".rds",sep=""))
 
 
 ###Validation and confusion matrix
-remove(predict_Ranger_trees)
-predict_Ranger_trees <- readRDS(paste(workdir,predictname,".rds",sep=""))
 predictions=predict_Ranger_trees$predictions
 
 predict.max=apply(predictions, 1, max)
@@ -756,12 +774,13 @@ resultname=paste("Results_Ranger",sample_size,samplingmethod,count_thresh,numtre
 saveRDS(Results_Ranger, paste(workdir,resultname,".rds",sep=""))
 print(Results_Ranger$overall)
 
+rm(data_valid_red)
+gc()
+
 metrics_name=paste("Metrics",sample_size,samplingmethod,count_thresh,numtrees,format(Sys.time(), "%m%d-%H%M"),sep="_")
 write.csv(t(Results_Ranger$overall), file = paste0(workdir, metrics_name, ".csv"), row.names = FALSE, quote = FALSE)
 
-Results_ranger <- readRDS(paste(workdir,resultname,".rds",sep=""))
-
-df <- data.frame(x=factor(c("Overall accuracy","Kappa",names(Results_ranger$byClass[,"F1"])),levels=(c("Overall accuracy","Kappa",names(Results_ranger$byClass[order(Results_ranger$byClass[,"Prevalence"],decreasing = TRUE),"F1"])))),y=c(Results_ranger$overall[1],Results_ranger$overall[2],Results_ranger$byClass[,"F1"]),prevalence=c(Results_ranger$overall[1],Results_ranger$overall[2],Results_ranger$byClass[,"Prevalence"]))
+df <- data.frame(x=factor(c("Overall accuracy","Kappa",names(Results_Ranger$byClass[,"F1"])),levels=(c("Overall accuracy","Kappa",names(Results_Ranger$byClass[order(Results_Ranger$byClass[,"Prevalence"],decreasing = TRUE),"F1"])))),y=c(Results_Ranger$overall[1],Results_Ranger$overall[2],Results_Ranger$byClass[,"F1"]),prevalence=c(Results_Ranger$overall[1],Results_Ranger$overall[2],Results_Ranger$byClass[,"Prevalence"]))
 index=which(df$prevalence!=0)
 df=df[index,]
 
@@ -780,20 +799,7 @@ p<-ggplot(data=df) +
 q<- p + theme_light() + theme(axis.text.x = element_text(angle = 90, hjust = 1,vjust=0.5)) + xlab("") + ylab("Performance measure or Relative cumulated area (dots)") + scale_fill_discrete("")
 ggsave(paste(workdir,"Plot_",resultname,".png",sep=""),q,width = 13, height = 8)
 
-#print("before assignment")
-#print(mem_used())
-data_predict=data_joined
-#print("before rm")
-#print(mem_used())
-rm(data_joined)
-#print("after rm")
-#print(mem_used())
-
-#print(head(data_predict))
-# remove non-features columns
-#data_predict_red <- data_predict[c(-1:-4)]
-data_predict_red <- data_predict %>% dplyr:: select(starts_with("XX"))
-#print(head(data_predict_red))
+data_predict_red <- readRDS(paste0(workdir,data_predict_red_name,".rds"))
 
 print("Start prediction...")
 start.time <- Sys.time()
@@ -805,7 +811,7 @@ time.taken
 predictions=predict_Ranger_trees$predictions
 print("after prediction")
 rm(Ranger_trees, data_predict_red)
-# print(mem_used())
+gc()
 
 predict.max=apply(predictions, 1, max)
 predict.whichmax=apply(predictions, 1, which.max)
@@ -819,7 +825,8 @@ predict.2class=colnames(predictions)[predict.which2max]
 
 predict.2class=ifelse(predict.class==predict.2class,colnames(predictions)[apply(predictions, 1, function(x) which(x==sort(x,partial=n-1)[n-1])[2])],predict.2class)
 
-Predict_classif=data.frame(data_predict$NewID,as.integer(data_predict$AREA),data_predict$TARGET,predict.class,round(predict.max,digits=3),predict.2class,round(predict.2max,digits=3))
+parcels_predict <- readRDS(paste0(workdir, parcels_predict_name, ".rds"))
+Predict_classif=data.frame(parcels_predict$NewID,parcels_predict$AREA,parcels_predict$TARGET,predict.class,round(predict.max,digits=3),predict.2class,round(predict.2max,digits=3))
 colnames(Predict_classif)=c("NewID",'Area','CT_decl','CT_pred_1','CT_conf_1','CT_pred_2','CT_conf_2')
 
 #save predictions
