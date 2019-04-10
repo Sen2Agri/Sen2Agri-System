@@ -410,6 +410,7 @@ if ( samplingmethod=="Random") {
 
       originals=SMOTEd$orig_P
       synthetics=SMOTEd$syn_data
+      rm(SMOTEd)
       originals$SMOTE=1
       synthetics$SMOTE=0
 
@@ -427,6 +428,7 @@ if ( samplingmethod=="Random") {
       #synthetics$TARGET=originals$TARGET[1]
       Smoted_data=rbind(Smoted_data,originals)
     }
+    rm(data_smote)
 
 
     grp_data=group_by(data_joined,TARGET)
@@ -498,17 +500,13 @@ if ( samplingmethod=="Random") {
 
     Sample_SMOTE=rbind( na.omit(Sample_areaweighted_originals), na.omit(Sample_areaweighted_smoted))
     Sample_SMOTE$TARGET=as.factor(Sample_SMOTE$TARGET)
-
+    rm(Sample_areaweighted_originals, Sample_areaweighted_smoted, Smoted_data)
 
     ind=which(round(Sample_SMOTE$NewID)==Sample_SMOTE$NewID)
     NewIDs=Sample_SMOTE$NewID[ind]
     write.csv(NewIDs,paste0(workdir,paste("Calib_NewIDs",sample_size,format(Sys.time(),"%m%d-%H%M"),sep="_"),".csv"))
     data_calib_red=Sample_SMOTE
-#    print("before rm Smoted_data")
-#    print(mem_used())
-    rm(Smoted_data)
-#    print("after rm Smoted_data")
-#    print(mem_used())
+    rm(Sample_SMOTE)
   } else if ( samplingmethod=="Fixunder") {
     print("Starting Fixed oversampling")
 
@@ -552,6 +550,7 @@ if ( samplingmethod=="Random") {
 
         originals=SMOTEd$orig_P
         synthetics=SMOTEd$syn_data
+        rm(SMOTEd)
         originals$SMOTE=1
         synthetics$SMOTE=0
 
@@ -569,6 +568,7 @@ if ( samplingmethod=="Random") {
       #synthetics$TARGET=originals$TARGET[1]
       Smoted_data=rbind(Smoted_data,originals)
     }
+    rm(data_smote)
 
 
     grp_data=group_by(data_joined,TARGET)
@@ -638,21 +638,21 @@ if ( samplingmethod=="Random") {
     }
 
     Sample_SMOTE=rbind( na.omit(Sample_areaweighted_originals), na.omit(Sample_areaweighted_smoted))
+    rm(Sample_areaweighted_originals, Sample_areaweighted_smoted, Smoted_data)
     Sample_SMOTE$TARGET=as.factor(Sample_SMOTE$TARGET)
-#    print("before rm Smoted_data")
-#    print(mem_used())
-    rm(Smoted_data)
-#    print("after rm Smoted_data")
-#    print(mem_used())
 
 
     ind=which(round(Sample_SMOTE$NewID)==Sample_SMOTE$NewID)
     NewIDs=Sample_SMOTE$NewID[ind]
     write.csv(NewIDs,paste0(workdir,paste("Calib_NewIDs",sample_size,format(Sys.time(), "%m%d-%H%M"),sep="_"),".csv"))
     data_calib_red=Sample_SMOTE
+    rm(Sample_SMOTE)
 
   } else
   print("Sampling not properly defined")
+
+rm(data_calib)
+gc()
 
 parcels_predict = data.frame(data_joined$NewID, data_joined$AREA, data_joined$TARGET)
 colnames(parcels_predict)=c("NewID", "AREA", "TARGET")
@@ -681,10 +681,6 @@ if(samplingmethod!="Random"){
   index=Declarations_summary$TARGET[which(Declarations_summary$count>ceiling(count_min/3))]
   data_valid_red=data_valid_red[which(data_valid_red$TARGET %in% index),]
 }
-
-#data=subset(data_calib,select=-c(XX,NewID,fid))
-#data_valid_red=na.omit(data_valid_red)
-#data_valid_red=valid_red[,-2]
 
 ###classification
 #data_model <- data_calib_red[c(ncol(data_calib_red), 2:(ncol(data_calib_red) - 3))]
