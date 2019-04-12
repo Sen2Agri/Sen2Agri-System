@@ -47,6 +47,11 @@
             <name>TAO Plugins</name>
             <url>https://github.com/tao-org/tao-plugins/tree/repository</url>
         </repository>
+		<repository>
+            <id>tao-services</id>
+            <name>TAO Services</name>
+            <url>https://github.com/tao-org/tao-services/tree/repository</url>
+        </repository>
         <repository>
             <id>spring-releases</id>
             <url>https://repo.spring.io/libs-release</url>
