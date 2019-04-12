@@ -27,6 +27,8 @@
 ## cd /path/to/install_script
 ## sudo ./sen2agriPlatormInstallAndConfig.sh
 ################################################################################################
+: ${INSTAL_CONFIG_FILE:="./config/install_config.conf"}
+#-----------------------------------------------------------------------------------------#
 : ${SYS_ACC_NAME:="sen2agri-service"}
 : ${SLURM_ACC_NAME:="slurm"}
 : ${MUNGE_ACC_NAME:="munge"}
@@ -48,6 +50,13 @@ MYSQL_CMD=${MYSQL_DB_CREATION}${MYSQL_DB_ACCESS_GRANT}
 declare -r -i -g L1C_PROCESSOR_MACCS=1
 declare -r -i -g L1C_PROCESSOR_MAJA=2
 #------------------------------------------------------------------------------------------#
+function get_install_config_property
+{
+    grep "^$1=" "${INSTAL_CONFIG_FILE}" | cut -d'=' -f2 | sed -e 's/\r//g'
+}
+
+#-----------------------------------------------------------#
+
 function parse_and_update_slurm_conf_file()
 {
    ####################################
@@ -348,7 +357,8 @@ function install_and_config_postgresql()
    echo "POSTGRESQL SERVICE: $(systemctl status postgresql-9.4 | grep "Active")"
 
    #------------DATABASE CREATION------------#
-    DB_NAME=$(head -q -n 1 ./config/db_name.conf 2>/dev/null)
+    #DB_NAME=$(head -q -n 1 ./config/db_name.conf 2>/dev/null)
+    DB_NAME=$(get_install_config_property "DB_NAME")
     if [ -z "$DB_NAME" ]; then
         DB_NAME="sen2agri"
     fi
@@ -747,9 +757,9 @@ function install_l1c_processor()
     done
 }
 
-function updateWebRestPort()
+function updateWebConfigParams()
 {
-    REST_SERVER_PORT=$(sed -n 's/^server.port =//p' /usr/share/sen2agri/sen2agri-services/config/services.properties)
+    REST_SERVER_PORT=$(sed -n 's/^server.port =//p' /usr/share/sen2agri/sen2agri-services/config/services.properties | sed -e 's/\r//g')
     # Strip leading space.
     REST_SERVER_PORT="${REST_SERVER_PORT## }"
     # Strip trailing space.
@@ -757,12 +767,40 @@ function updateWebRestPort()
      if [[ !  -z  $REST_SERVER_PORT  ]] ; then
         sed -i -e "s|static \$REST_SERVICES_URL = \x27http:\/\/localhost:8080|static \$REST_SERVICES_URL = \x27http:\/\/localhost:$REST_SERVER_PORT|g" /var/www/html/ConfigParams.php
      fi
+     
+    DB_NAME=$(get_install_config_property "DB_NAME")
+    if [[ ! -z $DB_NAME ]] ; then
+        sed -i -e "s|static \$DB_NAME = \x27sen2agri|static \$DB_NAME = \x27${DB_NAME}|g" /var/www/html/ConfigParams.php
+    fi
+}
+
+# Update /etc/sen2agri/sen2agri.conf with the right database
+function updateSen2AgriProcessorsParams()
+{
+    DB_NAME=$(get_install_config_property "DB_NAME")
+    if [[ ! -z $DB_NAME ]] ; then
+        sed -i -e "s|DatabaseName=sen2agri|DatabaseName=$DB_NAME|g" /etc/sen2agri/sen2agri.conf
+    fi
 }
 
 function install_sen2agri_services()
 {
+    SERVICES_ARCHIVE=$(get_install_config_property "SERVICES_ARCHIVE")
+    if [ -z "$SERVICES_ARCHIVE" ]; then
     if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
         zipArchive=$(ls -at ../sen2agri-services/sen2agri-services*.zip| head -n 1)
+        fi
+    else 
+        if [ -f "../sen2agri-services/${SERVICES_ARCHIVE}" ]; then
+            zipArchive=$(ls -at "../sen2agri-services/${SERVICES_ARCHIVE}" | head -n 1)
+        fi
+    fi
+    
+    if [ -z ${zipArchive} ] ; then
+        echo "No sen2agri-services zip archive provided in ../sen2agri-services"
+        echo "Exiting now"
+        exit 1
+    else
         filename="${zipArchive%.*}"
 
         echo "Extracting into /usr/share/sen2agri/sen2agri-services from archive $zipArchive ..."
@@ -778,10 +816,11 @@ function install_sen2agri_services()
         # ensure the execution flag
         chmod a+x /usr/share/sen2agri/sen2agri-services/bin/start.sh
 
-    else
-        echo "No sen2agri-services zip archive provided in ../sen2agri-services"
-        echo "Exiting now"
-        exit 1
+        # update the database name if needed in the sen2agri-services
+        DB_NAME=$(get_install_config_property "DB_NAME")
+        if [[ ! -z $DB_NAME ]] ; then
+            sed -i -e "s/sen2agri?stringtype=unspecified/${DB_NAME}?stringtype=unspecified/" /usr/share/sen2agri/sen2agri-services/config/services.properties
+        fi
     fi
 }
 
@@ -832,6 +871,7 @@ install_l1c_processor
 #-----------------------------------------------------------#
 ## install binaries
 install_RPMs
+updateSen2AgriProcessorsParams
 
 ## create system account
 create_system_account
@@ -851,7 +891,7 @@ install_and_config_postgresql
 ####  WEBSERVER                 INSTALL   & CONFIG      #####
 #-----------------------------------------------------------#
 install_and_config_webserver
-updateWebRestPort
+updateWebConfigParams
 
 #-----------------------------------------------------------#
 ####  DOWNLOADERS AND DEMMACS  INSTALL                  #####
