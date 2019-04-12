@@ -9,8 +9,10 @@ CREATE OR REPLACE FUNCTION sp_insert_product(
     _name character varying,
     _quicklook_image character varying,
     _footprint geography,
-    _orbit_id INTEGER,
-    _tiles json)
+    _orbit_id integer,
+    _tiles json,
+    _orbit_type_id smallint DEFAULT NULL::smallint,
+    _downloader_history_id integer DEFAULT NULL::integer)
   RETURNS integer AS
 $BODY$
 DECLARE return_id product.id%TYPE;
@@ -48,7 +50,9 @@ BEGIN
             footprint,
             geog,
             orbit_id,
-            tiles
+            tiles,
+            orbit_type_id,
+            downloader_history_id
         )
         VALUES (
             _product_type_id,
@@ -65,7 +69,9 @@ BEGIN
              WHERE path[2] IN (1, 3)) :: POLYGON,
              _footprint,
              _orbit_id,
-            array(select tile :: character varying from json_array_elements_text(_tiles) tile)
+            array(select tile :: character varying from json_array_elements_text(_tiles) tile),
+            _orbit_type_id,
+            _downloader_history_id
         )
         RETURNING id INTO return_id;
     END IF;
@@ -73,4 +79,7 @@ BEGIN
 	RETURN return_id;
 END;
 $BODY$
-  LANGUAGE plpgsql VOLATILE
+  LANGUAGE plpgsql VOLATILE;
+ALTER FUNCTION sp_insert_product(smallint, smallint, integer, smallint, integer, character varying, timestamp with time zone, character varying, character varying, geography, integer, json, smallint, integer)
+  OWNER TO admin;
+

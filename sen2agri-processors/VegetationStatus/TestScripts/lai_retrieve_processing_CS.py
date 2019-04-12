@@ -321,18 +321,20 @@ if __name__ == '__main__':
 
         #Compute NDVI and RVI
         if resolution == 0:
-            runCmd(["otbcli", "NdviRviExtraction2", appLocation,
+            runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
             "-xml", xml,
             "-ndvi", curOutSingleNDVIImg,
             "-msks", curOutLaiMonoMskFlgsImg,
-            "-fts", curOutNDVIRVIImg])
+            "-fts", curOutNDVIRVIImg,
+            "-laicfgs", "/usr/share/sen2agri/Lai_Bands_Cfgs.cfg"])
         else:
-            runCmd(["otbcli", "NdviRviExtraction2", appLocation,
+            runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
             "-xml", xml,
             "-outres", resolution,
             "-ndvi", curOutSingleNDVIImg,
             "-msks", curOutLaiMonoMskFlgsImg,
-            "-fts", curOutNDVIRVIImg])
+            "-fts", curOutNDVIRVIImg,
+            "-laicfgs", "/usr/share/sen2agri/Lai_Bands_Cfgs.cfg"])
 
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 

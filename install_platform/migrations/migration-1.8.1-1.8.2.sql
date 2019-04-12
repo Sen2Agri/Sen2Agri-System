@@ -44,24 +44,6 @@ begin
         execute _statement;
     end if;
     
-    
-    if not exists (select * from processor where short_name = 'l2-amp') then
-        _statement := $str$
-        INSERT INTO processor (id, name, short_name) VALUES (7, 'L2 SAR Amplitude','l2-amp');
-        $str$;
-        raise notice '%', _statement;
-        execute _statement;
-    end if;
-
-    if not exists (select * from processor where short_name = 'l2-cohe') then
-        _statement := $str$
-        INSERT INTO processor (id, name, short_name) VALUES (8, 'L2 SAR Coherence','l2-cohe');
-        $str$;
-        raise notice '%', _statement;
-        execute _statement;
-    end if;
-    
-    
     if exists (select * from information_schema.tables where table_schema = 'public' and table_name = 'meta') then
         if exists (select * from meta where version = '1.8.1') then
             raise notice 'upgrading from 1.8.1 to 1.8.2';

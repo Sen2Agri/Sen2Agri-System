@@ -63,7 +63,6 @@ INSERT INTO config_metadata VALUES ('executor.module.path.lai-ndvi-rvi-extractor
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-prosail-simulator', 'Prosail simulator', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-time-series-builder', 'Builds a raster with all time series', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-training-data-generator', 'Training data generator', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.mean-shift-smoothing', 'Mean shift smoothing', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.product-formatter', 'Product Formatter Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.xml-statistics', 'XML Statistics', 'file', true, 8);
 
@@ -77,9 +76,9 @@ INSERT INTO config_metadata VALUES ('executor.processor.l3b.keep_job_folders', '
 INSERT INTO config_metadata VALUES ('executor.processor.l3b.name', 'L3B Processor Name', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l3b.path', 'L3B Processor Path', 'file', false, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l3b_lai.slurm_qos', 'Slurm QOS for LAI processor', 'string', true, 8);
-INSERT INTO config_metadata VALUES ('executor.processor.s4a_l4a.slurm_qos', 'Slurm QOS for L4A processor', 'string', true, 8);
-INSERT INTO config_metadata VALUES ('executor.processor.s4b_l4a.slurm_qos', 'Slurm QOS for L4B processor', 'string', true, 8);
-INSERT INTO config_metadata VALUES ('executor.processor.s4c_l4a.slurm_qos', 'Slurm QOS for L4C processor', 'string', true, 8);
+INSERT INTO config_metadata VALUES ('executor.processor.s4c_l4a.slurm_qos', 'Slurm QOS for L4A processor', 'string', true, 8);
+INSERT INTO config_metadata VALUES ('executor.processor.s4c_l4b.slurm_qos', 'Slurm QOS for L4B processor', 'string', true, 8);
+INSERT INTO config_metadata VALUES ('executor.processor.s4c_l4c.slurm_qos', 'Slurm QOS for L4C processor', 'string', true, 8);
 
 INSERT INTO config_metadata VALUES ('executor.shapes_dir', 'Tiles shapes directory', 'directory', true, 8);
 INSERT INTO config_metadata VALUES ('executor.wrapper-path', 'Processor Wrapper Path', 'file', true, 8);
@@ -129,13 +128,13 @@ INSERT INTO config_metadata VALUES ('processor.l3b.sched_wait_proc_inputs', 'L3B
 
 INSERT INTO config_metadata VALUES ('processor.l4a.reference_data_dir', 'Crop Tye folder where insitu data are checked', 'string', false, 5);
 
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.training_ratio', '', 'float', TRUE, 5, TRUE, 'Training/total samples ratio', '{"min":"0","step":"0.5","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.num_trees', '', 'int', TRUE, 5, TRUE, 'Number of RF trees', '{"min":"0","step":"1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.sample_size', '', 'float', TRUE, 5, TRUE, 'Sample size', '{"min":"0","step":"0.1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.count_threshold', '', 'int', TRUE, 5, TRUE, 'Count threshold', '{"min":"0","step":"1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.count_min', '', 'int', TRUE, 5, TRUE, 'Minimum count', '{"min":"0","step":"1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.smote_target', '', 'int', TRUE, 5, TRUE, 'Target sample count for SMOTE', '{"min":"0","step":"1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.smote_k', '', 'int', TRUE, 5, TRUE, 'Number of SMOTE neighbours', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.training_ratio', 'Training/total samples ratio', 'float', TRUE, 5, TRUE, 'Training/total samples ratio', '{"min":"0","step":"0.5","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.num_trees', 'Number of RF trees', 'int', TRUE, 5, TRUE, 'Number of RF trees', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.sample_size', 'Sample size', 'float', TRUE, 5, TRUE, 'Sample size', '{"min":"0","step":"0.1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.count_threshold', 'Count threshold', 'int', TRUE, 5, TRUE, 'Count threshold', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.count_min', 'Minimum count', 'int', TRUE, 5, TRUE, 'Minimum count', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.smote_target', 'Target sample count for SMOTE', 'int', TRUE, 5, TRUE, 'Target sample count for SMOTE', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.smote_k', 'Number of SMOTE neighbours', 'int', TRUE, 5, TRUE, 'Number of SMOTE neighbours', '{"min":"0","step":"1","max":""}');
 
 INSERT INTO config_metadata VALUES ('processor.s4c_l4b.input_amp', 'The list of AMP products', 'select', FALSE, 19, TRUE, 'Available AMP input files', '{"name":"inputFiles_AMP[]","product_type_id":10}');
 INSERT INTO config_metadata VALUES ('processor.s4c_l4b.input_cohe', 'The list of COHE products', 'select', FALSE, 19, TRUE, 'Available COHE input files', '{"name":"inputFiles_COHE[]","product_type_id":11}');

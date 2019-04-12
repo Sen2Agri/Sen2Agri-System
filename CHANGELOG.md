@@ -17,6 +17,27 @@
  - When deleting a site, the folders for the L2A products that were not processed by MACCS are not deleted and should be deleted manually. Normally these folders contain no valid product and contain only log and EEF files.
 
 # Change Log
+## [2.0]
+
+### Added
+  - Support for L1C zip or tar.gz archived products in L2A processor 
+  - Table l1_tile_history in order to differentiate between the cases when the L2A not processed by MACCS due to any system issue and cases when the L2A not processed by MACCS because they are too cloudy. 
+  - Retry mechanism in L2A processing 
+  - Cloud and snow information are extracted for each L1C tile
+  - Support for MAJA processing. Sen2Agri L2A processor can use MAJA instead of MACCS
+  - Support for MUSCATE L2A product format in the Sen2Agri processors
+  - Evolution of data sources from sen2agri-services to support local DIAS repositories (CreoDIAS, MUNDI, ONDA)
+  - When multiple failures encountered for download, try download from SciHub
+  - Addition of email alerts in case of abnormal functioning of services
+
+### Changed
+ - The L2A processing is now tile oriented instead of product oriented. This allows a better paralelisation especially for sites where multiple tiles were present in on L1C product.
+ - L2A logging mechanism updated to keep log files in case of errors.
+ 
+
+### Fixed
+ - Correction in referenced Sentinel-2 tile extents (sen2agri-services)
+
 
 ## [1.8.3]
 

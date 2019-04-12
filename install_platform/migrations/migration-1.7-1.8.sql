@@ -25,7 +25,7 @@ begin
 
             if not exists (SELECT column_name FROM information_schema.columns WHERE table_name='downloader_history' and column_name='tiles') then
                 _statement := $str$
-                ALTER TABLE downloader_history ADD COLUMN tiles character varying null;
+                ALTER TABLE downloader_history ADD COLUMN tiles text[] null;
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;

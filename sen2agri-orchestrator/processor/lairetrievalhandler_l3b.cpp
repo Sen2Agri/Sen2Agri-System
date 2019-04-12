@@ -537,18 +537,6 @@ QStringList LaiRetrievalHandlerL3B::GetNdviRviExtractionNewArgs(const QString &i
            "-laicfgs", laiBandsCfg
     };
 }
-/*
-QStringList LaiRetrievalHandlerL3B::GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile,
-                                                          const QString &ndviFile, const QString &resolution) {
-    return { "NdviRviExtraction2",
-           "-xml", inputProduct,
-           "-msks", msksFlagsFile,
-           "-ndvi", ndviFile,
-           "-fts", ftsFile,
-           "-outres", resolution
-    };
-}
-*/
 
 QStringList LaiRetrievalHandlerL3B::GetBvImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile,
                                                    const QString &modelsFolder, const QString &monoDateLaiFileName) {

@@ -616,7 +616,7 @@ else {
                 }
             }
         }
-        
+		
         $json_config = json_encode( $fconfig );
 		
 		// generate json_param (skip parameters with empty values)
@@ -639,7 +639,13 @@ else {
 		$input_COHE = $_POST['inputFiles_COHE'];
 		$input_AMP  = $_POST['inputFiles_AMP'];
 		$input_NDVI = $_POST['inputFiles_NDVI'];
+        $s2_tiles = $_POST['S2Tiles'];
+        $l8_tiles = $_POST['L8Tiles'];
+        $s2_l8_tiles = $s2_tiles . ((strlen($s2_tiles) > 0 && strlen($l8_tiles) > 0) ? "," : "") . $l8_tiles; 
 		
+        // print_r($s2_l8_tiles);
+        // exit();
+
 		// advanced parameters	- dynamically get the 
         $fconfig = array();        
         foreach ($_POST as $key => $value) {
@@ -652,11 +658,11 @@ else {
                 }
             }
         }
-        
+		
         $json_config = json_encode( $fconfig );
 		
 		// generate json_param (skip parameters with empty values)
-		$params = array ("input_COHE" => $input_COHE, "input_AMP"  => $input_AMP, "input_NDVI" => $input_NDVI);
+		$params = array ("input_COHE" => $input_COHE, "input_AMP"  => $input_AMP, "input_NDVI" => $input_NDVI, "s2_l8_tiles" => $s2_l8_tiles);
 		$json_param = json_encode(array_filter($params));
 		
 		insertjob($name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config);

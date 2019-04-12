@@ -16,9 +16,9 @@ function get_active_processors($seasonId) {
 			<div><?php
 			while ( $row = pg_fetch_row ( $result ) ) {
 				$id = $row[0];
-				$short = substr(strtoupper($row[1]), 0, 3);
+				$short = substr(strtoupper($row[1]), 0, 7);
 				?>
-				<label><input name="<?= strtolower($short) ?>" data-id="<?= $id ?>" type="checkbox"<?= ($seasonId > 0) || ($short == "L2A") ? " checked disabled"  : "" ?>>&nbsp;<?= $short ?></label>
+				<label><input name="<?= strtolower($short) ?>" data-id="<?= $id ?>" type="checkbox"<?= ($seasonId > 0) || ($short == "L2A") || ($short == "L2-S1") || ($short == "LPIS") ? " checked disabled"  : "" ?>>&nbsp;<?= $short ?></label>
 			<?php } ?>
 			</div>
 		</div>
