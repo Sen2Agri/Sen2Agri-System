@@ -15,24 +15,32 @@
  */
 package org.esa.sen2agri.scheduling;
 
+import org.esa.sen2agri.commons.Commands;
 import org.esa.sen2agri.commons.Config;
 import org.esa.sen2agri.commons.Constants;
-import org.esa.sen2agri.commons.ParameterHelper;
+import org.esa.sen2agri.commons.Topics;
 import org.esa.sen2agri.db.ConfigurationKeys;
 import org.esa.sen2agri.entities.*;
 import org.esa.sen2agri.web.beans.Query;
 import org.quartz.JobDataMap;
+import ro.cs.tao.datasource.param.CommonParameterNames;
+import ro.cs.tao.datasource.remote.FetchMode;
 import ro.cs.tao.eodata.EOData;
 import ro.cs.tao.eodata.EOProduct;
 import ro.cs.tao.eodata.Polygon2D;
+import ro.cs.tao.messaging.Message;
 import ro.cs.tao.utils.Triple;
 import ro.cs.tao.utils.Tuple;
 
+import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -42,6 +50,7 @@ import java.util.stream.Collectors;
 public class LookupJob extends AbstractJob {
 
     private static final Map<Tuple<String, String>, Integer> runningJobs = Collections.synchronizedMap(new HashMap<>());
+    public static final int DAYS_BACK = 6;
 
     public LookupJob() {
         super();
@@ -49,11 +58,41 @@ public class LookupJob extends AbstractJob {
 
     @Override
     public String configKey() {
-        return "scheduled.lookup.enabled";
+        return ConfigurationKeys.SCHEDULED_LOOKUP_ENABLED;
     }
 
     @Override
     public String groupName() { return "Lookup"; }
+
+    @Override
+    protected void onMessageReceived(Message message) {
+        String command = message.getMessage();
+        logger.fine(String.format("%s:%d received command [%s]",
+                                  LookupJob.class.getSimpleName(), this.hashCode(), command));
+        if (Commands.DOWNLOADER_FORCE_START.equals(command)) {
+            String siteId = message.getItem("siteId");
+            if (siteId != null) {
+                Site site = persistenceManager.getSiteById(Short.parseShort(siteId));
+                String satelliteId = message.getItem("satelliteId");
+                if (satelliteId != null) {
+                    Satellite satellite = Satellite.getEnumConstantByValue(Integer.parseInt(satelliteId));
+                    if (satellite != null) {
+                        Tuple<String, String> key = new Tuple<>(site.getName(), satellite.shortName());
+                        runningJobs.remove(key);
+                        logger.fine(String.format("Job with key %s removed", key));
+                    }
+                } else {
+                    Set<Tuple<String, String>> keySet = runningJobs.keySet();
+                    for (Tuple<String, String> key : keySet) {
+                        if (key.getKeyOne().equals(site.getName())) {
+                            runningJobs.remove(key);
+                            logger.fine(String.format("Job with key %s removed", key));
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -81,46 +120,47 @@ public class LookupJob extends AbstractJob {
         }
         final short siteId = site.getId();
         final List<Season> seasons = persistenceManager.getEnabledSeasons(siteId);
-        if (seasons != null && seasons.size() > 0) {
-            seasons.sort(Comparator.comparing(Season::getStartDate));
-            logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
-                                      "Seasons defined: " +
-                                        String.join(";",
-                                                    seasons.stream()
-                                                            .map(Season::toString)
-                                                            .collect(Collectors.toList()))));
-            LocalDateTime startDate = getStartDate(satellite, site, seasons);
-            LocalDateTime endDate = getEndDate(seasons);
-            logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
-                    String.format("Using start date: %s and end date: %s", startDate, endDate)));
-            downloadEnabled = Config.isFeatureEnabled(site.getId(), ConfigurationKeys.DOWNLOADER_STATE_ENABLED);
-            sensorDownloadEnabled = Config.isFeatureEnabled(site.getId(),
-                    String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
-                            satellite.shortName().toLowerCase()));
-            if (!downloadEnabled || !sensorDownloadEnabled) {
-                logger.info(String.format(MESSAGE, site.getShortName(), satellite.name(), "Download disabled"));
-                return;
-            }
-            final String downloadPath = Paths.get(queryConfig.getDownloadPath(), site.getShortName()).toString();
-            if (LocalDateTime.now().compareTo(startDate) >= 0) {
-                if (endDate.compareTo(startDate) >= 0) {
-                    logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
-                                              String.format("Lookup for new products in range %s - %s",
-                                                            startDate.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)),
-                                                            endDate.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)))));
-                    lookupAndDownload(site, startDate, endDate, downloadPath, queryConfig, downloadConfig);
+        try {
+            if (seasons != null && seasons.size() > 0) {
+                seasons.sort(Comparator.comparing(Season::getStartDate));
+                logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
+                                          "Seasons defined: " +
+                                                  String.join(";",
+                                                              seasons.stream()
+                                                                      .map(Season::toString)
+                                                                      .collect(Collectors.toList()))));
+                LocalDateTime startDate = getStartDate(satellite, site, seasons);
+                LocalDateTime endDate = getEndDate(seasons);
+                logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
+                                          String.format("Using start date: %s and end date: %s", startDate, endDate)));
+                downloadEnabled = Config.isFeatureEnabled(site.getId(), ConfigurationKeys.DOWNLOADER_STATE_ENABLED);
+                sensorDownloadEnabled = Config.isFeatureEnabled(site.getId(),
+                                                                String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
+                                                                              satellite.shortName().toLowerCase()));
+                if (!downloadEnabled || !sensorDownloadEnabled) {
+                    logger.info(String.format(MESSAGE, site.getShortName(), satellite.name(), "Download disabled"));
+                    return;
+                }
+                final String downloadPath = Paths.get(queryConfig.getDownloadPath(), site.getShortName()).toString();
+                if (LocalDateTime.now().compareTo(startDate) >= 0) {
+                    if (endDate.compareTo(startDate) >= 0) {
+                        logger.fine(String.format(MESSAGE, site.getShortName(), satellite.name(),
+                                                  String.format("Lookup for new products in range %s - %s",
+                                                                startDate.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)),
+                                                                endDate.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)))));
+                        lookupAndDownload(site, startDate, endDate, downloadPath, queryConfig, downloadConfig);
+                    } else {
+                        logger.info(String.format(MESSAGE, site.getName(), satellite.name(),
+                                                  "No products to download"));
+                    }
                 } else {
-                    logger.info(String.format(MESSAGE, site.getName(), satellite.name(),
-                                              "No products to download"));
-                    cleanupJob(site, satellite);
+                    logger.info(String.format(MESSAGE, site.getName(), satellite.name(), "Season not started"));
                 }
             } else {
-                logger.info(String.format(MESSAGE, site.getName(), satellite.name(), "Season not started"));
-                cleanupJob(site, satellite);
+                logger.warning(String.format(MESSAGE, site.getName(), satellite.name(),
+                                             "No season defined or season not started"));
             }
-        } else {
-            logger.warning(String.format(MESSAGE, site.getName(), satellite.name(),
-                                         "No season defined or season not started"));
+        } finally {
             cleanupJob(site, satellite);
         }
     }
@@ -128,8 +168,12 @@ public class LookupJob extends AbstractJob {
     protected LocalDateTime getStartDate(Satellite satellite, Site site, List<Season> seasons) {
         LocalDateTime minStartDate = seasons.get(0).getStartDate().atStartOfDay();
         int downloaderStartOffset = Config.getAsInteger(ConfigurationKeys.DOWNLOADER_START_OFFSET, 0);
-        if (downloaderStartOffset > 0) {
-            minStartDate = minStartDate.minusMonths(downloaderStartOffset);
+        if (satellite == Satellite.Sentinel1) {
+            minStartDate = minStartDate.minusDays(DAYS_BACK);
+        } else {
+            if (downloaderStartOffset > 0) {
+                minStartDate = minStartDate.minusMonths(downloaderStartOffset);
+            }
         }
         LocalDateTime startDate;
         LocalDateTime lastDate = null;
@@ -159,24 +203,23 @@ public class LookupJob extends AbstractJob {
         Map<String, Object> params = new HashMap<>();
         Satellite satellite = queryConfiguration.getSatellite();
         Set<String> tiles = persistenceManager.getSiteTiles(site, downloadConfiguration.getSatellite());
-        params.put(ParameterHelper.getStartDateParamName(satellite),
+        params.put(CommonParameterNames.START_DATE,
                    new String[] {
                            start.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)),
                            end.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)) });
-        params.put(ParameterHelper.getEndDateParamName(satellite),
+        params.put(CommonParameterNames.END_DATE,
                    new String[] {
                            start.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)),
                            end.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)) });
-        params.put(ParameterHelper.getFootprintParamName(satellite), Polygon2D.fromWKT(site.getExtent()));
-        String tileParamName = ParameterHelper.getTileParamName(satellite);
-        if (tiles != null && tiles.size() > 0 && tileParamName != null) {
+        params.put(CommonParameterNames.FOOTPRINT, Polygon2D.fromWKT(site.getExtent()));
+        if (tiles != null && tiles.size() > 0) {
             String tileList;
             if (tiles.size() == 1) {
                 tileList = tiles.stream().findFirst().get();
             } else {
                 tileList = "[" + String.join(",", tiles) + "]";
             }
-            params.put(tileParamName, tileList);
+            params.put(CommonParameterNames.TILE, tileList);
         }
         final List<Parameter> specificParameters = queryConfiguration.getSpecificParameters();
         if (specificParameters != null) {
@@ -211,7 +254,11 @@ public class LookupJob extends AbstractJob {
                     .submit(() -> downloadService.query(site.getId(), query, queryConfiguration, count));
             final List<EOProduct> results = future.get();
             logger.info(String.format(MESSAGE, site.getName(), satellite.name(),
-                                      String.format("Query returned %s products", results.size())));
+                                      String.format("Found %d products for site %s", results.size(), site.getShortName())));
+            if (Boolean.parseBoolean(Config.getProperty("query.dump.product.names", "false"))) {
+                Files.write(Paths.get(downloadConfiguration.getDownloadPath(), "products.txt"),
+                            results.stream().map(EOData::getName).collect(Collectors.joining(",")).getBytes());
+            }
             String forceStartFlag = String.format(ConfigurationKeys.DOWNLOADER_SITE_FORCE_START_ENABLED, satellite.shortName());
             if (Config.getAsBoolean(site.getId(), forceStartFlag, false)) {
                 // one-time forced lookup, therefore remove all products that have a NOK status
@@ -226,8 +273,8 @@ public class LookupJob extends AbstractJob {
                                               deleted, site.getShortName(), satellite.shortName()));
                 }
                 Config.setSetting(site.getId(), forceStartFlag, "false");
-                logger.info(String.format("Flag '%s' for site '%s' was reset. Next lookup will perform normally",
-                                          forceStartFlag, satellite.shortName()));
+                logger.info(String.format("Flag '%s' for site '%s' and satellite '%s' was reset. Next lookup will perform normally",
+                                          forceStartFlag, site.getShortName(), satellite.shortName()));
             }
             // Check for already downloaded products with status (2, 5, 6, 7).
             // If such products exist for other sites, they will be "duplicated" for the current site
@@ -255,47 +302,58 @@ public class LookupJob extends AbstractJob {
                                                                                              .map(EOData::getName)
                                                                                              .collect(Collectors.toSet()));
                 if (existing != null && existing.size() > 0) {
-                    logger.info(String.format("The following products have already been downloaded for other sites: %s",
+                    logger.info(String.format("The following products have already been downloaded for other sites and will not be re-downloaded: %s",
                                               String.join(",", existing)));
                     results.removeIf(r -> existing.contains(r.getName()));
                     persistenceManager.attachToSite(site, existing);
                 }
             }
-            if (results.size() > 0) {
-                runningJobs.put(key, results.size());
-                for (int i = 0; i < results.size(); i++) {
+            final int resultsSize = results.size();
+            if (resultsSize > 0) {
+                runningJobs.put(key, resultsSize);
+                final ThreadPoolExecutor worker = Config.getWorkerFor(downloadConfiguration);
+                for (int i = 0; i < resultsSize; i++) {
                     final List<EOProduct> subList = results.subList(i, i + 1);
-                    Config.getWorkerFor(downloadConfiguration)
-                            .submit(new DownloadTask(site, satellite, subList,
-                                                     () -> downloadService.download(site.getId(),
-                                                                                    subList,
-                                                                                    tiles, path, downloadConfiguration),
-                                                     LookupJob.this::downloadCompleted));
+                    worker.submit(new DownloadTask(site, satellite, results,
+                                                   () -> {
+                                                       Instant startTime = Instant.now();
+                                                       downloadService.download(site.getId(), subList,
+                                                                                tiles, path, downloadConfiguration);
+                                                       long seconds = Duration.between(startTime, Instant.now()).getSeconds();
+                                                       if (downloadConfiguration.getFetchMode() == FetchMode.SYMLINK &&
+                                                            seconds > 10) {
+                                                           sendNotification(Topics.PROCESSING_ATTENTION,
+                                                                            String.format("Lookup site \"%s\"", site.getName()),
+                                                                            String.format("Symlink creation took %d seconds", seconds));
+                                                       }
+                                                   },
+                                                   LookupJob.this::downloadCompleted));
                 }
-            } else {
-                cleanupJob(site, satellite);
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.severe(e.getMessage() + " @ " + String.join(" < ",
-                                      Arrays.stream(e.getStackTrace())
-                                              .map(StackTraceElement::toString)
-                                              .collect(Collectors.toSet())));
+            String message = e.getMessage() + " @ " + String.join(" < ",
+                                                                  Arrays.stream(e.getStackTrace())
+                                                                          .map(StackTraceElement::toString)
+                                                                          .collect(Collectors.toSet()));
+            logger.severe(message);
+            sendNotification(Topics.PROCESSING_ATTENTION,
+                             String.format("Lookup site \"%s\"", site.getName()),
+                             message);
+
+        } finally {
             cleanupJob(site, satellite);
         }
     }
 
     private void cleanupJob(Site site, Satellite sat) {
-        synchronized (runningJobs) {
-            Tuple<String, String> key = new Tuple<>(site.getName(), sat.shortName());
-            runningJobs.remove(key);
-        }
+        runningJobs.remove(new Tuple<>(site.getName(), sat.shortName()));
     }
 
     private void downloadCompleted(Triple<String, String, String> key) {
         synchronized (runningJobs) {
             Tuple<String, String> jobKey = new Tuple<>(key.getKeyOne(), key.getKeyTwo());
-            int current = runningJobs.get(jobKey) - 1;
+            int count = key.getKeyThree().split(",").length;
+            int current = runningJobs.get(jobKey) - count;
             logger.fine(String.format("Download Completed [%s] - remaining products to complete for site '%s' and satellite '%s' = '%s'",
                     key.getKeyThree(), key.getKeyOne(), key.getKeyTwo(), current));
             if (current > 0) {
@@ -330,8 +388,8 @@ public class LookupJob extends AbstractJob {
                 logger.warning(ex.getMessage());
             } finally {
                 Triple<String, String, String> key = new Triple<>(site.getName(),
-                                                                satellite.shortName(),
-                                                                String.join(",", products.stream().map(EOData::getName).collect(Collectors.toList())));
+                                                                  satellite.shortName(),
+                                                                  products.stream().map(EOData::getName).collect(Collectors.joining(",")));
                 this.callback.accept(key);
             }
         }

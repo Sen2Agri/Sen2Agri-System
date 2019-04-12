@@ -16,6 +16,7 @@
 package org.esa.sen2agri;
 
 import org.esa.sen2agri.commons.Config;
+import org.esa.sen2agri.services.BatchNotifier;
 import org.esa.sen2agri.services.ScheduleManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -41,6 +42,9 @@ public class CoreLauncher implements SchedulingConfigurer, ServiceLauncher {
     @Autowired
     private ScheduleManager scheduleManager;
 
+    @Autowired
+    private BatchNotifier batchNotifier;
+
     public static void main(String[] args) {
         SpringApplication.run(CoreLauncher.class, args);
     }
@@ -50,14 +54,17 @@ public class CoreLauncher implements SchedulingConfigurer, ServiceLauncher {
         long interval = Long.parseLong(Config.getProperty("database.config.polling", "15")) * 60000;
         int netUtilTimeout = Integer.parseInt(Config.getProperty("network.connexions.timeout", "30")) * 1000;
         NetUtils.setTimeout(netUtilTimeout);
-        Logger.getLogger(CoreLauncher.class.getName())
-                .info(String.format("Network connection timeout initialized at %d seconds", netUtilTimeout / 1000));
+        Logger logger = Logger.getLogger(CoreLauncher.class.getName());
+        logger.info(String.format("Network connection timeout initialized at %d seconds", netUtilTimeout / 1000));
 
         taskRegistrar.addFixedRateTask(new IntervalTask(() -> {
             scheduleManager.refresh();
         }, interval, interval));
-        Logger.getLogger(CoreLauncher.class.getName())
-                .info(String.format("Database configuration polling initialized at %d minutes", interval / 60000));
+        logger.info(String.format("Database configuration polling initialized at %d minutes", interval / 60000));
+        long[] ret = batchNotifier.initialize();
+        logger.info(String.format("Batch notification initialized at %d minutes with message limit of %d",
+                                  ret[1] / 60000, ret[0]));
+
     }
 
     @Override

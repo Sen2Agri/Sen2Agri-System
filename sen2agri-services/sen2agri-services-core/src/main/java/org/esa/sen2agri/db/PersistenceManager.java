@@ -29,6 +29,7 @@ import ro.cs.tao.datasource.DataSourceManager;
 import ro.cs.tao.datasource.param.DataSourceParameter;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -127,6 +128,10 @@ public class PersistenceManager {
 
     public DataSource getDataSource() { return dbConfig.dataSource(); }
 
+    public DataSourceConfiguration getDataSourceConfiguration(int id) {
+        return dataSourceRepository.findById(id).orElse(null);
+    }
+
     public List<Site> getEnabledSites() {
         return siteRepository.getEnabledSites();
     }
@@ -174,10 +179,11 @@ public class PersistenceManager {
     }
 
     public List<DownloadProduct> getRetriableProducts(short siteId, DataSourceConfiguration configuration) {
-        return getDownloadProductRepository().findRetriesBySite(siteId,
-                                                    configuration.getSatellite().value());/*,
-                                                    configuration.getMaxRetries(),
-                                                    configuration.getRetryInterval());*/
+        return getDownloadProductRepository().findRetriesBySite(siteId, configuration.getSatellite().value());
+    }
+
+    public List<DownloadProduct> getLastRetriableProducts(short siteId, DataSourceConfiguration configuration) {
+        return getDownloadProductRepository().findLastRetriesBySite(siteId, configuration.getSatellite().value());
     }
 
     public List<DownloadProduct> getProductsWithoutOrbitDirection(int siteId, int satelliteId) {
@@ -264,8 +270,12 @@ public class PersistenceManager {
         return getDownloadProductRepository().findByStatusAndDate(siteId, satellite.value(), olderThan);
     }
 
-    public List<DownloadProduct> getIntersectingProducts(String productName, int daysBack) {
-        return getDownloadProductRepository().findIntersectingProducts(productName, daysBack);
+    public List<DownloadProduct> getStalledProducts(int siteId, int daysBack) {
+        return getDownloadProductRepository().findPreviouslyNotIntersected(siteId, daysBack);
+    }
+
+    public List<DownloadProduct> getIntersectingProducts(String productName, int daysBack, double threshold) {
+        return getDownloadProductRepository().findIntersectingProducts(productName, daysBack, threshold);
     }
 
     public List<DownloadProductTile> getDownloadProductTiles(int siteId) {
@@ -330,7 +340,11 @@ public class PersistenceManager {
 
     @Transactional
     public ProductCount save(ProductCount productCount) {
-        new NonMappedEntitiesRepository(this).save(productCount);
+        try {
+            new NonMappedEntitiesRepository(this).save(productCount);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return productCount;
     }
 
@@ -348,8 +362,28 @@ public class PersistenceManager {
         return getProductRepository().findByDownloadedProduct(downloadHistoryId);
     }
 
+    public HighLevelProduct getHighLevelProductByName(int siteId, String name) {
+        return getProductRepository().findProductByName(siteId, name);
+    }
+
     public HighLevelProduct save(HighLevelProduct product) {
         return product != null ?  getProductRepository().saveProduct(product) : null;
+    }
+
+    public ProductDetails getProductStatistics(int productId) {
+        return getNonMappedEntitiesRepository().getProductStatistics(productId);
+    }
+
+    public List<ProductDetails> getStatisticsForProducts(Set<Integer> productIds) {
+        return getNonMappedEntitiesRepository().getStatisticsForProducts(productIds);
+    }
+
+    public void save(ProductDetails productDetails) {
+        try {
+            getNonMappedEntitiesRepository().save(productDetails);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     public Processor getProcessor(String shortName) {
@@ -442,6 +476,7 @@ public class PersistenceManager {
                 String.format("delete from job where (site_id = %s)", siteId),
                 String.format("delete from scheduled_task_status where task_id in (select id from scheduled_task where site_id = %s)", siteId),
                 String.format("delete from scheduled_task where (site_id = %s)", siteId),
+                String.format("delete from l1_tile_history where downloader_history_id in (select id from downloader_history where site_id = %s)", siteId),
                 String.format("delete from downloader_history where (site_id = %s)", siteId),
                 String.format("delete from downloader_count where (site_id = %s)", siteId),
                 String.format("delete from product where (site_id = %s)", siteId),

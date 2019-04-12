@@ -30,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.logging.Logger;
 
 /**
  * @author Cosmin Cara
@@ -37,7 +38,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class Config {
 
     private static final List<DataSourceConfiguration> dataSourceConfigurations = new ArrayList<>();
-    private static final Map<DataSourceConfiguration, ThreadPoolExecutor> dataSourceExecutors = new HashMap<>();
+    private static final Map<DataSourceConfiguration, ThreadPoolExecutor> dataSourceExecutors = Collections.synchronizedMap(new HashMap<>());
     private static final ExecutorService backgroundWorker = Executors.newSingleThreadExecutor();
     private static PersistenceManager persistenceManager;
     private static DownloadService downloadService;
@@ -147,25 +148,25 @@ public class Config {
                         backgroundWorker.submit(() -> {
                             executor.shutdownNow();
                             dataSourceExecutors.put(ds,
-                                                    new NamedThreadPoolExecutor(ds.getDataSourceName() +
-                                                                                        ds.getSatellite().name(),
+                                                    new NamedThreadPoolExecutor(ds.getDataSourceName() + "-" +
+                                                                                        ds.getSatellite().shortName(),
                                                                                 maxConnections));
                         });
                     }
                 }
             } else {
                 dataSourceExecutors.put(ds,
-                                        new NamedThreadPoolExecutor(ds.getDataSourceName() +
-                                                                            ds.getSatellite().name(),
+                                        new NamedThreadPoolExecutor(ds.getDataSourceName() + "-" +
+                                                                            ds.getSatellite().shortName(),
                                                                     maxConnections));
             }
-        };
+        }
         for (DataSourceConfiguration ds : toRemove) {
             persistenceManager.remove(ds);
         }
     }
 
-    public static ExecutorService getWorkerFor(DataSourceConfiguration dataSourceConfiguration) {
+    public static ThreadPoolExecutor getWorkerFor(DataSourceConfiguration dataSourceConfiguration) {
         return dataSourceExecutors.get(dataSourceConfiguration);
     }
 
@@ -186,7 +187,15 @@ public class Config {
 
     public static String getSetting(String name, String defaultValue) {
         final Optional<Map<String, String>> map = getSiteConfig().values().stream().filter(m -> m.containsKey(name)).findFirst();
-        return map.map(m -> m.get(name)).orElse(defaultValue);
+        Optional<String> value = map.map(m -> m.get(name));
+        if (value.isPresent()) {
+            return value.orElse(null);
+        } else {
+            Logger.getLogger(Config.class.getName()).warning(String.format("Config key [%s] not found, using default value '%s'",
+                                                                           name, defaultValue));
+            persistenceManager.saveSetting((short) 0, name, defaultValue);
+            return defaultValue;
+        }
     }
 
     public static String getSetting(short siteId, String name, String defaultValue) {
@@ -276,7 +285,7 @@ public class Config {
         return dataSourceConfigurations.stream()
                 .filter(ds -> satellite.equals (ds.getSatellite()) &&
                         (ds.isEnabled() && (ds.getScope() & Scope.QUERY) != 0) &&
-                        ((ds.getSiteId() != null && ds.getSiteId().equals(site.getId())) || ds.getSiteId() == null))
+                        (ds.getSiteId() == null || ds.getSiteId().equals(site.getId())))
                 .findFirst().orElse(null);
     }
 
@@ -284,7 +293,7 @@ public class Config {
         return dataSourceConfigurations.stream()
                 .filter(ds -> satellite.equals (ds.getSatellite()) &&
                         (ds.isEnabled() && (ds.getScope() & Scope.DOWNLOAD) != 0) &&
-                        ((ds.getSiteId() != null && ds.getSiteId().equals(site.getId())) || ds.getSiteId() == null))
+                        (ds.getSiteId() == null || ds.getSiteId().equals(site.getId())))
                 .findFirst().orElse(null);
     }
 

@@ -134,6 +134,9 @@
             <basic name="specificParameters">
                 <column name="specific_params" nullable="true" column-definition="json"/>
             </basic>
+            <basic name="secondaryDatasourceId">
+                <column name="secondary_datasource_id" nullable="true" column-definition="integer" />
+            </basic>
             <transient name="additionalSettings" />
         </attributes>
     </entity>

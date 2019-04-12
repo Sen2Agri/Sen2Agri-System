@@ -15,10 +15,7 @@
  */
 package org.esa.sen2agri.services.internal;
 
-import org.esa.sen2agri.commons.Config;
-import org.esa.sen2agri.commons.Constants;
-import org.esa.sen2agri.commons.ParameterHelper;
-import org.esa.sen2agri.commons.TaskProgress;
+import org.esa.sen2agri.commons.*;
 import org.esa.sen2agri.db.ConfigurationKeys;
 import org.esa.sen2agri.db.PersistenceManager;
 import org.esa.sen2agri.entities.DataSourceConfiguration;
@@ -34,17 +31,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import ro.cs.tao.datasource.*;
 import ro.cs.tao.datasource.converters.ConversionException;
+import ro.cs.tao.datasource.param.CommonParameterNames;
 import ro.cs.tao.datasource.param.DataSourceParameter;
 import ro.cs.tao.datasource.param.QueryParameter;
 import ro.cs.tao.eodata.EOProduct;
 import ro.cs.tao.messaging.Message;
 import ro.cs.tao.messaging.Messaging;
 import ro.cs.tao.messaging.Notifiable;
+import ro.cs.tao.security.SystemPrincipal;
 import ro.cs.tao.utils.Tuple;
 
 import java.lang.reflect.Array;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -90,10 +90,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
             }
             List<Query> subQueries = null;
             try {
-                String tileParamName = ParameterHelper.getTileParamName(configuration.getSatellite());
-                if (tileParamName != null) {
-                    subQueries = queryObject.splitByParameter(tileParamName);
-                }
+                subQueries = queryObject.splitByParameter(CommonParameterNames.TILE);
             } catch (ConversionException e) {
                 logger.warning("Cannot create subqueries. Reason: " + e.getMessage());
             }
@@ -184,10 +181,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                                 configuration.getDataSourceName());
                 List<Query> subQueries = null;
                 try {
-                    String tileParamName = ParameterHelper.getTileParamName(configuration.getSatellite());
-                    if (tileParamName != null) {
-                        subQueries = queryObject.splitByParameter(tileParamName);
-                    }
+                    subQueries = queryObject.splitByParameter(CommonParameterNames.TILE);
                 } catch (ConversionException e) {
                     logger.warning("Cannot create subqueries. Reason: " + e.getMessage());
                 }
@@ -233,6 +227,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                         int page = 1;
                         do {
                             query.setPageNumber(page);
+                            logger.fine(String.format("Query page #%d for site id %d", page, siteId));
                             List<EOProduct> products = query.execute();
                             results.addAll(products);
                             total -= products.size();
@@ -242,16 +237,6 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                                 break;
                             }
                         } while (total > 0);
-                        /*while (total > 0) {
-                            query.setPageNumber(page++);
-                            List<EOProduct> products = query.execute();
-                            results.addAll(products);
-                            if (products.size() < DEFAULT_PRODUCTS_PER_PAGE_NO) {
-                                break;
-                            } else {
-                                total -= DEFAULT_PRODUCTS_PER_PAGE_NO;
-                            }
-                        }*/
                     } else {
                         results.addAll(query.execute());
                     }
@@ -406,6 +391,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                                                     satellite.shortName()), "true");
         }
         start(siteId);
+        sendCommand(Commands.DOWNLOADER_FORCE_START, siteId, null);
     }
 
     @Override
@@ -435,6 +421,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                                                           }));
         Config.setSetting(siteId, configKey, "true");
         start(siteId, satelliteId);
+        sendCommand(Commands.DOWNLOADER_FORCE_START, siteId, (int) satelliteId);
     }
 
     @Override
@@ -548,6 +535,19 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
             downloadsInProgress.put(mainTask, new TaskProgress(mainTask, site, satellite, mainProgress));
         }
 
+    }
+
+    private void sendCommand(String name, int siteId, Integer satelliteId) {
+        Message message = new Message();
+        message.setUser(SystemPrincipal.instance().getName());
+        message.setTopic(Topics.COMMAND);
+        message.setTimestamp(Instant.now().toEpochMilli());
+        message.setMessage("Force start");
+        message.addItem("siteId", String.valueOf(siteId));
+        if (satelliteId != null) {
+            message.addItem("satelliteId", String.valueOf(satelliteId.intValue()));
+        }
+        Messaging.send(SystemPrincipal.instance(), Topics.COMMAND, message);
     }
 
     private Tuple<Site, Satellite> getProductInfo(String productName) {

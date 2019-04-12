@@ -47,7 +47,7 @@ public class RetryJob extends AbstractJob {
     }
 
     @Override
-    public String configKey() { return "scheduled.retry.enabled"; }
+    public String configKey() { return ConfigurationKeys.SCHEDULED_RETRY_ENABLED; }
 
     @Override
     public String groupName() { return "Retry"; }
@@ -61,28 +61,25 @@ public class RetryJob extends AbstractJob {
     @Override
     @SuppressWarnings("unchecked")
     protected void executeImpl(JobDataMap dataMap) {
-        //List<Site> sites =  (List<Site>) dataMap.get("sites");
         Site site = (Site) dataMap.get("site");
         DataSourceConfiguration qCfg = (DataSourceConfiguration) dataMap.get("queryConfig");
         DataSourceConfiguration dldCfg = (DataSourceConfiguration) dataMap.get("downloadConfig");
-        //for (Site site : sites) {
-            if (!site.isEnabled()) {
-                return;
-            }
-            if (!Config.isFeatureEnabled(site.getId(), ConfigurationKeys.DOWNLOADER_STATE_ENABLED) ||
-                    !Config.isFeatureEnabled(site.getId(), String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
-                            dldCfg.getSatellite().shortName().toLowerCase()))) {
-                logger.info(String.format(MESSAGE, site.getShortName(), dldCfg.getSatellite().name(),
-                                          "Download disabled"));
-                return;
-            }
-            Config.getWorkerFor(dldCfg).submit(() -> {
-                final String downloadPath = Paths.get(dldCfg.getDownloadPath(), site.getShortName()).toString();
-                logger.fine(String.format(MESSAGE, site.getShortName(), dldCfg.getSatellite().name(),
-                                          "Retry failed products"));
-                retryDownloads(site, qCfg, dldCfg, downloadPath);
-            });
-        //}
+        if (!site.isEnabled()) {
+            return;
+        }
+        if (!Config.isFeatureEnabled(site.getId(), ConfigurationKeys.DOWNLOADER_STATE_ENABLED) ||
+                !Config.isFeatureEnabled(site.getId(), String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
+                        dldCfg.getSatellite().shortName().toLowerCase()))) {
+            logger.info(String.format(MESSAGE, site.getShortName(), dldCfg.getSatellite().name(),
+                                      "Download disabled"));
+            return;
+        }
+        Config.getWorkerFor(dldCfg).submit(() -> {
+            final String downloadPath = Paths.get(dldCfg.getDownloadPath(), site.getShortName()).toString();
+            logger.fine(String.format(MESSAGE, site.getShortName(), dldCfg.getSatellite().name(),
+                                      "Retry failed products"));
+            retryDownloads(site, qCfg, dldCfg, downloadPath);
+        });
     }
 
     private void retryDownloads(Site site, DataSourceConfiguration queryCfg, DataSourceConfiguration downloadCfg, String path) {
@@ -143,6 +140,62 @@ public class RetryJob extends AbstractJob {
                                                                            Arrays.stream(ex.getStackTrace())
                                                                                    .map(StackTraceElement::toString)
                                                                                    .collect(Collectors.toSet()))));
+        }
+        try {
+            List<DownloadProduct> lastChanceProducts = this.persistenceManager.getLastRetriableProducts(site.getId(), downloadCfg);
+            if (lastChanceProducts != null && lastChanceProducts.size() > 0) {
+                Integer secondaryDatasourceId = downloadCfg.getSecondaryDatasourceId();
+                if (secondaryDatasourceId != null) {
+                    DataSourceConfiguration secondaryDS = persistenceManager.getDataSourceConfiguration(secondaryDatasourceId);
+                    DataSource dataSource = DataSourceManager.getInstance().get(queryCfg.getSatellite().name(),
+                                                                                queryCfg.getDataSourceName());
+                    Map<String, Map<String, DataSourceParameter>> parameters = dataSource.getSupportedParameters();
+                    boolean canFilterByProduct = parameters.get(queryCfg.getSatellite().name()).get("product") != null;
+                    lastChanceProducts.forEach(p -> {
+                        p.setStatusId(Status.DOWNLOADING);
+                        p.setNbRetries((short) (p.getNbRetries() + 1));
+                        p.setTimestamp(LocalDateTime.now());
+                        this.persistenceManager.save(p);
+                    });
+                    Set<String> tiles = persistenceManager.getSiteTiles(site, secondaryDS.getSatellite());
+                    ProductConverter converter = new ProductConverter();
+                    List<EOProduct> products = lastChanceProducts.stream()
+                            .map(dbp -> {
+                                EOProduct product = converter.convertToEntityAttribute(dbp);
+                                if (canFilterByProduct) {
+                                    try {
+                                        Query query = new Query();
+                                        query.setUser(queryCfg.getUser());
+                                        query.setPassword(queryCfg.getPassword());
+                                        Map<String, Object> params = new HashMap<>();
+                                        params.put("product", product.getName());
+                                        query.setValues(params);
+                                        List<EOProduct> list = this.downloadService.query(site.getId(), query, queryCfg, -1);
+                                        if (list != null && list.size() == 1) {
+                                            product.setApproximateSize(list.get(0).getApproximateSize());
+                                        }
+                                    } catch (Exception ex) {
+                                        logger.severe(String.format("Cannot query %s. Reason: %s", product.getName(), ex.getMessage()));
+                                    }
+                                }
+                                return product;
+                            }).collect(Collectors.toList());
+                    this.downloadService.download(site.getId(), products, tiles, path, secondaryDS);
+                } else {
+                    logger.info(String.format(MESSAGE, site.getShortName(), downloadCfg.getSatellite().name(),
+                                              "No secondary data source defined"));
+                }
+            } else {
+                logger.info(String.format(MESSAGE, site.getShortName(), downloadCfg.getSatellite().name(),
+                                          "No products to retry"));
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            logger.warning(String.format(MESSAGE, site.getShortName(), downloadCfg.getSatellite().name(),
+                                         "Download failed: " + ex.getMessage() + " @ " + String.join(" < ",
+                                                                                                     Arrays.stream(ex.getStackTrace())
+                                                                                                             .map(StackTraceElement::toString)
+                                                                                                             .collect(Collectors.toSet()))));
         }
     }
 }

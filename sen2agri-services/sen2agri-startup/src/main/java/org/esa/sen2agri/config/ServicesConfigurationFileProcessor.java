@@ -17,6 +17,7 @@
 package org.esa.sen2agri.config;
 
 import org.esa.sen2agri.commons.Config;
+import org.esa.sen2agri.db.Database;
 import ro.cs.tao.services.commons.config.ConfigurationFileProcessor;
 
 import java.nio.file.Path;
@@ -29,10 +30,10 @@ import java.util.logging.Logger;
 public class ServicesConfigurationFileProcessor implements ConfigurationFileProcessor {
 
     @Override
-    public String getConfigFileName() { return "services.properties"; }
+    public String getFileName() { return "services.properties"; }
 
     @Override
-    public String getConfigFileResourceLocation() { return "/config/services.properties"; }
+    public String getFileResourceLocation() { return "/config/services.properties"; }
 
     @Override
     public void performAdditionalConfiguration(Path configDirectory, Properties properties) {
@@ -46,6 +47,16 @@ public class ServicesConfigurationFileProcessor implements ConfigurationFileProc
             for (Handler h : handlers) {
                 h.setLevel(newLevel);
             }
+        }
+        try {
+            Database.checkDatasource();
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
+        }
+        try {
+            Database.checkProductStats();
+        } catch (Exception e) {
+            System.err.println(e.getMessage());
         }
     }
 }

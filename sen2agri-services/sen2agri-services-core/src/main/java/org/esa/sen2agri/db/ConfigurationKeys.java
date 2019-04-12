@@ -19,11 +19,23 @@ package org.esa.sen2agri.db;
  * @author Cosmin Cara
  */
 public final class ConfigurationKeys {
+    public static final String SENSOR_STATE = "%s.enabled";
+    public static final String DOWNLOAD_DIR = "downloader.%s.write-dir";
     public static final String DOWNLOADER_STATE_ENABLED = "downloader.enabled";
     public static final String DOWNLOADER_SITE_STATE_ENABLED = "downloader.%s.enabled";
     public static final String DOWNLOADER_SITE_FORCE_START_ENABLED = "downloader.%s.forcestart";
-    public static final String SENSOR_STATE = "%s.enabled";
-    public static final String DOWNLOAD_DIR = "downloader.%s.write-dir";
     public static final String DOWNLOADER_START_OFFSET = "downloader.start.offset";
     public static final String SKIP_EXISTING_PRODUCTS = "downloader.skip.existing";
+    public static final String SCHEDULED_LOOKUP_ENABLED = "scheduled.lookup.enabled";
+    public static final String SCHEDULED_RETRY_ENABLED = "scheduled.retry.enabled";
+    public static final String MAIL_AUTH = "mail.smtp.auth";
+    public static final String MAIL_STARTTLS = "mail.smtp.starttls.enable";
+    public static final String MAIL_HOST = "mail.smtp.host";
+    public static final String MAIL_PORT = "mail.smtp.port";
+    public static final String MAIL_USER = "mail.smtp.username";
+    public static final String MAIL_PASSWORD = "mail.smtp.password";
+    public static final String MAIL_SENDER = "mail.from";
+    public static final String MAIL_RECIPIENT = "mail.to";
+    public static final String MAIL_BATCH_LIMIT = "mail.message.batch.limit";
+
 }

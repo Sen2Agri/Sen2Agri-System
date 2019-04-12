@@ -45,7 +45,7 @@ public class DatasourceController  extends ControllerBase {
     @Autowired
     private DataSourceService dataSourceService;
 
-    @RequestMapping(value = "/", method = RequestMethod.GET)
+    @RequestMapping(value = "/", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<List<DataSourceConfiguration>> getConfigurations() {
         final List<DataSourceConfiguration> list = dataSourceService.getDataSourceConfigurations();
         if (list == null || list.isEmpty()) {
@@ -54,7 +54,7 @@ public class DatasourceController  extends ControllerBase {
         return new ResponseEntity<>(list, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/{satellite}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{satellite}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<List<DataSourceConfiguration>> getConfigurations(@PathVariable("satellite") short satelliteId) {
         final List<DataSourceConfiguration> list =
                 dataSourceService.getDataSourceConfigurations(new SatelliteConverter().convertToEntityAttribute((int)satelliteId));
@@ -64,9 +64,9 @@ public class DatasourceController  extends ControllerBase {
         return new ResponseEntity<>(list, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/{satellite}/{name}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{satellite}/{name}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<DataSourceConfiguration> getConfiguration(@PathVariable("satellite") short satelliteId,
-                                                                          @PathVariable("name") String name) {
+                                                                    @PathVariable("name") String name) {
         DataSourceConfiguration entity =
                 dataSourceService.getDataSourceConfiguration(new SatelliteConverter().convertToEntityAttribute((int)satelliteId),
                                                              name);

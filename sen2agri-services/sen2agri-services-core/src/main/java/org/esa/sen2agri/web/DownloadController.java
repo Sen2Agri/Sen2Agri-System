@@ -50,7 +50,7 @@ public class DownloadController extends ControllerBase {
     /**
      * Returns information about all the downloads in progress.
      */
-    @RequestMapping(value = "/", method = RequestMethod.GET)
+    @RequestMapping(value = "/", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<List<TaskProgress>> getInProgress() {
         List<TaskProgress> tasks = downloadService.getDownloadsInProgress((short) 0);
         if (tasks == null || tasks.isEmpty()) {
@@ -63,7 +63,7 @@ public class DownloadController extends ControllerBase {
      * Returns information about the downloads in progress for a specific site
      * @param siteId    The site identifier
      */
-    @RequestMapping(value = "/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<List<TaskProgress>> getInProgress(@PathVariable("id") short siteId) {
         List<TaskProgress> tasks = downloadService.getDownloadsInProgress(siteId);
         if (tasks == null || tasks.isEmpty()) {
@@ -72,7 +72,7 @@ public class DownloadController extends ControllerBase {
         return new ResponseEntity<>(tasks, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/{code}/{satellite}", method = RequestMethod.GET)
+    @RequestMapping(value = "/{code}/{satellite}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<List<SensorProgress>> getOverallProgress(@PathVariable("code") String shortName,
                                                                  @PathVariable("satellite") String satelliteName) {
         Short siteId = siteHelper.getSiteIdByShortName(shortName);
@@ -87,7 +87,7 @@ public class DownloadController extends ControllerBase {
         return new ResponseEntity<>(progress, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/{id}/count", method = RequestMethod.GET)
+    @RequestMapping(value = "/{id}/count", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<Long> getCount(@PathVariable("id") short siteId) {
         long count = downloadService.getCount(siteId);
         return new ResponseEntity<>(count, HttpStatus.OK);
@@ -96,7 +96,7 @@ public class DownloadController extends ControllerBase {
     /**
      * Stops all the downloads and marks the downloader as disabled for all sites
      */
-    @RequestMapping(value = "/stop", method = RequestMethod.GET)
+    @RequestMapping(value = "/stop", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> stop() {
         downloadService.stop((short) 0);
         info("/downloader/stop received");
@@ -107,7 +107,7 @@ public class DownloadController extends ControllerBase {
      * Stops the downloads and marks the downloader disabled for the specific site.
      * @param siteId    The site identifier
      */
-    @RequestMapping(value = "/stop/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/stop/{id}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> stop(@PathVariable("id") short siteId) {
         downloadService.stop(siteId);
         info("/downloader/stop/%s received", siteId);
@@ -120,7 +120,7 @@ public class DownloadController extends ControllerBase {
      * @param siteId    The site identifier
      * @param satelliteId   The satellite identifier
      */
-    @RequestMapping(value = "/stop/{id}/{satelliteId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/stop/{id}/{satelliteId}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> stop(@PathVariable("id") short siteId,
                                   @PathVariable("satelliteId") short satelliteId) {
         downloadService.stop(siteId, satelliteId);
@@ -131,7 +131,7 @@ public class DownloadController extends ControllerBase {
     /**
      * Enables the downloader.
      */
-    @RequestMapping(value = "/start", method = RequestMethod.GET)
+    @RequestMapping(value = "/start", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> start() {
         downloadService.start((short) 0);
         scheduleManager.refresh();
@@ -143,7 +143,7 @@ public class DownloadController extends ControllerBase {
      * Enables the downloader for the specific site.
      * @param siteId    The site identifier
      */
-    @RequestMapping(value = "/start/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/start/{id}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> start(@PathVariable("id") short siteId) {
         downloadService.start(siteId);
         scheduleManager.refresh();
@@ -155,7 +155,7 @@ public class DownloadController extends ControllerBase {
      * Forces the downloader to start from the beginning for the specific site.
      * @param siteId    The site identifier
      */
-    @RequestMapping(value = "/forcestart/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/forcestart/{id}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> forceStart(@PathVariable("id") short siteId) {
         downloadService.forceStart(siteId);
         scheduleManager.refresh();
@@ -168,7 +168,7 @@ public class DownloadController extends ControllerBase {
      * @param siteId    The site identifier
      * @param satelliteId   The satellite identifier
      */
-    @RequestMapping(value = "/start/{id}/{satelliteId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/start/{id}/{satelliteId}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> start(@PathVariable("id") short siteId,
                                    @PathVariable("satelliteId") short satelliteId) {
         downloadService.start(siteId, satelliteId);
@@ -182,7 +182,7 @@ public class DownloadController extends ControllerBase {
      * @param siteId    The site identifier
      * @param satelliteId   The satellite identifier
      */
-    @RequestMapping(value = "/forcestart/{id}/{satelliteId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/forcestart/{id}/{satelliteId}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> forceStart(@PathVariable("id") short siteId,
                                         @PathVariable("satelliteId") short satelliteId) {
         downloadService.forceStart(siteId, satelliteId);

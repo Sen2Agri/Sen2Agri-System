@@ -113,6 +113,19 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
         }.single();
     }
 
+    HighLevelProduct findProductByName(int siteId, String name) {
+        return new HighLevelProductTemplate() {
+            @Override
+            protected String conditionsSQL() { return "WHERE site_id = ? AND name = ?"; }
+
+            @Override
+            protected void mapParameters(PreparedStatement statement) throws SQLException {
+                statement.setInt(1, siteId);
+                statement.setString(2, name);
+            }
+        }.single();
+    }
+
     List<HighLevelProduct> findByDownloadedProduct(int downloadHistoryId) {
         return new HighLevelProductTemplate() {
             @Override

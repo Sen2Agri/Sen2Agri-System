@@ -20,6 +20,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -51,9 +52,9 @@ public abstract class NonMappedRepository<T> {
         }
 
         public List<T> list() {
-            try {
-                DataSource dataSource = persistenceManager.getDataSource();
-                JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+            DataSource dataSource = persistenceManager.getDataSource();
+            JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+            try (Connection conn = dataSource.getConnection()) {
                 return jdbcTemplate.query(
                         connection -> {
                             PreparedStatement statement = connection.prepareStatement(baseSQL() + " " + conditionsSQL());
@@ -69,8 +70,13 @@ public abstract class NonMappedRepository<T> {
         public int delete() {
             DataSource dataSource = persistenceManager.getDataSource();
             JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-            return jdbcTemplate.update(deleteQuery() + " " + conditionsSQL(),
-                                       this::mapParameters);
+            try (Connection connection = dataSource.getConnection()) {
+                return jdbcTemplate.update(deleteQuery() + " " + conditionsSQL(),
+                                           this::mapParameters);
+            } catch (SQLException ex) {
+                Logger.getLogger(getClass().getName()).warning(ex.getMessage());
+                return 0;
+            }
         }
     }
 }

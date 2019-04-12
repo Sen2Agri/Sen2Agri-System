@@ -53,4 +53,11 @@ public class Parameter {
         return String.class.getName().equals(type) ? value :
                 new GenericAdapter(type).marshal(value);
     }
+
+    @Override
+    public String toString() {
+        return "<" + (name != null ? name : "null") + ":" +
+                (type != null ? type : "null") + ">=" +
+                (value != null ? value : "null");
+    }
 }

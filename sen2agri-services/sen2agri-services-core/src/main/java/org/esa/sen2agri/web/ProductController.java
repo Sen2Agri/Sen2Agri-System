@@ -69,7 +69,7 @@ public class ProductController extends ControllerBase {
     @Autowired
     private ProductTypesService productTypesService;
 
-    @RequestMapping(value = "/disable/{satellite}/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/disable/{satellite}/{id}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<List<DataSourceConfiguration>> disable(@PathVariable("satellite") short satelliteId,
                                                                 @PathVariable("id") short siteId) {
         downloadService.stop(siteId, satelliteId);
@@ -78,7 +78,7 @@ public class ProductController extends ControllerBase {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/enable/{satellite}/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/enable/{satellite}/{id}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<List<DataSourceConfiguration>> enable(@PathVariable("satellite") short satelliteId,
                                                                  @PathVariable("id") short siteId) {
         downloadService.start(siteId, satelliteId);
@@ -87,7 +87,7 @@ public class ProductController extends ControllerBase {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/enable/status/{satellite}/{id}", method = RequestMethod.GET)
+    @RequestMapping(value = "/enable/status/{satellite}/{id}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<Boolean> enableStatus(@PathVariable("satellite") short satelliteId,
                                                                  @PathVariable("id") short siteId) {
         return new ResponseEntity<>(dataSourceService.getSensorStatus(
@@ -95,14 +95,14 @@ public class ProductController extends ControllerBase {
                 siteId), HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/objectstorage/get", method = RequestMethod.GET)
+    @RequestMapping(value = "/objectstorage/get", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<String[]> getProductTypesForObjectStorage() {
         return new ResponseEntity<>(Config.getSettingValues("scheduled.object.storage.move.product.types",
                                                             new String[0]),
                                             HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/objectstorage/set/{productTypeIds}", method = RequestMethod.GET)
+    @RequestMapping(value = "/objectstorage/set/{productTypeIds}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<?> setProductTypesForObjectStorage(@PathVariable String[] productTypeIds) {
         if (productTypeIds != null && productTypeIds.length > 0) {
             Config.setSetting("scheduled.object.storage.move.product.types", String.join(";", productTypeIds));

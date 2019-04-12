@@ -18,13 +18,13 @@ package org.esa.sen2agri.services;
 
 import org.esa.sen2agri.commons.Config;
 import org.esa.sen2agri.commons.Constants;
-import org.esa.sen2agri.commons.ParameterHelper;
 import org.esa.sen2agri.db.ConfigurationKeys;
 import org.esa.sen2agri.db.PersistenceManager;
 import org.esa.sen2agri.entities.*;
 import org.esa.sen2agri.web.beans.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import ro.cs.tao.datasource.param.CommonParameterNames;
 import ro.cs.tao.eodata.Polygon2D;
 
 import java.time.LocalDateTime;
@@ -39,6 +39,10 @@ public class SiteHelper {
     private PersistenceManager persistenceManager;
 
     private Logger logger = Logger.getLogger(SiteHelper.class.getName());
+
+    public void setPersistenceManager(PersistenceManager persistenceManager) {
+        this.persistenceManager = persistenceManager;
+    }
 
     public Short getSiteIdByShortName(String shortName) {
         Site site = persistenceManager.getSiteByShortName(shortName);
@@ -72,24 +76,27 @@ public class SiteHelper {
         Map<String, Object> params = new HashMap<>();
         Satellite satellite = queryConfiguration.getSatellite();
         Set<String> tiles = persistenceManager.getSiteTiles(site, satellite);
-        params.put(ParameterHelper.getStartDateParamName(satellite),
+        //params.put(ParameterHelper.getStartDateParamName(satellite),
+        params.put(CommonParameterNames.START_DATE,
                    new String[] {
                            start.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)),
                            end.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)) });
-        params.put(ParameterHelper.getEndDateParamName(satellite),
+        //params.put(ParameterHelper.getEndDateParamName(satellite),
+        params.put(CommonParameterNames.END_DATE,
                    new String[] {
                            start.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)),
                            end.format(DateTimeFormatter.ofPattern(Constants.FULL_DATE_FORMAT)) });
-        params.put(ParameterHelper.getFootprintParamName(satellite), Polygon2D.fromWKT(site.getExtent()));
-        String tileParamName = ParameterHelper.getTileParamName(satellite);
-        if (tiles != null && tiles.size() > 0 && tileParamName != null) {
+        //params.put(ParameterHelper.getFootprintParamName(satellite), Polygon2D.fromWKT(site.getExtent()));
+        params.put(CommonParameterNames.FOOTPRINT, Polygon2D.fromWKT(site.getExtent()));
+        //String tileParamName = ParameterHelper.getTileParamName(satellite);
+        if (tiles != null && tiles.size() > 0) {
             String tileList;
             if (tiles.size() == 1) {
                 tileList = tiles.stream().findFirst().get();
             } else {
                 tileList = "[" + String.join(",", tiles) + "]";
             }
-            params.put(tileParamName, tileList);
+            params.put(CommonParameterNames.TILE, tileList);
         }
         final List<Parameter> specificParameters = queryConfiguration.getSpecificParameters();
         if (specificParameters != null) {

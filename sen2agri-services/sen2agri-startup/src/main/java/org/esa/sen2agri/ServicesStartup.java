@@ -17,10 +17,12 @@ package org.esa.sen2agri;
 
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import ro.cs.tao.services.commons.StartupBase;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 /**
  * @author Cosmin Cara
@@ -29,13 +31,17 @@ import java.io.IOException;
 @EnableScheduling
 public class ServicesStartup extends StartupBase {
 
+    private Logger logger = Logger.getLogger(ServicesStartup.class.getName());
+
     public static void main(String[] args) throws IOException {
         run(ServicesStartup.class, args);
     }
 
     @Override
     public void onApplicationEvent(ApplicationEvent event) {
-        // No-op
+        if (event instanceof ContextRefreshedEvent) {
+            // NOOP
+        }
     }
 
 }

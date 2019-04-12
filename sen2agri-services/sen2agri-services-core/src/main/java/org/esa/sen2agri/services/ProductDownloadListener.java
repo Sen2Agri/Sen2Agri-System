@@ -28,6 +28,7 @@ import ro.cs.tao.datasource.ProductStatusListener;
 import ro.cs.tao.eodata.EOProduct;
 import ro.cs.tao.eodata.metadata.MetadataInspector;
 import ro.cs.tao.products.sentinels.Sentinel1MetadataInspector;
+import ro.cs.tao.serialization.GeometryAdapter;
 
 import java.io.IOException;
 import java.net.URI;
@@ -59,6 +60,18 @@ public class ProductDownloadListener implements ProductStatusListener {
         if (dbProduct == null) {
             dbProduct = new ProductConverter().convertToDatabaseColumn(product);
         } else {
+            if (dbProduct.getFootprint() == null && product.getGeometry() != null) {
+                try {
+                    dbProduct.setFootprint(new GeometryAdapter().marshal(product.getGeometry()));
+                } catch (Exception e) {
+                    logger.warning(String.format("Cannot update fooprint for product %s. Reason: %s",
+                                                 product.getName(), e.getMessage()));
+                }
+            }
+            if (dbProduct.getOrbitType() == null && product.getAttributeValue("orbitdirection") != null) {
+                dbProduct.setOrbitType(OrbitType.valueOf(product.getAttributeValue("orbitdirection")));
+            }
+            dbProduct = persistenceManager.save(dbProduct);
             // avoid redownloading the products aborted, downloaded or processed
             if (!Status.DOWNLOADING.equals(dbProduct.getStatusId()) &&
                     !Status.FAILED.equals(dbProduct.getStatusId())) {

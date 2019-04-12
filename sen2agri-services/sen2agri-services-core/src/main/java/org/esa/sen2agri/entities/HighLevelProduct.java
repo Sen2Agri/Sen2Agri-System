@@ -39,6 +39,7 @@ public class HighLevelProduct {
     private String[] tiles;
     private OrbitType orbitType;
     private int downloadProductId;
+    private ProductDetails productDetails;
 
     public int getId() {
         return id;
@@ -135,4 +136,12 @@ public class HighLevelProduct {
 
     public int getDownloadProductId() { return downloadProductId; }
     public void setDownloadProductId(int downloadProductId) { this.downloadProductId = downloadProductId; }
+
+    public ProductDetails getProductDetails() {
+        return productDetails;
+    }
+
+    public void setProductDetails(ProductDetails productDetails) {
+        this.productDetails = productDetails;
+    }
 }

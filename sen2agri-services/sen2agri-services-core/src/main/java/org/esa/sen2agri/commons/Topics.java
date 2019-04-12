@@ -14,15 +14,12 @@
  * with this program; if not, see http://www.gnu.org/licenses/
  */
 
-package org.esa.sen2agri.config;
+package org.esa.sen2agri.commons;
 
-import ro.cs.tao.services.commons.config.ConfigurationFileProcessor;
-
-public class ApplicationConfigurationFileProcessor implements ConfigurationFileProcessor {
-    @Override
-    public String getFileName() { return "application.properties"; }
-
-    @Override
-    public String getFileResourceLocation() { return "/config/spring.properties"; }
-
+public class Topics {
+    public static final String PROCESSING_ATTENTION = "PROCESSING_ATTENTION";
+    public static final String PROCESSING_WARNING = "PROCESSING_WARNING";
+    public static final String PROCESSING_ERROR = "PROCESSING_ERROR";
+    public static final String PROCESSING_COMPLETED = "PROCESSING_COMPLETED";
+    public static final String COMMAND = "COMMAND";
 }

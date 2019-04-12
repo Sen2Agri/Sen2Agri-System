@@ -65,7 +65,7 @@ public class SiteController extends ControllerBase {
         return new ResponseEntity<>(siteId, HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/", method = RequestMethod.DELETE, produces = "application/json")
     public ResponseEntity<?> delete(@RequestBody DeleteReqPayload entity) {
         short siteId = entity.siteId;
         if (entity.siteId < 0) {

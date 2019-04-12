@@ -48,6 +48,7 @@ public class DataSourceConfiguration {
     private String localArchivePath;
     private boolean enabled;
     private List<Parameter> specificParameters;
+    private Integer secondaryDatasourceId;
     private Properties additionalSettings;
 
     @XmlAttribute(name = "id")
@@ -111,6 +112,10 @@ public class DataSourceConfiguration {
     public List<Parameter> getSpecificParameters() { return specificParameters; }
     public void setSpecificParameters(List<Parameter> specificParameters) { this.specificParameters = specificParameters; }
 
+    @XmlElement(name = "secondaryDatasourceId")
+    public Integer getSecondaryDatasourceId() { return secondaryDatasourceId; }
+    public void setSecondaryDatasourceId(Integer secondaryDatasourceId) { this.secondaryDatasourceId = secondaryDatasourceId; }
+
     public Object getParameterValue(String name) throws Exception {
         if (specificParameters != null) {
             Optional<Parameter> parameter = specificParameters.stream().filter(p -> p.getName().equals(name)).findFirst();
@@ -165,11 +170,11 @@ public class DataSourceConfiguration {
                 ", downloadPath=" + (downloadPath != null ? '\'' + downloadPath + '\'' : "null") +
                 ", localArchivePath=" + (localArchivePath != null ? '\'' + localArchivePath + '\'' : "null") +
                 ", enabled=" + enabled +
+                ", secondaryDatasourceId=" + (secondaryDatasourceId != null ? secondaryDatasourceId : "null") +
                 ", specificParameters=[" + (specificParameters != null ?
-                                            String.join(",",
-                                                        specificParameters.stream()
-                                                                          .map(Object::toString)
-                                                                          .collect(Collectors.toList())) : "null") + "]" +
+                specificParameters.stream()
+                                  .map(Object::toString)
+                                  .collect(Collectors.joining(",")) : "null") + "]" +
                 ", additionalSettings=" + (additionalSettings != null ? additionalSettings.toString() : "null") +
                 '}';
     }

@@ -16,18 +16,23 @@
 package org.esa.sen2agri.scheduling;
 
 import org.esa.sen2agri.commons.Config;
+import org.esa.sen2agri.commons.Topics;
 import org.esa.sen2agri.db.PersistenceManager;
 import org.esa.sen2agri.services.DownloadService;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import ro.cs.tao.messaging.Message;
+import ro.cs.tao.messaging.Messaging;
+import ro.cs.tao.messaging.Notifiable;
+import ro.cs.tao.security.SystemPrincipal;
 
 import java.util.logging.Logger;
 
 /**
  * @author Cosmin Cara
  */
-public abstract class AbstractJob implements Job {
+public abstract class AbstractJob extends Notifiable implements Job {
 
     protected static final String MESSAGE = "[site '%s',sensor '%s'] %s";
 
@@ -38,6 +43,12 @@ public abstract class AbstractJob implements Job {
     public AbstractJob() {
         persistenceManager = Config.getPersistenceManager();
         downloadService = Config.getDownloadService();
+        subscribe(Topics.COMMAND);
+    }
+
+    @Override
+    protected void onMessageReceived(Message message) {
+        // Override this in subclass if need to process messages
     }
 
     @Override
@@ -50,6 +61,17 @@ public abstract class AbstractJob implements Job {
             logger.warning(t.getMessage());
             t.printStackTrace();
         }
+    }
+
+    protected void sendNotification(String topic, String key, String message) {
+        Message msg = new Message();
+        msg.setTopic(topic);
+        msg.setTimestamp(System.currentTimeMillis());
+        msg.setUser(SystemPrincipal.instance().getName());
+        msg.addItem(Message.SOURCE_KEY, this.getClass().getSimpleName());
+        msg.addItem(Message.PAYLOAD_KEY, key);
+        msg.addItem(Message.MESSAGE_KEY, message);
+        Messaging.send(SystemPrincipal.instance(), key, msg);
     }
 
     protected abstract void executeImpl(JobDataMap dataMap);

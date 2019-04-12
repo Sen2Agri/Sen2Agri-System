@@ -32,8 +32,8 @@ import org.springframework.jdbc.support.KeyHolder;
 import ro.cs.tao.serialization.GeometryAdapter;
 
 import javax.sql.DataSource;
-import java.sql.*;
 import java.sql.Date;
+import java.sql.*;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,6 +51,25 @@ public class DownloadProductRepository extends NonMappedRepository<DownloadProdu
                 return "JOIN datasource d ON d.satellite_id = dh.satellite_id " +
                         "WHERE dh.site_id = ? AND dh.status_id IN (1, 3) AND dh.satellite_id = ? " +
                         "AND dh.no_of_retries < d.max_retries " +
+                        "AND EXTRACT(epoch FROM (current_timestamp - dh.created_timestamp)) / 60 >= d.retry_interval_minutes " +
+                        "AND d.scope IN (2, 3) AND d.enabled = true ORDER BY dh.product_date";
+            }
+
+            @Override
+            protected void mapParameters(PreparedStatement statement) throws SQLException {
+                statement.setShort(1, (short) siteId);
+                statement.setShort(2, (short) satelliteId);
+            }
+        }.list();
+    }
+
+    List<DownloadProduct> findLastRetriesBySite(int siteId, int satelliteId) {
+        return new DownloadProductTemplate() {
+            @Override
+            protected String conditionsSQL() {
+                return "JOIN datasource d ON d.satellite_id = dh.satellite_id " +
+                        "WHERE dh.site_id = ? AND dh.status_id IN (1, 3) AND dh.satellite_id = ? " +
+                        "AND dh.no_of_retries = d.max_retries " +
                         "AND EXTRACT(epoch FROM (current_timestamp - dh.created_timestamp)) / 60 >= d.retry_interval_minutes " +
                         "AND d.scope IN (2, 3) AND d.enabled = true ORDER BY dh.product_date";
             }
@@ -234,14 +253,41 @@ public class DownloadProductRepository extends NonMappedRepository<DownloadProdu
         }.list();
     }
 
-    List<DownloadProduct> findIntersectingProducts(String productName, int daysBack) {
+    List<DownloadProduct> findPreviouslyNotIntersected(int siteId, int daysBack) {
+        return new DownloadProductTemplate() {
+            @Override
+            protected String conditionsSQL() {
+                return "JOIN (SELECT d2.product_name, i.product_name AS intr, d2.site_id, d2.orbit_id, d2.satellite_id FROM downloader_history d2 " +
+                        "JOIN downloader_history i ON i.site_id = d2.site_id AND i.orbit_id = d2.orbit_id AND i.satellite_id = d2.satellite_id " +
+                        "WHERE ST_INTERSECTS(i.footprint, d2.footprint) AND DATE_PART('day', d2.product_date - i.product_date) BETWEEN ? AND ? AND d2.satellite_id = 3) AS intersections " +
+                        "ON intersections.site_id = dh.site_id AND intersections.orbit_id = dh.orbit_id AND intersections.satellite_id = dh.satellite_id AND " +
+                        "intersections.product_name = dh.product_name " +
+                        "LEFT JOIN (SELECT full_path, name, site_id, orbit_id, satellite_id, inserted_timestamp, CASE WHEN array_length(string_to_array(name, '_'), 1) = 8 THEN " +
+                        "GREATEST(substr(split_part(name, '_', 4), 2, 15)::date, substr(split_part(name, '_', 5), 1, 15)::date) ELSE " +
+                        "GREATEST(substr(split_part(name, '_', 6), 2, 15)::date, substr(split_part(name, '_', 7), 1, 15)::date) END as master_date FROM product) AS p " +
+                        "ON p.site_id = dh.site_id AND p.orbit_id = dh.orbit_id AND p.satellite_id = dh.satellite_id AND CAST(dh.product_date as date) = p.master_date " +
+                        "WHERE dh.satellite_id = 3 AND dh.site_id = ? AND dh.status_id = 5 AND p.full_path IS NULL " +
+                        "ORDER BY dh.product_date, dh.orbit_id, dh.product_name;";
+            }
+
+            @Override
+            protected void mapParameters(PreparedStatement statement) throws SQLException {
+                statement.setInt(1, daysBack - 1);
+                statement.setInt(2, daysBack + 1);
+                statement.setInt(3, siteId);
+            }
+        }.list();
+    }
+
+    List<DownloadProduct> findIntersectingProducts(String productName, int daysBack, double threshold) {
         return new DownloadProductTemplate() {
             @Override
             protected String conditionsSQL() {
                 return "WHERE EXISTS (SELECT * FROM downloader_history WHERE product_name = ? AND " +
                         "ST_INTERSECTS(footprint, dh.footprint) AND satellite_id = dh.satellite_id AND " +
                         "site_id = dh.site_id AND orbit_id = dh.orbit_id AND " +
-                        "DATE_PART('day', product_date - dh.product_date) BETWEEN ? AND ?)";
+                        "DATE_PART('day', product_date - dh.product_date) BETWEEN ? AND ? " +
+                        "AND st_area(st_intersection(footprint, dh.footprint)) / st_area(footprint) > ?)";
             }
 
             @Override
@@ -249,6 +295,7 @@ public class DownloadProductRepository extends NonMappedRepository<DownloadProdu
                 statement.setString(1, productName);
                 statement.setInt(2, daysBack - 1);
                 statement.setInt(3, daysBack + 1);
+                statement.setDouble(4, threshold);
             }
         }.list();
     }
