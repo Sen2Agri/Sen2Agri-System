@@ -132,7 +132,7 @@ def get_season_dates(start_date, end_date):
     dates = []
     while start_date <= end_date:
         dates.append(start_date)
-        start_date += timedelta(days=7)
+        start_date += timedelta(days=10)
     return dates
 
 
