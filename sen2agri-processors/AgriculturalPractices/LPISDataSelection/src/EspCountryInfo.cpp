@@ -2,13 +2,13 @@
 
 std::string EspCountryInfo::GetName() { return "ESP"; }
 
-std::string EspCountryInfo::GetUniqueId(OGRFeature &ogrFeat) {
+std::string EspCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
     return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("C_DECLARA"));
 }
-std::string EspCountryInfo::GetMainCrop(OGRFeature &ogrFeat) {
+std::string EspCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {
     return RemoveSuffix(ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("C_PRODUCTO")));
 }
-bool EspCountryInfo::GetHasPractice(OGRFeature &ogrFeat, const std::string &practice) {
+bool EspCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice) {
     if (practice == FALLOW_LAND_VAL) {
         int cropCode = std::atoi(ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("C_PRODUCTO")));
         int variedad = std::atoi(ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("C_VARIEDAD")));
@@ -30,7 +30,7 @@ bool EspCountryInfo::GetHasPractice(OGRFeature &ogrFeat, const std::string &prac
     return false;
 }
 
-std::string EspCountryInfo::GetPracticeType(OGRFeature &ogrFeat) {
+std::string EspCountryInfo::GetPracticeType(const AttributeEntry &ogrFeat) {
     if (m_practice == FALLOW_LAND_VAL) {
         return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("C_VARIEDAD"));
     } // else if (practice == NITROGEN_FIXING_CROP_VAL) return "NA"

@@ -10,14 +10,14 @@ if [ "$#" -eq "3" ] ; then
     CSV_COMPACT="--csvcompact 0"
 fi
 
-OUTPUTS_ROOT="/mnt/archive/agric_practices/Outputs/"
-
 COUNTRY="$1"
 PRD_TYPE="$2"
 OUT_REL_PATH=""
 OUT_FILE_NAME=""
 OUTPUT_LEVEL1="DataExtractionResults"
 OUT_SUBFOLDER="Compact"
+
+OUTPUTS_ROOT="/mnt/archive/agric_practices/Outputs/${COUNTRY}/"
 
 OUT_REL_PATH="${PRD_TYPE}_SHP"
 OUT_FILE_NAME="${COUNTRY}_2018_${PRD_TYPE}_Extracted_Data.csv"
@@ -33,6 +33,12 @@ case "$1" in
         ;;
     ITA)
         ;;
+    ITA_CP1)
+        ;;
+    ITA_CP2)
+        ;;
+    ITA_FML)
+        ;;        
     ROU)
         ;;
     *)

@@ -16,6 +16,15 @@ otb_create_application(
                  LtuCountryInfo.h LtuCountryInfo.cpp
                  NlCountryInfo.h NlCountryInfo.cpp
                  RouCountryInfo.h RouCountryInfo.cpp
+                 AttributeEntry.h
+                 GSAAAttributesTablesReaderBase.h
+                 GSAAAttributesTablesReaderFactory.cpp
+                 GSAAAttributesTablesReaderFactory.h
+                 GSAACsvAttributesTablesReader.cpp
+                 GSAACsvAttributesTablesReader.h
+                 GSAAShpAttributesTablesReader.cpp
+                 GSAAShpAttributesTablesReader.h
+
   LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata boost_regex)
 
 #if(BUILD_TESTING)

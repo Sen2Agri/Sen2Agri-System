@@ -15,21 +15,21 @@ public:
     LtuCountryInfo();
 
     virtual std::string GetName();
-    virtual void InitializeIndexes(OGRFeature &firstOgrFeat);
-    virtual std::string GetUniqueId(OGRFeature &ogrFeat);
+    virtual void InitializeIndexes(const AttributeEntry &firstOgrFeat);
+    virtual std::string GetUniqueId(const AttributeEntry &ogrFeat);
 
-    virtual std::string GetMainCrop(OGRFeature &ogrFeat);
-    virtual bool GetHasPractice(OGRFeature &ogrFeat, const std::string &practice);
+    virtual std::string GetMainCrop(const AttributeEntry &ogrFeat);
+    virtual bool GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice);
 
-    virtual std::string GetPracticeType(OGRFeature &ogrFeat);
+    virtual std::string GetPracticeType(const AttributeEntry &ogrFeat);
 
-    virtual std::string GetPEnd(OGRFeature &ogrFeat);
+    virtual std::string GetPEnd(const AttributeEntry &ogrFeat);
     int HandleFileLine(const MapHdrIdx& header, const std::vector<std::string>& line, int fileIdx);
 
     bool HasUid(const std::string &fid, const std::map<std::string, std::string> &refMap);
 
 private:
-    std::string GetGSAAUniqueId(OGRFeature &ogrFeat);
+    std::string GetGSAAUniqueId(const AttributeEntry &ogrFeat);
 
     int m_PSL_KODAS_FieldIdx;
     int m_agg_id_FieldIdx;

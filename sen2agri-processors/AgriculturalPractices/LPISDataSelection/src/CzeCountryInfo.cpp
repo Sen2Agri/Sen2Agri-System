@@ -9,18 +9,18 @@ CzeCountryInfo::CzeCountryInfo() {
 
 std::string CzeCountryInfo::GetName() { return "CZE"; }
 
-void CzeCountryInfo::InitializeIndexes(OGRFeature &firstOgrFeat)
+void CzeCountryInfo::InitializeIndexes(const AttributeEntry &firstOgrFeat)
 {
     CountryInfoBase::InitializeIndexes(firstOgrFeat);
 
     m_NKOD_DPB_FieldIdx = firstOgrFeat.GetFieldIndex("NKOD_DPB");
 }
 
-std::string CzeCountryInfo::GetUniqueId(OGRFeature &ogrFeat) {
+std::string CzeCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
   return ogrFeat.GetFieldAsString(m_NKOD_DPB_FieldIdx);
 }
 
-std::string CzeCountryInfo::GetMainCrop(OGRFeature &ogrFeat) {
+std::string CzeCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {
   const std::string &plod2 = GetLpisInfos(GetUniqueId(ogrFeat)).plod2;
   // Ignore items that have plod2 filled
   if (plod2.size() > 0 && std::atoi(plod2.c_str()) > 0) {
@@ -29,7 +29,7 @@ std::string CzeCountryInfo::GetMainCrop(OGRFeature &ogrFeat) {
   return GetLpisInfos(GetUniqueId(ogrFeat)).plod1;
 }
 
-bool CzeCountryInfo::GetHasPractice(OGRFeature &ogrFeat,
+bool CzeCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat,
                                     const std::string &practice) {
   bool bCheckVymera = false;
   const std::string &uid = GetUniqueId(ogrFeat);
@@ -51,7 +51,7 @@ bool CzeCountryInfo::GetHasPractice(OGRFeature &ogrFeat,
   return false;
 }
 
-std::string CzeCountryInfo::GetPracticeType(OGRFeature &ogrFeat) {
+std::string CzeCountryInfo::GetPracticeType(const AttributeEntry &ogrFeat) {
   if (m_practice == CATCH_CROP_VAL) {
     const std::string &mpl = GetEfaInfos(GetUniqueId(ogrFeat)).var_mpl;
     if (mpl == "L") {
@@ -61,7 +61,7 @@ std::string CzeCountryInfo::GetPracticeType(OGRFeature &ogrFeat) {
   }
   return "NA";
 }
-std::string CzeCountryInfo::GetPStart(OGRFeature &ogrFeat) {
+std::string CzeCountryInfo::GetPStart(const AttributeEntry &ogrFeat) {
   if (m_practice == CATCH_CROP_VAL) {
     const std::string &pType = GetPracticeType(ogrFeat);
     if (pType == "Winter") {
@@ -76,7 +76,7 @@ std::string CzeCountryInfo::GetPStart(OGRFeature &ogrFeat) {
   }
   return "NA";
 }
-std::string CzeCountryInfo::GetPEnd(OGRFeature &ogrFeat) {
+std::string CzeCountryInfo::GetPEnd(const AttributeEntry &ogrFeat) {
   if (m_practice == CATCH_CROP_VAL) {
     const std::string &pType = GetPracticeType(ogrFeat);
     if (pType == "Winter") {

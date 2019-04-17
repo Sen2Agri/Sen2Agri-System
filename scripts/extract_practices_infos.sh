@@ -21,7 +21,11 @@ WORKING_DIR_ROOT="/mnt/archive/agric_practices"
 INSITU_ROOT="$WORKING_DIR_ROOT/insitu/"
 OUT_DIR="$INSITU_ROOT/PracticesInfos/"
 
-FILTER_IDS_FILE="${OUT_DIR}/Sen4CAP_L4C_2018_FilterIDs.csv"
+if [ -z $COUNTRY_REGION ] ; then 
+    FILTER_IDS_FILE="${OUT_DIR}/Sen4CAP_L4C_2018_FilterIDs.csv"
+else 
+    FILTER_IDS_FILE="${OUT_DIR}/Sen4CAP_L4C_2018_${COUNTRY_REGION}_FilterIDs.csv"
+fi
 
 CC_OUT_FILE="${OUT_DIR}/Sen4CAP_L4C_Catch_${COUNTRY_AND_REGION}_2018.csv"
 NFC_OUT_FILE="${OUT_DIR}/Sen4CAP_L4C_NFC_${COUNTRY_AND_REGION}_2018.csv"
@@ -177,8 +181,17 @@ case "$COUNTRY" in
         NA_HEND="2018-08-15"
         ;;
     ITA)
-        IN_SHP_NAME="ITA_2018_DeclSTD_quality_indic.shp"
-        
+        if [ "$COUNTRY_REGION" == "FML" ] ; then
+            IN_SHP_NAME="ITA_FRIULI_MARCHE_LAZIO_2018_DeclSTD_quality_indic.shp"
+        elif [ "$COUNTRY_REGION" == "CP1" ] ; then
+            IN_SHP_NAME="ITA_CAMPANIA_PUGLIA_2018_DeclSTD_quality_indic_part1.shp"
+        elif [ "$COUNTRY_REGION" == "CP2" ]  ; then
+            IN_SHP_NAME="ITA_CAMPANIA_PUGLIA_2018_DeclSTD_quality_indic_part2.shp"
+        else
+            echo "Error executing practices infos for ITA. Unknown region ${COUNTRY_REGION}"
+            exit 1
+        fi    
+
         VEG_START="2018-01-01"
 
         NFC_VEG_START="2018-03-01"
@@ -192,8 +205,9 @@ case "$COUNTRY" in
         FL_PSTART="2018-01-01"
         FL_PEND="2018-06-30"
         
-        NA_HSTART="2018-02-05"
-        NA_HEND="2018-09-30"
+        NA_VEG_START="2018-04-02"
+        NA_HSTART="2018-04-02"
+        NA_HEND="2018-12-15"
         ;;
     ROU)
         IN_SHP_NAME="ROU_2018_DeclSTD_quality_indic.shp"

@@ -128,7 +128,7 @@ private:
 
     QStringList GetInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, const ProductType &prdType,
                                  QDateTime &minDate, QDateTime &maxDate);
-    QStringList FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QString &path);
+    QStringList FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QString &path, const QStringList &s2L8TilesFilter);
 
     PracticesTableExtractionParams LoadPracticesParams(const QSettings &settings, const QString &practicePrefix);
     void UpdatePracticesParams(const PracticesTableExtractionParams &defVals, PracticesTableExtractionParams &sectionVals);
@@ -137,9 +137,6 @@ private:
 
     QStringList GetListValue(const QSettings &settings, const QString &key);
     QString GetTsaExpectedPractice(const QString &practice);
-    QDateTime GetNdviProductTime(const QString &prdPath);
-    QDateTime GetS1L2AProductTime(const QString &prdPath);
-    void UpdateMinMaxTimes(const QDateTime &newTime, QDateTime &minTime, QDateTime &maxTime);
 };
 
 #endif // AGRICPRACTICESHANDLER_HPP

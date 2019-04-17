@@ -512,7 +512,7 @@ QString ProcessorHandler::GetStringConfigValue(const QJsonObject &parameters, co
 
     QString retVal;
     if(parameters.contains(key)) {
-        retVal = parameters[key].toInt();
+        retVal = parameters[key].toString();
     } else {
         retVal = GetMapValue(configParameters, fullKey);
     }

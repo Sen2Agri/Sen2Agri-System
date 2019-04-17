@@ -17,16 +17,18 @@ public:
     RouCountryInfo();
 
     virtual std::string GetName();
-    virtual std::string GetUniqueId(OGRFeature &ogrFeat);
-    virtual std::string GetMainCrop(OGRFeature &ogrFeat);
-    virtual bool GetHasPractice(OGRFeature &ogrFeat, const std::string &practice);
+    virtual std::string GetUniqueId(const AttributeEntry &ogrFeat);
+    virtual std::string GetMainCrop(const AttributeEntry &ogrFeat);
+    virtual bool GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice);
 
-    virtual std::string GetPEnd(OGRFeature &ogrFeat);
+    virtual std::string GetPStart(const AttributeEntry &ogrFeat);
+    virtual std::string GetPEnd(const AttributeEntry &ogrFeat);
 
     int HandleCCFeature(OGRFeature &ogrFeat, int fileIdx);
 
 private:
-    std::string GetGSAAUniqueId(OGRFeature &ogrFeat);
+    template <typename T>
+    std::string GetGSAAUniqueId(T &ogrFeat);
 };
 
 #endif

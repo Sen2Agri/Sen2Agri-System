@@ -5,15 +5,28 @@ if [ "$#" -lt 2 ]; then
     exit 1
 fi
 
+COUNTRY_AND_REGION="$1"
+COUNTRY="${COUNTRY_AND_REGION%%_*}"
+COUNTRY_REGION=""
+if [ "$1" != "$COUNTRY" ] ; then
+
+    COUNTRY_REGION="${1##*_}"
+fi    
+
 SITE_ID=""
 POOL_SIZE=2
 PRDS_PER_GROUP=20
 
 WORKING_DIR_ROOT="/mnt/archive/agric_practices"
 INSITU_ROOT="$WORKING_DIR_ROOT/insitu/"
-OUTPUTS_ROOT="$WORKING_DIR_ROOT/Outputs/"
+OUTPUTS_ROOT="$WORKING_DIR_ROOT/Outputs/${COUNTRY_AND_REGION}/"
 INPUTS_FILES_ROOT="/mnt/archive/agric_practices/Inputs/exec_cmds/"
-FILTER_IDS_FILE="$INSITU_ROOT/PracticesInfos/Sen4CAP_L4C_2018_FilterIDs.csv"
+
+if [ -z $COUNTRY_REGION ] ; then 
+    FILTER_IDS_FILE="$INSITU_ROOT/PracticesInfos/Sen4CAP_L4C_2018_FilterIDs.csv"
+else 
+    FILTER_IDS_FILE="$INSITU_ROOT/PracticesInfos/Sen4CAP_L4C_2018_${COUNTRY_REGION}_FilterIDs.csv"
+fi
 
 INSITU_REL_PATH=""
 OUT_REL_PATH=""
@@ -49,7 +62,7 @@ case "$2" in
         exit 1
 esac        
 
-case "$1" in
+case "${COUNTRY}" in
     NLD)
         INSITU_REL_PATH="nld_2018_32631_buf_${INSITU_BUFFER_SIZE}.shp"
         SITE_ID="4"
@@ -64,7 +77,14 @@ case "$1" in
         INSITU_REL_PATH="gsaa2018_32629_full_buf_${INSITU_BUFFER_SIZE}.shp"
         ;;
     ITA)
-        INSITU_REL_PATH="TODO.shp"
+        if [ "$COUNTRY_REGION" == "FML" ] ; then
+            INSITU_REL_PATH="ITA_FRIULI_MARCHE_LAZIO_2018_32632_buf_${INSITU_BUFFER_SIZE}.shp"
+        elif [ "$COUNTRY_REGION" == "CP1" ] || [ "$COUNTRY_REGION" == "CP2" ] ; then
+            INSITU_REL_PATH="ITA_CAMPANIA_PUGLIA_2018_32633_buf_${INSITU_BUFFER_SIZE}.shp"
+        else 
+            echo "Error executing data extraction for ITA. Unknown region ${COUNTRY_REGION}"
+            exit 1
+        fi    
         ;;
     ROU)
         INSITU_REL_PATH="TODO.shp"

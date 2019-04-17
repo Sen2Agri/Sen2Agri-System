@@ -2,7 +2,7 @@
 
 std::string NlCountryInfo::GetName() { return "NL"; }
 
-void NlCountryInfo::InitializeIndexes(OGRFeature &firstOgrFeat)
+void NlCountryInfo::InitializeIndexes(const AttributeEntry &firstOgrFeat)
 {
     CountryInfoBase::InitializeIndexes(firstOgrFeat);
 
@@ -12,15 +12,15 @@ void NlCountryInfo::InitializeIndexes(OGRFeature &firstOgrFeat)
     m_GRONDBED_2_FieldIdx = firstOgrFeat.GetFieldIndex("GRONDBED_2");
 }
 
-std::string NlCountryInfo::GetUniqueId(OGRFeature &ogrFeat) {
+std::string NlCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
     return ogrFeat.GetFieldAsString(m_FUNCTIONEE_FieldIdx);
 }
 
-std::string NlCountryInfo::GetMainCrop(OGRFeature &ogrFeat) {
+std::string NlCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {
     return ogrFeat.GetFieldAsString(m_GRONDBEDEK_FieldIdx);
 }
 
-bool NlCountryInfo::GetHasPractice(OGRFeature &ogrFeat, const std::string &practice) {
+bool NlCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice) {
     if (practice == CATCH_CROP_VAL) {
         std::string field = ogrFeat.GetFieldAsString(m_IND_EA_FieldIdx);
         if (field == "J") {
@@ -35,7 +35,7 @@ bool NlCountryInfo::GetHasPractice(OGRFeature &ogrFeat, const std::string &pract
     return false;
 }
 
-std::string NlCountryInfo::GetHStart(OGRFeature &ogrFeat) {
+std::string NlCountryInfo::GetHStart(const AttributeEntry &ogrFeat) {
     const std::string &mainCrop = GetMainCrop(ogrFeat);
     if (mainCrop == "233") {
         return m_hWinterStart;
@@ -43,7 +43,7 @@ std::string NlCountryInfo::GetHStart(OGRFeature &ogrFeat) {
     return m_hstart;
 }
 
-std::string NlCountryInfo::GetPractice(OGRFeature &ogrFeat) {
+std::string NlCountryInfo::GetPractice(const AttributeEntry &ogrFeat) {
     if (m_practice == CATCH_CROP_VAL) {
         std::string field = ogrFeat.GetFieldAsString(m_IND_EA_FieldIdx);
         if (field == "J") {
@@ -60,7 +60,7 @@ std::string NlCountryInfo::GetPractice(OGRFeature &ogrFeat) {
     return m_practice;
 }
 
-std::string NlCountryInfo::GetPracticeType(OGRFeature &ogrFeat) {
+std::string NlCountryInfo::GetPracticeType(const AttributeEntry &ogrFeat) {
     if (m_practice == CATCH_CROP_VAL) {
         std::string field = ogrFeat.GetFieldAsString(m_GRONDBED_2_FieldIdx);
         std::string retPtype = field;
@@ -75,7 +75,7 @@ std::string NlCountryInfo::GetPracticeType(OGRFeature &ogrFeat) {
     }
     return "NA";
 }
-std::string NlCountryInfo::GetPStart(OGRFeature &ogrFeat) {
+std::string NlCountryInfo::GetPStart(const AttributeEntry &ogrFeat) {
     if (m_practice == CATCH_CROP_VAL) {
         const std::string &practice = GetPractice(ogrFeat);
         if (practice == "CatchCropIsMain") {
@@ -86,7 +86,7 @@ std::string NlCountryInfo::GetPStart(OGRFeature &ogrFeat) {
     }
     return "NA";
 }
-std::string NlCountryInfo::GetPEnd(OGRFeature &ogrFeat) {
+std::string NlCountryInfo::GetPEnd(const AttributeEntry &ogrFeat) {
     if (m_practice == CATCH_CROP_VAL) {
         const std::string &practice = GetPractice(ogrFeat);
         if (practice == "CatchCropIsMain") {

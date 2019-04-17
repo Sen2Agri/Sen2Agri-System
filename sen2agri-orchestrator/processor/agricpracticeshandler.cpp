@@ -359,7 +359,7 @@ AgricPracticesSiteCfg AgricPracticesHandler::LoadSiteConfigFile(const QString &s
     QSettings settings(siteCfgFilePath, QSettings::IniFormat);
     QString cmnSectionKey("COMMON/");
 
-    cfg.prdsPerGroup = GetBoolConfigValue(parameters, configParameters, "prds_per_group", L4C_AP_CFG_PREFIX);
+    cfg.prdsPerGroup = GetIntConfigValue(parameters, configParameters, "prds_per_group", L4C_AP_CFG_PREFIX);
     cfg.country = settings.value( cmnSectionKey + "COUNTRY").toString();
     cfg.year = settings.value( cmnSectionKey + "YEAR").toString();
     cfg.fullShapePath = settings.value( cmnSectionKey + "FULL_SHP").toString();
@@ -793,6 +793,10 @@ QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
             return QStringList();
     }
     const auto &inputProducts = parameters[prodsInputKey.c_str()].toArray();
+    const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, L4C_AP_CFG_PREFIX);
+    const QString &s2L8TilesStr = GetStringConfigValue(parameters, configParameters, "s2_l8_tiles", L4C_AP_CFG_PREFIX);
+    const QStringList &s2L8Tiles = s2L8TilesStr.split(',',  QString::SkipEmptyParts);
+
     QStringList listProducts;
 
     // get the products from the input_products or based on start_date or date_end
@@ -818,7 +822,7 @@ QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
         for (const auto &inputProduct : inputProducts) {
             // if the product is an LAI, we need to extract the TIFF file for the NDVI
             if (prdType == ProductType::L3BProductTypeId) {
-                const QStringList &tiffFiles = FindNdviProductTiffFile(ctx, event, inputProduct.toString());
+                const QStringList &tiffFiles = FindNdviProductTiffFile(ctx, event, inputProduct.toString(), s2L8Tiles);
                 if (tiffFiles.size() > 0) {
                     listProducts.append(tiffFiles);
                     for (const auto &tiffFile: tiffFiles) {
@@ -844,7 +848,8 @@ QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
     return listProducts;
 }
 
-QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QString &path)
+QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                                           const QString &path, const QStringList &s2L8TilesFilter)
 {
     QFileInfo fileInfo(path);
     if (!fileInfo.isDir()) {
@@ -858,10 +863,13 @@ QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContex
         // if we have the product name, we need to get the product path from the database
         absPath = ctx.GetProductAbsolutePath(event.siteId, path);
     }
-    const QString &tilesPath = QDir(absPath).filePath("TILES");
+    const QMap<QString, QString> &prdTiles = ProcessorHandlerHelper::GetHighLevelProductTilesDirs(absPath);
     QStringList retList;
-    for (const auto &subDir : QDir(tilesPath).entryList(QDir::NoDotAndDotDot | QDir::Dirs)) {
-        const QString &tileDir = QDir(tilesPath).filePath(subDir);
+    for(const auto &tileId : prdTiles.keys()) {
+        if (s2L8TilesFilter.size() > 0 && !s2L8TilesFilter.contains(tileId)) {
+            continue;
+        }
+        const QString &tileDir = prdTiles[tileId];
         const QString &laiFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(tileDir, "SNDVI");
         if (laiFileName.size() > 0) {
             retList.append(laiFileName);
@@ -1010,45 +1018,3 @@ QString AgricPracticesHandler::GetTsaExpectedPractice(const QString &practice)
     return retPractice;
 }
 
-QDateTime AgricPracticesHandler::GetNdviProductTime(const QString &prdPath)
-{
-    static QRegularExpression rex(QStringLiteral(NDVI_PRD_NAME_REGEX));
-    QRegularExpression re(rex);
-    const QString &fileName = QFileInfo(prdPath).fileName();
-    const QRegularExpressionMatch &match = re.match(fileName);
-    if (match.hasMatch()) {
-        const QString &timestamp = match.captured(1);
-        return QDateTime::fromString(timestamp, "yyyyMMddTHHmmss");
-    }
-    return QDateTime();
-}
-
-QDateTime AgricPracticesHandler::GetS1L2AProductTime(const QString &prdPath)
-{
-    const QString &fileName = QFileInfo(prdPath).fileName();
-    static QRegularExpression rex(QStringLiteral(S1_L2A_PRD_NAME_REGEX));
-    QRegularExpression re(rex);
-    const QRegularExpressionMatch &match = re.match(fileName);
-    if (match.hasMatch()) {
-        const QString &timestamp1 = match.captured(1);
-        const QString &timestamp2 = match.captured(2);
-        const QDateTime &qDateTime1 = QDateTime::fromString(timestamp1, "yyyyMMddTHHmmss");
-        const QDateTime &qDateTime2 = QDateTime::fromString(timestamp2, "yyyyMMddTHHmmss");
-        return qDateTime1 < qDateTime2 ? qDateTime1 : qDateTime2;
-    }
-    return QDateTime();
-}
-
-void AgricPracticesHandler::UpdateMinMaxTimes(const QDateTime &newTime, QDateTime &minTime, QDateTime &maxTime)
-{
-    if (newTime.isValid()) {
-        if (!minTime.isValid() && !maxTime.isValid()) {
-            minTime = newTime;
-            maxTime = newTime;
-        } else if (newTime < minTime) {
-            minTime = newTime;
-        } else if (newTime > maxTime) {
-            maxTime = newTime;
-        }
-    }
-}

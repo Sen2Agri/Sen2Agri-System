@@ -7,7 +7,7 @@ LtuCountryInfo::LtuCountryInfo() {
 
 std::string LtuCountryInfo::GetName() { return "LTU"; }
 
-void LtuCountryInfo::InitializeIndexes(OGRFeature &firstOgrFeat)
+void LtuCountryInfo::InitializeIndexes(const AttributeEntry &firstOgrFeat)
 {
     CountryInfoBase::InitializeIndexes(firstOgrFeat);
 
@@ -19,15 +19,15 @@ void LtuCountryInfo::InitializeIndexes(OGRFeature &firstOgrFeat)
     m_LAUKO_NR_FieldIdx = firstOgrFeat.GetFieldIndex("LAUKO_NR");
 }
 
-std::string LtuCountryInfo::GetUniqueId(OGRFeature &ogrFeat) {
+std::string LtuCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
     return GetGSAAUniqueId(ogrFeat);
 }
 
-std::string LtuCountryInfo::GetMainCrop(OGRFeature &ogrFeat) {
+std::string LtuCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {
     return ogrFeat.GetFieldAsString(m_PSL_KODAS_FieldIdx);
 }
 
-bool LtuCountryInfo::GetHasPractice(OGRFeature &ogrFeat, const std::string &practice) {
+bool LtuCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice) {
     const std::string &uid = GetUniqueId(ogrFeat);
     if (practice == CATCH_CROP_VAL) {
         return (m_ccISMap.find(uid) != m_ccISMap.end() ||
@@ -41,7 +41,7 @@ bool LtuCountryInfo::GetHasPractice(OGRFeature &ogrFeat, const std::string &prac
     return false;
 }
 
-std::string LtuCountryInfo::GetPracticeType(OGRFeature &ogrFeat) {
+std::string LtuCountryInfo::GetPracticeType(const AttributeEntry &ogrFeat) {
     const std::string &uid = GetUniqueId(ogrFeat);
     if (m_practice == CATCH_CROP_VAL) {
         if (m_ccISMap.find(uid) != m_ccISMap.end()) {
@@ -60,7 +60,7 @@ std::string LtuCountryInfo::GetPracticeType(OGRFeature &ogrFeat) {
     return "NA";
 }
 
-std::string LtuCountryInfo::GetPEnd(OGRFeature &ogrFeat) {
+std::string LtuCountryInfo::GetPEnd(const AttributeEntry &ogrFeat) {
     if (m_practice == FALLOW_LAND_VAL) {
         const std::string &pType = GetPracticeType(ogrFeat);
         if (pType == "PDZ") {
@@ -134,7 +134,7 @@ bool LtuCountryInfo::HasUid(const std::string &fid, const std::map<std::string, 
     return itMap != refMap.end();
 }
 
-std::string LtuCountryInfo::GetGSAAUniqueId(OGRFeature &ogrFeat)    {
+std::string LtuCountryInfo::GetGSAAUniqueId(const AttributeEntry &ogrFeat)    {
     std::string gsaaId;
     if (m_agg_id_FieldIdx >= 0) {
         gsaaId = ogrFeat.GetFieldAsString(m_agg_id_FieldIdx);

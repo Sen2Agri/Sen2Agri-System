@@ -127,6 +127,8 @@ private:
         m_bPlotOutputGraph = false;
         // # optional: in case continuos products (csv file) shall be generated set the value to TRUE otherwise set to FALSE
         m_bResultContinuousProduct = false;
+
+        m_bVerbose = false;
     }
 
     void DoInit() override
@@ -323,7 +325,7 @@ private:
         AddParameter(ParameterType_Int, "s1pixthr", "Number of minimum S1 pixels to consider a parcel valid");
         SetParameterDescription("s1pixthr", "Number of minimum S1 pixels to consider a parcel valid");
         MandatoryOff("s1pixthr");
-        SetDefaultParameterInt("s1pixthr", 8);
+        SetDefaultParameterInt("s1pixthr", 1);
 
 
         AddParameter(ParameterType_String, "catchcropval", "Catch crop value");
@@ -594,7 +596,7 @@ private:
 //            return false;
 //        }
 
-//        if (fieldId != "05300282100145") {
+//        if (fieldId != "216024-97-a") {
 //            return false;
 //        }
 
@@ -645,7 +647,7 @@ private:
         }
         if (fieldInfos.harvestStartWeekNo == 1) {
             // increment the harvest start time to the next week
-            fieldInfos.ttVegStartWeekFloorTime += SEC_IN_WEEK;
+            fieldInfos.ttHarvestStartWeekFloorTime += SEC_IN_WEEK;
             fieldInfos.harvestStartWeekNo++;
         }
 
@@ -660,22 +662,30 @@ private:
             bInitializeWithNR = true;
         }
 
-        otbAppLogINFO("Extracting amplitude file infos for field  " << fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Extracting amplitude file infos for field  " << fieldId);
+        }
         if (bOK && !ExtractAmplitudeFilesInfos(fieldInfos)) {
             bOK = false;
         }
 
-        otbAppLogINFO("Extracting coherence file infos for field  " << fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Extracting coherence file infos for field  " << fieldId);
+        }
         if (bOK && !ExtractCoherenceFilesInfos(fieldInfos)) {
             bOK = false;
         }
 
-        otbAppLogINFO("Extracting NDVI file infos for field  " << fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Extracting NDVI file infos for field  " << fieldId);
+        }
         if (bOK && !ExtractNdviFilesInfos(fieldInfos)) {
             bOK = false;
         }
 
-        otbAppLogINFO("Processing infos for field  " << fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Processing infos for field  " << fieldId);
+        }
         if (bOK && !ProcessFieldInformation(fieldInfos)) {
             bOK = false;
         }
@@ -703,13 +713,16 @@ private:
         itVH = mapInfos.find("VH");
         if (itVV == mapInfos.end() || itVH == mapInfos.end() ||
                 itVV->second.size() == 0 || itVH->second.size() == 0) {
-            otbAppLogWARNING("Didn't find entries for both VV and VH amplitude files for the field " << fieldInfo.fieldId);
+            if (m_bVerbose) {
+                otbAppLogWARNING("Didn't find entries for both VV and VH amplitude files for the field " << fieldInfo.fieldId);
+            }
             return false;
         }
 
-        otbAppLogINFO("Amplitude : Extracted a number of " << itVV->second.size() <<
-                      " VV entries and a number of " << itVH->second.size() << " VH entries!");
-
+        if (m_bVerbose) {
+            otbAppLogINFO("Amplitude : Extracted a number of " << itVV->second.size() <<
+                          " VV entries and a number of " << itVH->second.size() << " VH entries!");
+        }
         const std::vector<InputFileLineInfoType> &uniqueVVEntries = FilterDuplicates(itVV->second);
         const std::vector<InputFileLineInfoType> &uniqueVHEntries = FilterDuplicates(itVH->second);
 
@@ -720,8 +733,10 @@ private:
         fieldInfo.ampVVLines.insert(fieldInfo.ampVVLines.end(), commonVVInfos.begin(), commonVVInfos.end());
         fieldInfo.ampVHLines.insert(fieldInfo.ampVHLines.end(), commonVHInfos.begin(), commonVHInfos.end());
 
-        otbAppLogINFO("Amplitude : Available " << fieldInfo.ampVVLines.size() <<
-                      " VV entries and a number of " << fieldInfo.ampVHLines.size() << " VH entries!");
+        if (m_bVerbose) {
+            otbAppLogINFO("Amplitude : Available " << fieldInfo.ampVVLines.size() <<
+                          " VV entries and a number of " << fieldInfo.ampVHLines.size() << " VH entries!");
+        }
 
         if (!m_bAllowGaps) {
             if (!CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.ampVVLines) ||
@@ -754,7 +769,9 @@ private:
 
 //        otbAppLogINFO("Coherence : Extracted a number of " << itVV->second.size() <<
 //                      " VV entries and a number of " << itVH->second.size() << " VH entries!");
-        otbAppLogINFO("Coherence : Extracted a number of VV entries of " << itVV->second.size());
+        if (m_bVerbose) {
+            otbAppLogINFO("Coherence : Extracted a number of VV entries of " << itVV->second.size());
+        }
 
         const std::vector<InputFileLineInfoType> &uniqueEntries = FilterDuplicates(itVV->second);
         fieldInfo.coheVVLines.insert(fieldInfo.coheVVLines.end(), uniqueEntries.begin(), uniqueEntries.end());
@@ -858,7 +875,9 @@ private:
                 }
             }
         }
-        otbAppLogINFO("Kept a number of " << retLineInfos1.size() << " common lines!");
+        if (m_bVerbose) {
+            otbAppLogINFO("Kept a number of " << retLineInfos1.size() << " common lines!");
+        }
     }
 
     std::vector<InputFileLineInfoType> FilterDuplicates(const std::vector<InputFileLineInfoType> &lineInfos) {
@@ -885,7 +904,9 @@ private:
                               std::vector<GroupedMeanValInfosType> &ndviGroups, std::vector<GroupedMeanValInfosType> &coherenceGroups,
                               std::vector<MergedAllValInfosType> &allMergedValues) {
         // Read VV and VH backscatter (grd) and compute backscatter ratio (VV-VH)
-        otbAppLogINFO("Merging amplitudes for field  " << fieldInfos.fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Merging amplitudes for field  " << fieldInfos.fieldId);
+        }
         if (!MergeAmplitudes(fieldInfos.fieldId, ampVVLines, ampVHLines, mergedAmpInfos)) {
             return false;
         }
@@ -894,7 +915,9 @@ private:
 //        PrintAmplitudeInfos(fieldInfos);
         // DEBUG
 
-        otbAppLogINFO("Grouping amplitudes by weeks for field  " << fieldInfos.fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Grouping amplitudes by weeks for field  " << fieldInfos.fieldId);
+        }
         // Group backscatter ratio by weeks (7-day period) - compute week-mean ($grd.mean)
         if (!GroupTimedValuesByWeeks(mergedAmpInfos, ampRatioGroups)) {
             return false;
@@ -904,7 +927,9 @@ private:
         //PrintAmpGroupedMeanValues(ampRatioGroups);
         // DEBUG
 
-        otbAppLogINFO("Computing amplitude 3 weeks mean - current value mean for field  " << fieldInfos.fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Computing amplitude 3 weeks mean - current value mean for field  " << fieldInfos.fieldId);
+        }
         // Compute 3-weeks-mean before a week ($grd.w3m)
         // and compute difference between week-mean and previous 3-week-mean ($grd.change)
         if (!Compute3WeeksAmplRatioDiffs(ampRatioGroups)) {
@@ -919,7 +944,9 @@ private:
 //        PrintNdviInfos(fieldInfos);
         // DEBUG
 
-        otbAppLogINFO("Grouping NDVI by weeks for field  " << fieldInfos.fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Grouping NDVI by weeks for field  " << fieldInfos.fieldId);
+        }
         if (!GroupTimedValuesByWeeks(ndviLines, ndviGroups)) {
             return false;
         }
@@ -939,7 +966,9 @@ private:
         PrintCoherenceInfos(fieldInfos);
         // DEBUG
 
-        otbAppLogINFO("Grouping Coherence by weeks for field  " << fieldInfos.fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Grouping Coherence by weeks for field  " << fieldInfos.fieldId);
+        }
         if (!GroupTimedValuesByWeeks(coheVVLines, coherenceGroups)) {
             return false;
         }
@@ -956,7 +985,9 @@ private:
 //        PrintCoherenceGroupedMeanValues(coherenceGroups);
         // DEBUG
 
-        otbAppLogINFO("Merging all information for field  " << fieldInfos.fieldId);
+        if (m_bVerbose) {
+            otbAppLogINFO("Merging all information for field  " << fieldInfos.fieldId);
+        }
         if (!MergeAllFieldInfos(fieldInfos, ampRatioGroups, coherenceGroups,
                                 ndviGroups, allMergedValues)) {
             return false;
@@ -1124,7 +1155,9 @@ private:
 
         // update the ret list size with the right value
         size_t retListSize = retAllMergedValues.size();
-        otbAppLogINFO("Kept a common AMP-COHE values of " << retListSize);
+        if (m_bVerbose) {
+            otbAppLogINFO("Kept a common AMP-COHE values of " << retListSize);
+        }
         if (retListSize == 0) {
             otbAppLogWARNING("No common AMP-COHE values detected for the parcel with ID " << fieldInfos.fieldId);
             return false;
@@ -1242,7 +1275,7 @@ private:
                             const std::vector<GroupedMeanValInfosType> &coherenceGroups,
                             std::vector<MergedAllValInfosType> &retAllMergedValues)
     {
-        if (ampRatioGroups.size() != coherenceGroups.size()) {
+        if (ampRatioGroups.size() != coherenceGroups.size() && m_bVerbose) {
             otbAppLogWARNING("Amplitude and coherence groups sizes differ when merging for field " << fieldInfos.fieldId <<
                              " Amp size: " << ampRatioGroups.size() << " Cohe size: " << coherenceGroups.size());
         }
@@ -1795,7 +1828,7 @@ private:
                     efaMax = maxVal;    // select the maximum NDVI
                     efaMin = minVal;    // select the minimum NDVI
                     if( IsLess(efaMin, m_EfaNdviDown) ){ efaMin = m_EfaNdviDown; }                 // efa.min is >= efa.ndvi.dw
-                    if( IsGreater(efaMin, m_EfaNdviUp) ){ efaMin = m_EfaNdviUp; }                 // efa.min is <= efa.ndvi.up if efa.min>ndvi.up !
+                    if( IsGreater(efaMin, m_NdviUp) ){ efaMin = m_EfaNdviUp; }                 // efa.min is <= efa.ndvi.up if efa.min>ndvi.up !
                 } else {
                     // else set it to efa.ndvi.dw
                     efaMax = m_EfaNdviDown;
@@ -2402,6 +2435,11 @@ private:
             if (AllNdviMeanAreNA(efaMarkers)) {
                 ncHarvestInfos.evaluation.ndviPresence = NOT_AVAILABLE;
             }
+            if (fieldInfos.countryCode == "ROU") {
+                if (IsNA(ncHarvestInfos.evaluation.ndviPresence)) {
+                    ncHarvestInfos.evaluation.efaIndex = "NR";
+                }
+            }
         } else {
             if (!ncHarvestInfos.evaluation.ndviPresence) {
                 // # no evidence of the NFC vegetation in the vegetation season - return POOR evaluation
@@ -2449,8 +2487,8 @@ private:
         efaMarkers.resize(allMergedValues.size());
 
 //      DEBUG
-        std::cout << TimeToString(ttStartTime) << std::endl;
-        std::cout << TimeToString(ttEndTime) << std::endl;
+        // std::cout << TimeToString(ttStartTime) << std::endl;
+        // std::cout << TimeToString(ttEndTime) << std::endl;
         PrintEfaMarkers(allMergedValues, efaMarkers);
 //      DEBUG
 
@@ -2597,15 +2635,21 @@ private:
                 //curWeek = i;
                 // extract from the amplitude vectors , the weeks
                 std::vector<double> subsetAmpTimes;
+                std::vector<int> subsetAmpWeeks;
                 std::vector<double> subsetAmpValues;
                 for(size_t j = 0; j<mergedAmpInfos.size(); j++) {
                     if ((mergedAmpInfos[j].vvInfo.weekNo >= curWeek - 2) &&
                         (mergedAmpInfos[j].vvInfo.weekNo <= curWeek + 2)) {
+                        if (std::find(subsetAmpWeeks.begin(), subsetAmpWeeks.end(),
+                                      mergedAmpInfos[j].vvInfo.weekNo) == subsetAmpWeeks.end()) {
+                            subsetAmpWeeks.push_back(mergedAmpInfos[j].vvInfo.weekNo);
+                        }
                         subsetAmpTimes.push_back(mergedAmpInfos[j].ttDate / SEC_IN_DAY);
                         subsetAmpValues.push_back(mergedAmpInfos[j].ampRatio);
                     }
                 }
-                if (subsetAmpTimes.size() < 3) {
+                // we check the unique weeks
+                if (subsetAmpWeeks.size() < 3) {
                     continue;
                 }
 
@@ -2948,11 +2992,16 @@ private:
 
         std::stringstream ss;
 
-        ss << " <fid id=\"" << fieldInfos.fieldId.c_str() << "\">\n";
-        ss << " <harvest ps=\"" << TimeToString(harvestInfo.evaluation.ttHarvestStartTime).c_str() <<
-                                "\" pe=\"" << TimeToString(harvestInfo.evaluation.ttHarvestEndTime).c_str() <<
-                                "\" w=\"" << ValueToString(harvestInfo.evaluation.harvestConfirmWeek).c_str() <<
+        ss << " <fid id=\"" << fieldInfos.fieldSeqId.c_str() << "\" orig_id=\"" << fieldInfos.fieldId.c_str() << "\">\n";
+        ss << " <practice start=\"" << TimeToString(harvestInfo.evaluation.ttHarvestStartTime).c_str() <<
+                               "\" end=\"" << TimeToString(harvestInfo.evaluation.ttHarvestEndTime).c_str() <<
+                               "\"/>\n";
+        ss << " <harvest start=\"" << TimeToString(harvestInfo.evaluation.ttHarvestConfirmWeekStart).c_str() <<
+                              "\" end=\"" << TimeToString((IsNA(harvestInfo.evaluation.ttHarvestConfirmWeekStart) || harvestInfo.evaluation.ttHarvestConfirmWeekStart == 0) ?
+                                            harvestInfo.evaluation.ttHarvestConfirmWeekStart :
+                                            harvestInfo.evaluation.ttHarvestConfirmWeekStart + (6 * SEC_IN_DAY)).c_str() <<
                                 "\"/>\n";
+
         ss << "  <ndvis>\n";
         for (size_t i = 0; i<fieldInfos.ndviLines.size(); i++) {
             ss << "   <ndvi date=\"" << fieldInfos.ndviLines[i].strDate.c_str() <<
@@ -2960,9 +3009,9 @@ private:
         }
         ss << "  </ndvis>\n";
         ss << "  <amps>\n";
-        for (size_t i = 0; i<fieldInfos.ampRatioGroups.size(); i++) {
-            ss << "   <amp date=\"" << TimeToString(fieldInfos.ampRatioGroups[i].ttDate).c_str() <<
-                                    "\" val=\"" << ValueToString(fieldInfos.ampRatioGroups[i].meanVal).c_str() << "\"/>\n";
+        for (size_t i = 0; i<fieldInfos.mergedAmpInfos.size(); i++) {
+            ss << "   <amp date=\"" << TimeToString(fieldInfos.mergedAmpInfos[i].ttDate).c_str() <<
+                                    "\" val=\"" << ValueToString(fieldInfos.mergedAmpInfos[i].ampRatio).c_str() << "\"/>\n";
         }
         ss << "  </amps>\n";
         ss << "  <cohs>\n";
@@ -2975,7 +3024,7 @@ private:
         const std::string &ssStr = ss.str();
         size_t byteToWrite = ssStr.size();
         if (m_OutPlotsIdxFileStream.is_open()) {
-            m_OutPlotsIdxFileStream << fieldInfos.fieldId.c_str() << ";" << m_OutPlotsIdxCurIdx << ";" << byteToWrite <<"\n";
+            m_OutPlotsIdxFileStream << fieldInfos.fieldSeqId.c_str() << ";" << m_OutPlotsIdxCurIdx << ";" << byteToWrite <<"\n";
         }
         m_OutPlotsIdxCurIdx += byteToWrite;
         m_OutPlotsFileStream << ssStr.c_str();
@@ -3487,6 +3536,7 @@ private:
     bool m_bGapsFill;
 
     bool m_bDebugMode;
+    bool m_bVerbose;
 
     int m_nMinS1PixCnt;
 

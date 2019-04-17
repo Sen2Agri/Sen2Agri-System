@@ -24,6 +24,7 @@
 #include "otbOGRDataSourceWrapper.h"
 
 #include "CountryInfoFactory.h"
+#include "GSAAAttributesTablesReaderFactory.h"
 
 #include "CommonFunctions.h"
 
@@ -246,6 +247,23 @@ private:
         otbAppLogINFO("Output: " << outFileName);
         otbAppLogINFO("#######################################");
 
+        // Start the processing
+        boost::filesystem::path practicesInfoPath(inShpFile);
+        std::string pfFormat = practicesInfoPath.extension().c_str();
+        pfFormat.erase(pfFormat.begin(), std::find_if(pfFormat.begin(), pfFormat.end(), [](int ch) {
+                return ch != '.';
+            }));
+
+        auto practiceReadersFactory = GSAAAttributesTablesReaderFactory::New();
+        m_pGSAAAttrsTablesReader = practiceReadersFactory->GetPracticeReader(pfFormat);
+        m_pGSAAAttrsTablesReader->SetSource(inShpFile);
+
+        // start processing features
+        using namespace std::placeholders;
+        std::function<void(const AttributeEntry&)> f = std::bind(&LPISDataSelection::ProcessFeature, this, _1);
+        m_bFirstFeature = true;
+        m_pGSAAAttrsTablesReader->ExtractAttributes(f);
+/*
         otb::ogr::DataSource::Pointer source = otb::ogr::DataSource::New(
             inShpFile, otb::ogr::DataSource::Modes::Read);
         for (otb::ogr::DataSource::const_iterator lb=source->begin(), le=source->end(); lb != le; ++lb)
@@ -261,16 +279,21 @@ private:
                 ProcessFeature(*featIt);
             }
         }
+*/
         otbAppLogINFO("Extraction DONE!");
     }
 
-    void ProcessFeature(const ogr::Feature& feature) {
-        OGRFeature &ogrFeat = feature.ogr();
+    void ProcessFeature(const AttributeEntry& ogrFeat) {
+        if (m_bFirstFeature) {
+            // Initialize any indexes from the first feature
+            m_pCountryInfos->InitializeIndexes(ogrFeat);
+            m_bFirstFeature = false;
+        }
         if (!FilterFeature(ogrFeat)) {
             return;
         }
 
-        WritePracticesFileLine(feature);
+        WritePracticesFileLine(ogrFeat);
     }
 
     void WritePracticesFileHeader() {
@@ -287,12 +310,11 @@ private:
         }
     }
 
-    void WritePracticesFileLine(const ogr::Feature& feature) {
+    void WritePracticesFileLine(const AttributeEntry& ogrFeat) {
         if (!m_outPracticesFileStream.is_open()) {
             std::cout << "Trying  to write feature in a closed stream!" << std::endl;
             return;
         }
-        OGRFeature &ogrFeat = feature.ogr();
         const std::string &uid = m_pCountryInfos->GetUniqueId(ogrFeat);
         int seqId = m_pCountryInfos->GetSeqId(ogrFeat);
         const std::string &mainCrop = GetValueOrNA(m_pCountryInfos->GetMainCrop(ogrFeat));
@@ -334,7 +356,7 @@ private:
         return "NA";
     }
 
-    bool FilterFeature(OGRFeature &ogrFeat) {
+    bool FilterFeature(const AttributeEntry &ogrFeat) {
         // if we have filters and we did not find the id
         std::string uid = m_pCountryInfos->GetUniqueId(ogrFeat);
         NormalizeFieldId(uid);
@@ -401,6 +423,9 @@ private:
     std::ofstream m_outPracticesFileStream;
 
     bool m_bWriteIdsOnlyFile;
+    bool m_bFirstFeature;
+
+    std::unique_ptr<GSAAAttributesTablesReaderBase> m_pGSAAAttrsTablesReader;
 };
 
 } // end of namespace Wrapper

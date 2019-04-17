@@ -369,7 +369,7 @@ void CompositeHandler::FilterInputProducts(QStringList &listFiles,
 void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
+    const QStringList &listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(
@@ -381,7 +381,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     GetJobConfig(ctx, event, cfg);
 
     int resolution = cfg.resolution;
-    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
+    const QMap<QString, TileTemporalFilesInfo> &mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
                                                                ProductType::L2AProductTypeId);
     //ProcessorHandlerHelper::TrimLeftSecondarySatellite(listProducts, mapTiles);
 
@@ -390,7 +390,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit productFormatterTask{"product-formatter", {}};
     NewStepList allSteps;
     QList<CompositeGlobalExecutionInfos> listCompositeInfos;
-    for(auto tileId : mapTiles.keys())
+    for(const auto &tileId : mapTiles.keys())
     {
         const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
         int curRes = resolution;

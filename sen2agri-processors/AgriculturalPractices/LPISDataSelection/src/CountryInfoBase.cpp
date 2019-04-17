@@ -16,7 +16,7 @@ CountryInfoBase::CountryInfoBase()
     m_S2PixIdx = -1;
 }
 
-void CountryInfoBase::InitializeIndexes(OGRFeature &firstOgrFeat)
+void CountryInfoBase::InitializeIndexes(const AttributeEntry &firstOgrFeat)
 {
     m_SeqIdFieldIdx = firstOgrFeat.GetFieldIndex(SEQ_UNIQUE_ID);
     m_LandCoverFieldIdx = firstOgrFeat.GetFieldIndex(LC_VAL);
@@ -53,7 +53,7 @@ void CountryInfoBase::SetAdditionalFiles(const std::vector<std::string> &additio
     }
 }
 
-int CountryInfoBase::GetSeqId(OGRFeature &ogrFeat) {
+int CountryInfoBase::GetSeqId(const AttributeEntry &ogrFeat) {
     if (m_SeqIdFieldIdx == -1) {
         return -1;    // we don't have the column
     }
@@ -73,15 +73,15 @@ void CountryInfoBase::SetWinterPEnd(const std::string &val) { m_pWinterEnd = val
 
 std::string CountryInfoBase::GetYear() {return m_year;}
 std::string CountryInfoBase::GetVegStart() {return m_vegstart;}
-std::string CountryInfoBase::GetHStart(OGRFeature &ogrFeat) {(void)ogrFeat ; return m_hstart;}
-std::string CountryInfoBase::GetHEnd(OGRFeature &ogrFeat) {(void)ogrFeat ; return m_hend;}
+std::string CountryInfoBase::GetHStart(const AttributeEntry &ogrFeat) {(void)ogrFeat ; return m_hstart;}
+std::string CountryInfoBase::GetHEnd(const AttributeEntry &ogrFeat) {(void)ogrFeat ; return m_hend;}
 std::string CountryInfoBase::GetPractice() {return m_practice;}
-std::string CountryInfoBase::GetPractice(OGRFeature &ogrFeat) { (void)ogrFeat ; return GetPractice(); }
-std::string CountryInfoBase::GetPracticeType(OGRFeature &ogrFeat) {(void)ogrFeat ; return m_ptype;}
-std::string CountryInfoBase::GetPStart(OGRFeature &ogrFeat) {(void)ogrFeat ; return m_pstart;}
-std::string CountryInfoBase::GetPEnd(OGRFeature &ogrFeat) {(void)ogrFeat ; return m_pend;}
+std::string CountryInfoBase::GetPractice(const AttributeEntry &ogrFeat) { (void)ogrFeat ; return GetPractice(); }
+std::string CountryInfoBase::GetPracticeType(const AttributeEntry &ogrFeat) {(void)ogrFeat ; return m_ptype;}
+std::string CountryInfoBase::GetPStart(const AttributeEntry &ogrFeat) {(void)ogrFeat ; return m_pstart;}
+std::string CountryInfoBase::GetPEnd(const AttributeEntry &ogrFeat) {(void)ogrFeat ; return m_pend;}
 
-bool CountryInfoBase::IsMonitoringParcel(OGRFeature &ogrFeat) {
+bool CountryInfoBase::IsMonitoringParcel(const AttributeEntry &ogrFeat) {
     if (m_LandCoverFieldIdx == -1) {
         return true;    // we don't have the column
     }
@@ -155,7 +155,7 @@ std::vector<std::string> CountryInfoBase::GetInputFileLineElements(const std::st
     return results;
 }
 
-std::string CountryInfoBase::GetFieldOrNA(OGRFeature &ogrFeat, int idx) {
+std::string CountryInfoBase::GetFieldOrNA(const AttributeEntry &ogrFeat, int idx) {
     if (idx != -1) {
         const char* field = ogrFeat.GetFieldAsString(idx);
         if (field != NULL) {

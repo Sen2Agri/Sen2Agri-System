@@ -78,7 +78,7 @@ bool StatisticsInfosSingleCsvReader::GetEntriesForField(const std::string &fid, 
 {
     std::ifstream ifs( m_strSource.c_str() );
     if( ifs.fail() ) {
-        std::cout << "Error opening input file, exiting..." << std::endl;
+        std::cout << "Error opening input file " << m_strSource.c_str() <<". Exiting..." << std::endl;
         return false;
     }
 

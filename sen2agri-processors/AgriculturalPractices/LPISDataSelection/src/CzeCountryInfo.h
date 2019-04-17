@@ -7,15 +7,15 @@ class CzeCountryInfo : public CountryInfoBase {
 public:
     CzeCountryInfo();
 
-    virtual void InitializeIndexes(OGRFeature &firstOgrFeat);
+    virtual void InitializeIndexes(const AttributeEntry &firstOgrFeat);
     virtual std::string GetName();
-    virtual std::string GetUniqueId(OGRFeature &ogrFeat);
-    virtual std::string GetMainCrop(OGRFeature &ogrFeat);
-    virtual bool GetHasPractice(OGRFeature &ogrFeat, const std::string &practice);
+    virtual std::string GetUniqueId(const AttributeEntry &ogrFeat);
+    virtual std::string GetMainCrop(const AttributeEntry &ogrFeat);
+    virtual bool GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice);
 
-    virtual std::string GetPracticeType(OGRFeature &ogrFeat);
-    virtual std::string GetPStart(OGRFeature &ogrFeat);
-    virtual std::string GetPEnd(OGRFeature &ogrFeat);
+    virtual std::string GetPracticeType(const AttributeEntry &ogrFeat);
+    virtual std::string GetPStart(const AttributeEntry &ogrFeat);
+    virtual std::string GetPEnd(const AttributeEntry &ogrFeat);
 
 private :
     typedef struct {
