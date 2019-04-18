@@ -1,7 +1,6 @@
 add_subdirectory(SampleSelection)
 add_subdirectory(BandsExtractor)
 add_subdirectory(FeatureExtraction)
-add_subdirectory(TemporalResampling)
 add_subdirectory(QualityFlagsExtractor)
 
 install(FILES ../../scripts/CropType.py ../../scripts/CropTypeFused.py
