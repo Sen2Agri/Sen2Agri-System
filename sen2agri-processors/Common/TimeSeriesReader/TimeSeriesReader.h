@@ -214,7 +214,7 @@ protected:
 
     void ProcessMetadata(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper, const std::string& filename,
                          ImageDescriptor& descriptor, const TileData& td);
-    void GetProductBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper, const TileData& td,
+    virtual void GetProductBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper, const TileData& td,
                          ImageDescriptor &descriptor);
     otb::Wrapper::UInt8ImageType::Pointer GetProductMask(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper,
                                                          const TileData& td);

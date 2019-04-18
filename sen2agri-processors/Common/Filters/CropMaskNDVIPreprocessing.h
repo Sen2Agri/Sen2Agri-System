@@ -70,6 +70,28 @@ public:
         m_ComputeNDVIFilter = ComputeNDVIFilterType::New();
     }
 
+    void GetProductBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper, const TileData& td,
+                         ImageDescriptor &descriptor) override {
+        // Return extract Green, Red, Nir and Swir bands image
+        const std::vector<std::string> &bandNames = {pHelper->GetRedBandName(),
+                                                pHelper->GetNirBandName()};
+
+        std::vector<int> relBandIdxs;
+        MetadataHelper<float>::VectorImageType::Pointer img = pHelper->GetImage(bandNames, &relBandIdxs);
+        img->UpdateOutputInformation();
+
+        auto resampledBands = getResampledBand<FloatVectorImageType>(img, td, false);
+
+        for (int bandIndex: relBandIdxs) {
+            auto channelExtractor = ExtractFloatChannelFilterType::New();
+            channelExtractor->SetInput(resampledBands);
+            channelExtractor->SetIndex(bandIndex);
+            m_Filters->PushBack(channelExtractor);
+            descriptor.bands.push_back(channelExtractor->GetOutput());
+        }
+    }
+
+
     otb::Wrapper::FloatVectorImageType * GetOutput(const std::vector<MissionDays> &sensorOutDays)
     {
 #if 0
