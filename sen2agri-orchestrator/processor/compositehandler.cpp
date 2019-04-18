@@ -151,7 +151,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
         auto waterResImg = compositePreprocessing.GetFilePath("water_res.tif");
         auto snowResImg = compositePreprocessing.GetFilePath("snow_res.tif");
         auto aotResImg = compositePreprocessing.GetFilePath("aot_res.tif");
-        QStringList compositePreprocessingArgs = { "CompositePreprocessing2", "-xml", inputProduct,
+        QStringList compositePreprocessingArgs = { "CompositePreprocessing", "-xml", inputProduct,
                                                    "-bmap", bandsMapping, "-res", resolutionStr,
                                                    "-msk", masksFile, "-outres", outResImgBands,
                                                    "-outcmres", cldResImg, "-outwmres", waterResImg,

@@ -13,10 +13,10 @@
 
  =========================================================================*/
  
-#include "ResampleAtS2Res_2.h"
+#include "ResampleAtS2Res.h"
 
 
-ResampleAtS2Res2::ResampleAtS2Res2()
+ResampleAtS2Res::ResampleAtS2Res()
 {
     m_PrimaryMissionImgOrigin[0] = -1;
     m_PrimaryMissionImgOrigin[1] = -1;
@@ -24,7 +24,7 @@ ResampleAtS2Res2::ResampleAtS2Res2()
     m_bUseGenericRSResampler = false;
 }
 
-void ResampleAtS2Res2::Init(const std::string &xml, const std::string &strMaskFileName,
+void ResampleAtS2Res::Init(const std::string &xml, const std::string &strMaskFileName,
                             const std::string &bandsMappingFile, int nRes, const std::string &masterInfo,
                             const std::string &primaryMissionXml)
 {
@@ -41,7 +41,7 @@ void ResampleAtS2Res2::Init(const std::string &xml, const std::string &strMaskFi
     m_strPrimaryMissionXml = primaryMissionXml;
 }
 
-void ResampleAtS2Res2::DoExecute()
+void ResampleAtS2Res::DoExecute()
 {
     auto factory = MetadataHelperFactory::New();
     m_pMetadataHelper = factory->GetMetadataHelper<float>(m_strXml);
@@ -86,28 +86,28 @@ void ResampleAtS2Res2::DoExecute()
     CreateMasterInfoFile();
 }
 
-ResampleAtS2Res2::ImageType::Pointer ResampleAtS2Res2::GetResampledMainImg() {
+ResampleAtS2Res::ImageType::Pointer ResampleAtS2Res::GetResampledMainImg() {
     return m_Concatener->GetOutput();
 }
 
-ResampleAtS2Res2::InternalImageType::Pointer ResampleAtS2Res2::GetResampledCloudMaskImg() {
+ResampleAtS2Res::InternalImageType::Pointer ResampleAtS2Res::GetResampledCloudMaskImg() {
     return m_ImageCloud;
 }
 
-ResampleAtS2Res2::InternalImageType::Pointer ResampleAtS2Res2::GetResampledWaterMaskImg() {
+ResampleAtS2Res::InternalImageType::Pointer ResampleAtS2Res::GetResampledWaterMaskImg() {
     return m_ImageWater;
 }
 
-ResampleAtS2Res2::InternalImageType::Pointer ResampleAtS2Res2::GetResampledSnowMaskImg() {
+ResampleAtS2Res::InternalImageType::Pointer ResampleAtS2Res::GetResampledSnowMaskImg() {
     return m_ImageSnow;
 }
 
-ResampleAtS2Res2::InternalImageType::Pointer ResampleAtS2Res2::GetResampledAotImg() {
+ResampleAtS2Res::InternalImageType::Pointer ResampleAtS2Res::GetResampledAotImg() {
     return m_ImageAot;
 }
 
 // get a reader from the file path
-ResampleAtS2Res2::ImageReaderType::Pointer ResampleAtS2Res2::getReader(const std::string& filePath) {
+ResampleAtS2Res::ImageReaderType::Pointer ResampleAtS2Res::getReader(const std::string& filePath) {
     ImageReaderType::Pointer reader = ImageReaderType::New();
 
     // set the file name
@@ -118,7 +118,7 @@ ResampleAtS2Res2::ImageReaderType::Pointer ResampleAtS2Res2::getReader(const std
     return reader;
 }
 
-void ResampleAtS2Res2::ExtractResampledAotImage()
+void ResampleAtS2Res::ExtractResampledAotImage()
 {
     // resample the AOT
     std::string aotFileName = m_pMetadataHelper->GetAotImageFileName(m_nRes);
@@ -139,7 +139,7 @@ void ResampleAtS2Res2::ExtractResampledAotImage()
 
 }
 
-bool ResampleAtS2Res2::ExtractResampledMasksImages()
+bool ResampleAtS2Res::ExtractResampledMasksImages()
 {
     if(m_strMaskFileName == "") {
         itkExceptionMacro("The mask file was not provided, do set 'msk' flag ");
@@ -163,7 +163,7 @@ bool ResampleAtS2Res2::ExtractResampledMasksImages()
     return true;
 }
 
-void ResampleAtS2Res2::CreateMasterInfoFile() {
+void ResampleAtS2Res::CreateMasterInfoFile() {
     if(m_masterInfoFile != "") {
         const BandsMappingConfig &bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
         std::string curMissionName = m_pMetadataHelper->GetMissionName();
@@ -178,7 +178,7 @@ void ResampleAtS2Res2::CreateMasterInfoFile() {
     }
 }
 
-void ResampleAtS2Res2::ExtractPrimaryMissionInfos() {
+void ResampleAtS2Res::ExtractPrimaryMissionInfos() {
     if(m_strPrimaryMissionXml.size() > 0)
     {
         auto factory = MetadataHelperFactory::New();
@@ -227,7 +227,7 @@ void ResampleAtS2Res2::ExtractPrimaryMissionInfos() {
     }
 }
 
-ResampleAtS2Res2::ImageType::Pointer ResampleAtS2Res2::ResampleImage(ImageType::Pointer img, Interpolator_Type interpolator,
+ResampleAtS2Res::ImageType::Pointer ResampleAtS2Res::ResampleImage(ImageType::Pointer img, Interpolator_Type interpolator,
                                                    int &nCurRes)
 {
     ImageType::Pointer retImg = img;

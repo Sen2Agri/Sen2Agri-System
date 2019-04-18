@@ -13,8 +13,8 @@
 
  =========================================================================*/
 
-#ifndef RESAMPLE_AT_S2_RES_2_H
-#define RESAMPLE_AT_S2_RES_2_H
+#ifndef RESAMPLE_AT_S2_RES_H
+#define RESAMPLE_AT_S2_RES_H
 
 #include "otbWrapperTypes.h"
 #include "otbMultiToMonoChannelExtractROI.h"
@@ -33,7 +33,7 @@
 #include "BandsCfgMappingParser.h"
 #include "GenericRSImageResampler.h"
 
-class ResampleAtS2Res2
+class ResampleAtS2Res
 {
 public:
     typedef float                                      PixelType;
@@ -53,7 +53,7 @@ public:
 
 
 public:
-    ResampleAtS2Res2();
+    ResampleAtS2Res();
     void Init(const std::string &xml, const std::string &strMaskFileName,
               const std::string &bandsMappingFile, int nRes, const std::string &masterInfo,
               const std::string &primaryMissionXml);
@@ -65,7 +65,7 @@ public:
     InternalImageType::Pointer GetResampledSnowMaskImg();
     InternalImageType::Pointer GetResampledAotImg();
 
-    const char * GetNameOfClass() { return "ResampleAtS2Res2"; }
+    const char * GetNameOfClass() { return "ResampleAtS2Res"; }
 
 private:
     ImageReaderType::Pointer getReader(const std::string& filePath);

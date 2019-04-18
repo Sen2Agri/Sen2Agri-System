@@ -17,7 +17,7 @@
 #include "otbWrapperApplicationFactory.h"
 
 #include "DirectionalCorrection.h"
-#include "ResampleAtS2Res_2.h"
+#include "ResampleAtS2Res.h"
 #include "ComputeNDVI.h"
 #include "CreateS2AnglesRaster.h"
 
@@ -25,16 +25,16 @@ namespace otb
 {
 namespace Wrapper
 {
-class CompositePreprocessing2 : public Application
+class CompositePreprocessing : public Application
 {
 public:
-    typedef CompositePreprocessing2 Self;
+    typedef CompositePreprocessing Self;
     typedef Application Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
     itkNewMacro(Self)
 
-    itkTypeMacro(CompositePreprocessing2, otb::Application)
+    itkTypeMacro(CompositePreprocessing, otb::Application)
 
     typedef otb::Wrapper::FloatVectorImageType                    InputImageType;
     typedef otb::Wrapper::FloatVectorImageType                    ImageType1;
@@ -46,10 +46,10 @@ private:
 
     void DoInit()
     {
-        SetName("CompositePreprocessing2");
+        SetName("CompositePreprocessing");
         SetDescription("Resample the corresponding bands from LANDSAT or SPOT to S2 resolution");
 
-        SetDocName("CompositePreprocessing2");
+        SetDocName("CompositePreprocessing");
         SetDocLongDescription("long description");
         SetDocLimitations("None");
         SetDocAuthors("CIU");
@@ -149,13 +149,13 @@ private:
     ComputeNDVI             m_computeNdvi;
     CreateS2AnglesRaster    m_creatAngles;
     DirectionalCorrection   m_dirCorr;
-    ResampleAtS2Res2        m_resampleAtS2Res;
+    ResampleAtS2Res        m_resampleAtS2Res;
 
 };
 }
 }
 
-OTB_APPLICATION_EXPORT(otb::Wrapper::CompositePreprocessing2)
+OTB_APPLICATION_EXPORT(otb::Wrapper::CompositePreprocessing)
 
 
 

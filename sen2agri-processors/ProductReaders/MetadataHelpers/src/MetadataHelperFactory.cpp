@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #include "MetadataHelperFactory.h"
 #include "Spot4MetadataHelper.h"
 #include "MAJAMetadataHelper.h"
