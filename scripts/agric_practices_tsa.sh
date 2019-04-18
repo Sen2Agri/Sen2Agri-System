@@ -91,18 +91,18 @@ case "$COUNTRY" in
         
         CC_NDVIUP=500
         CC_AMPTHRMIN=0.2
-        CC_AMPTHRBREAKDEN=3
-        CC_AMPTHRVALUEDEN=3
         CC_COHTHRBASE=0.1
         CC_COHTHRABS=0.7
         CC_EFAAMPTHR=0.03
+        CC_AMPTHRBREAKDEN=3
+        CC_AMPTHRVALUEDEN=3
         
         NA_NDVIUP=500
         NA_AMPTHRMIN=0.2
-        NA_AMPTHRBREAKDEN=3
-        NA_AMPTHRVALUEDEN=3
         NA_COHTHRBASE=0.1
         NA_COHTHRABS=0.7
+        NA_AMPTHRBREAKDEN=3
+        NA_AMPTHRVALUEDEN=3
         
         # we do not have FL and NFC
         EXECUTE_FL=""
@@ -114,12 +114,12 @@ case "$COUNTRY" in
         
         CC_NDVIUP=500
         CC_AMPTHRMIN=0.2
-        CC_AMPTHRBREAKDEN=3
-        CC_AMPTHRVALUEDEN=3
         CC_COHTHRBASE=0.1
         CC_COHTHRABS=0.7
         CC_EFAAMPTHR=0.03
         CC_CATCHMAIN="-" 
+        CC_AMPTHRBREAKDEN=3
+        CC_AMPTHRVALUEDEN=3
         
         FL_OPTTHRVEGCYCLE=500
         FL_COHTHRBASE=0.1
