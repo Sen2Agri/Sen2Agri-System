@@ -15,19 +15,51 @@
  
 #include "MetadataHelperFactory.h"
 #include "Spot4MetadataHelper.h"
-#include "MACCSMetadataHelper.h"
+#include "MAJAMetadataHelper.h"
+#include "MACCSS2MetadataHelper.h"
+#include "MACCSL8MetadataHelper.h"
 
-std::unique_ptr<MetadataHelper> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName, int nResolution)
+template <typename PixelType, typename MasksPixelType>
+std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName)
 {
-    std::unique_ptr<MetadataHelper> spot4MetadataHelper(new Spot4MetadataHelper);
-    if (spot4MetadataHelper->LoadMetadataFile(metadataFileName, nResolution))
+    std::cout << "Getting metadata helper" << std::endl;
+
+    std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> spot4MetadataHelper(new Spot4MetadataHelper<PixelType, MasksPixelType>);
+    if (spot4MetadataHelper->LoadMetadataFile(metadataFileName))
         return spot4MetadataHelper;
 
-    std::unique_ptr<MetadataHelper> maccsMetadataHelper(new MACCSMetadataHelper);
-    if (maccsMetadataHelper->LoadMetadataFile(metadataFileName, nResolution))
-        return maccsMetadataHelper;
+    std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> majaMetadataHelper(new MAJAMetadataHelper<PixelType, MasksPixelType>);
+    if (majaMetadataHelper->LoadMetadataFile(metadataFileName))
+        return majaMetadataHelper;
+
+    std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> maccsS2MetadataHelper(new MACCSS2MetadataHelper<PixelType, MasksPixelType>);
+    if (maccsS2MetadataHelper->LoadMetadataFile(metadataFileName))
+        return maccsS2MetadataHelper;
+
+    std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> maccsL8MetadataHelper(new MACCSL8MetadataHelper<PixelType, MasksPixelType>);
+    if (maccsL8MetadataHelper->LoadMetadataFile(metadataFileName))
+        return maccsL8MetadataHelper;
 
     itkExceptionMacro("Unable to read metadata from " << metadataFileName);
 
     return NULL;
 }
+
+template
+std::unique_ptr<MetadataHelper<short, short>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
+
+template
+std::unique_ptr<MetadataHelper<short, uint8_t>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
+
+template
+std::unique_ptr<MetadataHelper<float, short>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
+
+template
+std::unique_ptr<MetadataHelper<float, uint8_t>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
+
+
+template
+std::unique_ptr<MetadataHelper<int, short>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
+
+template
+std::unique_ptr<MetadataHelper<int, uint8_t>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);

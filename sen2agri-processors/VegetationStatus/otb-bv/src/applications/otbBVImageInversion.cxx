@@ -325,7 +325,7 @@ private:
                     }
                     auto factory = MetadataHelperFactory::New();
                     // we are interested only in the 10m resolution as here we have the RED and NIR
-                    std::unique_ptr<MetadataHelper> pHelper = factory->GetMetadataHelper(inMetadataXml);
+                    std::unique_ptr<MetadataHelper<short>> pHelper = factory->GetMetadataHelper<short>(inMetadataXml);
                     std::string foundModelName = getModelFileName(modelFiles, pHelper);
                     if(foundModelName == "") {
                         itkGenericExceptionMacro(<< "No suitable model name with the prefix " << modelsPrefix <<
@@ -465,7 +465,7 @@ private:
       }
   }
 
-  std::string getModelFileName(const std::vector<std::string> &modelsList, const std::unique_ptr<MetadataHelper> &pHelper) {
+  std::string getModelFileName(const std::vector<std::string> &modelsList, const std::unique_ptr<MetadataHelper<short>> &pHelper) {
       double fSolarZenith;
       double fSensorZenith;
       double fRelAzimuth;
@@ -478,7 +478,7 @@ private:
 
           if(parseModelFileName(modelName, fSolarZenith, fSensorZenith, fRelAzimuth)) {
               if(pHelper->HasBandMeanAngles()) {
-                  int nTotalBandsNo = pHelper->GetTotalBandsNo();
+                  int nTotalBandsNo = pHelper->GetBandsPresentInPrdTotalNo();
                   for(int j = 0; j<nTotalBandsNo; j++) {
                       MeanAngles_Type sensorBandAngles = pHelper->GetSensorMeanAngles(j);
                       if(inRange(fSolarZenith, 0.5, solarAngles.zenith) &&

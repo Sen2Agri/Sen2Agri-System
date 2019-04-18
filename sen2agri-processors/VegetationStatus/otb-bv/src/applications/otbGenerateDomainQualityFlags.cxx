@@ -59,27 +59,27 @@ class GenerateDomainQualityFlags : public Application
         bool   isEnabled;
     } DomainLimits_Type;
 
-    std::vector<DomainLimits_Type> S2_VALIDATION_LIMITS = {
-                                                                 {0.0, 1.0, 0.0},      //B1 - not used
-                                                                 {0.0, 1.0, 0.0},      //B2 - not used
-                                                                 {0.0, 0.242, 0.0},    //B3
-                                                                 {0.0, 0.292, 0.0},    //B4
-                                                                 {0.0, 0.335, 0.0},    //B5
-                                                                 {0.0, 0.608, 0.0},    //B6
-                                                                 {0.0, 0.759, 0.0},    //B7
-                                                                 {0.0, 0.776, 0.0},    //B8a
-                                                                 {0.0, 0.790, 0.0},    //B8
-                                                                 {0.0, 1.0, 0.0},      //B9 - not used
-                                                                 {0.0, 1.0, 0.0},      //B10 - not used
-                                                                 {0.0, 0.495, 0.0},    //B11
-                                                                 {0.0, 0.494, 0.0}};   //B12
+    std::map<std::string, DomainLimits_Type> S2_VALIDATION_LIMITS = {
+                                                                 {"B1", {0.0, 1.0, 0.0}},      //B1 - not used
+                                                                 {"B2", {0.0, 1.0, 0.0}},      //B2 - not used
+                                                                 {"B3", {0.0, 0.242, 0.0}},    //B3
+                                                                 {"B4", {0.0, 0.292, 0.0}},    //B4
+                                                                 {"B5", {0.0, 0.335, 0.0}},    //B5
+                                                                 {"B6", {0.0, 0.608, 0.0}},    //B6
+                                                                 {"B7", {0.0, 0.759, 0.0}},    //B7
+                                                                 {"B8A", {0.0, 0.776, 0.0}},   //B8a
+                                                                 {"B8", {0.0, 0.790, 0.0}},    //B8
+                                                                 {"B9", {0.0, 1.0, 0.0}},      //B9 - not used
+                                                                 {"B10", {0.0, 1.0, 0.0}},     //B10 - not used
+                                                                 {"B11", {0.0, 0.495, 0.0}},   //B11
+                                                                 {"B12", {0.0, 0.494, 0.0}}};  //B12
 
-    std::vector<DomainLimits_Type> L8_VALIDATION_LIMITS = {
-                                                                 {0.0, 0.3, 0.0},      //B3
-                                                                 {0.0, 0.266, 0.0},    //B4
-                                                                 {0.0, 0.788, 0.0},    //B8a
-                                                                 {0.0, 0.476, 0.0},    //B11
-                                                                 {0.0, 0.504, 0.0}};   //B12
+    std::map<std::string, DomainLimits_Type> L8_VALIDATION_LIMITS = {
+                                                                 {"B3", {0.0, 0.3, 0.0}},      //B3
+                                                                 {"B4", {0.0, 0.266, 0.0}},    //B4
+                                                                 {"B5", {0.0, 0.788, 0.0}},   //B8a
+                                                                 {"B6", {0.0, 0.476, 0.0}},   //B11
+                                                                 {"B7", {0.0, 0.504, 0.0}}};  //B12
 
     std::vector<DomainLimits_Type> LAI_VALIDATION_LIMITS = {{0.0, 8.0, 0.2, true}};
     std::vector<DomainLimits_Type> FAPAR_VALIDATION_LIMITS = {{0.0, 0.94, 0.1, true}};
@@ -248,30 +248,30 @@ class GenerateDomainQualityFlags : public Application
     typedef enum {LAI, FAPAR, FCOVER} IndexType;
 
     typedef MaskingFunctor< FloatVectorImageType::PixelType,
-                    MetadataHelper::SingleBandShortImageType::PixelType,
+                    MetadataHelper<float>::SingleBandShortImageType::PixelType,
                     FloatVectorImageType::PixelType>                                MaskingFunctorType;
 
     typedef DomainMaskExtractorFunctor <FloatVectorImageType::PixelType,
-                                    MetadataHelper::SingleBandShortImageType::PixelType,
+                                    MetadataHelper<float>::SingleBandShortImageType::PixelType,
                                     FloatVectorImageType::PixelType>                DomainMaskExtractorFunctorType;
 
     typedef DomainMaskExtractorBinaryFunctor<FloatVectorImageType::PixelType,
-                                             MetadataHelper::SingleBandShortImageType::PixelType,
+                                             MetadataHelper<float>::SingleBandShortImageType::PixelType,
                                              FloatVectorImageType::PixelType,
                                              FloatVectorImageType::PixelType>       DomainMaskExtractorBinaryFunctorType;
 
     typedef itk::BinaryFunctorImageFilter<  FloatVectorImageType,
-                                            MetadataHelper::SingleBandShortImageType,
+                                            MetadataHelper<float>::SingleBandShortImageType,
                                             FloatVectorImageType,
                                             MaskingFunctorType >                    MaskedOutputFilterType;
 
     typedef itk::BinaryFunctorImageFilter<FloatVectorImageType,
-                                        MetadataHelper::SingleBandShortImageType,
+                                        MetadataHelper<float>::SingleBandShortImageType,
                                         FloatVectorImageType,
                                         DomainMaskExtractorFunctorType >            DomainMaskExtractorFilterType;
 
     typedef itk::TernaryFunctorImageFilter<FloatVectorImageType,
-                                        MetadataHelper::SingleBandShortImageType,
+                                        MetadataHelper<float>::SingleBandShortImageType,
                                         FloatVectorImageType,
                                         FloatVectorImageType,
                                         DomainMaskExtractorBinaryFunctorType >      DomainMaskExtractorBinaryFilterType;
@@ -337,93 +337,59 @@ private:
     {
         const std::string &inMetadataXml = GetParameterString("xml");
         auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+        m_pHelper = factory->GetMetadataHelper<float>(inMetadataXml);
         if (HasValue("in")) {
-            HandleOutputDomainFlags(pHelper);
+            HandleOutputDomainFlags(m_pHelper);
         } else {
-            ExtractInputDomainFlags(pHelper);
+            ExtractInputDomainFlags(m_pHelper);
         }
     }
 
-    void ExtractInputDomainFlags(const std::unique_ptr<MetadataHelper> &pHelper)
+    void ExtractInputDomainFlags(const std::unique_ptr<MetadataHelper<float>> &pHelper)
     {
-        // Read the spacing for the default image
-        m_defImgReader = FloatVectorImageReaderType::New();
-        m_defImgReader->SetFileName(pHelper->GetImageFileName());
-        m_defImgReader->UpdateOutputInformation();
-        //int curRes = m_defImgReader->GetOutput()->GetSpacing()[0];
-
         // load the LAI config file
         loadLaiConfiguration(pHelper);
 
-        // Extract the resolutions to be used from the input product,
-        // create the helpers for the resolution rasters and initialize the domain limits vectors
-        std::vector<int> resolutionsVect = getResolutionsForConfiguredBands(m_laiCfg, pHelper);
-        std::sort (resolutionsVect.begin(), resolutionsVect.end());
-        std::map<int, std::vector<DomainLimits_Type>> resDomainLimits;
-        for (int cfgRes: resolutionsVect) {
-            createInputImgSplitForResolution(cfgRes);
-            std::vector<DomainLimits_Type> resDomLimits;
-            resDomLimits.resize(pHelper->GetBandsNoForResolution(cfgRes));
-            resDomainLimits[cfgRes] = resDomLimits;
-            if (pHelper->GetCurrentResolution() != cfgRes) {
-                auto factory = MetadataHelperFactory::New();
-                m_resHelpers[cfgRes] = factory->GetMetadataHelper(GetParameterString("xml"), cfgRes);
-            }
-        }
-
         // compute the domain limits for each band
         const std::string &missionName = pHelper->GetMissionName();
-        std::vector<DomainLimits_Type> domLimits = (missionName.find("SENTINEL-2") != std::string::npos) ?
+        std::map<std::string, DomainLimits_Type> domLimits = (missionName.find("SENTINEL2") != std::string::npos) ?
                     S2_VALIDATION_LIMITS : L8_VALIDATION_LIMITS;
-        for (int bandIdx: m_laiCfg.bandsIdxs) {
-            int curBandRes = pHelper->GetResolutionForAbsoluteBandIndex(bandIdx);
-            // Get the helper for the current resolution
-            const auto &resHelper = (curBandRes != pHelper->GetCurrentResolution() ? m_resHelpers.at(curBandRes) : pHelper);
-            auto &resDomLimits = resDomainLimits.at(curBandRes);
-            int relBandIdx = resHelper->GetRelativeBandIndex(bandIdx) - 1;
-            resDomLimits.at(relBandIdx).minVal = domLimits[bandIdx-1].minVal * pHelper->GetReflectanceQuantificationValue();
-            resDomLimits.at(relBandIdx).maxVal = domLimits[bandIdx-1].maxVal * pHelper->GetReflectanceQuantificationValue();
-            resDomLimits.at(relBandIdx).tolerance = domLimits[bandIdx-1].tolerance * pHelper->GetReflectanceQuantificationValue();
-            resDomLimits.at(relBandIdx).isEnabled = true;
+        std::vector<DomainLimits_Type> resDomLimits(m_laiCfg.bandsNames.size());
+        MetadataHelper<float>::VectorImageType::Pointer img = pHelper->GetImage(m_laiCfg.bandsNames);
+        img->UpdateOutputInformation();
 
+        int i = 0;
+        for (const std::string &bandName: m_laiCfg.bandsNames) {
+            std::map<std::string, DomainLimits_Type>::const_iterator mapIt = domLimits.find(bandName);
+            if (mapIt != domLimits.end() ) {
+                resDomLimits[i] = domLimits[bandName];
+                resDomLimits[i].minVal *= pHelper->GetReflectanceQuantificationValue();
+                resDomLimits[i].maxVal *= pHelper->GetReflectanceQuantificationValue();
+                resDomLimits[i].tolerance *= pHelper->GetReflectanceQuantificationValue();
+                resDomLimits[i].isEnabled = true;
+            } else {
+                resDomLimits[i].isEnabled = false;
+            }
+            i++;
         }
 
-        int baseRes = resolutionsVect[0];
-        MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
+        //int baseRes = resolutionsVect[0];
+        MetadataHelper<float>::SingleBandMasksImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
         FloatVectorImageType::Pointer maskedImg;
-        if (resolutionsVect.size() > 1) {
-            int secResolution = resolutionsVect[1];
-            m_domainMaskExtractorBinaryFunctor.SetValidationLimits(resDomainLimits.at(baseRes));
-            m_domainMaskExtractorBinaryFunctor.SetValidationLimits2(resDomainLimits.at(secResolution));
+        m_domainMaskExtractorFunctor.SetValidationLimits(resDomLimits);
 
-            m_domainMaskExtractorBinaryFilter = DomainMaskExtractorBinaryFilterType::New();
-            m_domainMaskExtractorBinaryFilter->SetFunctor(m_domainMaskExtractorBinaryFunctor);
-            m_domainMaskExtractorBinaryFilter->SetInput1(m_imgInputReadersMap.at(baseRes)->GetOutput());
-            m_domainMaskExtractorBinaryFilter->SetInput2(imgMsk);
-            m_domainMaskExtractorBinaryFilter->SetInput3(getResampledImage2(secResolution, baseRes,
-                                                m_imgInputReadersMap.at(secResolution)->GetOutput()));
-            m_domainMaskExtractorBinaryFilter->UpdateOutputInformation();
-            //m_domainMaskExtractorBinaryFilter->GetOutput()->SetNumberOfComponentsPerPixel(1);
-            // Mask the output according to the flags
-            maskedImg = m_domainMaskExtractorBinaryFilter->GetOutput();
-        } else {
-            m_domainMaskExtractorFunctor.SetValidationLimits(resDomainLimits.at(baseRes));
-
-            m_domainMaskExtractorFilter = DomainMaskExtractorFilterType::New();
-            m_domainMaskExtractorFilter->SetFunctor(m_domainMaskExtractorFunctor);
-            m_domainMaskExtractorFilter->SetInput1(m_imgInputReadersMap.at(baseRes)->GetOutput());
-            m_domainMaskExtractorFilter->SetInput2(imgMsk);
-            m_domainMaskExtractorFilter->UpdateOutputInformation();
-            //m_domainMaskExtractorFilter->GetOutput()->SetNumberOfComponentsPerPixel(1);
-            // Mask the output according to the flags
-            maskedImg = m_domainMaskExtractorFilter->GetOutput();
-        }
+        m_domainMaskExtractorFilter = DomainMaskExtractorFilterType::New();
+        m_domainMaskExtractorFilter->SetFunctor(m_domainMaskExtractorFunctor);
+        m_domainMaskExtractorFilter->SetInput1(img);
+        m_domainMaskExtractorFilter->SetInput2(imgMsk);
+        m_domainMaskExtractorFilter->UpdateOutputInformation();
+        // Mask the output according to the flags
+        maskedImg = m_domainMaskExtractorFilter->GetOutput();
 
         WriteImageToOutput(maskedImg, "outf", ImagePixelType_uint8);
     }
 
-    void HandleOutputDomainFlags(const std::unique_ptr<MetadataHelper> &pHelper)
+    void HandleOutputDomainFlags(const std::unique_ptr<MetadataHelper<float>> &pHelper)
     {
         if (!HasValue("indextype")) {
             itkExceptionMacro("Please provide the parameter <indextype> along with the in parameter!");
@@ -438,14 +404,14 @@ private:
         UpdateOutputDomainValues(pHelper);
     }
 
-    void ExtractOutputDomainFlags(const std::unique_ptr<MetadataHelper> &pHelper) {
+    void ExtractOutputDomainFlags(const std::unique_ptr<MetadataHelper<float>> &pHelper) {
         const std::string &rasterPath = GetParameterString("in");
         m_defImgReader = FloatVectorImageReaderType::New();
         m_defImgReader->SetFileName(rasterPath);
         m_defImgReader->UpdateOutputInformation();
         int inRes = m_defImgReader->GetOutput()->GetSpacing()[0];
 
-        MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
+        MetadataHelper<float>::SingleBandMasksImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
         imgMsk->UpdateOutputInformation();
         int curMaskRes = imgMsk->GetSpacing()[0];
 
@@ -461,7 +427,7 @@ private:
         WriteImageToOutput(m_domainMaskExtractorFilter->GetOutput(), "outf", ImagePixelType_uint8);
     }
 
-    void UpdateOutputDomainValues(const std::unique_ptr<MetadataHelper> &pHelper) {
+    void UpdateOutputDomainValues(const std::unique_ptr<MetadataHelper<float>> &pHelper) {
         const std::string &rasterPath = GetParameterString("in");
         m_defImgReader2 = FloatVectorImageReaderType::New();
         m_defImgReader2->SetFileName(rasterPath);
@@ -469,7 +435,7 @@ private:
         int inRes = m_defImgReader2->GetOutput()->GetSpacing()[0];
 
         std::vector<DomainLimits_Type> resDomLimits = GetOutDomainLimits();
-        MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
+        MetadataHelper<float>::SingleBandMasksImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
         imgMsk->UpdateOutputInformation();
         int curMaskRes = imgMsk->GetSpacing()[0];
 
@@ -501,9 +467,6 @@ private:
         FloatImageType::Pointer resImg = getResampledImage3(curRes, outRes,
                                     m_imgSplit->GetOutput()->GetNthElement(0));
 
-//        SetParameterOutputImagePixelType(outName, imgPixelType);
-//        SetParameterOutputImage(outName, mskImg);
-
         const std::string &outImgFileName = GetParameterAsString(outName);
         // write the output
         WriteOutput<FloatImageType>(resImg, outImgFileName, imgPixelType);
@@ -534,22 +497,6 @@ private:
         return resampler->GetOutput();
     }
 
-/*
-    template<typename ImageType>
-    using ResampleImageFilterType = otb::StreamingResampleImageFilter<ImageType, ImageType, double>;
-
-    template<typename ImageType>
-    typename ImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
-                                                    typename ImageType::Pointer inImg) {
-
-        if(nCurRes == nDesiredRes)
-            return inImg;
-        float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
-        typename ResampleImageFilterType<ImageType>::Pointer resampler = m_Resampler.getResampler(inImg, fMultiplicationFactor,
-                                                                         Interpolator_NNeighbor);
-        return resampler->GetOutput();
-    }
-*/
     ShortImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
                                                     ShortImageType::Pointer inImg) {
         if(nCurRes == nDesiredRes)
@@ -573,39 +520,16 @@ private:
     /**
      * Extracts the (sub)set of resolutions for the bands configured in the LAI configuration file
      */
-    std::vector<int> getResolutionsForConfiguredBands(const LAIBandsConfigInfos &infos, const std::unique_ptr<MetadataHelper> &pHelper) {
+    std::vector<int> getResolutionsForConfiguredBands(const LAIBandsConfigInfos &infos, const std::unique_ptr<MetadataHelper<float>> &pHelper) {
         std::vector<int> retRes;
-        for(int bandIdx: infos.bandsIdxs) {
-            int res = pHelper->GetResolutionForAbsoluteBandIndex(bandIdx);
+        for(const std::string &bandName: infos.bandsNames) {
+            int res = pHelper->GetResolutionForBand(bandName);
             if(std::find(retRes.begin(), retRes.end(), res) == retRes.end()) {
                 retRes.push_back(res);
             }
         }
         return retRes;
     }
-
-    void createInputImgSplitForResolution(int res) {
-        std::map<int,FloatVectorImageReaderType::Pointer>::iterator it;
-        it = m_imgInputReadersMap.find(res);
-        if (it == m_imgInputReadersMap.end()) {
-            // get the XML parameter
-            const std::string &inMetadataXml = GetParameterString("xml");
-            // Create a new product helper for the current resolution
-            auto factory = MetadataHelperFactory::New();
-            // create the helper directly into the map
-            m_metadataHelpersMap[res] = factory->GetMetadataHelper(inMetadataXml, res);
-            const auto &pHelper = m_metadataHelpersMap[res];
-
-            // create the reader for the image at this resolution
-            FloatVectorImageReaderType::Pointer imgReader = FloatVectorImageReaderType::New();
-            imgReader->SetFileName(pHelper->GetImageFileName());
-            imgReader->UpdateOutputInformation();
-
-            // add the new translator functor and the immage splitter into their maps
-            m_imgInputReadersMap[res] = imgReader;
-        }
-    }
-
 
     template<typename ImageType>
     void WriteOutput(typename ImageType::Pointer inImg, const std::string &outImg, ImagePixelType imgPixelType) {
@@ -625,7 +549,7 @@ private:
         paramOut->Write();
     }
 
-    void loadLaiConfiguration(const std::unique_ptr<MetadataHelper> &pHelper) {
+    void loadLaiConfiguration(const std::unique_ptr<MetadataHelper<float>> &pHelper) {
         // Load the LAI bands configuration file
         bool bHasLaiCfgs = HasValue("laicfgs");
         std::string laiCfgFile;
@@ -643,7 +567,7 @@ private:
 
         std::cout << "=================================" << std::endl;
         std::cout << "Bands used : ";
-        for (std::vector<int>::const_iterator i = m_laiCfg.bandsIdxs.begin(); i != m_laiCfg.bandsIdxs.end(); ++i) {
+        for (std::vector<std::string>::const_iterator i = m_laiCfg.bandsNames.begin(); i != m_laiCfg.bandsNames.end(); ++i) {
             std::cout << *i << ' ';
         }
         std::cout << std::endl;
@@ -658,7 +582,7 @@ private:
     ImageResampler<FloatImageType, FloatImageType>              m_FloatImageResampler;
 
     std::map<int, FloatVectorImageReaderType::Pointer>          m_imgInputReadersMap;
-    std::map<int, std::unique_ptr<MetadataHelper>>              m_metadataHelpersMap;
+    std::map<int, std::unique_ptr<MetadataHelper<float>>>              m_metadataHelpersMap;
 
     MaskedOutputFilterType::Pointer                             m_maskedOutputFunctor;
 
@@ -670,9 +594,9 @@ private:
 
     LAIBandsConfigInfos m_laiCfg;
 
-    std::map<int, std::unique_ptr<MetadataHelper>>              m_resHelpers;
-
     VectorImageToImageListType::Pointer                         m_imgSplit;
+
+    std::unique_ptr<MetadataHelper<float>> m_pHelper;
 };
 }
 }

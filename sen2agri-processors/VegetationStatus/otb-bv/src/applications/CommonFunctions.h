@@ -19,14 +19,15 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/regex.hpp>
 
 namespace otb
 {
     typedef struct {
-        std::vector<int> bandsIdxs;
+        std::vector<std::string> bandsNames;
         bool bUseNdvi;
         bool bUseRvi;
-        std::vector<int> rsrColumnFilterIdxs;
+        std::vector<std::string> rsrColumnFilterBandNames;
         std::string laiModelFilePath;
         std::string faparModelFilePath;
         std::string fcoverModelFilePath;
@@ -67,14 +68,15 @@ namespace otb
                   boost::trim(value);
                   if (key == "LAI_BANDS") {
                       bHasBandsKey = true;
-                      const std::vector<std::string> &bandIdxsVect = split(value, ',');
-                      for (size_t i = 0; i < bandIdxsVect.size(); i++) {
+                      const std::vector<std::string> &bandNamesVect = split(value, ',');
+                      for (size_t i = 0; i < bandNamesVect.size(); i++) {
                           try {
-                              int nValIdx = std::stoi(bandIdxsVect[i]);
-                              if(std::find(infos.bandsIdxs.begin(), infos.bandsIdxs.end(), nValIdx) != infos.bandsIdxs.end()) {
-                                  std::cout << "WARNING: LAI_BANDS contains twice the value " << nValIdx << std::endl;
+                              std::string bandName = bandNamesVect[i];
+                              boost::trim(bandName);
+                              if(std::find(infos.bandsNames.begin(), infos.bandsNames.end(), bandName) != infos.bandsNames.end()) {
+                                  std::cout << "WARNING: LAI_BANDS contains twice the value " << bandName << std::endl;
                               } else {
-                                  infos.bandsIdxs.push_back(nValIdx);
+                                  infos.bandsNames.push_back(bandName);
                               }
                           } catch (...) {
                               std::cout << "WARNING: Invalid band index found in LAI_BANDS key! Ignored!" << std::endl;
@@ -89,14 +91,15 @@ namespace otb
                           infos.bUseRvi = true;
                       }
                   } else if (key == "RSR_COLS_FILTER") {
-                      const std::vector<std::string> &rsrColsIdxsVect = split(value, ',');
-                      for (size_t i = 0; i < rsrColsIdxsVect.size(); i++) {
+                      const std::vector<std::string> &bandNamesVect = split(value, ',');
+                      for (size_t i = 0; i < bandNamesVect.size(); i++) {
                           try {
-                              int nValIdx = std::stoi(rsrColsIdxsVect[i]);
-                              if(std::find(infos.rsrColumnFilterIdxs.begin(), infos.rsrColumnFilterIdxs.end(), nValIdx) != infos.rsrColumnFilterIdxs.end()) {
-                                  std::cout << "WARNING: RSR_COLS_FILTER contains twice the value " << nValIdx << std::endl;
+                              std::string bandName = bandNamesVect[i];
+                              boost::trim(bandName);
+                              if(std::find(infos.rsrColumnFilterBandNames.begin(), infos.rsrColumnFilterBandNames.end(), bandName) != infos.rsrColumnFilterBandNames.end()) {
+                                  std::cout << "WARNING: RSR_COLS_FILTER contains twice the value " << bandName << std::endl;
                               } else {
-                                  infos.rsrColumnFilterIdxs.push_back(nValIdx);
+                                  infos.rsrColumnFilterBandNames.push_back(bandName);
                               }
                           } catch (...) {
                               std::cout << "WARNING: Invalid band index found in RSR_COLS_FILTER key! Ignored!" << std::endl;
@@ -120,10 +123,8 @@ namespace otb
       if (!bHasBandsKey) {
           //The blue band (B2) will not be used due to residual atmospheric efects. B8 will not be used because of its
           //overlap with B7 anb B8a. Therefore, B3, B4, B5, B6, B7, B8a, B11 and B12 will be used.
-          // B8A has actually the index 9, B11->index 12 and B12 -> Index 13
           std::cout << "No RSR columns specified. Using default ones ..." << std::endl;
-          static const int arr[] = {3, 4, 5, 6, 7, 9, 12, 13};
-          infos.bandsIdxs = std::vector<int> (arr, arr + sizeof(arr) / sizeof(arr[0]) );
+          infos.bandsNames = {"B3", "B4", "B5", "B6", "B7", "B8A", "B11", "B12"};
       }
       // also sort the array of bands
       //std::sort (infos.bandsIdxs.begin(), infos.bandsIdxs.end());
@@ -133,19 +134,33 @@ namespace otb
       std::cout << "======================" << std::endl;
       std::cout << "Add NDVI:" << infos.bUseNdvi << std::endl;
       std::cout << "Add RVI:" << infos.bUseRvi << std::endl;
-      std::cout << "Loaded bands indexes:" << std::endl;
-      for(size_t i = 0; i < infos.bandsIdxs.size(); i++) {
-          std::cout << " " << infos.bandsIdxs[i] << std::endl;
+      std::cout << "Loaded bands names:" << std::endl;
+      for(size_t i = 0; i < infos.bandsNames.size(); i++) {
+          std::cout << " " << infos.bandsNames[i] << std::endl;
       }
       std::cout << " " << std::endl;
-      std::cout << "Using RSR bands indexes:" << std::endl;
-      for(size_t i = 0; i < infos.rsrColumnFilterIdxs.size(); i++) {
-          std::cout << " " << infos.rsrColumnFilterIdxs[i] << std::endl;
+      std::cout << "Using RSR bands names:" << std::endl;
+      for(size_t i = 0; i < infos.rsrColumnFilterBandNames.size(); i++) {
+          std::cout << " " << infos.rsrColumnFilterBandNames[i] << std::endl;
       }
       std::cout << " " << std::endl;
       std::cout << "======================" << std::endl;
 
       return infos;
+    }
+
+    bool IsMatchingMission(const std::string &missionName, const std::string &missionRegex) {
+        if (missionName == missionRegex) {
+            return true;
+        }
+        try {
+            boost::regex re(missionRegex);
+            return boost::regex_match(missionName, re);
+        } catch (boost::regex_error& e) {
+            std::cerr << "Invalid regular expression found in configuration file for " << missionRegex <<
+                              ". The exception was \"" << e.what() << "\"";
+            throw e;
+        }
     }
 
     std::string getValueFromMissionsCfgFile(const std::string &fileName, const std::string &productMissionName,
@@ -178,7 +193,7 @@ namespace otb
                         sensorInstrument = keyStr.substr(diezIndex+1);
                     }
 
-                    if((productMissionName == missionName) &&
+                    if(IsMatchingMission(productMissionName, missionName) &&
                             ((sensorInstrument == "") || (productInstrumentName == sensorInstrument))) {
                         std::cout << "Found configured file!"<< std::endl;
 
@@ -200,6 +215,7 @@ namespace otb
 
         return "";
     }
+
 }
 
 #endif

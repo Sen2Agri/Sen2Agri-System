@@ -48,9 +48,6 @@
 
 #include "../Filters/CropTypePreprocessing.h"
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
-
 // Filters
 #include "otbMultiChannelExtractROI.h"
 #include "otbStreamingResampleImageFilter.h"
@@ -63,9 +60,6 @@ typedef otb::ObjectList<ImageType>                                 ImageListType
 
 typedef otb::ImageFileReader<ImageType>                            ImageReaderType;
 typedef otb::ObjectList<ImageReaderType>                           ImageReaderListType;
-
-typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
-typedef itk::SPOT4MetadataReader                                   SPOT4MetadataReaderType;
 
 namespace otb
 {
@@ -132,8 +126,8 @@ private:
 
   ImageReaderListType::Pointer          m_ImageReaderList;
 
-  SpotMaskFilterListType::Pointer                   m_SpotMaskFilters;
-  SentinelMaskFilterListType::Pointer               m_SentinelMaskFilters;
+//  SpotMaskFilterListType::Pointer                   m_SpotMaskFilters;
+//  SentinelMaskFilterListType::Pointer               m_SentinelMaskFilters;
   ImageListType::Pointer                            m_InputImages;
 };
 

@@ -124,15 +124,11 @@ private:
         m_SM = GetParameterFloatVectorImage("sm");
 
         auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml, resolution);
-        float fReflQuantifValue = pHelper->GetReflectanceQuantificationValue();
-        std::string inputImageFile = pHelper->GetImageFileName();
-        m_inputImageReader = ReaderType::New();
-        m_inputImageReader->SetFileName(inputImageFile);
-        m_inputImageReader->UpdateOutputInformation();
-
-        InputImageType::Pointer inputImg = m_inputImageReader->GetOutput();
-        extractBandsFromImage(inputImg);
+        m_pHelper = factory->GetMetadataHelper<float>(inXml);
+        float fReflQuantifValue = m_pHelper->GetReflectanceQuantificationValue();
+        const std::vector<std::string> &bandNames = m_pHelper->GetBandNamesForResolution(resolution);
+        // extract the bands
+        m_pHelper->GetImageList(bandNames, m_ImageList, resolution);
         extractBandsFromImage(m_CSM);
         extractBandsFromImage(m_WM);
         extractBandsFromImage(m_SM);
@@ -252,7 +248,7 @@ private:
     FunctorFilterType::Pointer          m_DirectionalCorrectionFunctor;
     DirectionalCorrectionFunctorType          m_Functor;
 
-    ReaderType::Pointer m_inputImageReader;
+    std::unique_ptr<MetadataHelper<float>> m_pHelper;
 };
 
 }

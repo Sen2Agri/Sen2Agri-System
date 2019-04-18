@@ -268,7 +268,7 @@ bool StatisticsInfosSingleCsvReader::ExtractInfosFromLine(const std::string &fil
         lineInfo.stdDev = std::stod(lineElems[curIdx++], &sz);
 
         int weekNo, yearNo;
-        int itemYear;
+        int itemYear = 0;
         // ignore products that are not from the current year
         if (GetWeekFromDate(strDate, yearNo, weekNo, INPUT_FILE_DATE_PATTERN))
         {

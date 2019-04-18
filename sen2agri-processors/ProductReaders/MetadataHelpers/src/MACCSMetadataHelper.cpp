@@ -26,6 +26,28 @@ MACCSMetadataHelper::MACCSMetadataHelper()
     m_ReflQuantifVal = 1;
 }
 
+MACCSMetadataHelper::VectorImageType::Pointer MACCSMetadataHelper::GetImage(const std::vector<int> &bandIdxs, int outRes)
+{
+    return NULL;
+}
+
+MACCSMetadataHelper::VectorImageType::Pointer MACCSMetadataHelper::GetImage(const std::vector<int> &bandIdxs,
+                                                                                 std::vector<int> &retRelBandIdxs, int outRes)
+{
+    return NULL;
+}
+
+MetadataHelper::ImageListType::Pointer MACCSMetadataHelper::GetImageList(const std::vector<std::string> &bandNames,
+                                                                              ImageListType::Pointer outImgList,
+                                                                              int outRes)
+{
+    (void)bandNames;
+    (void)outImgList;
+    (void)outRes;
+    return NULL;
+}
+
+
 std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelativeIdx)
 {
     if(bRelativeIdx) {
@@ -49,7 +71,7 @@ std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelati
     }
 }
 
-int MACCSMetadataHelper::GetRelativeBandIndex(unsigned int nAbsBandIdx)
+int MACCSMetadataHelper::GetRelativeBandIndex(unsigned int nAbsBandIdx, int res)
 {
     if(m_missionType == LANDSAT) {
         return nAbsBandIdx;
@@ -79,7 +101,7 @@ int MACCSMetadataHelper::GetResolutionForAbsoluteBandIndex(int nAbsBandIdx)
 
 }
 
-float MACCSMetadataHelper::GetAotQuantificationValue()
+float MACCSMetadataHelper::GetAotQuantificationValue(int)
 {
     if(!m_specificAotMetadata) {
         ReadSpecificMACCSAotHdrFile();
@@ -109,6 +131,10 @@ int MACCSMetadataHelper::GetAotBandIndex()
 
 bool MACCSMetadataHelper::DoLoadMetadata()
 {
+    m_fAotQuantificationValue = 0.0;
+    m_fAotNoDataVal = 0;
+    m_nAotBandIndex = -1;
+
     MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
     // just check if the file is Spot4 metadata file. In this case
     // the helper will return the hardcoded values from the constructor as these are not
@@ -239,22 +265,22 @@ void MACCSMetadataHelper::ReadSpecificMACCSImgHdrFile()
     }
 }
 
-void MACCSMetadataHelper::ReadSpecificMACCSCldHdrFile()
-{
-    std::string fileName;
-    if(m_missionType == LANDSAT) {
-        fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_CLD");
-    } else {
-        if(m_nResolution == 10) {
-            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
-        } else {
-            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
-        }
-    }
+//void MACCSMetadataHelper::ReadSpecificMACCSCldHdrFile()
+//{
+//    std::string fileName;
+//    if(m_missionType == LANDSAT) {
+//        fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_CLD");
+//    } else {
+//        if(m_nResolution == 10) {
+//            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
+//        } else {
+//            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
+//        }
+//    }
 
-    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
-    m_specificCldMetadata = maccsMetadataReader->ReadMetadata(fileName);
-}
+//    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+//    m_specificCldMetadata = maccsMetadataReader->ReadMetadata(fileName);
+//}
 
 void MACCSMetadataHelper::ReadSpecificMACCSAotHdrFile()
 {

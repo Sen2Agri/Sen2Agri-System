@@ -138,12 +138,16 @@ def get_reference_raster(product):
 
     directory = os.path.dirname(product)
     if extension == ".xml":
-        files = glob.glob(os.path.join(directory, "*PENTE*"))
+        files = glob.glob(os.path.join(directory, "*_FRE_B4.tif"))
         if files:
-            return files[0]
+            return files[0]    
         else:
-            files = glob.glob(os.path.join(directory, "*"))
-            raise Exception("Unable to find a reference raster for SPOT product", directory, files)
+            files = glob.glob(os.path.join(directory, "*PENTE*"))
+            if files:
+                return files[0]
+            else:
+                files = glob.glob(os.path.join(directory, "*"))
+                raise Exception("Unable to find a reference raster for MAJA or SPOT product", directory, files)
     if extension == ".hdr":
         dir = os.path.join(directory, parts[0] + ".DBL.DIR")
         files = glob.glob(os.path.join(dir, "*_FRE_R1.DBL.TIF"))
@@ -187,6 +191,10 @@ def get_tile_id(product):
 
     m = re.match(
         "S2[a-z0-9]_[a-z0-9]+_[a-z0-9]+_[a-z0-9]+_([a-z0-9]+)_.+\\.HDR", file, re.IGNORECASE)
+    if m:
+        return (Mission.SENTINEL, m.group(1))
+    m = re.match(
+        "SENTINEL2[A-D]_.+_L2A_T([A-Z0-9]+)_.+_MTD_ALL\.xml", file, re.IGNORECASE)
     if m:
         return (Mission.SENTINEL, m.group(1))
 

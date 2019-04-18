@@ -44,9 +44,8 @@ void DirectionalCorrectionFunctor<TInput,TOutput>::Initialize(const std::vector<
 }
 
 template< class TInput, class TOutput>
-bool DirectionalCorrectionFunctor<TInput,TOutput>::operator!=( const DirectionalCorrectionFunctor & other) const
+bool DirectionalCorrectionFunctor<TInput,TOutput>::operator!=( const DirectionalCorrectionFunctor &) const
 {
-    (void)other;    // supress unused warning
     return true;
 }
 

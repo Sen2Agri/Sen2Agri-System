@@ -22,24 +22,23 @@
 #include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
 #include "itkNaryFunctorImageFilter.h"
 
-typedef itk::SPOT4MetadataReader                                   SPOT4MetadataReaderType;
-
-class Spot4MetadataHelper : public MetadataHelper
+template <typename PixelType, typename MasksPixelType>
+class Spot4MetadataHelper : public MetadataHelper<PixelType, MasksPixelType>
 {
     template< class TInput, class TOutput>
-    class NaryMaskHandlerFunctor
+    class SpotMaskHandlerFunctor
     {
     public:
-        NaryMaskHandlerFunctor(){}
+        SpotMaskHandlerFunctor(){}
         void Initialize(MasksFlagType nMaskFlags, bool binarizeResult) { m_MaskFlags = nMaskFlags; m_bBinarizeResult = binarizeResult;}
-        NaryMaskHandlerFunctor& operator =(const NaryMaskHandlerFunctor& copy) {
+        SpotMaskHandlerFunctor& operator =(const SpotMaskHandlerFunctor& copy) {
             m_MaskFlags=copy.m_MaskFlags;
             m_bBinarizeResult = copy.m_bBinarizeResult;
             return *this;
         }
-        bool operator!=( const NaryMaskHandlerFunctor & a) const { return   (this->m_MaskFlags != a.m_MaskFlags) ||
+        bool operator!=( const SpotMaskHandlerFunctor & a) const { return   (this->m_MaskFlags != a.m_MaskFlags) ||
                                                                             (this->m_bBinarizeResult != a.m_bBinarizeResult) ;}
-        bool operator==( const NaryMaskHandlerFunctor & a ) const { return !(*this != a); }
+        bool operator==( const SpotMaskHandlerFunctor & a ) const { return !(*this != a); }
 
         TOutput operator()( const std::vector< TInput > & B) {
             switch (B.size())
@@ -97,28 +96,40 @@ class Spot4MetadataHelper : public MetadataHelper
 
 
 public:
-    typedef NaryMaskHandlerFunctor<MetadataHelper::SingleBandShortImageType::PixelType,
-                                        MetadataHelper::SingleBandShortImageType::PixelType>    NaryMaskHandlerFunctorType;
-    typedef itk::NaryFunctorImageFilter< MetadataHelper::SingleBandShortImageType,
-                                        MetadataHelper::SingleBandShortImageType,
-                                        NaryMaskHandlerFunctorType>                             NaryFunctorImageFilterType;
+    typedef SpotMaskHandlerFunctor<typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType::PixelType,
+                                        typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType::PixelType>    SpotMaskHandlerFunctorType;
+    typedef itk::NaryFunctorImageFilter< typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType,
+                                        typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType,
+                                        SpotMaskHandlerFunctorType>                             NaryFunctorImageFilterType;
 
     Spot4MetadataHelper();
 
     const char * GetNameOfClass() { return "Spot4MetadataHelper"; }
 
-    virtual std::string GetBandName(unsigned int nIdx, bool bRelativeIdx=true);
-    // for Spot we have only one resolution
-    virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx) { return nAbsBandIdx; }
-    virtual int GetBandsNoForResolution(int nRes) { UNUSED(nRes); return 4; }
+    virtual typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer GetImage(const std::vector<std::string> &bandNames,
+                                                                                                  int outRes = -1);
+    virtual typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer GetImage(const std::vector<std::string> &bandNames,
+                                                   std::vector<int> *pRetRelBandIdxs, int outRes = -1);
+    virtual typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer GetImageList(const std::vector<std::string> &bandNames,
+                                                typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer outImgList, int outRes = -1);
 
-    virtual MetadataHelper::SingleBandShortImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult);
-    virtual int GetResolutionForAbsoluteBandIndex(int nAbsBandIdx);
+    virtual std::vector<std::string> GetBandNamesForResolution(int);
+    virtual std::vector<std::string> GetAllBandNames();
+    virtual std::vector<std::string> GetPhysicalBandNames();
+    virtual int GetResolutionForBand(const std::string &bandName);
+
+    virtual typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult, int resolution);
+
+    virtual std::string GetAotImageFileName(int) {return m_AotFileName;}
+    virtual float GetAotQuantificationValue(int res);
+    virtual float GetAotNoDataValue(int res);
+    virtual int GetAotBandIndex(int res);
 
 protected:
-    virtual bool DoLoadMetadata();
+    virtual bool DoLoadMetadata(const std::string& file);
 
     std::string DeriveFileNameFromImageFileName(const std::string& replacement);
+    int GetRelativeBandIdx(const std::string &bandName);
 
     std::string getImageFileName();
     std::string getAotFileName();
@@ -129,11 +140,13 @@ protected:
 
     std::unique_ptr<SPOT4Metadata> m_metadata;
 
-    ResamplingBandExtractor<short> m_bandsExtractor;
+    SpotMaskHandlerFunctorType m_maskHandlerFunctor;
+    typename NaryFunctorImageFilterType::Pointer m_maskHandlerFilter;
 
-    NaryMaskHandlerFunctorType m_maskHandlerFunctor;
-    NaryFunctorImageFilterType::Pointer m_maskHandlerFilter;
+    std::string m_AotFileName;
 
 };
+
+#include "Spot4MetadataHelper.cpp"
 
 #endif // SPOT4METADATAHELPER_H

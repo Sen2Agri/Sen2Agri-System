@@ -61,9 +61,6 @@
 //#include "itkIdentityTransform.h"
 #include "itkScaleTransform.h"
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
-
 // Filters
 #include "otbMultiChannelExtractROI.h"
 #include "../Filters/otbTemporalResamplingFilter.h"

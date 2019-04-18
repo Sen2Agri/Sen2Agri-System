@@ -810,11 +810,14 @@ demmaccs_config = l1c_db.get_demmaccs_config()
 if demmaccs_config is None:
     log(general_log_path, "Could not load the config from database", general_log_filename)
     sys.exit(-1)
-#delete all the temporary content from a previous run
+
 if not os.path.isdir(demmaccs_config.working_dir) and not create_recursive_dirs(demmaccs_config.working_dir):
     log(general_log_path, "Could not create the work base directory {}".format(demmaccs_config.working_dir), general_log_filename)
     sys.exit(-1)
-remove_dir_content(demmaccs_config.working_dir)
+
+#delete all the temporary content from a previous run
+#remove_dir_content(demmaccs_config.working_dir)
+
 #create directory for the eventual archives like l1c products
 create_recursive_dirs(os.path.join(demmaccs_config.working_dir, ARCHIVES))
 l1c_queue = Queue.Queue(maxsize=int(args.processes_number))

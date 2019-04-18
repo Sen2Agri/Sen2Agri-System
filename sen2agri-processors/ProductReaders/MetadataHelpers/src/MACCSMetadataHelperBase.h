@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "ResamplingBandExtractor.h"
 #include "itkNaryFunctorImageFilter.h"
 
 typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
@@ -187,12 +186,6 @@ public:
                                         typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType,
                                         MACCSMaskHandlerFunctorType>                             NaryFunctorImageFilterType;
 
-    typedef otb::StreamingResampleImageFilter<typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType,
-                                            typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType, double>     ResampleVectorImageFilterType;
-    typedef otb::ImageList<typename MetadataHelper<PixelType, MasksPixelType>::SingleBandImageType>                          ImageListType;
-    typedef otb::ImageListToVectorImageFilter<otb::ImageList<typename MetadataHelper<PixelType, MasksPixelType>::SingleBandImageType>,
-                                              typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType>          ListConcatenerFilterType;
-
     MACCSMetadataHelperBase();
 
     const char * GetNameOfClass() { return "MACCSMetadataHelperBase"; }
@@ -206,27 +199,6 @@ protected:
     virtual std::string getWaterFileName(int res) = 0;
     virtual std::string getSnowFileName(int res) = 0;
     virtual std::string getQualityFileName(int res) = 0;
-
-     typename MetadataHelper<PixelType, MasksPixelType>::ImageReaderType::Pointer CreateReader(const std::string &imgPath) {
-        typename MetadataHelper<PixelType, MasksPixelType>::ImageReaderType::Pointer reader =
-                MetadataHelper<PixelType, MasksPixelType>::ImageReaderType::New();
-        reader->SetFileName(imgPath);
-        reader->UpdateOutputInformation();
-        this->m_readers.push_back(reader);
-        return reader;
-    }
-
-    typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer CreateImageList() {
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer imgList = MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::New();
-        this->m_ImageListVect.push_back(imgList);
-        return imgList;
-    }
-
-    typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ListConcatenerFilterType::Pointer CreateConcatenner() {
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ListConcatenerFilterType::Pointer concat = MACCSMetadataHelperBase<PixelType, MasksPixelType>::ListConcatenerFilterType::New();
-        this->m_Concateners.push_back(concat);
-        return concat;
-    }
 
     std::string getMACCSImageFileName(const std::vector<CommonFileInformation>& imageFiles,
                                       const std::string& ending);
@@ -253,18 +225,10 @@ protected:
 protected:
     std::unique_ptr<MACCSFileMetadata> m_metadata;
 
-    ResamplingBandExtractor<MasksPixelType> m_maskFlagsBandsExtractor;
-
     MACCSMaskHandlerFunctorType m_maccsMaskHandlerFunctor;
     typename NaryFunctorImageFilterType::Pointer m_maccsMaskHandlerFilter;
 
 
-    std::vector<typename MetadataHelper<PixelType, MasksPixelType>::ImageReaderType::Pointer> m_readers;
-    ImageResampler<typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType, typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType>  m_ImageResampler;
-
-    ResamplingBandExtractor<PixelType>  m_bandsExtractor;
-    std::vector<typename ImageListType::Pointer> m_ImageListVect;
-    std::vector<typename ListConcatenerFilterType::Pointer>   m_Concateners;
 
 };
 

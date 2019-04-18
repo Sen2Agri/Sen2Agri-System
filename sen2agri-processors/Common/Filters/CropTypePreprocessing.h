@@ -30,17 +30,14 @@
 //#include "itkIdentityTransform.h"
 #include "itkScaleTransform.h"
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
-
 // Filters
 #include "otbMultiChannelExtractROI.h"
 
 #include "otbCropTypeFeatureExtractionFilter.h"
 #include "otbTemporalResamplingFilter.h"
 
-#include "otbSpotMaskFilter.h"
-#include "otbSentinelMaskFilter.h"
+//#include "otbSpotMaskFilter.h"
+//#include "otbSentinelMaskFilter.h"
 
 #include "TimeSeriesReader.h"
 
@@ -73,6 +70,39 @@ public:
         m_FeatureExtractors = CropTypeFeatureExtractionFilterListType::New();
     }
 
+    void getRedEdgeBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper,
+                                                   const TileData &td,
+                                                   ImageDescriptor &descriptor) override
+    {
+        if (!m_IncludeRedEdge) {
+            return;
+        }
+        std::vector<std::string> redEdgeBands = pHelper->GetRedEdgeBandNames();
+        if (redEdgeBands.size() == 0) {
+            return;
+        }
+        const std::string &narrowNirBandName = pHelper->GetNarrowNirBandName();
+        if (narrowNirBandName.size() == 0) {
+            return;
+        }
+        redEdgeBands.push_back(narrowNirBandName);
+
+        ExtractFloatChannelFilterType::Pointer channelExtractor;
+
+        std::vector<int> relBandsIdxs;
+        MetadataHelper<float, uint8_t>::VectorImageType::Pointer img = pHelper->GetImage(redEdgeBands, &relBandsIdxs);
+        img->UpdateOutputInformation();
+
+        for (int bandIndex: relBandsIdxs) {
+            channelExtractor = ExtractFloatChannelFilterType::New();
+            channelExtractor->SetInput(img);
+            channelExtractor->SetIndex(bandIndex);
+            m_Filters->PushBack(channelExtractor);
+            auto resampledBand = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+            descriptor.redEdgeBands.push_back(resampledBand);
+        }
+    }
+/*
     void getSentinelRedEdgeBands(const MACCSFileMetadata &meta,
                           const TileData &td,
                           ImageDescriptor &descriptor,
@@ -127,7 +157,7 @@ public:
         descriptor.bands.push_back(b7Band);
         descriptor.bands.push_back(b8aBand);
     }
-
+*/
     int getBandCount(const std::string &sensor) override {
         if (sensor == "SENTINEL") {
             if (m_IncludeRedEdge) {

@@ -25,7 +25,7 @@ TotalWeightComputation::TotalWeightComputation()
 
 void TotalWeightComputation::SetMissionName(std::string &missionName)
 {
-    if(missionName.find("SENTINEL-2") == 0)  {
+    if(missionName.find("SENTINEL2") == 0)  {
         m_sensorType = S2;
     } else {
         m_sensorType = L8;

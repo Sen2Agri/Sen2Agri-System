@@ -108,7 +108,7 @@ private:
         std::string mskImg = GetParameterAsString("msk");
 
         auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml, res);
+        auto pHelper = factory->GetMetadataHelper<short>(inXml);
 
 
         std::string masterInfoFileName;

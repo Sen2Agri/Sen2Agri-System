@@ -34,6 +34,7 @@
 #include "DirectionalCorrectionFunctor.h"
 #include "MetadataHelperFactory.h"
 #include "ResamplingBandExtractor.h"
+#include "MetadataHelper.h"
 
 
 class DirectionalCorrection
@@ -89,6 +90,7 @@ private:
 
     ReaderType::Pointer                     m_inputImageReader;
     ResamplingBandExtractor<float>         m_ResampledBandsExtractor;
+    std::unique_ptr<MetadataHelper<float>>  m_pHelper;
 };
 
 #endif // DIRECTIONAL_CORRECTION_H

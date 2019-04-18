@@ -30,9 +30,6 @@
 //#include "itkIdentityTransform.h"
 #include "itkScaleTransform.h"
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
-
 // Filters
 #include "otbMultiChannelExtractROI.h"
 #include "otbConcatenateVectorImagesFilter.h"
@@ -110,6 +107,39 @@ public:
         m_ConcatenateImagesFilters = ConcatenateImagesFilterListType::New();
     }
 
+    void getRedEdgeBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper,
+                                                   const TileData &td,
+                                                   ImageDescriptor &descriptor) override
+    {
+        if (!m_IncludeRedEdge) {
+            return;
+        }
+        std::vector<std::string> redEdgeBands = pHelper->GetRedEdgeBandNames();
+        if (redEdgeBands.size() == 0) {
+            return;
+        }
+        // insert at the begining the blue and red bands
+        redEdgeBands.insert(redEdgeBands.begin(), pHelper->GetRedBandName());
+        redEdgeBands.insert(redEdgeBands.begin(), pHelper->GetBlueBandName());
+        // ... and at the end the NIR band
+        redEdgeBands.push_back(pHelper->GetNirBandName());
+
+        ExtractFloatChannelFilterType::Pointer channelExtractor;
+
+        std::vector<int> relBandsIdxs;
+        MetadataHelper<float, uint8_t>::VectorImageType::Pointer img = pHelper->GetImage(redEdgeBands, &relBandsIdxs);
+        img->UpdateOutputInformation();
+
+        for (int bandIndex: relBandsIdxs) {
+            channelExtractor = ExtractFloatChannelFilterType::New();
+            channelExtractor->SetInput(img);
+            channelExtractor->SetIndex(bandIndex);
+            m_Filters->PushBack(channelExtractor);
+            auto resampledBand = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+            descriptor.redEdgeBands.push_back(resampledBand);
+        }
+    }
+/*
     void getSentinelRedEdgeBands(const MACCSFileMetadata &meta,
                           const TileData &td,
                           ImageDescriptor &descriptor,
@@ -160,7 +190,7 @@ public:
         descriptor.redEdgeBands.push_back(b7Band);
         descriptor.redEdgeBands.push_back(b8Band);
     }
-
+*/
     otb::Wrapper::FloatVectorImageType * GetOutput(const std::vector<MissionDays> &sensorOutDays)
     {
         std::map<std::string, std::vector<int> > dayMap;

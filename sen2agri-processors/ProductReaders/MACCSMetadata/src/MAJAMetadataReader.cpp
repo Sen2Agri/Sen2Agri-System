@@ -440,6 +440,7 @@ std::unique_ptr<MACCSFileMetadata> ConvertToMACCSStructure(std::unique_ptr<MAJAF
 
     std::unique_ptr<MACCSFileMetadata> fileRetMACCS = std::unique_ptr<MACCSFileMetadata>(new MACCSFileMetadata);
     fileRetMACCS->Header.FixedHeader.Mission = std::move(fileMaja->ProductCharacteristics.Mission);
+    fileRetMACCS->Header.FixedHeader.SourceSystem = std::move(fileMaja->DatasetIdentification.Producer);
     fileRetMACCS->InstanceId.AcquisitionDate = ExtractDateFromDateTime(fileMaja->ProductCharacteristics.AcquisitionDateTime);
     fileRetMACCS->ProductInformation.AcquisitionDateTime = std::move(fileMaja->ProductCharacteristics.AcquisitionDateTime);
     for (unsigned short resolutionIdx = 0; resolutionIdx < fileMaja->ProductCharacteristics.GroupResolutions.size();

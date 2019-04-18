@@ -133,7 +133,7 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
     int i;
     int cnt = 0;
 
-    // Weighted Average Reflectances
+    // Weight for B2 for L3A
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
         // Normalize the values
@@ -142,13 +142,14 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
         }
         var[cnt++] = short(outInfos.m_CurrentPixelWeights[i] * WEIGHT_QUANTIF_VALUE);
     }
+
+    // Weighted Average Date L3A
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
-        // Weighted Average Date L3A
         var[cnt++] = outInfos.m_nCurrentPixelWeightedDate[i];
     }
 
-    // Weight for B2 for L3A
+    // Weighted Average Reflectances
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
         // Normalize the values
@@ -162,9 +163,9 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
         }
     }
 
+    // Pixel status
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
-        // Pixel status
         var[cnt++] = outInfos.m_nCurrentPixelFlag[i];
     }
 

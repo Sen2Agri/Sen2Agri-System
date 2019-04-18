@@ -1,4 +1,5 @@
 #include "TimeSeriesReader.h"
+#include "MetadataHelperFactory.h"
 
 int getDaysFromEpoch(const std::string &date)
 {
@@ -61,36 +62,17 @@ const std::vector<MissionDays> readOutputDays(const std::string &file)
 
 void TimeSeriesReader::Build(std::vector<std::string>::const_iterator begin, std::vector<std::string>::const_iterator end, const TileData &td)
 {
-    // loop through the descriptors
-    auto maccsMetadataReader = MACCSMetadataReaderType::New();
-    auto spot4MetadataReader = SPOT4MetadataReaderType::New();
+    auto factory = MetadataHelperFactory::New();
+
     for (auto it = begin; it != end; ++it) {
         const auto &desc = *it;
 
+        m_ProductReaders.push_back(factory->GetMetadataHelper<float, uint8_t>(desc));
+        const std::unique_ptr<MetadataHelper<float, uint8_t>> &pHelper = m_ProductReaders[m_ProductReaders.size()-1];
         ImageDescriptor id;
-        if (auto meta = maccsMetadataReader->ReadMetadata(desc)) {
-            // add the information to the list
-            if (meta->Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
-                // Interpret landsat product
-                ProcessLandsat8Metadata(*meta, desc, id, td);
-            } else if (meta->Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
-                // Interpret sentinel product
-                ProcessSentinel2Metadata(*meta, desc, id, td);
-            } else {
-                itkExceptionMacro("Unknown mission: " + meta->Header.FixedHeader.Mission);
-            }
+        ProcessMetadata(pHelper, desc, id, td);
+        m_Descriptors.push_back(id);
 
-            m_Descriptors.push_back(id);
-
-        }else if (auto meta = spot4MetadataReader->ReadMetadata(desc)) {
-            // add the information to the list
-            ProcessSpot4Metadata(*meta, desc, id, td);
-
-            m_Descriptors.push_back(id);
-
-        } else {
-            itkExceptionMacro("Unable to read metadata from " << desc);
-        }
     }
 
     // sort the descriptors after the aquisition date
@@ -122,68 +104,27 @@ void TimeSeriesReader::updateRequiredImageSize(const std::vector<std::string>& d
     td.m_imageHeight = 0;
 
     // look for the first raster belonging to the main mission
-    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
-    SPOT4MetadataReaderType::Pointer spot4MetadataReader = SPOT4MetadataReaderType::New();
+    auto factory = MetadataHelperFactory::New();
     for (int i = startIndex; i < endIndex; i++) {
         const std::string& desc = descriptors[i];
-        if (auto meta = maccsMetadataReader->ReadMetadata(desc)) {
-            // check if the raster corresponds to the main mission
-            if (meta->Header.FixedHeader.Mission.find(m_mission) != std::string::npos) {
-                boost::filesystem::path rootFolder(desc);
-                rootFolder.remove_filename();
+        std::unique_ptr<MetadataHelper<float, uint8_t>> pHelper = factory->GetMetadataHelper<float, uint8_t>(desc);
+        if (pHelper->GetMissionShortName() == m_mission) {
+            const std::vector<std::string> &firsResBandNames = pHelper->GetBandNamesForResolution(pHelper->GetProductResolutions()[0]);
+            MetadataHelper<float, uint8_t>::VectorImageType::Pointer img = pHelper->GetImage(firsResBandNames);
+            img->UpdateOutputInformation();
+            float curRes = img->GetSpacing()[0];
 
-                std::string imageFile = getMACCSRasterFileName(rootFolder, meta->ProductOrganization.ImageFiles, "_FRE");
-                if (imageFile.size() == 0) {
-                    imageFile = getMACCSRasterFileName(rootFolder, meta->ProductOrganization.ImageFiles, "_FRE_R1");
-                }
-                auto reader = getInt16ImageReader(imageFile);
-                reader->GetOutput()->UpdateOutputInformation();
-                float curRes = reader->GetOutput()->GetSpacing()[0];
+            const float scale = (float)m_pixSize / curRes;
+            td.m_imageWidth = img->GetLargestPossibleRegion().GetSize()[0] / scale;
+            td.m_imageHeight = img->GetLargestPossibleRegion().GetSize()[1] / scale;
 
+            auto origin = img->GetOrigin();
+            ImageType::SpacingType spacing = img->GetSpacing();
+            td.m_imageOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale - 1.0);
+            td.m_imageOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale - 1.0);
 
-                const float scale = (float)m_pixSize / curRes;
-                td.m_imageWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] / scale;
-                td.m_imageHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1] / scale;
-
-                auto origin = reader->GetOutput()->GetOrigin();
-                auto spacing = reader->GetOutput()->GetSpacing();
-                td.m_imageOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale - 1.0);
-                td.m_imageOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale - 1.0);
-
-                td.m_projection = reader->GetOutput()->GetProjectionRef();
-
-                break;
-            }
-
-        }else if (auto meta = spot4MetadataReader->ReadMetadata(desc)) {
-            // check if the raster corresponds to the main mission
-            if (meta->Header.Ident.find(m_mission) != std::string::npos) {
-                // get the root foloder from the descriptor file name
-                boost::filesystem::path rootFolder(desc);
-                rootFolder.remove_filename();
-
-                const auto &imageFile = rootFolder / meta->Files.OrthoSurfCorrPente;
-                auto reader = getInt16ImageReader(imageFile.string());
-                reader->GetOutput()->UpdateOutputInformation();
-                float curRes = reader->GetOutput()->GetSpacing()[0];
-
-
-                const float scale = (float)m_pixSize / curRes;
-                td.m_imageWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] / scale;
-                td.m_imageHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1] / scale;
-
-                auto origin = reader->GetOutput()->GetOrigin();
-                ImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
-                td.m_imageOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale - 1.0);
-                td.m_imageOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale - 1.0);
-
-                td.m_projection = reader->GetOutput()->GetProjectionRef();
-
-                break;
-            }
-
-        } else {
-            itkExceptionMacro("Unable to read metadata from " << desc);
+            td.m_projection = img->GetProjectionRef();
+            break;
         }
     }
 }
@@ -238,8 +179,8 @@ TimeSeriesReader::TimeSeriesReader()
 
     m_CastInt16FloatFilterFilst = CastInt16FloatFilterListType::New();
 
-    m_SpotMaskFilters = SpotMaskFilterListType::New();
-    m_SentinelMaskFilters = SentinelMaskFilterListType::New();
+//    m_SpotMaskFilters = SpotMaskFilterListType::New();
+//    m_SentinelMaskFilters = SentinelMaskFilterListType::New();
 
     m_ChannelExtractors = ExtractChannelListType::New();
 
@@ -273,6 +214,78 @@ bool TimeSeriesReader::SortUnmergedMetadata(const ImageDescriptor& o1, const Ima
     }
 }
 
+void TimeSeriesReader::ProcessMetadata(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper, const std::string& filename,
+                                       ImageDescriptor& descriptor, const TileData& td) {
+    // Extract the raster date
+    descriptor.aquisitionDate = pHelper->GetAcquisitionDate();
+
+    // Save the descriptor field path
+    descriptor.filename = filename;
+
+    // save the mission
+    descriptor.mission = pHelper->GetMissionShortName();
+    descriptor.isMain = m_mission.compare(descriptor.mission) == 0;
+
+    // Get the product bands
+    GetProductBands(pHelper, td, descriptor);
+
+    // The mask is built from the product
+    descriptor.mask = GetProductMask(pHelper, td);
+}
+
+void TimeSeriesReader::GetProductBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper, const TileData& td,
+                                       ImageDescriptor &descriptor) {
+    // Return extract Green, Red, Nir and Swir bands image
+    const std::vector<std::string> &bandNames1 = {pHelper->GetGreenBandName(),
+                                            pHelper->GetRedBandName(),
+                                            pHelper->GetNirBandName()};
+    const std::vector<std::string> &bandNames2 = {pHelper->GetSwirBandName()};
+
+    std::vector<int> relBandIdxs1;
+    std::vector<int> relBandIdxs2;
+    MetadataHelper<float>::VectorImageType::Pointer img1 = pHelper->GetImage(bandNames1, &relBandIdxs1);
+    MetadataHelper<float>::VectorImageType::Pointer img2 = pHelper->GetImage(bandNames2, &relBandIdxs2);
+    img1->UpdateOutputInformation();
+    img2->UpdateOutputInformation();
+
+    auto resampledBands1 = getResampledBand<FloatVectorImageType>(img1, td, false);
+    auto resampledBands2 = getResampledBand<FloatVectorImageType>(img2, td, false);
+
+    for (int bandIndex: relBandIdxs1) {
+        auto channelExtractor = ExtractFloatChannelFilterType::New();
+        channelExtractor->SetInput(resampledBands1);
+        channelExtractor->SetIndex(bandIndex);
+        m_Filters->PushBack(channelExtractor);
+        descriptor.bands.push_back(channelExtractor->GetOutput());
+    }
+
+    for (int bandIndex: relBandIdxs2) {
+        auto channelExtractor = ExtractFloatChannelFilterType::New();
+        channelExtractor->SetInput(resampledBands2);
+        channelExtractor->SetIndex(bandIndex);
+        m_Filters->PushBack(channelExtractor);
+        descriptor.bands.push_back(channelExtractor->GetOutput());
+    }
+
+    getRedEdgeBands(pHelper, td, descriptor);
+}
+
+otb::Wrapper::UInt8ImageType::Pointer TimeSeriesReader::GetProductMask(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper,
+                                                                       const TileData& td) {
+    // Return the mask associated with the product with 1 if one of the flags is present and 0 otherwise
+    MetadataHelper<float, uint8_t>::SingleBandMasksImageType::Pointer imgMsk = pHelper->GetMasksImage((MasksFlagType)(MSK_CLOUD|MSK_VALID|MSK_SAT), true);
+
+    // Resample if needed
+    return getResampledBand<UInt8ImageType>(imgMsk, td, true);
+}
+
+void TimeSeriesReader::getRedEdgeBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>&,
+                                               const TileData &,
+                                               ImageDescriptor &)
+{
+}
+
+/*
 void TimeSeriesReader::ProcessSpot4Metadata(const SPOT4Metadata& meta, const std::string& filename, ImageDescriptor& descriptor, const TileData& td) {
 
     // Extract the raster date
@@ -360,6 +373,7 @@ UInt8ImageReaderType::Pointer TimeSeriesReader::getUInt8ImageReader(const std::s
     return reader;
 }
 
+
 Int16ImageReaderType::Pointer TimeSeriesReader::getInt16ImageReader(const std::string& filePath) {
     auto reader = Int16ImageReaderType::New();
 
@@ -382,6 +396,7 @@ UInt16ImageReaderType::Pointer TimeSeriesReader::getUInt16ImageReader(const std:
     return reader;
 }
 
+
 UInt8VectorImageReaderType::Pointer TimeSeriesReader::getUInt8VectorImageReader(const std::string& filePath) {
     auto reader = UInt8VectorImageReaderType::New();
 
@@ -393,6 +408,7 @@ UInt8VectorImageReaderType::Pointer TimeSeriesReader::getUInt8VectorImageReader(
     return reader;
 }
 
+
 FloatVectorImageReaderType::Pointer TimeSeriesReader::getFloatVectorImageReader(const std::string& filePath) {
     auto reader = FloatVectorImageReaderType::New();
 
@@ -403,6 +419,7 @@ FloatVectorImageReaderType::Pointer TimeSeriesReader::getFloatVectorImageReader(
     m_Filters->PushBack(reader);
     return reader;
 }
+
 
 std::string TimeSeriesReader::getMACCSRasterFileName(const boost::filesystem::path &rootFolder, const std::vector<CommonFileInformation>& imageFiles, const std::string& ending) {
 
@@ -426,6 +443,7 @@ std::string TimeSeriesReader::getMACCSMaskFileName(const boost::filesystem::path
     }
     return "";
 }
+
 
 void TimeSeriesReader::getSpotBands(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor) {
     // Return the bands associated with a SPOT product
@@ -551,6 +569,7 @@ otb::Wrapper::UInt8ImageType::Pointer TimeSeriesReader::getLandsatMask(const MAC
     return getResampledBand<UInt8ImageType>(sentinelMaskFilter->GetOutput(), td, true);
 }
 
+
 void TimeSeriesReader::getSentinelBands(const MACCSFileMetadata &meta,
                                         const boost::filesystem::path &rootFolder,
                                         const TileData &td,
@@ -603,14 +622,12 @@ void TimeSeriesReader::getSentinelBands(const MACCSFileMetadata &meta,
     descriptor.bands.push_back(b8Band);
     descriptor.bands.push_back(b11Band);
 
-    getSentinelRedEdgeBands(meta, td, descriptor, reader1, reader2);
+    getSentinelRedEdgeBands(meta, td, descriptor);
 }
 
 void TimeSeriesReader::getSentinelRedEdgeBands(const MACCSFileMetadata &,
                                                const TileData &,
-                                               ImageDescriptor &,
-                                               Int16ImageReaderType::Pointer,
-                                               Int16ImageReaderType::Pointer)
+                                               ImageDescriptor &)
 {
 }
 
@@ -638,3 +655,4 @@ otb::Wrapper::UInt8ImageType::Pointer TimeSeriesReader::getSentinelMask(const MA
     // Resample if needed
     return getResampledBand<UInt8ImageType>(sentinelMaskFilter->GetOutput(), td, true);
 }
+*/

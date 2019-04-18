@@ -15,9 +15,6 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
-
 #include "otbVectorImage.h"
 #include "otbImageList.h"
 #include "otbImageListToVectorImageFilter.h"
@@ -109,9 +106,6 @@ typedef otb::ObjectList<ExtractROIFilterType>                      ExtractROIFil
 typedef otb::ImageFileReader<ImageType>                            ImageReaderType;
 typedef otb::ObjectList<ImageReaderType>                           ImageReaderListType;
 
-typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
-typedef itk::SPOT4MetadataReader                                   SPOT4MetadataReaderType;
-
 typedef otb::StreamingResampleImageFilter<InternalImageType, InternalImageType, double>    ResampleFilterType;
 typedef otb::ObjectList<ResampleFilterType>                           ResampleFilterListType;
 typedef otb::BCOInterpolateImageFunction<InternalImageType,
@@ -182,7 +176,7 @@ private:
     m_AllMasks = ListConcatenerFilterType::New();
     m_AllMasksList = InternalImageListType::New();
     m_ResamplersList = ResampleFilterListType::New();
-    m_ImageReaderList = ImageReaderListType::New();
+    //m_ImageReaderList = ImageReaderListType::New();
 
     AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
     AddParameter(ParameterType_OutputImage, "out", "A raster containing the number of dates for each pixel that have valid land values.");
@@ -205,7 +199,7 @@ private:
       m_AllMasks = ListConcatenerFilterType::New();
       m_AllMasksList = InternalImageListType::New();
       m_ResamplersList = ResampleFilterListType::New();
-      m_ImageReaderList = ImageReaderListType::New();
+      //m_ImageReaderList = ImageReaderListType::New();
   }
 
   void DoExecute()
@@ -229,14 +223,14 @@ private:
 
       auto factory = MetadataHelperFactory::New();
       for (const std::string& desc : descriptors) {
-          m_vectHelpers.push_back(factory->GetMetadataHelper(desc));
+          m_vectHelpers.push_back(factory->GetMetadataHelper<short>(desc));
       }
 
       // compute the desired size of the output image
       updateRequiredImageSize(m_vectHelpers);
 
       // load all descriptors
-      for (const std::unique_ptr<MetadataHelper> &helper: m_vectHelpers) {
+      for (const std::unique_ptr<MetadataHelper<short>> &helper: m_vectHelpers) {
           ImageDescriptor id;
           ProcessMetadata(helper, id);
           m_DescriptorsList.push_back(id);
@@ -246,31 +240,33 @@ private:
       BuildRasterAndMask();
   }
 
-  void updateRequiredImageSize(const std::vector<std::unique_ptr<MetadataHelper>> &vectHelpers) {
+  void updateRequiredImageSize(const std::vector<std::unique_ptr<MetadataHelper<short>>> &vectHelpers) {
       m_primaryMissionImgWidth = -1;
       m_primaryMissionImgHeight = -1;
       m_bCutImages = false;
-      for (const std::unique_ptr<MetadataHelper>& helper: vectHelpers) {
+      for (const std::unique_ptr<MetadataHelper<short>>& helper: vectHelpers) {
           if(helper->GetMissionName().find(m_strPrimaryMission) != std::string::npos) {
-                std::string imageFile = helper->GetImageFileName();
-                ImageReaderType::Pointer reader = getReader(imageFile);
-                reader->UpdateOutputInformation();
+              // get the image for the default resolution
+                MetadataHelper<short>::VectorImageType::Pointer img = helper->GetImage(helper->GetPhysicalBandNames(), NULL, -1);
+                img->UpdateOutputInformation();
+//                ImageReaderType::Pointer reader = getReader(imageFile);
+//                reader->UpdateOutputInformation();
                 //float curRes = reader->GetOutput()->GetSpacing()[0];
 
                 //const float scale = (float)m_nPrimaryMissionRes / curRes;
                 // if we have primary mission set, then we ignore the given primary mission resolution
                 // and we use the one in the primary mission product
-                m_primaryMissionImgWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0];// / scale;
-                m_primaryMissionImgHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1];// / scale;
+                m_primaryMissionImgWidth = img->GetLargestPossibleRegion().GetSize()[0];// / scale;
+                m_primaryMissionImgHeight = img->GetLargestPossibleRegion().GetSize()[1];// / scale;
 
-                m_nPrimaryImgRes = reader->GetOutput()->GetSpacing()[0];
+                m_nPrimaryImgRes = img->GetSpacing()[0];
 
-                FloatVectorImageType::PointType origin = reader->GetOutput()->GetOrigin();
+                FloatVectorImageType::PointType origin = img->GetOrigin();
                 //InternalImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
                 m_primaryMissionImgOrigin[0] = origin[0];// + 0.5 * spacing[0] * (scale - 1.0);
                 m_primaryMissionImgOrigin[1] = origin[1];// + 0.5 * spacing[1] * (scale - 1.0);
 
-                m_strPrMissionImgProjRef = reader->GetOutput()->GetProjectionRef();
+                m_strPrMissionImgProjRef = img->GetProjectionRef();
                 m_GenericRSImageResampler.SetOutputProjection(m_strPrMissionImgProjRef);
                 m_bCutImages = true;
 
@@ -280,7 +276,7 @@ private:
   }
 
   // Process a LANDSAT8 metadata structure and extract the needed bands and masks.
-  void ProcessMetadata(const std::unique_ptr<MetadataHelper> &helper, ImageDescriptor& descriptor) {
+  void ProcessMetadata(const std::unique_ptr<MetadataHelper<short>> &helper, ImageDescriptor& descriptor) {
 
       // Extract the raster date
       descriptor.aquisitionDate = helper->GetAcquisitionDate();
@@ -297,10 +293,6 @@ private:
           itkExceptionMacro("Unsupported mission " << mission);
       }
       descriptor.isMain = m_strPrimaryMission.compare(descriptor.mission) == 0;
-
-      ImageReaderType::Pointer reader = getReader(helper->GetImageFileName());
-      reader->UpdateOutputInformation();
-
       descriptor.curMask = cutImage(helper->GetMasksImage(ALL, false));
   }
 
@@ -321,16 +313,16 @@ private:
   }
 
   // get a reader from the file path
-  ImageReaderType::Pointer getReader(const std::string& filePath) {
-      ImageReaderType::Pointer reader = ImageReaderType::New();
+//  ImageReaderType::Pointer getReader(const std::string& filePath) {
+//      ImageReaderType::Pointer reader = ImageReaderType::New();
 
-      // set the file name
-      reader->SetFileName(filePath);
+//      // set the file name
+//      reader->SetFileName(filePath);
 
-      // add it to the list and return
-      m_ImageReaderList->PushBack(reader);
-      return reader;
-  }
+//      // add it to the list and return
+//      m_ImageReaderList->PushBack(reader);
+//      return reader;
+//  }
 
   InternalImageType::Pointer cutImage(const InternalImageType::Pointer &img) {
       InternalImageType::Pointer retImg = img;
@@ -373,7 +365,7 @@ private:
   ListConcatenerFilterType::Pointer     m_AllMasks;
   ResampleFilterListType::Pointer       m_ResamplersList;
   InternalImageListType::Pointer        m_AllMasksList;
-  ImageReaderListType::Pointer          m_ImageReaderList;
+//  ImageReaderListType::Pointer          m_ImageReaderList;
   std::vector<ImageDescriptor>          m_DescriptorsList;
   std::string                           m_strPrimaryMission;
   int                                   m_nPrimaryImgRes;
@@ -387,7 +379,7 @@ private:
   bool                                  m_bUseGenericRSResampler;
 
   MaskStatusFlagsExtractorFilterType::Pointer m_MskStatusFlagsExtractorFunctor;
-  std::vector<std::unique_ptr<MetadataHelper>> m_vectHelpers;
+  std::vector<std::unique_ptr<MetadataHelper<short>>> m_vectHelpers;
 };
 }
 }

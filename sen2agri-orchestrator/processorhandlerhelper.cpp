@@ -17,6 +17,7 @@
 /* static */
 QMap<QString, ProcessorHandlerHelper::L2MetaTileNameInfos> ProcessorHandlerHelper::m_mapSensorL2ATileMetaFileInfos =
     {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 8, "hdr", "S2A|S2B_*_*_L2VALD_<TILEID>_*_*_*_<DATE>.HDR"}},
+     {"SENTINEL2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 8, "xml", "SENTINEL2A|SENTINEL2B_*_L2A_<TILEID>_*_MTD_ALL.xml"}},
      {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, 5, "hdr", "L8_*_L8C_L2VALD_<TILEID>_<DATE>.HDR"}},
      {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, 3, "xml", "SPOT4_*_*_<DATE>_*_*.xml"}},
      {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, 3, "xml", "SPOT5_*_*_<DATE>_*_*.xml"}},
@@ -89,6 +90,15 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &
             if(infos.productType == L2_PRODUCT_TYPE_S2) {
                 if((pieces.size() == 9) && (pieces[5] == "")) {
                     return QString(pieces[4]);
+                } else {
+                    // Check for MAJA
+                    if((pieces.size() == 8) && path.endsWith("_MTD_ALL.xml")) {
+                        QString  tileName = QString(pieces[3]);
+                        if (tileName.startsWith("T")) {
+                            return tileName.mid(1);
+                        }
+                        return tileName;
+                    }
                 }
             } else if(infos.productType == L2_PRODUCT_TYPE_L8) {
                 if((pieces.size() == 6) && (pieces[3] == "L2VALD")) {
@@ -646,19 +656,24 @@ bool ProcessorHandlerHelper::IsValidL2AMetadataFileName(const QString &path) {
     QStringList listComponents = fileName.split(".",QString::SkipEmptyParts);
     QString ext;
 
+    QString fileNameNoExt = fileName;
     if(listComponents.size() > 1) {
         ext = listComponents[listComponents.size()-1];
+        fileNameNoExt = info.baseName();
     }
-    listComponents = fileName.split("_");
-
     const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(fileName);
+
+    listComponents = fileNameNoExt.split("_");
 
     if((infos.productType != L2_PRODUCT_TYPE_UNKNOWN) && ext.compare(infos.extension, Qt::CaseInsensitive) != 0)  {
         return false;
     }
     switch (infos.productType) {
         case L2_PRODUCT_TYPE_S2:
-            if(listComponents.size() < 4 || listComponents[3] != "L2VALD" || listComponents[2] == "QCK") {
+            // check if it is a S2 MACCS or MAJA format
+            if(listComponents.size() < 4 || ((listComponents[3] != "L2VALD" || listComponents[2] == "QCK") &&
+                                             (listComponents[6] != "MTD" || listComponents[7] != "ALL")))
+            {
                 return false;
             }
             break;

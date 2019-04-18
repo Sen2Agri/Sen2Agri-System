@@ -600,7 +600,7 @@ int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetRelativeBandIdx(const s
     return -1;
 }
 
-
+/*
 void MACCSS2MetadataHelperDummy() {
     MACCSS2MetadataHelper<short, short> test1;
     MACCSS2MetadataHelper<short, uint8_t> test11;
@@ -609,4 +609,4 @@ void MACCSS2MetadataHelperDummy() {
     MACCSS2MetadataHelper<int, short> test3;
     MACCSS2MetadataHelper<int, uint8_t> test31;
 }
-
+*/

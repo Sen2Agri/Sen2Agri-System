@@ -183,9 +183,14 @@ public:
 
     const char * GetNameOfClass() { return "S2MetadataHelper"; }
 
-    virtual std::string GetBandName(unsigned int nBandIdx, bool bRelativeIdx=true);
-    virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx);
-    virtual float GetAotQuantificationValue();
+    virtual VectorImageType::Pointer GetImage(const std::vector<int> &bandIdxs, int outRes = -1);
+    virtual VectorImageType::Pointer GetImage(const std::vector<int> &bandIdxs,
+                                                   std::vector<int> &retRelBandIdxs, int outRes = -1);
+    virtual ImageListType::Pointer GetImageList(const std::vector<std::string> &bandNames, ImageListType::Pointer outImgList,
+                                                     int outRes = -1);
+
+    virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx, int res = 10);
+    virtual float GetAotQuantificationValue(int);
     virtual float GetAotNoDataValue();
     virtual int GetAotBandIndex();
     virtual int GetResolutionForAbsoluteBandIndex(int nAbsBandIdx);
@@ -218,7 +223,7 @@ protected:
                               const std::string& ending, std::string &retStr);
     void ReadSpecificMACCSImgHdrFile();
     void ReadSpecificMACCSAotHdrFile();
-    void ReadSpecificMACCSCldHdrFile();
+//    void ReadSpecificMACCSCldHdrFile();
     void ReadSpecificMACCSMskHdrFile();
     int getBandIndex(const std::vector<CommonBand>& bands, const std::string& name);
     bool CheckFileExistence(std::string &fileName);
@@ -240,10 +245,17 @@ protected:
     std::unique_ptr<MACCSFileMetadata> m_specificCldMetadata;
     std::unique_ptr<MACCSFileMetadata> m_specificMskMetadata;
 
+    float m_fAotQuantificationValue;
+    float m_fAotNoDataVal;
+    int m_nAotBandIndex;
+
     ResamplingBandExtractor<short> m_bandsExtractor;
 
     NaryMaskHandlerFunctorType m_maskHandlerFunctor;
     NaryFunctorImageFilterType::Pointer m_maskHandlerFilter;
+
+private:
+    std::string GetBandName(unsigned int nBandIdx, bool bRelativeIdx=true);
 
 };
 

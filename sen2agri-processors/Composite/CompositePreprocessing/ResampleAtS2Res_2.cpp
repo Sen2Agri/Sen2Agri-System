@@ -44,14 +44,13 @@ void ResampleAtS2Res2::Init(const std::string &xml, const std::string &strMaskFi
 void ResampleAtS2Res2::DoExecute()
 {
     auto factory = MetadataHelperFactory::New();
-    m_pMetadataHelper = ((m_nRes <= 0) ? factory->GetMetadataHelper(m_strXml):
-                                        factory->GetMetadataHelper(m_strXml, m_nRes));
+    m_pMetadataHelper = factory->GetMetadataHelper<float>(m_strXml);
 
-    std::string imageFile = m_pMetadataHelper->GetImageFileName();
-    m_inputImgReader = getReader(imageFile);
-    m_inputImgReader->UpdateOutputInformation();
-    ImageType::Pointer img = m_inputImgReader->GetOutput();
-    int curRes = img->GetSpacing()[0];
+    const std::vector<std::string> &bandNames = m_pMetadataHelper->GetBandNamesForResolution(m_nRes);
+    std::vector<int> relBandsIdxs;
+    m_inputImg = m_pMetadataHelper->GetImage(bandNames, &relBandsIdxs);
+    m_inputImg->UpdateOutputInformation();
+    int curRes = m_inputImg->GetSpacing()[0];
     if(m_nRes <= 0) {
         m_nRes = curRes;
     }
@@ -62,14 +61,18 @@ void ResampleAtS2Res2::DoExecute()
     ExtractPrimaryMissionInfos();
 
     // resample the image if it is the case
-    img = ResampleImage(img, Interpolator_Linear, curRes);
+    ImageType::Pointer img = ResampleImage(m_inputImg, Interpolator_Linear, curRes);
 
-    std::string missionName = m_pMetadataHelper->GetMissionName();
+    const std::string &missionName = m_pMetadataHelper->GetMissionName();
     BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
-    const std::vector<int> &vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(m_nRes, missionName);
-    for(unsigned int i = 0; i<vectIdxs.size(); i++) {
-        int nRelBandIdx = m_pMetadataHelper->GetRelativeBandIndex(vectIdxs[i]);
-        m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractImgResampledBand(img, nRelBandIdx, Interpolator_Linear, curRes, m_nRes));
+    const std::vector<std::string> &vectBandNames = bandsMappingCfg.GetBandNames(m_nRes, missionName);
+    for(unsigned int i = 0; i<bandNames.size(); i++) {
+        // check that the band is configured
+        if(std::find(vectBandNames.begin(), vectBandNames.end(), bandNames[i]) != vectBandNames.end()) {
+            int nRelBandIdx = relBandsIdxs[i]+1;
+            m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractImgResampledBand(img, nRelBandIdx,
+                                                                 Interpolator_Linear, curRes, m_nRes));
+        }
     }
 
     // Extract (and resample, if needed) the cloud, water and snow masks
@@ -118,8 +121,8 @@ ResampleAtS2Res2::ImageReaderType::Pointer ResampleAtS2Res2::getReader(const std
 void ResampleAtS2Res2::ExtractResampledAotImage()
 {
     // resample the AOT
-    std::string aotFileName = m_pMetadataHelper->GetAotImageFileName();
-    int aotBandIdx = m_pMetadataHelper->GetAotBandIndex();
+    std::string aotFileName = m_pMetadataHelper->GetAotImageFileName(m_nRes);
+    int aotBandIdx = m_pMetadataHelper->GetAotBandIndex(m_nRes);
     ImageReaderType::Pointer aotImageReader = getReader(aotFileName);
     ImageType::Pointer aotImage = aotImageReader->GetOutput();
     aotImage->UpdateOutputInformation();
@@ -179,27 +182,26 @@ void ResampleAtS2Res2::ExtractPrimaryMissionInfos() {
     if(m_strPrimaryMissionXml.size() > 0)
     {
         auto factory = MetadataHelperFactory::New();
-        m_pPrimaryMissionMetadataHelper = ((m_nRes <= 0) ? factory->GetMetadataHelper(m_strPrimaryMissionXml):
-                                            factory->GetMetadataHelper(m_strPrimaryMissionXml, m_nRes));
+        m_pPrimaryMissionMetadataHelper = factory->GetMetadataHelper<float>(m_strPrimaryMissionXml);
         BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
         std::string missionName = m_pPrimaryMissionMetadataHelper->GetMissionName();
         std::string curMissionName = m_pMetadataHelper->GetMissionName();
         // only if the primary mission is the primary mission and is a different mission than the current one
         if((missionName != curMissionName) && bandsMappingCfg.IsMasterMission(missionName))
         {
-            std::string imageFile = m_pPrimaryMissionMetadataHelper->GetImageFileName();
-            ImageReaderType::Pointer reader = ImageReaderType::New();
-            // set the file name
-            reader->SetFileName(imageFile);
-            reader->UpdateOutputInformation();
-            ImageType::Pointer img = reader->GetOutput();
+            const std::vector<std::string> &bandNames = (m_nRes <= 0) ?
+                        m_pPrimaryMissionMetadataHelper->GetBandNamesForResolution(
+                            m_pPrimaryMissionMetadataHelper->GetProductResolutions()[0]) :
+                m_pPrimaryMissionMetadataHelper->GetBandNamesForResolution(m_nRes);
+            ImageType::Pointer img = m_pPrimaryMissionMetadataHelper->GetImage(bandNames, NULL, m_nRes);
+            img->UpdateOutputInformation();
             int primaryImgRes = img->GetSpacing()[0];
             if(primaryImgRes != m_nRes)
             {
                 m_nRes = primaryImgRes;
             }
 
-            ImageType::Pointer oldImg = m_inputImgReader->GetOutput();
+            ImageType::Pointer oldImg = m_inputImg;
             const std::string &oldImgProjRef = oldImg->GetProjectionRef();
             int oldImgRes = oldImg->GetSpacing()[0];
 
@@ -211,7 +213,7 @@ void ResampleAtS2Res2::ExtractPrimaryMissionInfos() {
             m_PrimaryMissionImgWidth = img->GetLargestPossibleRegion().GetSize()[0];
             m_PrimaryMissionImgHeight = img->GetLargestPossibleRegion().GetSize()[1];
 
-            ImageType::PointType origin = reader->GetOutput()->GetOrigin();
+            ImageType::PointType origin = img->GetOrigin();
             m_PrimaryMissionImgOrigin[0] = origin[0];
             m_PrimaryMissionImgOrigin[1] = origin[1];
             m_strPrMissionImgProjRef = img->GetProjectionRef();

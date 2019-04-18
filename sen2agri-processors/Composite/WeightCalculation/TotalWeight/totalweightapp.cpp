@@ -119,7 +119,7 @@ private:
     }
 
     auto factory = MetadataHelperFactory::New();
-    auto pHelper = factory->GetMetadataHelper(inXml);
+    auto pHelper = factory->GetMetadataHelper<short>(inXml);
     std::string l2aDate = pHelper->GetAcquisitionDate();
     std::string l3aDate = GetParameterString("l3adate");
     int halfSynthesis = GetParameterInt("halfsynthesis");

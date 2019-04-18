@@ -131,11 +131,13 @@ private:
         }
 
         auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+        m_pHelper = factory->GetMetadataHelper<short>(inMetadataXml);
 
-        m_defImgReader = ReaderType::New();
-        m_defImgReader->SetFileName(pHelper->GetImageFileName());
-        m_defImgReader->UpdateOutputInformation();
+        const std::vector<std::string> &bandNames = m_pHelper->GetBandNamesForResolution(m_pHelper->GetProductResolutions()[0]);
+        std::vector<int> relBandIdxs;
+        m_img = m_pHelper->GetImage(bandNames, &relBandIdxs);
+        m_img->UpdateOutputInformation();
+
 
 //        itk::MetaDataDictionary dict = m_defImgReader->GetOutput()->GetMetaDataDictionary();
 //        std::vector<bool> flgs(1,true);
@@ -146,7 +148,7 @@ private:
 //        std::vector<double> values;
 //        ReadNoDataFlags(dict, flags, values);
 
-        AnglesImageType::Pointer anglesImg = createAnglesBands(pHelper, pHelper->HasDetailedAngles());
+        AnglesImageType::Pointer anglesImg = createAnglesBands(m_pHelper, m_pHelper->HasDetailedAngles());
 
         if(HasValue("resampled")) {
             bool resampled = (GetParameterInt("resampled") != 0);
@@ -178,7 +180,7 @@ private:
         SetParameterOutputImage("out", anglesImg);
     }
 
-    AnglesImageType::Pointer createAnglesBands(const std::unique_ptr<MetadataHelper> &pHelper, bool useDetailedAngles) {
+    AnglesImageType::Pointer createAnglesBands(const std::unique_ptr<MetadataHelper<short>> &pHelper, bool useDetailedAngles) {
         m_AnglesRaster = allocateRaster();
         m_AnglesMaskRaster = allocateRaster();
         if (useDetailedAngles) {
@@ -194,9 +196,9 @@ private:
 
     AnglesImageType::Pointer allocateRaster()
     {
-        auto sz = m_defImgReader->GetOutput()->GetLargestPossibleRegion().GetSize();
-        auto spacing = m_defImgReader->GetOutput()->GetSpacing();
-        const std::string &imgProjRef = m_defImgReader->GetOutput()->GetProjectionRef();
+        auto sz = m_img->GetLargestPossibleRegion().GetSize();
+        auto spacing = m_img->GetSpacing();
+        const std::string &imgProjRef = m_img->GetProjectionRef();
 
         int width = sz[0];
         int height = sz[1];
@@ -235,7 +237,7 @@ private:
         return anglesRaster;
     }
 
-    void writeMeanAnglesToRaster(const std::unique_ptr<MetadataHelper> &pHelper)
+    void writeMeanAnglesToRaster(const std::unique_ptr<MetadataHelper<short>> &pHelper)
     {
         double quantifValue = pHelper->GetReflectanceQuantificationValue();
         double cosSensorZenith = round(cos(pHelper->GetSensorMeanAngles().zenith * M_PI / 180) * quantifValue);
@@ -257,7 +259,7 @@ private:
         }
     }
 
-    void writeDetailedAnglesToRaster(const std::unique_ptr<MetadataHelper> &pHelper)
+    void writeDetailedAnglesToRaster(const std::unique_ptr<MetadataHelper<short>> &pHelper)
     {
         const MetadataHelperAngles &solarAngles = pHelper->GetDetailedSolarAngles();
         const std::vector<MetadataHelperViewingAnglesGrid> &viewingAngles = pHelper->GetAllDetectorsDetailedViewingAngles();
@@ -306,7 +308,7 @@ private:
      * Resamples an image according to the given current and desired resolution
      */
     AnglesImageType::Pointer resampleAnglesImage(AnglesImageType::Pointer anglesRaster) {
-        auto sz = m_defImgReader->GetOutput()->GetLargestPossibleRegion().GetSize();
+        auto sz = m_img->GetLargestPossibleRegion().GetSize();
         int width = sz[0];
         int height = sz[1];
 
@@ -520,11 +522,13 @@ private:
         std::cout << "]" << std::endl;
     }
 
-    ReaderType::Pointer                 m_defImgReader;
     AnglesImageType::Pointer            m_AnglesRaster;
     AnglesImageType::Pointer            m_AnglesMaskRaster;
     ImageResampler<AnglesImageType, AnglesImageType> m_AnglesResampler;
     AnglesMaskedOutputFilterType::Pointer m_AnglesMaskedOutputFunctor;
+
+    std::unique_ptr<MetadataHelper<short>> m_pHelper;
+    MetadataHelper<short>::VectorImageType::Pointer m_img;
 
     //ChangeNoDataFilterType::Pointer m_ChangeNoDataFilter;
 

@@ -133,13 +133,13 @@ private:
 
         auto factory = MetadataHelperFactory::New();
         // we load first the default resolution where we have the RED and NIR
-        auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+        m_pHelper = factory->GetMetadataHelper<float>(inMetadataXml);
+        const std::vector<std::string> &bandsToExtract = {m_pHelper->GetRedBandName(), m_pHelper->GetNirBandName()};
+        m_img = m_pHelper->GetImage(bandsToExtract, &m_bandIndexes);
+        m_img->UpdateOutputInformation();
 
         // Read the spacing for the default image
-        m_defImgReader = ReaderType::New();
-        m_defImgReader->SetFileName(pHelper->GetImageFileName());
-        m_defImgReader->UpdateOutputInformation();
-        int curRes = m_defImgReader->GetOutput()->GetSpacing()[0];
+        int curRes = m_img->GetSpacing()[0];
 
         int nOutRes = curRes;
         if(HasValue("outres")) {
@@ -149,13 +149,13 @@ private:
             }
         }
         // Compute NDVI and RVI
-        computeNdviRvi(pHelper);
+        computeNdviRvi();
 
         // Handle, if needed, the creation of the NDVI or RVI export rasters
         handleNdviRviCreation(curRes, nOutRes);
 
         // Handle, if needed, the features creation (all bands + optionally the NDVI and RVI bands)
-        handleFeaturesCreation(pHelper, curRes, nOutRes);
+        handleFeaturesCreation(m_pHelper, curRes, nOutRes);
     }
 
     /**
@@ -171,40 +171,23 @@ private:
     }
 
     /**
-     * Extracts the (sub)set of resolutions for the bands configured in the LAI configuration file
-     */
-    std::vector<int> getResolutionsForConfiguredBands(const LAIBandsConfigInfos &infos, const std::unique_ptr<MetadataHelper> &pHelper) {
-        std::vector<int> retRes;
-        for(int bandIdx: infos.bandsIdxs) {
-            int res = pHelper->GetResolutionForAbsoluteBandIndex(bandIdx);
-            if(std::find(retRes.begin(), retRes.end(), res) == retRes.end()) {
-                retRes.push_back(res);
-            }
-        }
-        return retRes;
-    }
-
-    /**
      * Performs the computation of the NDVI and RVI that will be accessible after that
      * using the m_ndviRviImgSplit member
      */
-    void computeNdviRvi(const std::unique_ptr<MetadataHelper> &pHelper) {
+    void computeNdviRvi() {
         // the bands are 1 based
-        int nNirBandIdx = pHelper->GetRelNirBandIndex()-1;
-        int nRedBandIdx = pHelper->GetRelRedBandIndex()-1;
-
         bool bHasMsks = HasValue("msks");
         if(bHasMsks) {
             m_msksImg = GetParameterFloatVectorImage("msks");
             m_MaskedNdviRviFunctor = MaskedNDVIRVIFilterType::New();
-            m_MaskedNdviRviFunctor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
-            m_MaskedNdviRviFunctor->SetInput1(m_defImgReader->GetOutput());
+            m_MaskedNdviRviFunctor->GetFunctor().Initialize(m_bandIndexes[0], m_bandIndexes[1]);
+            m_MaskedNdviRviFunctor->SetInput1(m_img);
             m_MaskedNdviRviFunctor->SetInput2(m_msksImg);
             m_ndviRviFunctorOutput = m_MaskedNdviRviFunctor->GetOutput();
         } else {
             m_UnmaskedNdviRviFunctor = UnmaskedNDVIRVIFilterType::New();
-            m_UnmaskedNdviRviFunctor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
-            m_UnmaskedNdviRviFunctor->SetInput(m_defImgReader->GetOutput());
+            m_UnmaskedNdviRviFunctor->GetFunctor().Initialize(m_bandIndexes[0], m_bandIndexes[1]);
+            m_UnmaskedNdviRviFunctor->SetInput(m_img);
             m_ndviRviFunctorOutput = m_UnmaskedNdviRviFunctor->GetOutput();
         }
 
@@ -247,7 +230,7 @@ private:
      * Handles the creation of the features output (if configured) by adding the configured
      * bands and the NDVI and RVI if configured in LAI bands configuration file
      */
-    void handleFeaturesCreation(const std::unique_ptr<MetadataHelper> &pHelper, int nCurRes, int nOutRes) {
+    void handleFeaturesCreation(const std::unique_ptr<MetadataHelper<float>> &pHelper, int nCurRes, int nOutRes) {
         bool bOutFts = HasValue("fts");
         if(bOutFts) {
             // Load the LAI bands configuration file
@@ -269,30 +252,37 @@ private:
             std::cout << "addndvi : " << laiCfg.bUseNdvi           << std::endl;
             std::cout << "addrvi : " << laiCfg.bUseRvi             << std::endl;
             std::cout << "Bands used : ";
-            for (std::vector<int>::const_iterator i = laiCfg.bandsIdxs.begin(); i != laiCfg.bandsIdxs.end(); ++i) {
-                std::cout << *i << ' ';
+            for (const auto &bandName: laiCfg.bandsNames) {
+                std::cout << bandName << ' ';
             }
             std::cout << std::endl;
             std::cout << "=================================" << std::endl;
 
-            std::vector<int> resolutionsVect = getResolutionsForConfiguredBands(laiCfg, pHelper);
-            for (int cfgRes: resolutionsVect) {
-                createInputImgSplitForResolution(cfgRes);
-            }
-
+            double fQuantifVal = pHelper->GetReflectanceQuantificationValue();
             allList = ImageListType::New();
-            // Iterate all configured bands taking into account the raster for the resolution the band belongs
-            for (int bandIdx: laiCfg.bandsIdxs) {
-                int curBandRes = pHelper->GetResolutionForAbsoluteBandIndex(bandIdx);
-                // Get the helper for the current resolution
-                const auto &pResHelper = m_metadataHelpersMap.at(curBandRes);
-                // get the relative band index in the product raster for the current band resolution
-                // The relative band index is 1 based value so we must extract the 0 based one
-                int relBandIdx = pResHelper->GetRelativeBandIndex(bandIdx) - 1;
-                VectorImageToImageListType::Pointer imgInputSplit = m_imgInputSplittersMap.at(curBandRes);
-                std::cout << "Adding band with id: " << bandIdx << ", res: " <<  curBandRes
-                          << ", relative band idx: " << relBandIdx  << std::endl;
-                allList->PushBack(getResampledImage(curBandRes, nOutRes, imgInputSplit->GetOutput()->GetNthElement(relBandIdx)));
+
+            std::vector<int> relBandIdxs;
+            MetadataHelper<float>::VectorImageType::Pointer img = pHelper->GetImage(laiCfg.bandsNames, &relBandIdxs, nOutRes);
+            img->UpdateOutputInformation();
+            int curRes = img->GetSpacing()[0];
+            int nInputBands = img->GetNumberOfComponentsPerPixel();
+
+            ReflTransFilterType::Pointer reflTransFunctor = ReflTransFilterType::New();
+            reflTransFunctor->GetFunctor().Initialize((float)fQuantifVal);
+            reflTransFunctor->SetInput(img);
+            reflTransFunctor->GetOutput()->SetNumberOfComponentsPerPixel(nInputBands);
+
+            VectorImageToImageListType::Pointer imgInputSplit = VectorImageToImageListType::New();
+            imgInputSplit->SetInput(reflTransFunctor->GetOutput());
+            imgInputSplit->UpdateOutputInformation();
+            imgInputSplit->GetOutput()->UpdateOutputInformation();
+
+            // add the new translator functor and the immage splitter into their maps
+            m_reflTransFunctors.push_back(reflTransFunctor);
+            m_imgInputSplitters.push_back(imgInputSplit);
+
+            for (size_t i = 0; i<laiCfg.bandsNames.size(); i++) {
+                allList->PushBack(getResampledImage(curRes, nOutRes, imgInputSplit->GetOutput()->GetNthElement(relBandIdxs[i])));
             }
 
             // add the bands for NDVI and RVI
@@ -310,45 +300,6 @@ private:
         }
     }
 
-    void createInputImgSplitForResolution(int res) {
-        std::map<int,VectorImageToImageListType::Pointer>::iterator it;
-        it = m_imgInputSplittersMap.find(res);
-        if (it == m_imgInputSplittersMap.end()) {
-            // get the XML parameter
-            const std::string &inMetadataXml = GetParameterString("xml");
-            // Create a new product helper for the current resolution
-            auto factory = MetadataHelperFactory::New();
-            // create the helper directly into the map
-            m_metadataHelpersMap[res] = factory->GetMetadataHelper(inMetadataXml, res);
-            const auto &pHelper = m_metadataHelpersMap[res];
-
-            // create the reader for the image at this resolution
-            ReaderType::Pointer imgReader = ReaderType::New();
-            imgReader->SetFileName(pHelper->GetImageFileName());
-            imgReader->UpdateOutputInformation();
-
-            // Translate the input image from short reflectance values to float (subunitaire) values
-            // translated using the quantification value
-            double fQuantifVal = pHelper->GetReflectanceQuantificationValue();
-
-            ReflTransFilterType::Pointer reflTransFunctor = ReflTransFilterType::New();
-            reflTransFunctor->GetFunctor().Initialize((float)fQuantifVal);
-            reflTransFunctor->SetInput(imgReader->GetOutput());
-            int nInputBands = imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
-            reflTransFunctor->GetOutput()->SetNumberOfComponentsPerPixel(nInputBands);
-
-            VectorImageToImageListType::Pointer imgInputSplit = VectorImageToImageListType::New();
-            imgInputSplit->SetInput(reflTransFunctor->GetOutput());
-            imgInputSplit->UpdateOutputInformation();
-            imgInputSplit->GetOutput()->UpdateOutputInformation();
-
-            // add the new translator functor and the immage splitter into their maps
-            m_imgInputReadersMap[res] = imgReader;
-            m_reflTransFunctorsMap[res] = reflTransFunctor;
-            m_imgInputSplittersMap[res] = imgInputSplit;
-        }
-    }
-
     VectorImageToImageListType::Pointer       m_ndviRviImgSplit;
     ImageListToVectorImageFilterType::Pointer m_ftsConcat;
 
@@ -360,15 +311,19 @@ private:
 
     FloatToShortTransFilterType::Pointer  m_floatToShortNdviFunctor;
 
-    ReaderType::Pointer                       m_defImgReader;
+    std::unique_ptr<MetadataHelper<float>>             m_pHelper;
+    MetadataHelper<float>::VectorImageType::Pointer    m_img;
+    std::vector<int>                            m_bandIndexes;
+
+    //ReaderType::Pointer                       m_defImgReader;
     ImageResampler<InternalImageType, InternalImageType> m_Resampler;
 
     ImageType::Pointer m_msksImg;
+    std::vector<ReflTransFilterType::Pointer> m_reflTransFunctors;
+    std::vector<VectorImageToImageListType::Pointer> m_imgInputSplitters;
 
-    std::map<int, ReaderType::Pointer> m_imgInputReadersMap;
-    std::map<int, std::unique_ptr<MetadataHelper>> m_metadataHelpersMap;
-    std::map<int, ReflTransFilterType::Pointer> m_reflTransFunctorsMap;
-    std::map<int, VectorImageToImageListType::Pointer> m_imgInputSplittersMap;
+    //std::map<int, ReaderType::Pointer> m_imgInputReadersMap;
+//    std::map<int, std::unique_ptr<MetadataHelper<float>>> m_metadataHelpersMap;
 };
 }
 }

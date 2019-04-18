@@ -43,15 +43,10 @@ void DirectionalCorrection::Init(int res, std::string &xml, std::string &scatcoe
 void DirectionalCorrection::DoExecute()
 {
     auto factory = MetadataHelperFactory::New();
-    auto pHelper = factory->GetMetadataHelper(m_strXml, m_nRes);
+    m_pHelper = factory->GetMetadataHelper<float>(m_strXml);
     //float fReflQuantifValue = pHelper->GetReflectanceQuantificationValue();
-    std::string inputImageFile = pHelper->GetImageFileName();
-    m_inputImageReader = ReaderType::New();
-    m_inputImageReader->SetFileName(inputImageFile);
-    m_inputImageReader->UpdateOutputInformation();
-
-    InputImageType1::Pointer inputImg = m_inputImageReader->GetOutput();
-    extractBandsFromImage(inputImg);
+    const auto &bandNames = m_pHelper->GetBandNamesForResolution(m_nRes);
+    m_pHelper->GetImageList(bandNames, m_ImageList, m_nRes);
 
     // extract the cloud, water and snow masks from the masks file
     m_ImageList->PushBack(m_CSM);
@@ -64,10 +59,9 @@ void DirectionalCorrection::DoExecute()
 
     std::vector<ScaterringFunctionCoefficients> scatteringCoeffs;
     scatteringCoeffs = loadScatteringFunctionCoeffs(m_strScatCoeffs);
-    unsigned int nBandsForRes = pHelper->GetBandsNoForCurrentResolution();
-    if(nBandsForRes != scatteringCoeffs.size()) {
+    if(bandNames.size() != scatteringCoeffs.size()) {
         itkExceptionMacro("Scattering coefficients file contains only " << scatteringCoeffs.size()
-                          << " but are expected coefficients for " << nBandsForRes << " bands!");
+                          << " but are expected coefficients for " << bandNames.size() << " bands!");
     }
 
     m_Functor.Initialize(scatteringCoeffs);

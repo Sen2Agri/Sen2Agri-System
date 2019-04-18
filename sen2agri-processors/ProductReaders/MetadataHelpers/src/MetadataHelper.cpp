@@ -20,62 +20,44 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 
-MetadataHelper::MetadataHelper()
+template<typename PixelType, typename MasksPixelType>
+MetadataHelper<PixelType, MasksPixelType>::MetadataHelper()
 {
-    m_nResolution = -1;
     m_detailedAnglesGridSize = 0;
 }
 
-MetadataHelper::~MetadataHelper()
+template<typename PixelType, typename MasksPixelType>
+MetadataHelper<PixelType, MasksPixelType>::~MetadataHelper()
 {
 }
 
-bool MetadataHelper::LoadMetadataFile(const std::string& file, int nResolution)
+template<typename PixelType, typename MasksPixelType>
+bool MetadataHelper<PixelType, MasksPixelType>::LoadMetadataFile(const std::string& file)
 {
     Reset();
     m_inputMetadataFileName = file;
-    m_nResolution = nResolution;
 
     boost::filesystem::path p(m_inputMetadataFileName);
     p.remove_filename();
     m_DirName = p.native();
 
-    return DoLoadMetadata();
+    return DoLoadMetadata(file);
 }
 
-void MetadataHelper::Reset()
+template<typename PixelType, typename MasksPixelType>
+void MetadataHelper<PixelType, MasksPixelType>::Reset()
 {
     m_Mission = "";
-
-    m_AotFileName = "";
-    m_CloudFileName = "";
-    m_WaterFileName = "";
-    m_SnowFileName = "";
-    m_ImageFileName = "";
     m_AcquisitionDate = "";
 
     m_ReflQuantifVal = 1;
-
-    m_fAotQuantificationValue = 0.0;
-    m_fAotNoDataVal = 0;
-    m_nAotBandIndex = -1;
-
-    m_nAbsRedBandIndex = -1;
-    m_nAbsGreenBandIndex = -1;
-    m_nAbsBlueBandIndex = -1;
-    m_nAbsNirBandIndex = -1;
-
-    m_nRelRedBandIndex = -1;
-    m_nRelGreenBandIndex = -1;
-    m_nRelBlueBandIndex = -1;
-    m_nRelNirBandIndex = -1;
-
 
     m_solarMeanAngles.azimuth = m_solarMeanAngles.zenith = 0.0;
     m_bHasDetailedAngles = false;
 }
 
-int MetadataHelper::GetAcquisitionDateAsDoy()
+template<typename PixelType, typename MasksPixelType>
+int MetadataHelper<PixelType, MasksPixelType>::GetAcquisitionDateAsDoy()
 {
     struct tm tmDate = {};
     if (strptime(m_AcquisitionDate.c_str(), "%Y%m%d", &tmDate) == NULL) {
@@ -94,7 +76,8 @@ int MetadataHelper::GetAcquisitionDateAsDoy()
     return lrintf(diff / 86400 /* 60*60*24*/);
 }
 
-MeanAngles_Type MetadataHelper::GetSensorMeanAngles() {
+template<typename PixelType, typename MasksPixelType>
+MeanAngles_Type MetadataHelper<PixelType, MasksPixelType>::GetSensorMeanAngles() {
     MeanAngles_Type angles = {0,0};
 
     if(HasBandMeanAngles()) {
@@ -129,7 +112,8 @@ MeanAngles_Type MetadataHelper::GetSensorMeanAngles() {
     return angles;
 }
 
-MeanAngles_Type MetadataHelper::GetSensorMeanAngles(int nBand) {
+template<typename PixelType, typename MasksPixelType>
+MeanAngles_Type MetadataHelper<PixelType, MasksPixelType>::GetSensorMeanAngles(int nBand) {
     MeanAngles_Type angles = {0,0};
     if(nBand >= 0 && nBand < (int)m_sensorBandsMeanAngles.size()) {
         angles = m_sensorBandsMeanAngles[nBand];
@@ -139,7 +123,8 @@ MeanAngles_Type MetadataHelper::GetSensorMeanAngles(int nBand) {
     return angles;
 }
 
-double MetadataHelper::GetRelativeAzimuthAngle()
+template<typename PixelType, typename MasksPixelType>
+double MetadataHelper<PixelType, MasksPixelType>::GetRelativeAzimuthAngle()
 {
     MeanAngles_Type solarAngle = GetSolarMeanAngles();
     MeanAngles_Type sensorAngle = GetSensorMeanAngles();
@@ -156,23 +141,25 @@ double MetadataHelper::GetRelativeAzimuthAngle()
     return relAzimuth;
 }
 
-bool MetadataHelper::GetTrueColourBandIndexes(int &redIdx, int &greenIdx, int &blueIdx)
+template<typename PixelType, typename MasksPixelType>
+bool MetadataHelper<PixelType, MasksPixelType>::GetTrueColourBandNames(std::string &redBandName, std::string &greenBandName, std::string &blueBandName)
 {
-    redIdx = m_nAbsRedBandIndex;
-    greenIdx = m_nAbsGreenBandIndex;
-    blueIdx = m_nAbsBlueBandIndex;
+    redBandName = m_nRedBandName;
+    greenBandName = m_nGreenBandName;
+    blueBandName = m_nBlueBandName;
     // we might not have blue and is green (as for spot, in this case we use NIR)
     // TODO: We should override this function for SPOT
-    if(blueIdx == greenIdx) {
-        blueIdx = m_nAbsNirBandIndex;
+    if(blueBandName == greenBandName) {
+        blueBandName = m_nNirBandName;
     }
-    if(redIdx > 0 && greenIdx > 0 && blueIdx > 0) {
+    if(redBandName.size() > 0 && greenBandName.size() > 0 && blueBandName.size() > 0) {
         return true;
     }
     return false;
 }
 
-std::string MetadataHelper::buildFullPath(const std::string& fileName)
+template<typename PixelType, typename MasksPixelType>
+std::string MetadataHelper<PixelType, MasksPixelType>::buildFullPath(const std::string& fileName)
 {
     boost::filesystem::path p(m_DirName);
     p /= fileName;

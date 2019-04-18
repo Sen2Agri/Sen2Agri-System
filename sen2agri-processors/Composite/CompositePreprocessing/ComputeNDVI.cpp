@@ -32,24 +32,16 @@ void ComputeNDVI::DoInit(std::string &xml, int nRes)
 ComputeNDVI::OutputImageType::Pointer ComputeNDVI::DoExecute()
 {
     auto factory = MetadataHelperFactory::New();
-    auto pHelper = factory->GetMetadataHelper(m_inXml);
-    // the bands are 1 based
-    int nNirBandIdx = pHelper->GetRelNirBandIndex()-1;
-    int nRedBandIdx = pHelper->GetRelRedBandIndex()-1;
-    //Read all input parameters
-    m_InputImageReader = ImageReaderType::New();
-    std::string imgFileName = pHelper->GetImageFileName();
-
-    std::cout << "ComputeNDVI -> Image File Name: " << imgFileName << std::endl;
-
-    m_InputImageReader->SetFileName(imgFileName);
-    m_InputImageReader->UpdateOutputInformation();
-    ImageType::Pointer img = m_InputImageReader->GetOutput();
+    m_pHelper = factory->GetMetadataHelper<short>(m_inXml);
+    std::vector<std::string> bandNames = {m_pHelper->GetRedBandName(), m_pHelper->GetNirBandName()};
+    std::vector<int> resRelIdxs;
+    MetadataHelper<short>::VectorImageType::Pointer img = m_pHelper->GetImage(bandNames, &resRelIdxs);
+    img->UpdateOutputInformation();
     int curRes = img->GetSpacing()[0];
 
     m_Functor = FilterType::New();
-    m_Functor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
-    m_Functor->SetInput(m_InputImageReader->GetOutput());
+    m_Functor->GetFunctor().Initialize(resRelIdxs[0], resRelIdxs[1]);
+    m_Functor->SetInput(img);
     m_Functor->UpdateOutputInformation();
 
     //WriteToOutputFile();

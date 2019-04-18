@@ -236,7 +236,7 @@ private:
         otbAppLogINFO( << "InXML: " << inXml << std::endl );
 
         auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml);
+        auto pHelper = factory->GetMetadataHelper<short>(inXml);
         bool bHasTrueColorBandIndexes = GetTrueColorBandIndexes(bandsMappingCfg, pHelper, resolution, redIdx, greenIdx, blueIdx);
 
         for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
@@ -257,26 +257,26 @@ private:
         }
     }
 
-    bool GetTrueColorBandIndexes(BandsMappingConfig &bandsMappingCfg, const std::unique_ptr<MetadataHelper> &pHelper, int resolution,
+    bool GetTrueColorBandIndexes(BandsMappingConfig &bandsMappingCfg, const std::unique_ptr<MetadataHelper<short>> &pHelper, int resolution,
                                  int &redIdx, int &greenIdx, int &blueIdx) {
         std::string curMissionName = pHelper->GetMissionName();
         redIdx = greenIdx = blueIdx = -1;
 
-        int nRedIdx, nGreenIdx, nBlueIdx;
-        bool bHasTrueColors = pHelper->GetTrueColourBandIndexes(nRedIdx, nGreenIdx, nBlueIdx);
+        std::string redBandName , greenBandName, blueBandName;
+        bool bHasTrueColors = pHelper->GetTrueColourBandNames(redBandName, greenBandName, blueBandName);
         if(!bHasTrueColors)
             return false;
-        int nMasterRedIdx = bandsMappingCfg.GetMasterBandIndex(curMissionName, resolution, nRedIdx);
-        int nMasterGreenIdx = bandsMappingCfg.GetMasterBandIndex(curMissionName, resolution, nGreenIdx);
-        int nMasterBlueIdx = bandsMappingCfg.GetMasterBandIndex(curMissionName, resolution, nBlueIdx);
+        const std::string &masterRedBandName = bandsMappingCfg.GetMasterBandName(curMissionName, resolution, redBandName);
+        const std::string &masterGreenBandName = bandsMappingCfg.GetMasterBandName(curMissionName, resolution, greenBandName);
+        const std::string &masterBlueBandName = bandsMappingCfg.GetMasterBandName(curMissionName, resolution, blueBandName);
         // if one of them is not present, return
-        if(nMasterRedIdx <= 0 ||  nMasterGreenIdx <= 0 || nMasterBlueIdx <= 0) {
+        if(masterRedBandName.size() == 0 ||  masterGreenBandName.size() == 0 || masterBlueBandName.size() == 0) {
             return false;
         }
         // now convert the absolute indexes into relative indexes to our raster type
-        redIdx = bandsMappingCfg.GetIndexInMasterPresenceArray(resolution, nMasterRedIdx);
-        greenIdx = bandsMappingCfg.GetIndexInMasterPresenceArray(resolution, nMasterGreenIdx);
-        blueIdx = bandsMappingCfg.GetIndexInMasterPresenceArray(resolution, nMasterBlueIdx);
+        redIdx = bandsMappingCfg.GetIndexInMasterPresenceArray(resolution, masterRedBandName);
+        greenIdx = bandsMappingCfg.GetIndexInMasterPresenceArray(resolution, masterGreenBandName);
+        blueIdx = bandsMappingCfg.GetIndexInMasterPresenceArray(resolution, masterBlueBandName);
 
         // these indexes are 0 based
         if(redIdx < 0 ||  greenIdx < 0 || blueIdx < 0) {

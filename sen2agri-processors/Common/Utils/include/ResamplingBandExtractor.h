@@ -130,6 +130,33 @@ public:
         return nbBands;
     }
 
+    std::vector<int> ExtractImageBands(const typename ImageType::Pointer img, typename otb::ImageList<otb::Image<PixelType>>::Pointer &outList,
+                                 const std::vector<int> &bandsIndexes, Interpolator_Type interpolator,
+                                 int curRes=-1, int nDesiredRes=-1,
+                                 int nForcedOutWidth=-1, int nForcedOutHeight=-1)
+    {
+        int nbBands = img->GetNumberOfComponentsPerPixel();
+        std::vector<int> relBandsIndexes(bandsIndexes.size());
+        std::fill(relBandsIndexes.begin(), relBandsIndexes.end(), -1);
+        int curBandIdx = outList->Size();
+        for(int j=0; j < bandsIndexes.size(); j++)
+        {
+            if (bandsIndexes[j] < nbBands) {
+                //Resample the cloud mask
+                typename ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
+                extractor->SetInput( img );
+                extractor->SetChannel( bandsIndexes[j] + 1 );
+                extractor->UpdateOutputInformation();
+                m_ExtractorList->PushBack( extractor );
+                outList->PushBack(getResampledImage(curRes, nDesiredRes, nForcedOutWidth, nForcedOutHeight, extractor, interpolator));
+                relBandsIndexes[j] = curBandIdx;
+                curBandIdx++;
+            }
+        }
+
+        return relBandsIndexes;
+    }
+
     typename InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes, int forcedWidth, int forcedHeight,
                                                  typename ExtractROIFilterType::Pointer extractor,
                                                  Interpolator_Type interpolator) {
@@ -165,6 +192,7 @@ private:
     typename ExtractROIFilterListType::Pointer     m_ExtractorList;
     typename ImageReaderListType::Pointer          m_ImageReaderList;
     ImageResampler<InternalImageType, InternalImageType>     m_ImageResampler;
+
 };
 
 #endif // RESAMPLING_BAND_EXTRACTOR_H

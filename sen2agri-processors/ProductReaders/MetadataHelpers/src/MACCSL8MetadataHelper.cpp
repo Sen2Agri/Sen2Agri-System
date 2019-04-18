@@ -301,6 +301,7 @@ int MACCSL8MetadataHelper<PixelType, MasksPixelType>::GetRelativeBandIdx(const s
     return -1;
 }
 
+/*
 void MACCSL8MetadataHelperDummy() {
     MACCSL8MetadataHelper<short, short> test1;
     MACCSL8MetadataHelper<short, uint8_t> test11;
@@ -309,3 +310,4 @@ void MACCSL8MetadataHelperDummy() {
     MACCSL8MetadataHelper<int, short> test3;
     MACCSL8MetadataHelper<int, uint8_t> test31;
 }
+*/

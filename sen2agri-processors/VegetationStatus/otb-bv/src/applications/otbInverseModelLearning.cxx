@@ -166,7 +166,7 @@ private:
         std::string inMetadataXml = GetParameterString("xml");
         auto factory = MetadataHelperFactory::New();
         // we are interested only in the 10m resolution as here we have the RED and NIR
-        auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+        auto pHelper = factory->GetMetadataHelper<short>(inMetadataXml);
 
         MeanAngles_Type solarAngles = pHelper->GetSolarMeanAngles();
         double relativeAzimuth = pHelper->GetRelativeAzimuthAngle();
@@ -175,7 +175,7 @@ private:
         bool hasAngles = true;
         if(pHelper->HasBandMeanAngles()) {
             // we use the first valid angle from the band list
-            int nTotalBandsNo = pHelper->GetTotalBandsNo();
+            int nTotalBandsNo = pHelper->GetBandsPresentInPrdTotalNo();
             for(int j = 0; j<nTotalBandsNo; j++) {
                 sensorBandAngles = pHelper->GetSensorMeanAngles(j);
                 if(!std::isnan(sensorBandAngles.azimuth) && !std::isnan(sensorBandAngles.zenith)) {

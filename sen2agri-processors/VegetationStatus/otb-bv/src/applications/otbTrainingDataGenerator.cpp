@@ -166,15 +166,16 @@ private:
               std::string inMetadataXml = GetParameterString("xml");
               auto factory = MetadataHelperFactory::New();
               // we are interested only in the 10m resolution as here we have the RED and NIR
-              auto pHelper = factory->GetMetadataHelper(inMetadataXml);
-              nBandsNo = pHelper->GetBandsNoForCurrentResolution();
+              std::unique_ptr<MetadataHelper<short>> pHelper = factory->GetMetadataHelper<short>(inMetadataXml);
+              const std::vector<std::string> &bandNames = pHelper->GetBandNamesForResolution(pHelper->GetProductResolutions()[0]);
+              nBandsNo = bandNames.size();
               // the bands are 1 based
               if(redIdx == -1)
-                redIdx = pHelper->GetRelRedBandIndex() - 1;
+                redIdx = std::distance(bandNames.begin(), find(bandNames.begin(), bandNames.end(), pHelper->GetRedBandName()));
               if(blueIdx == -1)
-                blueIdx = pHelper->GetRelBlueBandIndex() - 1;
+                blueIdx = std::distance(bandNames.begin(), find(bandNames.begin(), bandNames.end(), pHelper->GetBlueBandName()));
               if(nirIdx == -1)
-                nirIdx = pHelper->GetRelNirBandIndex() - 1;
+                nirIdx = std::distance(bandNames.begin(), find(bandNames.begin(), bandNames.end(), pHelper->GetNirBandName()));
           }
       }
 

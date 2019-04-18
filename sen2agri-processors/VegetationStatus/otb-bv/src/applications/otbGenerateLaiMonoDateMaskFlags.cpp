@@ -39,9 +39,9 @@ public:
 
     itkTypeMacro(GenerateLaiMonoDateMaskFlags, otb::Application)
 
-    typedef otb::ImageFileWriter<MetadataHelper::SingleBandShortImageType> WriterType;
-    typedef otb::StreamingResampleImageFilter<MetadataHelper::SingleBandShortImageType,
-                    MetadataHelper::SingleBandShortImageType, double>     ResampleFilterType;
+    typedef otb::ImageFileWriter<MetadataHelper<short>::SingleBandShortImageType> WriterType;
+    typedef otb::StreamingResampleImageFilter<MetadataHelper<short>::SingleBandShortImageType,
+                    MetadataHelper<short>::SingleBandShortImageType, double>     ResampleFilterType;
 
 private:
     void DoInit()
@@ -82,8 +82,8 @@ private:
         std::string outImg = GetParameterAsString("out");
 
         auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml);
-        MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
+        std::unique_ptr<MetadataHelper<short>> pHelper = factory->GetMetadataHelper<short>(inXml);
+        MetadataHelper<short>::SingleBandMasksImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
 
         WriteOutput(imgMsk, outImg, -1);
 
@@ -101,7 +101,7 @@ private:
         }
     }
 
-    void WriteOutput(MetadataHelper::SingleBandShortImageType::Pointer imgMsk, const std::string &outImg, int nRes) {
+    void WriteOutput(MetadataHelper<short>::SingleBandShortImageType::Pointer imgMsk, const std::string &outImg, int nRes) {
         std::string fileName(outImg);
 
         bool bCompress = (GetParameterInt("compress") != 0);
@@ -134,8 +134,8 @@ private:
         paramOut->Write();
     }
 
-    MetadataHelper::SingleBandShortImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
-                                                 MetadataHelper::SingleBandShortImageType::Pointer inImg) {
+    MetadataHelper<short>::SingleBandShortImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
+                                                 MetadataHelper<short>::SingleBandShortImageType::Pointer inImg) {
         if(nCurRes == nDesiredRes)
             return inImg;
         float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
@@ -144,7 +144,7 @@ private:
     }
 
 private:
-    ImageResampler<MetadataHelper::SingleBandShortImageType, MetadataHelper::SingleBandShortImageType> m_Resampler;
+    ImageResampler<MetadataHelper<short>::SingleBandShortImageType, MetadataHelper<short>::SingleBandShortImageType> m_Resampler;
 
 };
 

@@ -169,7 +169,7 @@ private:
 
       auto factory = MetadataHelperFactory::New();
       for (const std::string& desc : descriptors) {
-          m_vectHelpers.push_back(factory->GetMetadataHelper(desc));
+          m_vectHelpers.push_back(factory->GetMetadataHelper<short>(desc));
       }
 
       // compute the desired size of the output image
@@ -183,7 +183,7 @@ private:
   }
 
   void BuildRasterAndMask() {
-       for (const std::unique_ptr<MetadataHelper> &pHelper: m_vectHelpers) {
+       for (const std::unique_ptr<MetadataHelper<short>> &pHelper: m_vectHelpers) {
           ImageDescriptor descriptor;
           // Extract the raster date
           descriptor.aquisitionDate = pHelper->GetAcquisitionDate();
@@ -206,15 +206,15 @@ private:
 
           // Create also the NDVI for this descriptor
           // the bands are 1 based
-          int nNirBandIdx = pHelper->GetRelNirBandIndex()-1;
-          int nRedBandIdx = pHelper->GetRelRedBandIndex()-1;
-
-          ImageReaderType::Pointer reader = getReader(pHelper->GetImageFileName());
-          reader->UpdateOutputInformation();
+          const std::string &nirBandName = pHelper->GetNirBandName();
+          const std::string &redBandName = pHelper->GetRedBandName();
+          std::vector<int> relBandIdxs;
+          MetadataHelper<short>::VectorImageType::Pointer img = pHelper->GetImage({redBandName, nirBandName}, &relBandIdxs);
+          img->UpdateOutputInformation();
 
           descriptor.maskedNdviFunctor = MaskedNDVIFilterType::New();
-          descriptor.maskedNdviFunctor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
-          descriptor.maskedNdviFunctor->SetInput(reader->GetOutput());
+          descriptor.maskedNdviFunctor->GetFunctor().Initialize(relBandIdxs[0], relBandIdxs[1]);
+          descriptor.maskedNdviFunctor->SetInput(img);
           descriptor.maskedNdviFunctor->SetInput2(descriptor.curMask);
           descriptor.maskedNdviFunctor->UpdateOutputInformation();
           InternalFloatImageType::Pointer ndvisImg = descriptor.maskedNdviFunctor->GetOutput();
@@ -286,31 +286,30 @@ private:
       }
   }
 
-  void updateRequiredImageSize(const std::vector<std::unique_ptr<MetadataHelper>> &vectHelpers) {
+  void updateRequiredImageSize(const std::vector<std::unique_ptr<MetadataHelper<short>>> &vectHelpers) {
       m_primaryMissionImgWidth = -1;
       m_primaryMissionImgHeight = -1;
       m_bCutImages = false;
-      for (const std::unique_ptr<MetadataHelper>& helper: vectHelpers) {
+      for (const std::unique_ptr<MetadataHelper<short>>& helper: vectHelpers) {
           if(helper->GetMissionName().find(m_strPrimaryMission) != std::string::npos) {
-                const std::string &imageFile = helper->GetImageFileName();
-                ImageReaderType::Pointer reader = getReader(imageFile);
-                reader->UpdateOutputInformation();
+                MetadataHelper<short>::VectorImageType::Pointer img = helper->GetImage({helper->GetRedBandName()}, NULL, -1);
+                img->UpdateOutputInformation();
                 //float curRes = reader->GetOutput()->GetSpacing()[0];
 
                 //const float scale = (float)m_nPrimaryMissionRes / curRes;
                 // if we have primary mission set, then we ignore the given primary mission resolution
                 // and we use the one in the primary mission product
-                m_primaryMissionImgWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0];// / scale;
-                m_primaryMissionImgHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1];// / scale;
+                m_primaryMissionImgWidth = img->GetLargestPossibleRegion().GetSize()[0];// / scale;
+                m_primaryMissionImgHeight = img->GetLargestPossibleRegion().GetSize()[1];// / scale;
 
-                m_nPrimaryImgRes = reader->GetOutput()->GetSpacing()[0];
+                m_nPrimaryImgRes = img->GetSpacing()[0];
 
-                InternalFloatVectorImageType::PointType origin = reader->GetOutput()->GetOrigin();
+                InternalFloatVectorImageType::PointType origin = img->GetOrigin();
                 //InternalImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
                 m_primaryMissionImgOrigin[0] = origin[0];// + 0.5 * spacing[0] * (scale - 1.0);
                 m_primaryMissionImgOrigin[1] = origin[1];// + 0.5 * spacing[1] * (scale - 1.0);
 
-                m_strPrMissionImgProjRef = reader->GetOutput()->GetProjectionRef();
+                m_strPrMissionImgProjRef = img->GetProjectionRef();
                 m_GenericRSImageResampler.SetOutputProjection(m_strPrMissionImgProjRef);
                 m_GenericRSFloatImageResampler.SetOutputProjection(m_strPrMissionImgProjRef);
 
@@ -438,7 +437,7 @@ private:
 
   bool                                  m_bUseGenericRSResampler;
 
-  std::vector<std::unique_ptr<MetadataHelper>> m_vectHelpers;
+  std::vector<std::unique_ptr<MetadataHelper<short>>> m_vectHelpers;
 
   bool                                  m_ndh;
 

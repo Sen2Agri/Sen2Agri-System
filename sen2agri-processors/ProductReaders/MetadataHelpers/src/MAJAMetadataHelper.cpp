@@ -308,7 +308,7 @@ typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType::Po
         return this->m_majaSingleMaskHandlerFilter->GetOutput();
     }
 }
-
+/*
 void MAJAMetadataHelperDummy() {
     MAJAMetadataHelper<short, short> test1;
     MAJAMetadataHelper<short, uint8_t> test11;
@@ -317,4 +317,4 @@ void MAJAMetadataHelperDummy() {
     MAJAMetadataHelper<int, short> test3;
     MAJAMetadataHelper<int, uint8_t> test31;
 }
-
+*/

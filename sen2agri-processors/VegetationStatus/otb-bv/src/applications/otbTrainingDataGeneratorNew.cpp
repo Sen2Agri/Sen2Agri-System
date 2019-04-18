@@ -71,18 +71,15 @@ private:
         SetDefaultParameterInt("bvidx", 0);
         MandatoryOff("bvidx");
 
-        AddParameter(ParameterType_Int, "redidx", "The index of the RED band in the simulated reflectances file. This is used only with addrefls and is ignored if useallrefls is set.");
-        SetDefaultParameterInt("redidx", -1);
+        AddParameter(ParameterType_String, "redidx", "The index of the RED band in the simulated reflectances file. This is used only with addrefls and is ignored if useallrefls is set.");
         MandatoryOff("redidx");
 
-        AddParameter(ParameterType_Int, "niridx", "The index of the NIR band in the simulated reflectances file. This is used only with addrefls and is ignored if useallrefls is set.");
-        SetDefaultParameterInt("niridx", -1);
+        AddParameter(ParameterType_String, "niridx", "The index of the NIR band in the simulated reflectances file. This is used only with addrefls and is ignored if useallrefls is set.");
         MandatoryOff("niridx");
 
         AddParameter(ParameterType_InputFilename, "xml",
                      "Input XML file of a product that will be used to get the red and nir band indexes if redidx or niridx are not specified.");
         SetParameterDescription( "xml", "Input XML file of a product." );
-        MandatoryOff("xml");
 
         AddParameter(ParameterType_InputFilename, "laicfgs",
                      "Master file containing the LAI configuration files for each mission.");
@@ -99,8 +96,8 @@ private:
         SetDocExampleParameterValue("biovarsfile", "bvfile.txt");
         SetDocExampleParameterValue("simureflsfile", "simulated_reflectances.tif");
         SetDocExampleParameterValue("bvidx", "0");
-        SetDocExampleParameterValue("redidx", "0");
-        SetDocExampleParameterValue("niridx", "2");
+        SetDocExampleParameterValue("redidx", "B3");
+        SetDocExampleParameterValue("niridx", "B8");
         SetDocExampleParameterValue("xml", "product.xml");
         SetDocExampleParameterValue("outtrainfile", "training.txt");
   }
@@ -113,28 +110,27 @@ private:
       std::string bvFileName = GetParameterString("biovarsfile");
       std::string simuReflsName = GetParameterString("simureflsfile");
       std::size_t bvIdx = GetParameterInt("bvidx");
-      int redIdx = GetParameterInt("redidx");
-      int nirIdx = GetParameterInt("niridx");
+      std::string redBandName = GetParameterString("redidx");
+      std::string nirBandName = GetParameterString("niridx");
 
       std::string outFileName = GetParameterString("outtrainfile");
 
       std::string laiCfgFile;
-      if(HasValue("xml")) {
-          std::string inMetadataXml = GetParameterString("xml");
-          auto factory = MetadataHelperFactory::New();
-          // we are interested only in the 10m resolution as here we have the RED and NIR
-          auto pHelper = factory->GetMetadataHelper(inMetadataXml);
-          // the bands are 1 based
-          if(redIdx == -1)
-            redIdx = pHelper->GetAbsRedBandIndex();
-          if(nirIdx == -1)
-            nirIdx = pHelper->GetAbsNirBandIndex();
 
-          // Load the LAI bands configuration file from laicfgs
-          if(HasValue("laicfgs")) {
-              const std::string &laiCfgsFile = GetParameterString("laicfgs");
-              laiCfgFile = getValueFromMissionsCfgFile(laiCfgsFile, pHelper->GetMissionName(), pHelper->GetInstrumentName());
-          }
+      std::string inMetadataXml = GetParameterString("xml");
+      auto factory = MetadataHelperFactory::New();
+      // we are interested only in the 10m resolution as here we have the RED and NIR
+      std::unique_ptr<MetadataHelper<short>> pHelper = factory->GetMetadataHelper<short>(inMetadataXml);
+      // the bands are 1 based
+      if(redBandName.size() == 0)
+        redBandName = pHelper->GetRedBandName();
+      if(nirBandName.size() == 0)
+        nirBandName = pHelper->GetNirBandName();
+
+      // Load the LAI bands configuration file from laicfgs
+      if(HasValue("laicfgs")) {
+          const std::string &laiCfgsFile = GetParameterString("laicfgs");
+          laiCfgFile = getValueFromMissionsCfgFile(laiCfgsFile, pHelper->GetMissionName(), pHelper->GetInstrumentName());
       }
 
       if (laiCfgFile.length() == 0) {
@@ -149,20 +145,20 @@ private:
       // if we use NDVI or RVI we will need to have the bands for RED and NIR in the list of bands
       // for which we simulate the reflectances. The other applications will also need to handle this
       // Otherwise, the model will be created with the wrong number of bands
-      std::vector<int> rsrColumnsFilterIndexes = laiCfg.rsrColumnFilterIdxs;
+      std::vector<std::string> rsrColumnsFilterBandNames = laiCfg.rsrColumnFilterBandNames;
       if (laiCfg.bUseNdvi || laiCfg.bUseRvi) {
           // if RED band not present in the list, then add it
-          if(std::find(rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end(), redIdx) == rsrColumnsFilterIndexes.end()) {
-              rsrColumnsFilterIndexes.push_back(redIdx);
-              otbAppLogINFO("Added missing RED BAND index: " << redIdx);
+          if(std::find(rsrColumnsFilterBandNames.begin(), rsrColumnsFilterBandNames.end(), redBandName) == rsrColumnsFilterBandNames.end()) {
+              rsrColumnsFilterBandNames.push_back(redBandName);
+              otbAppLogINFO("Added missing RED BAND index: " << redBandName);
           }
           // if NIR band not present in the list, then add it
-          if(std::find(rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end(), nirIdx) == rsrColumnsFilterIndexes.end()) {
-              rsrColumnsFilterIndexes.push_back(nirIdx);
-              otbAppLogINFO("Added missing NIR BAND index: " << nirIdx);
+          if(std::find(rsrColumnsFilterBandNames.begin(), rsrColumnsFilterBandNames.end(), nirBandName) == rsrColumnsFilterBandNames.end()) {
+              rsrColumnsFilterBandNames.push_back(nirBandName);
+              otbAppLogINFO("Added missing NIR BAND index: " << nirBandName);
           }
           // Sort again the array
-          std::sort (rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end());
+          //std::sort (rsrColumnsFilterBandNames.begin(), rsrColumnsFilterBandNames.end());
       }
 
 
@@ -170,13 +166,13 @@ private:
       std::cout << "addndvi : " << laiCfg.bUseNdvi           << std::endl;
       std::cout << "addrvi : " << laiCfg.bUseRvi             << std::endl;
       std::cout << "Bands used : ";
-      for (std::vector<int>::const_iterator i = laiCfg.bandsIdxs.begin(); i != laiCfg.bandsIdxs.end(); ++i) {
-          std::cout << *i << ' ';
+      for (const auto &bandName: laiCfg.bandsNames) {
+          std::cout << bandName << ' ';
       }
       std::cout << std::endl;
       std::cout << "=================================" << std::endl;
 
-      printRsrBands(rsrColumnsFilterIndexes);
+      printRsrBands(rsrColumnsFilterBandNames);
 
 
       try
@@ -241,12 +237,12 @@ private:
           vectRefls.pop_back();
 
           size_t nbFileReflBands = vectRefls.size();
-          const std::vector<int> &bandsIndexes = CheckAndTranslateBandIndexes(rsrColumnsFilterIndexes, vectRefls, laiCfg);
+          const std::vector<int> &bandsIndexes = CheckAndTranslateBandIndexes(pHelper, rsrColumnsFilterBandNames, vectRefls, laiCfg);
 
           // we use all the bands for the sensor
           for(size_t i = 0; i<nbFileReflBands; i++) {
               // check if the current band is configured
-              if(std::find(bandsIndexes.begin(), bandsIndexes.end(), i+1) != bandsIndexes.end()) {
+              if(std::find(bandsIndexes.begin(), bandsIndexes.end(), i) != bandsIndexes.end()) {
                   outline += " ";
                   outline += vectRefls[i];
               }
@@ -254,9 +250,9 @@ private:
 
           if (laiCfg.bUseNdvi || laiCfg.bUseRvi) {
               // add NDVI and RVI values
-              if(redIdx >= 0 && nirIdx >= 0) {
-                  int relRedBandIdx = getBandIndexInRsrVect(rsrColumnsFilterIndexes, redIdx);
-                  int relNirBandIdx = getBandIndexInRsrVect(rsrColumnsFilterIndexes, nirIdx);
+              if(redBandName.size() > 0 && nirBandName.size() > 0) {
+                  int relRedBandIdx = getBandIndexInRsrVect(rsrColumnsFilterBandNames, redBandName);
+                  int relNirBandIdx = getBandIndexInRsrVect(rsrColumnsFilterBandNames, nirBandName);
                   if(relRedBandIdx >=0 && relNirBandIdx >= 0) {
                       float fRedVal = std::stof(vectRefls[relRedBandIdx]);
                       float fNirVal = std::stof(vectRefls[relNirBandIdx]);
@@ -289,55 +285,61 @@ private:
       }
   }
 
-  std::vector<int> CheckAndTranslateBandIndexes(const std::vector<int> &rsrColumnsFilterIndexes,
+  std::vector<int> CheckAndTranslateBandIndexes(const std::unique_ptr<MetadataHelper<short>> &pHelper,
+                                                const std::vector<std::string> &rsrColumnsFilterBandNames,
                                                 const std::vector<std::string> &vectRefls,
                                                 const LAIBandsConfigInfos &laiCfg) {
       size_t nbFileReflBands = vectRefls.size();
       std::vector<int> bandsIndexes;
       // check if a filter on the RSR bands was made or we have all RSR bands
-      if (rsrColumnsFilterIndexes.size() > 0) {
+      if (rsrColumnsFilterBandNames.size() > 0) {
           // validations of the RSR bands
-          if (vectRefls.size() != rsrColumnsFilterIndexes.size()) {
+          if (nbFileReflBands != rsrColumnsFilterBandNames.size()) {
               itkGenericExceptionMacro(<< "Invalid bands number. Different from the number defined in RSR_COLS_FILTER ("
-                                       << vectRefls.size() << " != " << rsrColumnsFilterIndexes.size() << ")");
+                                       << nbFileReflBands << " != " << rsrColumnsFilterBandNames.size() << ")");
           }
           // Translate the bands indexes to the correct values
           // first check that the LAI bands indexes are within the rsr columns indexes
-          for (size_t i = 0; i<laiCfg.bandsIdxs.size(); i++) {
-              int bandIdx = getBandIndexInRsrVect(rsrColumnsFilterIndexes, laiCfg.bandsIdxs[i]);
+          for (size_t i = 0; i<laiCfg.bandsNames.size(); i++) {
+              int bandIdx = getBandIndexInRsrVect(rsrColumnsFilterBandNames, laiCfg.bandsNames[i]);
               if (bandIdx == -1) {
-                  itkGenericExceptionMacro(<< "Incorrect config in LAI config. Band index " << laiCfg.bandsIdxs[i] << " is not in the defined RSR indexes");
+                  itkGenericExceptionMacro(<< "Incorrect config in LAI config. Band index " << laiCfg.bandsNames[i] << " is not in the defined RSR indexes");
               } else {
                   // add the found index in the vector as the translated index of the band but 1 based
-                  bandsIndexes.push_back(bandIdx+1);
+                  bandsIndexes.push_back(bandIdx);
               }
           }
 
       } else {
           // check that the indexes are smaller than the number of bands
-          for (size_t i = 0; i<laiCfg.bandsIdxs.size(); i++) {
-              if((laiCfg.bandsIdxs[i]-1) >= (int)nbFileReflBands) {
-                  itkGenericExceptionMacro(<< "Index in LAI config " << laiCfg.bandsIdxs[i] << " higher than the number of valid reflectance bands " << nbFileReflBands);
+          const std::vector<std::string> &allBands = pHelper->GetAllBandNames();
+          for (const std::string &bandName: laiCfg.bandsNames) {
+              std::ptrdiff_t pos = std::find(allBands.begin(), allBands.end(), bandName) -
+                      allBands.begin();
+              if(pos >= (std::ptrdiff_t)allBands.size()) {
+                  itkGenericExceptionMacro(<< "Band " << bandName << " cannot be found in product band ");
               }
+              if(pos > nbFileReflBands) {
+                  itkGenericExceptionMacro(<< "Number of LAI band names higher than the number of valid reflectance bands " << nbFileReflBands);
+              }
+              bandsIndexes.push_back(pos);
           }
-          bandsIndexes = laiCfg.bandsIdxs;
       }
 
       return bandsIndexes;
   }
 
-  int getBandIndexInRsrVect(const std::vector<int> &rsrColumnsFilterIndexes, int absBandIdx) {
-      std::ptrdiff_t pos = std::find(rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end(), absBandIdx) -
-              rsrColumnsFilterIndexes.begin();
-      if(pos >= (std::ptrdiff_t)rsrColumnsFilterIndexes.size()) {
+  int getBandIndexInRsrVect(const std::vector<std::string> &rsrColumnsFilterNames, std::string bandName) {
+      std::ptrdiff_t pos = std::find(rsrColumnsFilterNames.begin(), rsrColumnsFilterNames.end(), bandName) -
+              rsrColumnsFilterNames.begin();
+      if(pos >= (std::ptrdiff_t)rsrColumnsFilterNames.size()) {
           return -1;
-      } else {
-          // return the found index
-          return pos;
       }
+      // return the found index
+      return pos;
   }
 
-  void printRsrBands(const std::vector<int> &rsrColumnsFilterIndexes) {
+  void printRsrBands(const std::vector<std::string> &rsrColumnsFilterIndexes) {
       std::stringstream ss;
       ss << "RSR bands indexes used:" << std::endl;
       for(size_t i = 0; i< rsrColumnsFilterIndexes.size(); ++i) {

@@ -509,6 +509,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confirm'] == 'Confirm Delete Site') {
     $shortname      = $_REQUEST ['delete_site_short_name'];
 
+    $arr_result = array();    
     foreach($_POST as $key => $value) {
         if (strpos($key, 'delete_chk') === 0) {
             // value starts with delete_chk

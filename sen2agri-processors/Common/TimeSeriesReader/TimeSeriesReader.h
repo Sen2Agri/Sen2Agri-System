@@ -34,9 +34,6 @@
 //#include "itkIdentityTransform.h"
 #include "itkScaleTransform.h"
 
-#include "../../ProductReaders/MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../ProductReaders/MACCSMetadata/include/SPOT4MetadataReader.hpp"
-
 // Filters
 #include "itkVectorIndexSelectionCastImageFilter.h"
 
@@ -47,6 +44,7 @@
 #include <map>
 
 #include <boost/filesystem.hpp>
+#include "MetadataHelper.h"
 
 typedef otb::VectorImage<float, 2>                                 ImageType;
 typedef otb::Wrapper::UInt8VectorImageType                         MaskType;
@@ -111,9 +109,6 @@ typedef otb::ObjectList<ConcatenateInt16ImagesFilterType>                       
 typedef itk::CastImageFilter<otb::Wrapper::Int16ImageType, otb::Wrapper::FloatImageType>    CastInt16FloatFilterType;
 typedef otb::ObjectList<CastInt16FloatFilterType>                                           CastInt16FloatFilterListType;
 
-typedef itk::MACCSMetadataReader                            MACCSMetadataReaderType;
-typedef itk::SPOT4MetadataReader                            SPOT4MetadataReaderType;
-
 #define LANDSAT    "LANDSAT"
 #define SENTINEL   "SENTINEL"
 #define SPOT       "SPOT"
@@ -123,11 +118,6 @@ typedef itk::SPOT4MetadataReader                            SPOT4MetadataReaderT
 #define MASK_TYPE_DIV   2
 
 int getDaysFromEpoch(const std::string &date);
-
-struct SourceImageMetadata {
-    MACCSFileMetadata  msccsFileMetadata;
-    SPOT4Metadata      spot4Metadata;
-};
 
 // Data related to the size and location of each tile
 struct TileData {
@@ -159,7 +149,7 @@ struct ImageDescriptor {
     // the format of the metadata
     unsigned char type;
     // the metadata
-    SourceImageMetadata metadata;
+    //SourceImageMetadata metadata;
 };
 
 //  Software Guide : EndCodeSnippet
@@ -191,6 +181,7 @@ protected:
     std::string m_mission;
     float m_pixSize;
     std::vector<ImageDescriptor> m_Descriptors;
+    std::vector<std::unique_ptr<MetadataHelper<float, uint8_t>>> m_ProductReaders;
     std::map<std::string, int> m_SamplingRates;
     std::map<std::string, std::vector<int> > m_SensorOutDays;
 
@@ -202,8 +193,8 @@ protected:
 
     CastInt16FloatFilterListType::Pointer        m_CastInt16FloatFilterFilst;
 
-    SpotMaskFilterListType::Pointer                   m_SpotMaskFilters;
-    SentinelMaskFilterListType::Pointer               m_SentinelMaskFilters;
+//    SpotMaskFilterListType::Pointer                   m_SpotMaskFilters;
+//    SentinelMaskFilterListType::Pointer               m_SentinelMaskFilters;
     ExtractChannelListType::Pointer                   m_ChannelExtractors;
 
     FloatImageListType::Pointer                       m_FloatImageList;
@@ -221,47 +212,15 @@ protected:
     // Sort the descriptors based on the aquisition date
     static bool SortUnmergedMetadata(const ImageDescriptor& o1, const ImageDescriptor& o2);
 
-    // Process a SPOT4 metadata structure and extract the needed bands and masks.
-    void ProcessSpot4Metadata(const SPOT4Metadata& meta, const std::string& filename, ImageDescriptor& descriptor, const TileData& td);
-
-    // Process a LANDSAT8 metadata structure and extract the needed bands and masks.
-    void ProcessLandsat8Metadata(const MACCSFileMetadata& meta, const std::string& filename, ImageDescriptor& descriptor, const TileData& td);
-
-    // Process a SENTINEL2 metadata structure and extract the needed bands and masks.
-    void ProcessSentinel2Metadata(const MACCSFileMetadata& meta, const std::string& filename, ImageDescriptor& descriptor, const TileData& td);
-
-    // Get the id of the band. Return -1 if band not found.
-    int getBandIndex(const std::vector<CommonBand>& bands, const std::string& name);
-
-    UInt8ImageReaderType::Pointer getUInt8ImageReader(const std::string& filePath);
-
-    Int16ImageReaderType::Pointer getInt16ImageReader(const std::string& filePath);
-    UInt16ImageReaderType::Pointer getUInt16ImageReader(const std::string& filePath);
-    UInt8VectorImageReaderType::Pointer getUInt8VectorImageReader(const std::string& filePath);
-    FloatVectorImageReaderType::Pointer getFloatVectorImageReader(const std::string& filePath);
-
-    // Return the path to a file for which the name end in the ending
-    std::string getMACCSRasterFileName(const boost::filesystem::path &rootFolder, const std::vector<CommonFileInformation>& imageFiles, const std::string& ending);
-
-    // Return the path to a file for which the name end in the ending
-    std::string getMACCSMaskFileName(const boost::filesystem::path &rootFolder, const std::vector<CommonAnnexInformation>& maskFiles, const std::string& ending);
-
-    virtual void getSpotBands(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor);
-    otb::Wrapper::UInt8ImageType::Pointer getSpotMask(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td);
-    virtual void getLandsatBands(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor);
-    otb::Wrapper::UInt8ImageType::Pointer getLandsatMask(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td);
-
-    virtual void getSentinelBands(const MACCSFileMetadata &meta,
-                                  const boost::filesystem::path &rootFolder,
-                                  const TileData &td,
-                                  ImageDescriptor &descriptor);
-    virtual void getSentinelRedEdgeBands(const MACCSFileMetadata &meta,
-                                         const TileData &td,
-                                         ImageDescriptor &descriptor,
-                                         Int16ImageReaderType::Pointer reader1,
-                                         Int16ImageReaderType::Pointer reader2);
-
-    otb::Wrapper::UInt8ImageType::Pointer getSentinelMask(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td);
+    void ProcessMetadata(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper, const std::string& filename,
+                         ImageDescriptor& descriptor, const TileData& td);
+    void GetProductBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper, const TileData& td,
+                         ImageDescriptor &descriptor);
+    otb::Wrapper::UInt8ImageType::Pointer GetProductMask(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper,
+                                                         const TileData& td);
+    virtual void getRedEdgeBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>&,
+                                const TileData &td,
+                                ImageDescriptor &descriptor);
 
     otb::ObjectList<itk::ProcessObject>::Pointer m_Filters = otb::ObjectList<itk::ProcessObject>::New();
 
@@ -480,9 +439,9 @@ protected:
     }
 
     // build the date for spot products as YYYYMMDD
-    inline std::string formatSPOT4Date(const std::string& date) {
-        return date.substr(0,4) + date.substr(5,2) + date.substr(8,2);
-    }
+//    inline std::string formatSPOT4Date(const std::string& date) {
+//        return date.substr(0,4) + date.substr(5,2) + date.substr(8,2);
+//    }
 
     virtual int getBandCount(const std::string &sensor) {
         if (sensor == "SENTINEL" || sensor == "SPOT" || sensor == "LANDSAT") {

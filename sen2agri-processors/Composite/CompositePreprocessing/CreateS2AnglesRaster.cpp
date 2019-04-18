@@ -29,18 +29,18 @@ void CreateS2AnglesRaster::DoInit( int res, std::string &xml)
 CreateS2AnglesRaster::OutputImageType::Pointer CreateS2AnglesRaster::DoExecute()
 {
     auto factory = MetadataHelperFactory::New();
-    auto pHelper = factory->GetMetadataHelper(m_inXml, m_nOutRes);
+    std::unique_ptr<MetadataHelper<short>> pHelper = factory->GetMetadataHelper<short>(m_inXml);
 
     int nGridSize = pHelper->GetDetailedAnglesGridSize();
     if(nGridSize == 0) {
         itkExceptionMacro("Something is wrong. Grid size for angles is said to be 0!");
     }
-    std::string fileName = pHelper->GetImageFileName();
-    ImageReaderType::Pointer image = ImageReaderType::New();
-    image->SetFileName(fileName);
-    image->UpdateOutputInformation();
-    auto sz = image->GetOutput()->GetLargestPossibleRegion().GetSize();
-    auto spacing = image->GetOutput()->GetSpacing();
+    const std::vector<std::string> &resBandNames = pHelper->GetBandNamesForResolution(m_nOutRes);
+    std::vector<int> resRelBandsIdxs;
+    MetadataHelper<short>::VectorImageType::Pointer img = pHelper->GetImage(resBandNames, &resRelBandsIdxs, m_nOutRes);
+    img->UpdateOutputInformation();
+    auto sz = img->GetLargestPossibleRegion().GetSize();
+    auto spacing = img->GetSpacing();
 
     int width = sz[0];
     int height = sz[1];
@@ -63,9 +63,9 @@ CreateS2AnglesRaster::OutputImageType::Pointer CreateS2AnglesRaster::DoExecute()
     region.SetSize(size);
     region.SetIndex(start);
 
-    auto viewingAngles = pHelper->GetDetailedViewingAngles();
+    auto viewingAngles = pHelper->GetDetailedViewingAngles(m_nOutRes);
     auto solarAngles = pHelper->GetDetailedSolarAngles();
-    int nBandsForRes = pHelper->GetBandsNoForCurrentResolution();
+    int nBandsForRes = pHelper->GetBandNamesForResolution(m_nOutRes).size();
 
     if((viewingAngles.size() == 0) || (viewingAngles.size() != (unsigned int)nBandsForRes) ||
             (solarAngles.Zenith.Values.size() == 0) || (solarAngles.Azimuth.Values.size() == 0)) {

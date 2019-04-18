@@ -2,7 +2,7 @@
 class ConfigParams {
     static $DB_NAME = 'sen2agri';
     static $CONN_STRING;
-    static $SERVICES_URL = 'http://localhost:8081/dashboard';
+    static $SERVICES_URL = 'http://localhost:8082/dashboard';
     static $REST_SERVICES_URL = 'http://localhost:8080';
     static $SITE_ID;
     static $USER_NAME;

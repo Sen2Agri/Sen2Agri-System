@@ -23,14 +23,14 @@
 class BandConfig {
 
 public:
-    int identifier;
+    std::string bandName;
     int res;
     bool bIsMaster;
 };
 
 class BandMappingConfig {
 public:
-    void AddBandConfig(bool bMaster, int bandIdx, int res);
+    void AddBandConfig(bool bMaster, const std::string &bandName, int res);
     BandConfig GetMasterBand();
     BandConfig GetBand(int idx);
     unsigned int GetBandsNo();
@@ -52,14 +52,14 @@ public:
     bool IsConfiguredMission(const std::string &missionName);
     bool IsMasterMission(const std::string &missionName) const;
 
-    std::vector<int> GetAbsoluteBandIndexes(int res, const std::string &missionName, bool bIgnoreMissing = true);
+    std::vector<std::string> GetBandNames(int res, const std::string &missionName, bool bIgnoreMissing = true);
     std::vector<int> GetMasterBandsPresence(int nRes, int &outNbValidBands);
     /* This function does not returns the indexes from the file but the valid indexes in
      * sequencial ascending order and -1 if missing band */
     std::vector<int> GetBandsPresence(int nRes, const std::string &missionName, int &outNbValidBands);
-    int GetMasterBandIndex(const std::string &missionName, int nRes, int nSensorBandIdx);
-    int GetIndexInPresenceArray(int nRes, const std::string &missionName, int absIdx);
-    int GetIndexInMasterPresenceArray(int nRes, int absIdx);
+    std::string GetMasterBandName(const std::string &missionName, int nRes, const std::string &sensorBandName);
+    int GetIndexInPresenceArray(int nRes, const std::string &missionName, const std::string &bandName);
+    int GetIndexInMasterPresenceArray(int nRes, const std::string &bandName);
 
 private:
     std::string GetMasterMissionName();

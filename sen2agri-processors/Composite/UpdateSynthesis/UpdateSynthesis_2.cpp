@@ -221,17 +221,17 @@ private:
         }
 
         auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml, resolution);
-        std::string missionName = pHelper->GetMissionName();
+        m_pHelper = factory->GetMetadataHelper<float>(inXml);
+        const std::string &missionName = m_pHelper->GetMissionName();
         int nExtractedBandsNo = 0;
         // create an array of bands presences with the same size as the master band size
         std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, missionName, nExtractedBandsNo);
 
         // Using these indexes as they are extracted is not right
         // These indexes are from the current product and they should be translated to bands presence array indexes
-        int nBlueBandIdx = pHelper->GetAbsBlueBandIndex();
+        const std::string &blueBandName = m_pHelper->GetBlueBandName();
         // here we compute the relative indexes according to the presence array for the red and blue band
-        int nRelBlueBandIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, missionName, nBlueBandIdx);
+        int nRelBlueBandIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, missionName, blueBandName);
         //std::string masterMission = bandsMappingCfg.GetMasterMissionName();
         //std::vector<int> vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(resolution, missionName);
         // Here we have a raster that already has the extracted bands configured in the file.
@@ -239,7 +239,6 @@ private:
         InternalBandImageType::Pointer l2aBandImg;
         int nAddedBands = 0;
         for(unsigned int i = 0; i<bandsPresenceVect.size(); i++) {
-            //int nRelBandIdx = pHelper->GetRelativeBandIndex(vectIdxs[i]);
             int nRelBandIdx = bandsPresenceVect[i];
             if(nRelBandIdx >= 0) {
                 l2aBandImg = m_ResampledBandsExtractor.ExtractImgResampledBand(m_L2AIn, nRelBandIdx+1,
@@ -256,17 +255,11 @@ private:
         // NOTE: this happens only for Sentinel2
         bool bHasAppendedPrevL2ABlueBand = false;
         if(nRelBlueBandIdx == -1) {
-            auto pDefHelper = factory->GetMetadataHelper(inXml, 10);
-            nBlueBandIdx = pDefHelper->GetAbsBlueBandIndex();
-            // here we compute the relative indexes according to the presence array for the red and blue band
-            nRelBlueBandIdx = bandsMappingCfg.GetIndexInPresenceArray(10, missionName, nBlueBandIdx);
-
-            ImageReaderType::Pointer inputImgReader = getReader(pDefHelper->GetImageFileName());
-            InputImageType::Pointer L2A10MResImg = inputImgReader->GetOutput();
+            InputImageType::Pointer L2A10MResImg =  m_pHelper->GetImage({blueBandName}, NULL, 10);
             L2A10MResImg->UpdateOutputInformation();
 
             // extract the band without resampling it
-            l2aBandImg = m_ResampledBandsExtractor.ExtractImgResampledBand(L2A10MResImg, nRelBlueBandIdx+1,
+            l2aBandImg = m_ResampledBandsExtractor.ExtractImgResampledBand(L2A10MResImg, 1,
                                                      Interpolator_Linear);
             l2aBandImg->UpdateOutputInformation();
             // check if we need to reproject this image if it is the case
@@ -315,9 +308,9 @@ private:
 
         m_Concat->SetInput(m_ImageList);
 
-        int productDate = pHelper->GetAcquisitionDateAsDoy();
+        int productDate = m_pHelper->GetAcquisitionDateAsDoy();
         m_Functor.Initialize(bandsPresenceVect, nExtractedBandsNo, nRelBlueBandIdx, bHasAppendedPrevL2ABlueBand, l3aExist,
-                             productDate, pHelper->GetReflectanceQuantificationValue());
+                             productDate, m_pHelper->GetReflectanceQuantificationValue());
         m_UpdateSynthesisFunctor = FunctorFilterType::New();
         m_UpdateSynthesisFunctor->SetFunctor(m_Functor);
         m_UpdateSynthesisFunctor->SetInput(m_Concat->GetOutput());
@@ -427,6 +420,8 @@ private:
 
     GenericRSImageResampler<InternalBandImageType, InternalBandImageType>  m_GenericRSImageResampler;
     ImageResampler<InternalBandImageType, InternalBandImageType>  m_ImageResampler;
+
+    std::unique_ptr<MetadataHelper<float>> m_pHelper;
 /*
     VectorImageToImageListType::Pointer       m_imgSplit;
     ImageListToVectorImageFilterType::Pointer m_allConcat;

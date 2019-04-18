@@ -120,9 +120,9 @@ class BVLaiNewProcessor : public Application
     typedef belcamApplyTrainedNeuralNetworkFilter<ImageType, OutImageType> BelcamNeuronFilter;
     typedef Int16VectorImageType                            AnglesImageType;
 
-    typedef itk::BinaryFunctorImageFilter<OutImageType,MetadataHelper::SingleBandShortImageType,OutImageType,
+    typedef itk::BinaryFunctorImageFilter<OutImageType,MetadataHelper<short>::SingleBandImageType,OutImageType,
                     MaskingFunctor<
-                        OutImageType::PixelType, MetadataHelper::SingleBandShortImageType::PixelType,
+                        OutImageType::PixelType, MetadataHelper<short>::SingleBandImageType::PixelType,
                         OutImageType::PixelType> > MaskedOutputFilterType;
 
 public:
@@ -202,15 +202,9 @@ private:
         }
 
         auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+        m_pHelper = factory->GetMetadataHelper<short>(inMetadataXml);
 
-        // Read the spacing for the default image
-        m_defImgReader = ReaderType::New();
-        m_defImgReader->SetFileName(pHelper->GetImageFileName());
-        m_defImgReader->UpdateOutputInformation();
-        int curRes = m_defImgReader->GetOutput()->GetSpacing()[0];
-
-        int nOutRes = curRes;
+        int nOutRes = m_pHelper->GetProductResolutions()[0];
         if(HasValue("outres")) {
             nOutRes = GetParameterInt("outres");
             if(nOutRes != 10 && nOutRes != 20) {
@@ -219,33 +213,32 @@ private:
         }
 
         // load the LAI config file
-        loadLaiConfiguration(pHelper);
+        loadLaiConfiguration(m_pHelper);
 
         // Extract the needed bands
-        handleFeaturesCreation(pHelper, nOutRes);
+        handleFeaturesCreation(m_pHelper, nOutRes);
 
         if (HasValue("fts")) {
             SetParameterOutputImage("fts", m_ftsConcat->GetOutput());
         }
 
         if (HasValue("outlai")) {
-            ProduceOutput(pHelper, LAI, nOutRes);
+            ProduceOutput(m_pHelper, LAI);
         }
         if (HasValue("outfapar")) {
-            ProduceOutput(pHelper, FAPAR, nOutRes);
+            ProduceOutput(m_pHelper, FAPAR);
         }
         if (HasValue("outfcover")) {
-            ProduceOutput(pHelper, FCOVER, nOutRes);
+            ProduceOutput(m_pHelper, FCOVER);
         }
     }
 
-    void ProduceOutput(const std::unique_ptr<MetadataHelper> &pHelper, IndexType indexType, int nOutRes) {
+    void ProduceOutput(const std::unique_ptr<MetadataHelper<short>> &pHelper, IndexType indexType) {
         std::string modelTextFile;
         std::string modelParamName;
         std::string outparamName;
         std::string laiCfgEntry;
         BelcamNeuronFilter::Pointer filter;
-        //MaskedOutputFilterType::Pointer maskingFunctor;
         switch (indexType) {
             case LAI:
                 modelParamName = "laimodel";
@@ -253,9 +246,6 @@ private:
                 laiCfgEntry = m_laiCfg.laiModelFilePath;
                 m_laiNeuronFilter = BelcamNeuronFilter::New();
                 filter = m_laiNeuronFilter;
-//                m_LaiMaskedOutputFunctor = MaskedOutputFilterType::New();
-//                m_LaiMaskedOutputFunctor->GetFunctor()->SetValidationLimits(0.0, 8.0, 0.2);
-//                maskingFunctor = m_LaiMaskedOutputFunctor;
                 break;
             case FAPAR:
                 modelParamName = "faparmodel";
@@ -263,9 +253,6 @@ private:
                 laiCfgEntry = m_laiCfg.faparModelFilePath;
                 m_faparNeuronFilter = BelcamNeuronFilter::New();
                 filter = m_faparNeuronFilter;
-//                m_FaparMaskedOutputFunctor = MaskedOutputFilterType::New();
-//                m_FaparMaskedOutputFunctor->GetFunctor()->SetValidationLimits(0.0, 0.94, 0.1);
-//                maskingFunctor = m_FaparMaskedOutputFunctor;
                 break;
             case FCOVER:
                 modelParamName = "fcovermodel";
@@ -273,9 +260,6 @@ private:
                 laiCfgEntry = m_laiCfg.fcoverModelFilePath;
                 m_fcoverNeuronFilter = BelcamNeuronFilter::New();
                 filter = m_fcoverNeuronFilter;
-//                m_FcoverMaskedOutputFunctor = MaskedOutputFilterType::New();
-//                m_FcoverMaskedOutputFunctor->GetFunctor()->SetValidationLimits(0.0, 1.0, 0.1);
-//                maskingFunctor = m_FcoverMaskedOutputFunctor;
                 break;
         }
         if (HasValue(modelParamName)) {
@@ -291,14 +275,8 @@ private:
         OutImageType::Pointer modelOutput = ExecuteModel(m_ftsConcat->GetOutput(), pHelper->GetReflectanceQuantificationValue(),
                                                          filter, modelTextFile);
 
-        // The masking is not made anymore here but in a distinct application that also extracts the domain
-        // quality flags
-        // Mask the output according to the flags
-        //OutImageType::Pointer maskedImg = MaskModelOutput(modelOutput, maskingFunctor, pHelper, nOutRes);
-
         const std::string &outImgFileName = GetParameterAsString(outparamName);
         // write the output
-        //WriteOutput(maskedImg, outImgFileName);
         WriteOutput(modelOutput, outImgFileName);
     }
 
@@ -315,8 +293,8 @@ private:
         return resampler->GetOutput();
     }
 
-    MetadataHelper::SingleBandShortImageType::Pointer getResampledImage2(int nCurRes, int nDesiredRes,
-                                                 MetadataHelper::SingleBandShortImageType::Pointer inImg) {
+    MetadataHelper<short>::SingleBandImageType::Pointer getResampledImage2(int nCurRes, int nDesiredRes,
+                                                 MetadataHelper<short>::SingleBandImageType::Pointer inImg) {
         if(nCurRes == nDesiredRes)
             return inImg;
         float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
@@ -328,10 +306,11 @@ private:
     /**
      * Extracts the (sub)set of resolutions for the bands configured in the LAI configuration file
      */
-    std::vector<int> getResolutionsForConfiguredBands(const LAIBandsConfigInfos &infos, const std::unique_ptr<MetadataHelper> &pHelper) {
+    std::vector<int> getResolutionsForConfiguredBands(const LAIBandsConfigInfos &infos,
+                                                      const std::unique_ptr<MetadataHelper<short>> &pHelper) {
         std::vector<int> retRes;
-        for(int bandIdx: infos.bandsIdxs) {
-            int res = pHelper->GetResolutionForAbsoluteBandIndex(bandIdx);
+        for(const std::string &bandName: infos.bandsNames) {
+            int res = pHelper->GetResolutionForBand(bandName);
             if(std::find(retRes.begin(), retRes.end(), res) == retRes.end()) {
                 retRes.push_back(res);
             }
@@ -343,31 +322,11 @@ private:
      * Handles the creation of the features output (if configured) by adding the configured
      * bands and the NDVI and RVI if configured in LAI bands configuration file
      */
-    void handleFeaturesCreation(const std::unique_ptr<MetadataHelper> &pHelper, int nOutRes) {
-        std::vector<int> resolutionsVect = getResolutionsForConfiguredBands(m_laiCfg, pHelper);
-        for (int cfgRes: resolutionsVect) {
-            createInputImgSplitForResolution(cfgRes);
-        }
-
+    void handleFeaturesCreation(const std::unique_ptr<MetadataHelper<short>> &pHelper, int nOutRes) {
         allList = ImageListType::New();
-        // Iterate all configured bands taking into account the raster for the resolution the band belongs
-        for (int bandIdx: m_laiCfg.bandsIdxs) {
-            int curBandRes = pHelper->GetResolutionForAbsoluteBandIndex(bandIdx);
-            // Get the helper for the current resolution
-            const auto &pResHelper = m_metadataHelpersMap.at(curBandRes);
-            // get the relative band index in the product raster for the current band resolution
-            // The relative band index is 1 based value so we must extract the 0 based one
-            int relBandIdx = pResHelper->GetRelativeBandIndex(bandIdx) - 1;
-            VectorImageToImageListType::Pointer imgInputSplit = m_imgInputSplittersMap.at(curBandRes);
-            std::cout << "Adding band with id: " << bandIdx << ", res: " <<  curBandRes
-                      << ", relative band idx: " << relBandIdx  << std::endl;
-            allList->PushBack(getResampledImage(curBandRes, nOutRes, imgInputSplit->GetOutput()->GetNthElement(relBandIdx)));
-        }
-
+        pHelper->GetImageList(m_laiCfg.bandsNames, allList, nOutRes);
         AnglesImageType::Pointer anglesImg = GetParameterInt16VectorImage("angles");
 
-//        AnglesImageType::Pointer anglesImg = pHelper->HasDetailedAngles() ?
-//                    createAnglesBands(pHelper) : createMeanAnglesBands(pHelper);
         anglesImg->UpdateOutputInformation();
         m_anglesSplit = VectorImageToImageListType::New();
         m_anglesSplit->SetInput(anglesImg);
@@ -397,34 +356,6 @@ private:
         return neuronFilter->GetOutput();
     }
 
-    void createInputImgSplitForResolution(int res) {
-        std::map<int,VectorImageToImageListType::Pointer>::iterator it;
-        it = m_imgInputSplittersMap.find(res);
-        if (it == m_imgInputSplittersMap.end()) {
-            // get the XML parameter
-            const std::string &inMetadataXml = GetParameterString("xml");
-            // Create a new product helper for the current resolution
-            auto factory = MetadataHelperFactory::New();
-            // create the helper directly into the map
-            m_metadataHelpersMap[res] = factory->GetMetadataHelper(inMetadataXml, res);
-            const auto &pHelper = m_metadataHelpersMap[res];
-
-            // create the reader for the image at this resolution
-            ReaderType::Pointer imgReader = ReaderType::New();
-            imgReader->SetFileName(pHelper->GetImageFileName());
-            imgReader->UpdateOutputInformation();
-
-            VectorImageToImageListType::Pointer imgInputSplit = VectorImageToImageListType::New();
-            imgInputSplit->SetInput(imgReader->GetOutput());
-            imgInputSplit->UpdateOutputInformation();
-            imgInputSplit->GetOutput()->UpdateOutputInformation();
-
-            // add the new translator functor and the immage splitter into their maps
-            m_imgInputReadersMap[res] = imgReader;
-            m_imgInputSplittersMap[res] = imgInputSplit;
-        }
-    }
-
     void WriteOutput(OutImageType::Pointer inImg, const std::string &outImg) {
         inImg->UpdateOutputInformation();
 
@@ -443,8 +374,8 @@ private:
     }
 
     OutImageType::Pointer MaskModelOutput(OutImageType::Pointer img, MaskedOutputFilterType::Pointer maskingFunctor,
-                                          const std::unique_ptr<MetadataHelper> &pHelper, int nOutRes) {
-        MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
+                                          const std::unique_ptr<MetadataHelper<short>> &pHelper, int nOutRes) {
+        MetadataHelper<short>::SingleBandMasksImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
 
         imgMsk->UpdateOutputInformation();
 
@@ -453,7 +384,7 @@ private:
         return maskingFunctor->GetOutput();
     }
 
-    void loadLaiConfiguration(const std::unique_ptr<MetadataHelper> &pHelper) {
+    void loadLaiConfiguration(const std::unique_ptr<MetadataHelper<short>> &pHelper) {
         // Load the LAI bands configuration file
         bool bHasLaiCfgs = HasValue("laicfgs");
         std::string laiCfgFile;
@@ -473,292 +404,29 @@ private:
         std::cout << "addndvi : " << m_laiCfg.bUseNdvi           << std::endl;
         std::cout << "addrvi : " << m_laiCfg.bUseRvi             << std::endl;
         std::cout << "Bands used : ";
-        for (std::vector<int>::const_iterator i = m_laiCfg.bandsIdxs.begin(); i != m_laiCfg.bandsIdxs.end(); ++i) {
+        for (std::vector<std::string>::const_iterator i = m_laiCfg.bandsNames.begin(); i != m_laiCfg.bandsNames.end(); ++i) {
             std::cout << *i << ' ';
         }
         std::cout << std::endl;
         std::cout << "=================================" << std::endl;
     }
 
-/*
-    THE CODE BELOW WAS MOVED TO otbCreateAnglesRaster
-    AnglesImageType::Pointer createMeanAnglesBands(const std::unique_ptr<MetadataHelper> &pHelper) {
-        auto sz = m_defImgReader->GetOutput()->GetLargestPossibleRegion().GetSize();
-        auto spacing = m_defImgReader->GetOutput()->GetSpacing();
-        double quantifValue = pHelper->GetReflectanceQuantificationValue();
-        int width = sz[0];
-        int height = sz[1];
-
-        m_AnglesRaster = AnglesImageType::New();
-
-        AnglesImageType::IndexType start;
-        start[0] =   0;  // first index on X
-        start[1] =   0;  // first index on Y
-
-        AnglesImageType::SizeType size;
-        size[0]  = ANGLES_GRID_SIZE;  // size along X
-        size[1]  = ANGLES_GRID_SIZE;  // size along Y
-
-        AnglesImageType::RegionType region;
-        region.SetSize(size);
-        region.SetIndex(start);
-
-        m_AnglesRaster->SetRegions(region);
-        m_AnglesRaster->SetNumberOfComponentsPerPixel(3);
-
-        AnglesImageType::SpacingType anglesRasterSpacing;
-        anglesRasterSpacing[0] = (((float)width) * spacing[0]) / ANGLES_GRID_SIZE; // spacing along X
-        anglesRasterSpacing[1] = (((float)height) * spacing[1]) / ANGLES_GRID_SIZE; // spacing along Y
-        m_AnglesRaster->SetSpacing(anglesRasterSpacing);
-
-        m_AnglesRaster->Allocate();
-        double cosSensorZenith = round(cos(pHelper->GetSensorMeanAngles().zenith * M_PI / 180) * quantifValue);
-        double cosSunZenith = round(cos(pHelper->GetSolarMeanAngles().zenith * M_PI / 180) * quantifValue);
-        double cosRelAzimuth = round(cos(pHelper->GetRelativeAzimuthAngle() * M_PI / 180) * quantifValue);
-
-        for(unsigned int i = 0; i < ANGLES_GRID_SIZE; i++) {
-            for(unsigned int j = 0; j < ANGLES_GRID_SIZE; j++) {
-                itk::VariableLengthVector<float> vct(3);
-                vct[0] = cosSensorZenith;
-                vct[1] = cosSunZenith;
-                vct[2] = cosRelAzimuth;
-
-                AnglesImageType::IndexType idx;
-                idx[0] = j;
-                idx[1] = i;
-                m_AnglesRaster->SetPixel(idx, vct);
-            }
-        }
-        m_AnglesRaster->UpdateOutputInformation();
-        AnglesImageType::Pointer retImg = m_AnglesResampler.getResampler(m_AnglesRaster, width, height)->GetOutput();
-        retImg->UpdateOutputInformation();
-
-        return retImg;
-    }
-
-    AnglesImageType::Pointer createAnglesBands(const std::unique_ptr<MetadataHelper> &pHelper) {
-        auto sz = m_defImgReader->GetOutput()->GetLargestPossibleRegion().GetSize();
-        auto spacing = m_defImgReader->GetOutput()->GetSpacing();
-        //double quantifValue = pHelper->GetReflectanceQuantificationValue();
-        int width = sz[0];
-        int height = sz[1];
-
-        m_AnglesRaster = AnglesImageType::New();
-
-        AnglesImageType::IndexType start;
-        start[0] =   0;  // first index on X
-        start[1] =   0;  // first index on Y
-
-        AnglesImageType::SizeType size;
-        size[0]  = ANGLES_GRID_SIZE;  // size along X
-        size[1]  = ANGLES_GRID_SIZE;  // size along Y
-
-        AnglesImageType::RegionType region;
-        region.SetSize(size);
-        region.SetIndex(start);
-
-        m_AnglesRaster->SetRegions(region);
-        m_AnglesRaster->SetNumberOfComponentsPerPixel(3);
-
-        AnglesImageType::SpacingType anglesRasterSpacing;
-        anglesRasterSpacing[0] = (((float)width) * spacing[0]) / ANGLES_GRID_SIZE; // spacing along X
-        anglesRasterSpacing[1] = (((float)height) * spacing[1]) / ANGLES_GRID_SIZE; // spacing along Y
-        m_AnglesRaster->SetSpacing(anglesRasterSpacing);
-
-        m_AnglesRaster->Allocate();
-        const MetadataHelperAngles &solarAngles = pHelper->GetDetailedSolarAngles();
-        const std::vector<MetadataHelperViewingAnglesGrid> &viewingAngles = pHelper->GetAllDetectorsDetailedViewingAngles();
-        const std::vector<std::vector<double>> &sensorZenithMeanMatrix = getMeanViewingAngles(viewingAngles, true);
-        const std::vector<std::vector<double>> &sensorAzimuthMeanMatrix = getMeanViewingAngles(viewingAngles, false);
-
-        const std::vector<std::vector<double>> &sensorZenithCosMatrix = computeCosValues(sensorZenithMeanMatrix);
-        const std::vector<std::vector<double>> &sunZenithCosMatrix = computeCosValues(solarAngles.Zenith.Values);
-        const std::vector<std::vector<double>> &relAzimuthMatrix = computeRelativeAzimuth(solarAngles.Azimuth.Values, sensorAzimuthMeanMatrix);
-        for(unsigned int i = 0; i < ANGLES_GRID_SIZE; i++) {
-            const std::vector<double> &curSensorZenithLine = sensorZenithCosMatrix[i];
-            const std::vector<double> &curSunZenithCosLine = sunZenithCosMatrix[i];
-            const std::vector<double> &curRelAzimuthLine = relAzimuthMatrix[i];
-            for(unsigned int j = 0; j < ANGLES_GRID_SIZE; j++) {
-                itk::VariableLengthVector<float> vct(3);
-                vct[0] = curSensorZenithLine[j];
-                vct[1] = curSunZenithCosLine[j];
-                vct[2] = curRelAzimuthLine[j];
-
-                AnglesImageType::IndexType idx;
-                idx[0] = j;
-                idx[1] = i;
-                m_AnglesRaster->SetPixel(idx, vct);
-            }
-        }
-        m_AnglesRaster->UpdateOutputInformation();
-        AnglesImageType::Pointer retImg = m_AnglesResampler.getResampler(m_AnglesRaster, width, height)->GetOutput();
-        retImg->UpdateOutputInformation();
-
-        return retImg;
-    }
-
-
-    std::vector<std::vector<double>> getMeanViewingAngles(const std::vector<MetadataHelperViewingAnglesGrid> &viewingAngles,
-                                                          bool useZenith) {
-        std::vector<std::vector<double>> sumsMatrix;
-        std::vector<std::vector<int>> cntNotNanMatrix;
-        for (const MetadataHelperViewingAnglesGrid &grid : viewingAngles) {
-            const MetadataHelperAngleList &anglesList = useZenith ? grid.Angles.Zenith : grid.Angles.Azimuth;
-            for (size_t i = 0; i<anglesList.Values.size(); i++) {
-                const std::vector<double> &valuesLine = anglesList.Values[i];
-                if (sumsMatrix.size() == i) {
-                    expandMatrices(valuesLine, sumsMatrix, cntNotNanMatrix);
-                } else {
-                    updateMatrices(valuesLine, i, sumsMatrix, cntNotNanMatrix);
-                }
-            }
-        }
-        return getMatrixMeanValues(sumsMatrix, cntNotNanMatrix);
-    }
-
-    void expandMatrices(const std::vector<double> &valuesLine, std::vector<std::vector<double>> &sumsMatrix,
-                        std::vector<std::vector<int>> &cntNotNanMatrix) {
-        std::vector<double> sumsVect;
-        std::vector<int> cntNotNanVect;
-        for (size_t i = 0; i<valuesLine.size(); i++) {
-            if (std::isnan(valuesLine[i])) {
-                sumsVect.push_back(0.0);
-                cntNotNanVect.push_back(0);
-            } else {
-                sumsVect.push_back(valuesLine[i]);
-                cntNotNanVect.push_back(1);
-            }
-        }
-        sumsMatrix.push_back(sumsVect);
-        cntNotNanMatrix.push_back(cntNotNanVect);
-    }
-
-    void updateMatrices(const std::vector<double> &valuesLine, int lineIdxInMatrix, std::vector<std::vector<double>> &sumsMatrix,
-                        std::vector<std::vector<int>> &cntNotNanMatrix) {
-        std::vector<double> &sumsVect = sumsMatrix[lineIdxInMatrix];
-        std::vector<int> &cntNotNanVect = cntNotNanMatrix[lineIdxInMatrix];
-
-        // Normally, the size of the values line and the sums and notNan vectors are the same
-        // but if they are not, then expand the sums vector and the
-        while (sumsVect.size() < valuesLine.size()) {
-            sumsVect.push_back(0.0);
-            cntNotNanVect.push_back(0);
-        }
-        // now update the lines
-        for (size_t i = 0; i<valuesLine.size(); i++) {
-            if (!std::isnan(valuesLine[i])) {
-                sumsVect[i] += valuesLine[i];
-                cntNotNanVect[i] += 1;
-            }
-        }
-    }
-
-    std::vector<std::vector<double>> getMatrixMeanValues(const std::vector<std::vector<double>> &sumsMatrix,
-                                                         const std::vector<std::vector<int>> &nonNanMatrix) {
-        //printMatrix(sumsMatrix);
-        //printMatrix(nonNanMatrix);
-
-        std::vector<std::vector<double>> retMeanValuesMatrix;
-        for (size_t i = 0; i < sumsMatrix.size(); i++) {
-            const std::vector<double> &sumsVect = sumsMatrix[i];
-            const std::vector<int> &nonNansVect = nonNanMatrix[i];
-            std::vector<double> meanValsVect;
-            for (size_t j = 0; j<sumsVect.size(); j++) {
-                meanValsVect.push_back((nonNansVect[j] != 0) ?
-                                           (sumsVect[j]/nonNansVect[j]) :
-                                           std::numeric_limits<double>::quiet_NaN());
-             }
-            retMeanValuesMatrix.push_back(meanValsVect);
-        }
-
-        //printMatrix(retMeanValuesMatrix);
-        return retMeanValuesMatrix;
-    }
-
-    std::vector<std::vector<double>> computeCosValues(const std::vector<std::vector<double>> &meanValuesMatrix) {
-        std::vector<std::vector<double>> retCosValuesMatrix;
-        for (const std::vector<double> &meanValsVect : meanValuesMatrix) {
-            std::vector<double> cosValsVect;
-            for (double val : meanValsVect) {
-                if (std::isnan(val)) {
-                    cosValsVect.push_back(NO_DATA_VALUE);
-                } else {
-                    cosValsVect.push_back(10000 * cos((val * M_PI ) / 180));
-                }
-             }
-            retCosValuesMatrix.push_back(cosValsVect);
-        }
-        //printMatrix(retCosValuesMatrix);
-        return retCosValuesMatrix;
-    }
-
-    std::vector<std::vector<double>> computeRelativeAzimuth(const std::vector<std::vector<double>> &solarAzimuthValuesMatrix,
-                                                            const std::vector<std::vector<double>> &sensorAzimuthValuesMatrix) {
-        std::vector<std::vector<double>> retRelAzimuthValuesMatrix;
-        for (size_t i = 0; i < solarAzimuthValuesMatrix.size(); i++) {
-            const std::vector<double> &solarAzimuthVect = solarAzimuthValuesMatrix[i];
-            const std::vector<double> &sensorAzimuthVect = sensorAzimuthValuesMatrix[i];
-            std::vector<double> relAzimuthValsVect;
-            for (size_t j = 0; j<solarAzimuthVect.size(); j++) {
-                if (std::isnan(solarAzimuthVect[j]) || std::isnan(sensorAzimuthVect[j])) {
-                    relAzimuthValsVect.push_back(NO_DATA_VALUE);
-                } else {
-                    double val = solarAzimuthVect[j] - sensorAzimuthVect[j];
-                    relAzimuthValsVect.push_back(10000 * cos((val * M_PI ) / 180));
-                }
-             }
-            retRelAzimuthValuesMatrix.push_back(relAzimuthValsVect);
-        }
-
-        return retRelAzimuthValuesMatrix;
-    }
-
-    template<typename T>
-    void printMatrix(const std::vector<std::vector<T>> &matrix) {
-        std::cout << "[";
-        for (const std::vector<T> &curLine : matrix) {
-            std::cout << "[";
-            int items = 0;
-            for (T val : curLine) {
-                if (items == 5) {
-                    std::cout << std::endl;
-                    items = 0;
-                }
-                std::cout << " " << val << std::setprecision(7) << " ";
-                items++;
-             }
-            std::cout << "]" << std::endl;
-        }
-        std::cout << "]" << std::endl;
-    }
-*/
-
-
     ImageListToVectorImageFilterType::Pointer m_ftsConcat;
 
     ImageListType::Pointer allList;
 
-    ReaderType::Pointer                       m_defImgReader;
     ImageResampler<InternalImageType, InternalImageType> m_Resampler;
-    ImageResampler<MetadataHelper::SingleBandShortImageType, MetadataHelper::SingleBandShortImageType> m_Resampler2;
+    ImageResampler<MetadataHelper<short>::SingleBandImageType, MetadataHelper<short>::SingleBandImageType> m_Resampler2;
 
     ImageType::Pointer m_msksImg;
 
-    std::map<int, ReaderType::Pointer> m_imgInputReadersMap;
-    std::map<int, std::unique_ptr<MetadataHelper>> m_metadataHelpersMap;
-    std::map<int, VectorImageToImageListType::Pointer> m_imgInputSplittersMap;
+    std::unique_ptr<MetadataHelper<short>> m_pHelper;
 
     BelcamNeuronFilter::Pointer m_laiNeuronFilter;
     BelcamNeuronFilter::Pointer m_faparNeuronFilter;
     BelcamNeuronFilter::Pointer m_fcoverNeuronFilter;
 
-    //AnglesImageType::Pointer            m_AnglesRaster;
-    //ImageResampler<AnglesImageType, AnglesImageType> m_AnglesResampler;
     VectorImageToImageListType::Pointer m_anglesSplit;
-
-//    MaskedOutputFilterType::Pointer m_LaiMaskedOutputFunctor;
-//    MaskedOutputFilterType::Pointer m_FaparMaskedOutputFunctor;
-//    MaskedOutputFilterType::Pointer m_FcoverMaskedOutputFunctor;
 
     LAIBandsConfigInfos m_laiCfg;
 };

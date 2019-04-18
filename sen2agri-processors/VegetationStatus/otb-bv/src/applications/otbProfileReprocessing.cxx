@@ -379,7 +379,7 @@ private:
           {
               MetadataHelperFactory::Pointer factory = MetadataHelperFactory::New();
               // we are interested only in the 10m resolution as we need only the date
-              auto pHelper = factory->GetMetadataHelper(strXml, 10);
+              auto pHelper = factory->GetMetadataHelper<short>(strXml);
               datesList.push_back(pHelper->GetAcquisitionDate());
           }
       } else if (HasValue("ildates")) {

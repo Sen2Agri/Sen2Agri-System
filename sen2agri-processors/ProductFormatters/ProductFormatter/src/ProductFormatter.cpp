@@ -32,8 +32,8 @@
 
 #include "ProductMetadataWriter.hpp"
 #include "TileMetadataWriter.hpp"
-#include "MACCSMetadataReader.hpp"
-#include "SPOT4MetadataReader.hpp"
+
+#include "MetadataHelperFactory.h"
 
 #define PROJECT_ID                      "S2AGRI"
 #define GIPP_VERSION                    "0001"
@@ -115,9 +115,6 @@
 #define PHENO_NDVI_PRODUCT      "Phenological NDVI Metrics"
 #define CROP_MASK               "Crop mask"
 #define CROP_TYPE               "Crop type"
-
-typedef itk::MACCSMetadataReader MACCSMetadataReaderType;
-typedef itk::SPOT4MetadataReader SPOT4MetadataReaderType;
 
 struct Coord{
     double x;
@@ -1896,44 +1893,6 @@ private:
    }
 
 
-  void FillMetadataInfoForLandsat(std::unique_ptr<MACCSFileMetadata> &metadata)
-  {
-      /* the source is a HDR file */
-
-    std::string acqDateTime = metadata->ProductInformation.AcquisitionDateTime;
-    // Remove the eventual UTC= from the prefix of the date
-    std::string::size_type pos = acqDateTime.find('=');
-    acqDateTime = (pos!= std::string::npos) ? acqDateTime.substr(pos+1) : acqDateTime;
-    // normally, the product date time respects already the standard ISO 8601
-    // we need just to replace - and : from it
-    acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), '-'), acqDateTime.end());
-    acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), ':'), acqDateTime.end());
-
-    AddAcquisitionDate(acqDateTime);
-    //AddAcquisitionDate(metadata->InstanceId.AcquisitionDate);
-  }
-
-  void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)
-  {
-      /* the source is a SPOT file */
-      //nothing to load????
-      // we use the acquisition date instead of processing date
-      std::string acqDateTime = metadata->Header.DatePdv;
-      std::string::size_type pos = acqDateTime.find('.');
-      // remove the milliseconds part of the acquisition date/time
-      acqDateTime = (pos != std::string::npos) ? acqDateTime.substr(0, pos) : acqDateTime;
-      acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), '-'), acqDateTime.end());
-      acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), ':'), acqDateTime.end());
-      // the product date does has a space separator between date and time. We need to replace it with T
-      std::replace( acqDateTime.begin(), acqDateTime.end(), ' ', 'T');
-      AddAcquisitionDate(acqDateTime);
-
-//      AddAcquisitionDate(metadata->Header.DatePdv.substr(0,4) +
-//              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2)
-//              + "T" + metadata->Header.DatePdv.substr(11,2) + metadata->Header.DatePdv.substr(14,2) +
-//              metadata->Header.DatePdv.substr(17,2));
-  }
-
   void AddAcquisitionDate(const std::string &acquisitionDate) {
       if(std::find(m_acquisitionDatesList.begin(), m_acquisitionDatesList.end(), acquisitionDate) == m_acquisitionDatesList.end()) {
           m_acquisitionDatesList.push_back(acquisitionDate);
@@ -1947,34 +1906,11 @@ private:
 
   void LoadAllDescriptors(const std::vector<std::string> &descriptors)
   {
-      // load all descriptors
-      MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
-      SPOT4MetadataReaderType::Pointer spot4MetadataReader = SPOT4MetadataReaderType::New();
-
+      auto factory = MetadataHelperFactory::New();
       for (const std::string& desc : descriptors) {
-
-
-          if (auto meta = maccsMetadataReader->ReadMetadata(desc)) {
-              // add the information to the list
-              if (meta->Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
-                  // Interpret landsat product
-                  //m_bIsHDR = true;
-                  FillMetadataInfoForLandsat(meta);
-              } else if (meta->Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
-                  // Interpret sentinel product
-                  //m_bIsHDR  = true;
-                  FillMetadataInfoForLandsat(meta);
-              } else {
-                  itkExceptionMacro("Unknown mission: " + meta->Header.FixedHeader.Mission);
-              }
-
-          }else if (auto meta = spot4MetadataReader->ReadMetadata(desc)) {
-
-              //m_bIsHDR = false;
-              FillMetadataInfoForSPOT(meta);
-          } else {
-              itkExceptionMacro("Unable to read metadata from " << desc);
-          }
+          const std::unique_ptr<MetadataHelper<float, uint8_t>> &pHelper = factory->GetMetadataHelper<float, uint8_t>(desc);
+          const std::string &acqDateTime = pHelper->GetAcquisitionDateTime();
+          AddAcquisitionDate(acqDateTime);
       }
   }
 

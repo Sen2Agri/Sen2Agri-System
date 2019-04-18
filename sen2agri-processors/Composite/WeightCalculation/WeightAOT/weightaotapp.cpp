@@ -126,11 +126,11 @@ private:
 
     m_weightOnAot.SetInputFileName(inImgStr);
     auto factory = MetadataHelperFactory::New();
-    auto pHelper = factory->GetMetadataHelper(
-                inMetadataXml, m_weightOnAot.GetInputImageResolution());
-    float fAotQuantificationVal = pHelper->GetAotQuantificationValue();
+    int inRes = m_weightOnAot.GetInputImageResolution();
+    auto pHelper = factory->GetMetadataHelper<short>(inMetadataXml);
+    float fAotQuantificationVal = pHelper->GetAotQuantificationValue(inRes);
     // the bands in XML are 1 based
-    int nBand = 0;//pHelper->GetAotBandIndex()-1;
+    int nBand = 0;
     m_weightOnAot.Initialize(nBand, fAotQuantificationVal, fAotMax, fWaotMin, fWaotMax);
 
     // Set the output image

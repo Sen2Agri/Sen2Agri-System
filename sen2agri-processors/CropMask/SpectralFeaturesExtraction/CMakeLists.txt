@@ -4,7 +4,7 @@ otb_create_application(
                    ../../Common/Filters/DataSmoothingFilter.h
                    ../../Common/Filters/CropMaskSpectralFeaturesFilter.h
     LINK_LIBRARIES ${OTB_LIBRARIES}
-                   MACCSMetadata
+                   Sen2AgriProductReaders
                    TimeSeriesReader)
 
 include_directories(../../Common/OTBExtensions)

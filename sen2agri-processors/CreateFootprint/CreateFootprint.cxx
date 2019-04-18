@@ -25,9 +25,9 @@
 #include "otbOGRIOHelper.h"
 #include "otbGeoInformationConversion.h"
 
-#include "MACCSMetadataReader.hpp"
-#include "SPOT4MetadataReader.hpp"
-#include "MetadataUtil.hpp"
+#include "MetadataHelperFactory.h"
+
+//#include "MetadataUtil.hpp"
 
 #include "CreateMaskFromValueFunctor.hxx"
 
@@ -112,6 +112,16 @@ private:
     {
         const auto &file = GetParameterString("in");
 
+        auto factory = MetadataHelperFactory::New();
+        m_pHelper = factory->GetMetadataHelper<int>(file);
+        std::vector<int> relBandIdxs;
+        const std::vector<std::string> &bandNames = m_pHelper->GetBandNamesForResolution(m_pHelper->GetProductResolutions()[0]);
+        // If the product readers have several bands in one raster (like MACCS) it will return the full raster image
+        // and the relative band idx will be updated accordingly.
+        // If we have bands in distinct files, then we are interested in only one file (no need to concatenate all bands for the first resolution)
+        MetadataHelper<int>::VectorImageType::Pointer img = m_pHelper->GetImage({bandNames[0]}, &relBandIdxs);
+        img->UpdateOutputInformation();
+
         if (GetParameterString("mode") == "metadata") {
             auto vectorData = VectorDataType::New();
 
@@ -130,31 +140,9 @@ private:
             tree->Add(folder, document);
             tree->Add(polygonNode, folder);
 
-            PolygonType::Pointer polygon;
-            std::string rasterFileName = file;
-            if (auto metadata = itk::MACCSMetadataReader::New()->ReadMetadata(file)) {
-                //polygon = FootprintFromMACCSMetadata(*metadata);
-                //vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
-                std::string rootFolder = extractFolder(file);
-                rasterFileName = getMACCSRasterFileName(rootFolder, metadata->ProductOrganization.ImageFiles, "_FRE");
-                if (rasterFileName.size() == 0) {
-                    rasterFileName = getMACCSRasterFileName(rootFolder, metadata->ProductOrganization.ImageFiles, "_FRE_R1");
-                }
-            } else if (auto metadata = itk::SPOT4MetadataReader::New()->ReadMetadata(file)) {
-                //polygon = FootprintFromSPOT4Metadata(*metadata);
-                //vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
-                std::string rootFolder = extractFolder(file);
-                rasterFileName = rootFolder + metadata->Files.OrthoSurfCorrPente;
-            }
-            auto reader = otb::ImageFileReader<FloatVectorImageType>::New();
-            reader->SetFileName(rasterFileName);
-            reader->UpdateOutputInformation();
+            PolygonType::Pointer polygon = FootprintFromGeoCoding<int>(img);
 
-            auto output = reader->GetOutput();
-
-            polygon = FootprintFromGeoCoding(output);
-
-            vectorData->SetProjectionRef(output->GetProjectionRef());
+            vectorData->SetProjectionRef(img->GetProjectionRef());
 
             polygonNode->SetPolygonExteriorRing(polygon);
 
@@ -169,20 +157,15 @@ private:
                 }
             }
         } else {
-            m_ImageFileReader = ImageFileReaderType::New();
-            m_ImageFileReader->SetFileName(getMainRasterFile(file));
-
             if (HasValue("outbounds")) {
-                m_ImageFileReader->UpdateOutputInformation();
-                auto output = m_ImageFileReader->GetOutput();
-                auto polygon = FootprintFromGeoCoding(output);
+                auto polygon = FootprintFromGeoCoding<int>(img);
 
                 auto sourceSrs = static_cast<OGRSpatialReference *>(
-                    OSRNewSpatialReference(output->GetProjectionRef().c_str()));
+                    OSRNewSpatialReference(img->GetProjectionRef().c_str()));
                 if (!sourceSrs) {
                     itkExceptionMacro(
                         << "Unable to create source OGRSpatialReference from OGR WKT\n"
-                        << output->GetProjectionRef());
+                        << img->GetProjectionRef());
                 }
 
                 auto targetSrs =
@@ -230,7 +213,7 @@ private:
 
                         itkExceptionMacro(<< "Unable to transform point (" << v[0] << ", " << v[1]
                                           << ") to WGS84. The source projection is:\n"
-                                          << output->GetProjectionRef()
+                                          << img->GetProjectionRef()
                                           << "\nOGR returned error code " << err);
                     }
                 }
@@ -244,7 +227,7 @@ private:
 
             m_MaskFilter = MaskFilterType::New();
             m_MaskFilter->GetFunctor().SetNoDataValue(GetParameterInt("mode.raster.nodata"));
-            m_MaskFilter->SetInput(m_ImageFileReader->GetOutput());
+            m_MaskFilter->SetInput(img);
 
             m_PolygonizeFilter = PolygonizeFilterType::New();
             m_PolygonizeFilter->SetInput(m_MaskFilter->GetOutput());
@@ -254,29 +237,6 @@ private:
         }
     }
 
-    PolygonType::Pointer FootprintFromMACCSMetadata(const MACCSFileMetadata &metadata)
-    {
-        auto poly = PolygonType::New();
-        poly->AddVertex(
-            PointFromMACCSGeopoint(metadata.ProductInformation.GeoCoverage.UpperLeftCorner));
-        poly->AddVertex(
-            PointFromMACCSGeopoint(metadata.ProductInformation.GeoCoverage.LowerLeftCorner));
-        poly->AddVertex(
-            PointFromMACCSGeopoint(metadata.ProductInformation.GeoCoverage.LowerRightCorner));
-        poly->AddVertex(
-            PointFromMACCSGeopoint(metadata.ProductInformation.GeoCoverage.UpperRightCorner));
-        return poly;
-    }
-
-    PolygonType::Pointer FootprintFromSPOT4Metadata(const SPOT4Metadata &metadata)
-    {
-        auto poly = PolygonType::New();
-        poly->AddVertex(PointFromSPOT4Point(metadata.WGS84.HGX, metadata.WGS84.HGY));
-        poly->AddVertex(PointFromSPOT4Point(metadata.WGS84.BGX, metadata.WGS84.BGY));
-        poly->AddVertex(PointFromSPOT4Point(metadata.WGS84.BDX, metadata.WGS84.BDY));
-        poly->AddVertex(PointFromSPOT4Point(metadata.WGS84.HDX, metadata.WGS84.HDY));
-        return poly;
-    }
 
     template <typename TPixel>
     PolygonType::Pointer FootprintFromGeoCoding(const otb::VectorImage<TPixel> *image)
@@ -289,22 +249,6 @@ private:
         return poly;
     }
 
-    ContinuousIndexType PointFromMACCSGeopoint(const MACCSGeoPoint &point)
-    {
-        ContinuousIndexType index;
-        index[0] = point.Long;
-        index[1] = point.Lat;
-        return index;
-    }
-
-    ContinuousIndexType PointFromSPOT4Point(double x, double y)
-    {
-        ContinuousIndexType index;
-        index[0] = x;
-        index[1] = y;
-        return index;
-    }
-
     ContinuousIndexType PointFromVector(const FloatVectorImageType::VectorType &v)
     {
         ContinuousIndexType index;
@@ -313,35 +257,7 @@ private:
         return index;
     }
 
-    // Extract the folder from a given path.
-    std::string extractFolder(const std::string& filename) {
-        size_t pos = filename.find_last_of("/\\");
-        if (pos == std::string::npos) {
-            return "";
-        }
-
-        return filename.substr(0, pos) + "/";
-    }
-
-    // Get the path to the Spot4 raster
-    std::string getSPOT4RasterFileName(const SPOT4Metadata & desc, const std::string& folder) {
-        return folder + desc.Files.OrthoSurfCorrPente;
-    }
-
-    // Return the path to a file for which the name end in the ending
-    std::string getMACCSRasterFileName(const std::string& rootFolder, const std::vector<CommonFileInformation>& imageFiles, const std::string& ending) {
-
-        for (const CommonFileInformation& fileInfo : imageFiles) {
-            if (fileInfo.LogicalName.length() >= ending.length() &&
-                    0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
-                return rootFolder + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
-            }
-
-        }
-        return "";
-    }
-
-    ImageFileReaderType::Pointer m_ImageFileReader;
+    std::unique_ptr<MetadataHelper<int>> m_pHelper;
     MaskFilterType::Pointer m_MaskFilter;
     PolygonizeFilterType::Pointer m_PolygonizeFilter;
 };

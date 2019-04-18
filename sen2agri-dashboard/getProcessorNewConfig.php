@@ -170,7 +170,7 @@ function insertjob($name, $description, $processor_short_name, $site_id, $start_
 }
 
 // sen2agri
-if ($isSen2Agri) {
+if (ConfigParams::isSen2Agri()) {
 	if (isset ( $_POST ['l3a'] )) {
 		$processor_short_name = "l3a";
 

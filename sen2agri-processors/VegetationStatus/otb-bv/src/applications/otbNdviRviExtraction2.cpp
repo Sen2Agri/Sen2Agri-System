@@ -167,18 +167,18 @@ private:
 
         auto factory = MetadataHelperFactory::New();
         // we are interested only in the 10m resolution as here we have the RED and NIR
-        auto pHelper = factory->GetMetadataHelper(inMetadataXml, 10);
+        m_pHelper = factory->GetMetadataHelper<float>(inMetadataXml);
 
         // the bands are 1 based
-        int nNirBandIdx = pHelper->GetRelNirBandIndex()-1;
-        int nRedBandIdx = pHelper->GetRelRedBandIndex()-1;
-        int nBlueBandIdx = pHelper->GetRelBlueBandIndex()-1;
+        const std::string &nirBandName = m_pHelper->GetNirBandName();
+        const std::string &redBandName = m_pHelper->GetRedBandName();
+        const std::string &blueBandName = m_pHelper->GetBlueBandName();
 
-        //Read all input parameters
-        m_imgReader->SetFileName(pHelper->GetImageFileName());
-        m_imgReader->UpdateOutputInformation();
+        std::vector<int> relBandIdxs;
+        MetadataHelper<float>::VectorImageType::Pointer img = m_pHelper->GetImage({redBandName, nirBandName}, &relBandIdxs);
+        img->UpdateOutputInformation();
 
-        int curRes = m_imgReader->GetOutput()->GetSpacing()[0];
+        int curRes = img->GetSpacing()[0];
         int nOutRes = curRes;
         if(HasValue("outres")) {
             nOutRes = GetParameterInt("outres");
@@ -191,14 +191,14 @@ private:
         if(bHasMsks) {
             m_msksImg = GetParameterFloatVectorImage("msks");
             m_MaskedFunctor = MaskedNDVIRVIFilterType::New();
-            m_MaskedFunctor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
-            m_MaskedFunctor->SetInput1(m_imgReader->GetOutput());
+            m_MaskedFunctor->GetFunctor().Initialize(relBandIdxs[0], relBandIdxs[1]);
+            m_MaskedFunctor->SetInput1(img);
             m_MaskedFunctor->SetInput2(m_msksImg);
             m_functorOutput = m_MaskedFunctor->GetOutput();
         } else {
             m_UnmaskedFunctor = UnmaskedNDVIRVIFilterType::New();
-            m_UnmaskedFunctor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
-            m_UnmaskedFunctor->SetInput(m_imgReader->GetOutput());
+            m_UnmaskedFunctor->GetFunctor().Initialize(relBandIdxs[0], relBandIdxs[1]);
+            m_UnmaskedFunctor->SetInput(img);
             m_functorOutput = m_UnmaskedFunctor->GetOutput();
         }
 
@@ -230,12 +230,16 @@ private:
         }
 
         if(bOutFts) {
+            const std::vector<std::string> &bandNames = m_pHelper->GetBandNamesForResolution(m_pHelper->GetProductResolutions()[0]);
+            relBandIdxs.clear();
+            MetadataHelper<float>::VectorImageType::Pointer imgFts = m_pHelper->GetImage(bandNames, &relBandIdxs);
+            imgFts->UpdateOutputInformation();
             // Translate the input image from short reflectance values to float (subunitaire) values
             // translated using the quantification value
-            double fQuantifVal = pHelper->GetReflectanceQuantificationValue();
+            double fQuantifVal = m_pHelper->GetReflectanceQuantificationValue();
             m_ReflTransFunctor = ReflTransFilterType::New();
             m_ReflTransFunctor->GetFunctor().Initialize((float)fQuantifVal);
-            m_ReflTransFunctor->SetInput(m_imgReader->GetOutput());
+            m_ReflTransFunctor->SetInput(imgFts);
             int nInputBands = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
             m_ReflTransFunctor->GetOutput()->SetNumberOfComponentsPerPixel(nInputBands);
 
@@ -246,14 +250,16 @@ private:
 
             if(bUseAllBands) {
                 // add all bands from the input image
-                int nBandsNo = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
-                for(int i = 0; i<nBandsNo; i++) {
-                    if (bUseBlueBand || (i != nBlueBandIdx)) {
+                for(size_t i = 0; i<bandNames.size(); i++) {
+                    if (bUseBlueBand || (bandNames[i] != blueBandName)) {
                         allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(i)));
                     }
                 }
             } else {
                 // add the RED and NIR bands from the input image
+                std::ptrdiff_t nRedBandIdx = relBandIdxs[std::distance(bandNames.begin(), find(bandNames.begin(), bandNames.end(), redBandName))];
+                std::ptrdiff_t nNirBandIdx = relBandIdxs[std::distance(bandNames.begin(), find(bandNames.begin(), bandNames.end(), redBandName))];
+
                 allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(nRedBandIdx)));
                 allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(nNirBandIdx)));
             }
@@ -297,6 +303,8 @@ private:
     ImageResampler<InternalImageType, InternalImageType> m_Resampler;
 
     ImageType::Pointer m_msksImg;
+
+    std::unique_ptr<MetadataHelper<float>> m_pHelper;
 };
 }
 }

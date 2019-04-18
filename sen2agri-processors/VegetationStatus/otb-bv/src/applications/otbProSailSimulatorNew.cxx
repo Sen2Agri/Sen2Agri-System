@@ -143,7 +143,6 @@ private:
     AddParameter(ParameterType_InputFilename, "xml",
                  "Input XML file of a product containing angles. If specified, the angles above will be ignored.");
     SetParameterDescription( "xml", "Input XML file of a product containing angles." );
-    MandatoryOff("xml");
 
     AddParameter(ParameterType_OutputFilename, "outangles",
                  "Output file containing the angles really used for the generated values (the ones from command line or from xml file).");
@@ -206,68 +205,66 @@ private:
 
     std::string productMissionName;
     std::string productInstrumentName;
-    std::vector<int> rsrColumnsFilterIndexes;
+    std::vector<std::string> rsrColumnsFilterBandNames;
 
-    if(HasValue("xml")) {
-        std::string inMetadataXml = GetParameterString("xml");
-        auto factory = MetadataHelperFactory::New();
-        // we are interested only in the 10m resolution as here we have the RED and NIR
-        auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+    std::string inMetadataXml = GetParameterString("xml");
+    auto factory = MetadataHelperFactory::New();
+    // we are interested only in the 10m resolution as here we have the RED and NIR
+    std::unique_ptr<MetadataHelper<short>> pHelper = factory->GetMetadataHelper<short>(inMetadataXml);
 
-        MeanAngles_Type solarAngles = pHelper->GetSolarMeanAngles();
-        double relativeAzimuth = pHelper->GetRelativeAzimuthAngle();
+    MeanAngles_Type solarAngles = pHelper->GetSolarMeanAngles();
+    double relativeAzimuth = pHelper->GetRelativeAzimuthAngle();
 
-        MeanAngles_Type sensorBandAngles = {0.0};
-        bool hasAngles = true;
-        if(pHelper->HasBandMeanAngles()) {
-            // we use the angle of the first band
-            int nTotalBandsNo = pHelper->GetTotalBandsNo();
-            for(int j = 0; j<nTotalBandsNo; j++) {
-                sensorBandAngles = pHelper->GetSensorMeanAngles(j);
-                if(!std::isnan(sensorBandAngles.azimuth) && !std::isnan(sensorBandAngles.zenith)) {
-                    break;
-                }
+    MeanAngles_Type sensorBandAngles = {0.0};
+    bool hasAngles = true;
+    if(pHelper->HasBandMeanAngles()) {
+        // we use the angle of the first band
+        int nTotalBandsNo = pHelper->GetBandsPresentInPrdTotalNo();
+        for(int j = 0; j<nTotalBandsNo; j++) {
+            sensorBandAngles = pHelper->GetSensorMeanAngles(j);
+            if(!std::isnan(sensorBandAngles.azimuth) && !std::isnan(sensorBandAngles.zenith)) {
+                break;
             }
-        } else if(pHelper->HasGlobalMeanAngles()) {
-            sensorBandAngles = pHelper->GetSensorMeanAngles();
-        } else {
-            hasAngles = false;
-            otbAppLogWARNING("There are no angles for this mission? " << pHelper->GetMissionName());
         }
-        if(hasAngles) {
-            m_SolarZenith = solarAngles.zenith;
-            m_SensorZenith = sensorBandAngles.zenith;
-            m_Azimuth = relativeAzimuth;
-        }
+    } else if(pHelper->HasGlobalMeanAngles()) {
+        sensorBandAngles = pHelper->GetSensorMeanAngles();
+    } else {
+        hasAngles = false;
+        otbAppLogWARNING("There are no angles for this mission? " << pHelper->GetMissionName());
+    }
+    if(hasAngles) {
+        m_SolarZenith = solarAngles.zenith;
+        m_SensorZenith = sensorBandAngles.zenith;
+        m_Azimuth = relativeAzimuth;
+    }
 
-        if(HasValue("rsrcfg")) {
-            std::string rsrCfgFile = GetParameterString("rsrcfg");
-            rsrFileName = getValueFromMissionsCfgFile(rsrCfgFile, pHelper->GetMissionName(), pHelper->GetInstrumentName());
-        }
+    if(HasValue("rsrcfg")) {
+        std::string rsrCfgFile = GetParameterString("rsrcfg");
+        rsrFileName = getValueFromMissionsCfgFile(rsrCfgFile, pHelper->GetMissionName(), pHelper->GetInstrumentName());
+    }
 
-        // get the filter for the RSR columns
-        const LAIBandsConfigInfos &laiBandsCfg = getRsrColumnsFilterIndexes(pHelper);
-        rsrColumnsFilterIndexes = laiBandsCfg.rsrColumnFilterIdxs;
+    // get the filter for the RSR columns
+    const LAIBandsConfigInfos &laiBandsCfg = getRsrColumnsFilterBandNames(pHelper);
+    rsrColumnsFilterBandNames = laiBandsCfg.rsrColumnFilterBandNames;
 
-        // if we use NDVI or RVI we will need to have the bands for RED and NIR in the list of bands
-        // for which we simulate the reflectances. The other applications will also need to handle this
-        // Otherwise, the model will be created with the wrong number of bands
-        if (laiBandsCfg.bUseNdvi || laiBandsCfg.bUseRvi) {
-            int nRedBandIdx = pHelper->GetAbsRedBandIndex();
-            int nNirBandIdx = pHelper->GetAbsNirBandIndex();
-            // if RED band not present in the list, then add it
-            if(std::find(rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end(), nRedBandIdx) == rsrColumnsFilterIndexes.end()) {
-                rsrColumnsFilterIndexes.push_back(nRedBandIdx);
-                otbAppLogINFO("Added missing RED BAND index: " << nRedBandIdx);
-            }
-            // if NIR band not present in the list, then add it
-            if(std::find(rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end(), nNirBandIdx) == rsrColumnsFilterIndexes.end()) {
-                rsrColumnsFilterIndexes.push_back(nNirBandIdx);
-                otbAppLogINFO("Added missing NIR BAND index: " << nNirBandIdx);
-            }
-            // Sort again the array
-            std::sort (rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end());
+    // if we use NDVI or RVI we will need to have the bands for RED and NIR in the list of bands
+    // for which we simulate the reflectances. The other applications will also need to handle this
+    // Otherwise, the model will be created with the wrong number of bands
+    if (laiBandsCfg.bUseNdvi || laiBandsCfg.bUseRvi) {
+        const std::string &redBandName = pHelper->GetRedBandName();
+        const std::string &nirBandName = pHelper->GetNirBandName();
+        // if RED band not present in the list, then add it
+        if(std::find(rsrColumnsFilterBandNames.begin(), rsrColumnsFilterBandNames.end(), redBandName) == rsrColumnsFilterBandNames.end()) {
+            rsrColumnsFilterBandNames.push_back(redBandName);
+            otbAppLogINFO("Added missing RED BAND index: " << redBandName);
         }
+        // if NIR band not present in the list, then add it
+        if(std::find(rsrColumnsFilterBandNames.begin(), rsrColumnsFilterBandNames.end(), nirBandName) == rsrColumnsFilterBandNames.end()) {
+            rsrColumnsFilterBandNames.push_back(nirBandName);
+            otbAppLogINFO("Added missing NIR BAND index: " << nirBandName);
+        }
+        // Sort again the array
+        //std::sort (rsrColumnsFilterBandNames.begin(), rsrColumnsFilterBandNames.end());
     }
 
     // initialize the solar zenith Fapar, if not set, with the solar zenith
@@ -289,8 +286,8 @@ private:
     }
 
     otbAppLogINFO("Using rsr file " << rsrFileName);
-    rsrFileName = getFilteredRsrFile(rsrFileName, rsrColumnsFilterIndexes);
-    printRsrBands(rsrColumnsFilterIndexes);
+    rsrFileName = getFilteredRsrFile(pHelper, rsrFileName, rsrColumnsFilterBandNames);
+    printRsrBands(rsrColumnsFilterBandNames);
 
     //The first 2 columns of the rsr file correspond to the wavelenght and the solar radiation
     otbAppLogINFO("Filtered rsr file " << rsrFileName);
@@ -464,7 +461,7 @@ private:
       }
   }
 
-  LAIBandsConfigInfos getRsrColumnsFilterIndexes(const std::unique_ptr<MetadataHelper> &pHelper) {
+  LAIBandsConfigInfos getRsrColumnsFilterBandNames(const std::unique_ptr<MetadataHelper<short>> &pHelper) {
       std::string laiCfgFile;
       // Load the LAI bands configuration file from laicfgs
       if(HasValue("laicfgs")) {
@@ -482,9 +479,10 @@ private:
       return loadLaiBandsConfigFile(laiCfgFile);
   }
 
-  std::string getFilteredRsrFile(const std::string &rsrFileName, const std::vector<int> &rsrColumnsFilterIndexes) {
+  std::string getFilteredRsrFile(const std::unique_ptr<MetadataHelper<short>> &pHelper, const std::string &rsrFileName,
+                                 const std::vector<std::string> &rsrColumnsFilterBandNames) {
         // if no filters, then do nothing and return the original rsrFileName containing all columns
-        if (rsrColumnsFilterIndexes.size() == 0) {
+        if (rsrColumnsFilterBandNames.size() == 0) {
             return rsrFileName;
         }
         const std::string &outFileName = GetParameterString("out");
@@ -508,6 +506,7 @@ private:
         }
 
         std::string rsrFileLine;
+        const std::vector<std::string> &allBandNames = pHelper->GetAllBandNames();
         while ( std::getline(inRsrFile, rsrFileLine)) {
             boost::trim(rsrFileLine);
             if (rsrFileLine.length() == 0) {
@@ -515,6 +514,10 @@ private:
             }
             std::string outline;
             const std::vector<std::string> &vectVals = split(rsrFileLine, ' ');
+            if (allBandNames.size() != vectVals.size() - 2) {
+                otbAppLogFATAL("The rsr type cannot be determined from file " << rsrFileName <<
+                               " for the number of items " << vectVals.size());
+            }
             // The first two columns are going directly to out file
             outline = vectVals[0];
             outline += " ";
@@ -523,7 +526,8 @@ private:
                 // the band index is i - 2 + 1 = i - 1
                 // This is becaused we ignore the first two columns but we add 1 as the rsrColumnsFilterIndexes
                 // values are 1 based
-                if(std::find(rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end(), i-1) != rsrColumnsFilterIndexes.end()) {
+                if(std::find(rsrColumnsFilterBandNames.begin(), rsrColumnsFilterBandNames.end(), allBandNames[i-2])
+                        != rsrColumnsFilterBandNames.end()) {
                     outline += " ";
                     outline += vectVals[i];
                 }
@@ -533,11 +537,11 @@ private:
         return newRsrFile;
   }
 
-  void printRsrBands(const std::vector<int> &rsrColumnsFilterIndexes) {
+  void printRsrBands(const std::vector<std::string> &rsrColumnsFilterBandNames) {
       std::stringstream ss;
-      ss << "RSR bands indexes used:" << std::endl;
-      for(size_t i = 0; i< rsrColumnsFilterIndexes.size(); ++i) {
-        ss << i<< " " << rsrColumnsFilterIndexes[i] << std::endl;
+      ss << "RSR bands names used:" << std::endl;
+      for(size_t i = 0; i< rsrColumnsFilterBandNames.size(); ++i) {
+        ss << i<< " " << rsrColumnsFilterBandNames[i] << std::endl;
       }
       ss << std::endl;
 

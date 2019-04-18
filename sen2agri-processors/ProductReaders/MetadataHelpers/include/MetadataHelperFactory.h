@@ -35,7 +35,8 @@ public:
 
     itkTypeMacro(MetadataHelperFactory, itk::LightObject)
 
-    std::unique_ptr<MetadataHelper> GetMetadataHelper(const std::string& metadataFileName, int nResolution = 10);
+    template <typename PixelType, typename MasksPixelType=short>
+    std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> GetMetadataHelper(const std::string& metadataFileName);
 };
 
 #endif // COMPOSITENAMINGHELPERFACTORY_H

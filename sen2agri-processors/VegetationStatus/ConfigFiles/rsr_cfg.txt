@@ -1,5 +1,5 @@
 SPOT4#HRVIR1=/usr/share/sen2agri/spot4hrvir1.rsr
 SPOT5#HRG1=/usr/share/sen2agri/spot5hrg1.rsr
 LANDSAT_8=/usr/share/sen2agri/landsat8_7b.rsr
-SENTINEL-2A=/usr/share/sen2agri/Sentinel2_real.rsr
-SENTINEL-2B=/usr/share/sen2agri/Sentinel2_real.rsr
+SENTINEL-?2[A-D]=/usr/share/sen2agri/Sentinel2_real.rsr
+

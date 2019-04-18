@@ -93,11 +93,11 @@ private:
     InternalImageType::Pointer            m_ImageAot;
 
     int m_nRes;
-    ImageReaderType::Pointer m_inputImgReader;
+    ImageType::Pointer m_inputImg;
 
     ResamplingBandExtractor<float> m_ResampledBandsExtractor;
-    std::unique_ptr<MetadataHelper> m_pMetadataHelper;
-    std::unique_ptr<MetadataHelper> m_pPrimaryMissionMetadataHelper;
+    std::unique_ptr<MetadataHelper<float>> m_pMetadataHelper;
+    std::unique_ptr<MetadataHelper<float>> m_pPrimaryMissionMetadataHelper;
 
     BandsCfgMappingParser m_bandsCfgMappingParser;
     std::string m_bandsMappingFile;

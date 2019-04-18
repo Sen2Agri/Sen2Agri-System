@@ -24,6 +24,7 @@
 #include "itkUnaryFunctorImageFilter.h"
 #include "GlobalDefs.h"
 #include "ImageResampler.h"
+#include "MetadataHelper.h"
 
 class ComputeNDVI
 {
@@ -47,10 +48,11 @@ public:
 
 private:
     std::string                         m_inXml;
-    ImageReaderType::Pointer            m_InputImageReader;
     int m_nResolution;
     FilterType::Pointer m_Functor;
     ImageResampler<OutputImageType, OutputImageType> m_ResampledBandsExtractor;
+
+    std::unique_ptr<MetadataHelper<short>> m_pHelper;
 
 };
 

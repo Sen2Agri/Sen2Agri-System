@@ -13,6 +13,7 @@ set(TimeSeriesReader_SOURCES
 add_library(TimeSeriesReader STATIC ${TimeSeriesReader_HEADERS} ${TimeSeriesReader_SOURCES})
 
 target_link_libraries(TimeSeriesReader
+    Sen2AgriProductReaders
     "${Boost_LIBRARIES}"
     "${OTBCommon_LIBRARIES}"
     "${OTBTinyXML_LIBRARIES}"

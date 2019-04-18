@@ -228,6 +228,22 @@ QStringList EventProcessingContext::findProductFiles(int siteId, const QString &
     for (const auto &file : QDir(absPath).entryList({ "*.HDR", "*.xml" }, QDir::Files)) {
         result.append(absPath + file);
     }
+    // Check for MAJA product
+    if (result.isEmpty()) {
+        QDirIterator it(absPath, QDir::Dirs | QDir::NoDot | QDir::NoDotDot, QDirIterator::Subdirectories);
+        while(it.hasNext()) {
+            const QString &subDirName = it.fileName();
+            if (subDirName.startsWith("SENTINEL2")) {
+                const QString &metaFileName = subDirName + "_MTD_ALL.xml";
+                const QString &metaFilePath = QDir(it.filePath()).filePath(metaFileName);
+                if(QFileInfo(metaFilePath).exists()) {
+                    result.append(metaFilePath);
+                    break;
+                }
+            }
+            it.next();
+        }
+    }
 
     if (result.isEmpty()) {
         throw std::runtime_error(
