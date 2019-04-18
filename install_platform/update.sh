@@ -35,6 +35,7 @@ function install_sen2agri_services()
                 mkdir -p /usr/share/sen2agri/sen2agri-services/lib && rm -f /usr/share/sen2agri/sen2agri-services/lib/*.jar && unzip -o ${zipArchive} 'lib/*' -d /usr/share/sen2agri/sen2agri-services
                 echo "Updating /usr/share/sen2agri/sen2agri-services/modules folder ..."
                 mkdir -p /usr/share/sen2agri/sen2agri-services/modules && rm -f /usr/share/sen2agri/sen2agri-services/modules/*.jar && unzip -o ${zipArchive} 'modules/*' -d /usr/share/sen2agri/sen2agri-services
+                mkdir -p /usr/share/sen2agri/sen2agri-services/scripts
                 
                 if [ -f /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties ] ; then 
                     mv /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties /usr/share/sen2agri/sen2agri-services/config/services.properties
@@ -81,6 +82,7 @@ function updateDownloadCredentials()
 
 function enableSciHubDwnDS()
 {
+    echo "Disabling Amazon datasource ..."
     sed -i '/SciHubDataSource.Sentinel2.scope=1/c\SciHubDataSource.Sentinel2.scope=3' /usr/share/sen2agri/sen2agri-services/config/services.properties
     sed -i '/AWSDataSource.Sentinel2.enabled=true/c\AWSDataSource.Sentinel2.enabled=false' /usr/share/sen2agri/sen2agri-services/config/services.properties
     
@@ -89,6 +91,7 @@ function enableSciHubDwnDS()
     
     sudo -u postgres psql sen2agri -c "update datasource set scope = 3 where satellite_id = 1 and name = 'Scientific Data Hub';"
     sudo -u postgres psql sen2agri -c "update datasource set enabled = 'false' where satellite_id = 1 and name = 'Amazon Web Services';"
+    echo "Disabling Amazon datasource ... Done!"
     
 #    sudo -u postgres psql sen2agri -c "update datasource set local_root = (select local_root from datasource where satellite_id = 1 and name = 'Amazon Web Services') where satellite_id = 1 and name = 'Scientific Data Hub';"
 #    sudo -u postgres psql sen2agri -c "update datasource set fetch_mode = (select fetch_mode from datasource where satellite_id = 1 and name = 'Amazon Web Services') where satellite_id = 1 and name = 'Scientific Data Hub';"
@@ -96,6 +99,10 @@ function enableSciHubDwnDS()
 
 function updateWebRestPort()
 {
+    # Set the port 8082 for the dashboard services URL 
+    sed -i -e "s|static \$SERVICES_URL = \x27http:\/\/localhost:8080\/dashboard|static \$SERVICES_URL = \x27http:\/\/localhost:8082\/dashboard|g" /var/www/html/ConfigParams.php
+    sed -i -e "s|static \$SERVICES_URL = \x27http:\/\/localhost:8081\/dashboard|static \$SERVICES_URL = \x27http:\/\/localhost:8082\/dashboard|g" /var/www/html/ConfigParams.php
+    
     REST_SERVER_PORT=$(sed -n 's/^server.port =//p' /usr/share/sen2agri/sen2agri-services/config/services.properties)
     # Strip leading space.
     REST_SERVER_PORT="${REST_SERVER_PORT## }"
@@ -108,9 +115,11 @@ function updateWebRestPort()
 
 function resetDownloadFailedProducts()
 {
+    echo "Resetting failed downloaded products from downloader_history ..."
     sudo -u postgres psql sen2agri -c "update downloader_history set no_of_retries = '0' where status_id = '3' "
     sudo -u postgres psql sen2agri -c "update downloader_history set no_of_retries = '0' where status_id = '4' "
     sudo -u postgres psql sen2agri -c "update downloader_history set status_id = '3' where status_id = '4' "
+    echo "Resetting failed downloaded products from downloader_history ... Done!"
 }
 
 
@@ -138,9 +147,10 @@ cat migrations/migration-1.5-1.6.sql | su -l postgres -c "psql $DB_NAME"
 cat migrations/migration-1.6-1.6.2.sql | su -l postgres -c "psql $DB_NAME"
 cat migrations/migration-1.6.2-1.7.sql | su -l postgres -c "psql $DB_NAME"
 cat migrations/migration-1.7-1.8.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.8-1.8.1.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.8.0-1.8.1.sql | su -l postgres -c "psql $DB_NAME"
 cat migrations/migration-1.8.1-1.8.2.sql | su -l postgres -c "psql $DB_NAME"
 cat migrations/migration-1.8.2-1.8.3.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-1.8.3-2.0.sql | su -l postgres -c "psql $DB_NAME"
 
 systemctl daemon-reload
 

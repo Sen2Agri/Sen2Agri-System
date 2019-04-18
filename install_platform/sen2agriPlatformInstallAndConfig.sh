@@ -481,6 +481,9 @@ function install_RPMs()
    ##install a couple of packages
    yum -y install gdal-python python-psycopg2 gd
 
+   ##install gdal 2.3 from the local repository
+   yum -y install ../rpm_binaries/gdal-local-*.centos7.x86_64.rpm
+   
    ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-*.rpm
 
