@@ -38,7 +38,7 @@ bool MACCSL8MetadataHelper<PixelType, MasksPixelType>::LoadAndUpdateMetadataValu
             return false;
         }
 
-        std::cout << "Using mission L8" << std::endl;
+        //std::cout << "Using mission L8" << std::endl;
 
         this->m_MissionShortName = "LANDSAT";
         this->m_nTotalBandsNo = this->m_metadata->ImageInformation.Bands.size();

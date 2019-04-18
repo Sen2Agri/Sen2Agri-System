@@ -39,7 +39,7 @@ bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::LoadAndUpdateMetadataValu
         return false;
     }
 
-    std::cout << "Using mission S2" << std::endl;
+    // std::cout << "Using mission S2" << std::endl;
 
     this->m_MissionShortName = "SENTINEL";
 

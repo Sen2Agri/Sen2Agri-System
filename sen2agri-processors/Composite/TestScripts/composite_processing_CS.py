@@ -279,9 +279,9 @@ for xml in inputList:
     out_w_Total=outTotalWeightFile.replace("#", counterString)
     
     if fullScatCoeffs:
-        cmd = ["otbcli", "CompositePreprocessing2",  "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-scatcoef", fullScatCoeffs, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
+        cmd = ["otbcli", "CompositePreprocessing",  "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-scatcoef", fullScatCoeffs, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     else:
-        cmd = ["otbcli", "CompositePreprocessing2",  "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
+        cmd = ["otbcli", "CompositePreprocessing",  "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     
     runCmd(cmd)
    

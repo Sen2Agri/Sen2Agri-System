@@ -296,9 +296,9 @@ for resolution in resolutions :
         curMasterInfoFile=getFileName(masterInfoFile, counterString, resolution)
 
         if (not multisatelites) or isMasterMissionFile(xml, bandsMap):
-            runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile])
+            runCmd(["otbcli", "CompositePreprocessing", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile])
         else:
-            runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile, "-pmxml", firstMasterFile])
+            runCmd(["otbcli", "CompositePreprocessing", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile, "-pmxml", firstMasterFile])
         
         runCmd(["otbcli", "WeightAOT", appLocation, "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
 

@@ -22,7 +22,7 @@
 template <typename PixelType, typename MasksPixelType>
 std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName)
 {
-    std::cout << "Getting metadata helper" << std::endl;
+    // std::cout << "Getting metadata helper" << std::endl;
 
     std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> spot4MetadataHelper(new Spot4MetadataHelper<PixelType, MasksPixelType>);
     if (spot4MetadataHelper->LoadMetadataFile(metadataFileName))
