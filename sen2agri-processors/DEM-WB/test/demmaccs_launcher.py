@@ -116,13 +116,10 @@ def validate_L1C_product_dir(l1cDir):
             try:
                 os.stat(subdir_path)
             except OSError, e:
-                if e.errno == errno.ENOENT:
                     print ("###################################")
-                    print ("Path {} does not exist or it is a broken symlink".format(subdir_path))
+                    print ("Cannot check if dir path {} exists or it is a valid symlink. Error was: {}".format(subdir_path, e.errno))
                     print ("###################################")
                     return False
-                else:
-                    raise e
 
         for filename in files:
             file_path = os.path.join(root, filename)
@@ -130,13 +127,10 @@ def validate_L1C_product_dir(l1cDir):
             try:
                 os.stat(file_path)
             except OSError, e:
-                if e.errno == errno.ENOENT:
-                    print ("###################################")
-                    print ("Path {} does not exist or it is a broken symlink".format(file_path))
-                    print ("###################################")
-                    return False
-                else:
-                    raise e
+                print ("###################################")
+                print ("Cannot check if file path {} exists or is a valid symlink. Error was: {}".format(subdir_path, e.errno))
+                print ("###################################")
+                return False
 
     return True
 
