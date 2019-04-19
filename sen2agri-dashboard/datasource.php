@@ -2,7 +2,7 @@
 
 require_once ("ConfigParams.php");
 
-$fetchMode = array('Overwrite'=>1, 'Resume'=>2, 'Copy'=>3, 'Symbolic link'=>4);
+$fetchMode = array('Overwrite'=> array(1, "OVERWRITE"), 'Resume'=>array(2, "RESUME"), 'Copy'=>array(3, "COPY"), 'Symbolic link'=>array(4, "SYMLINK"));
 $scope = array('Download'=>2,'Query'=>1,'Query and download'=>3);
 $sat_scope = array();
 
@@ -41,6 +41,15 @@ function checkscope($satellite,$scope_id,$source_id){
    
 }
 
+function getServerFetchMode($fetchMode, $selFetchMode) {
+    foreach ($fetchMode as $key=>$arr_value){
+        $values = array_values($arr_value);
+        if ($selFetchMode == $key) {
+            return array_values($arr_value)[1];	
+        }
+    }
+    return $selFetchMode;
+}
 
 if(isset($_REQUEST['action']) && $_REQUEST['action'] =='checkscope'){
     echo checkscope($_REQUEST['satellite'], $scope[$_REQUEST['scope']],$_REQUEST['source_date']);
@@ -66,7 +75,7 @@ if(isset($_REQUEST['btnSave'])){
         'scope' => $scope[$_REQUEST['scope']],
         'user'  =>  $_REQUEST['user'],
         'password' =>  $_REQUEST['pwd'],
-        'fetchMode' => strtoupper($_REQUEST['fetch_mode']),
+        'fetchMode' => strtoupper(getServerFetchMode($fetchMode, $_REQUEST['fetch_mode'])),
         'maxRetries' => $_REQUEST['max_retries'],
         'retryInterval' => $_REQUEST['retry'],
         'maxConnections' => $_REQUEST['max_connections'],
@@ -171,8 +180,11 @@ curl_close($curl);
 										<label class="control-label" for="fetch_mode_<?=$sourcedataId?>">Fetch mode</label>
                 						<select class="form-control" id="fetch_mode_<?=$sourcedataId?>" name="fetch_mode">
                 						<?php 
-                						    foreach ($fetchMode as $key=>$value){
-                						        $selected = strtolower($data->fetchMode)==strtolower($key) ?'selected="selected"':'';
+                						    foreach ($fetchMode as $key=>$arr_value){
+                						        $values = array_values($arr_value);
+                						        $value = $values[0];
+                						        $key_val = $arr_value[1];
+                						        $selected = strtolower($data->fetchMode)==strtolower($key_val) ?'selected="selected"':'';
                 						        ?>
                 							<option id="<?=$value?>" <?=$selected?>><?=$key?></option>
                 						<?php }?>
