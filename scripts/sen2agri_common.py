@@ -741,7 +741,8 @@ class ProcessorBase(object):
             tile = Tile(tile_id, tile_footprint, tile_footprint_wgs84,
                         tile_projection, build_descriptor_list(main_mission, products), raster)
 
-            self.tiles.append(tile)
+            if self.args.tile_filter is None or tile_id in self.args.tile_filter:
+                self.tiles.append(tile)
 
         for (mission, mission_tiles) in mission_products.iteritems():
             if mission != main_mission:
