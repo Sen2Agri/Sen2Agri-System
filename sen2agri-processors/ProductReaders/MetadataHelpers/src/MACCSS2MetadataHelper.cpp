@@ -124,7 +124,7 @@ typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer MAC
 
         typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer imageList = this->CreateImageList();
         this->m_bandsExtractor.ExtractImageBands(reader->GetOutput(), imageList,
-                                           retRelBandIdxs, Interpolator_NNeighbor);
+                                           retRelBandIdxs, Interpolator_BCO);
 
         imageList->UpdateOutputInformation();
         typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ListConcatenerFilterType::Pointer concat = this->CreateConcatenner();
@@ -148,7 +148,7 @@ typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer MAC
             const std::vector<int> &relBandsIdxs = containerIt->second;
             const std::vector<std::string> &resBandsNames = containerIt2->second;
             const std::vector<int> &addedRelBandIdx = this->m_bandsExtractor.ExtractImageBands(reader->GetOutput(), imageList,
-                                                                                  relBandsIdxs, Interpolator_NNeighbor, curRes, outRes);
+                                                                                  relBandsIdxs, Interpolator_BCO, curRes, outRes);
             for (int i = 0; i<resBandsNames.size(); i++) {
                 mapBandNamesToListIdx[resBandsNames[i]] = addedRelBandIdx[i];
             }
@@ -210,7 +210,7 @@ typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer MACCS
             if (relBandsIdxs.size() > 0) {
                 typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageReaderType::Pointer reader = this->CreateReader(getImageFileName(curRes));
                 this->m_bandsExtractor.ExtractImageBands(reader->GetOutput(), imageList, relBandsIdxs,
-                                                   Interpolator_NNeighbor, curRes, outRes);
+                                                   Interpolator_BCO, curRes, outRes);
             }
         }
     }
