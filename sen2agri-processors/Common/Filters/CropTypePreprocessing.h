@@ -99,7 +99,7 @@ public:
             channelExtractor->SetIndex(bandIndex);
             m_Filters->PushBack(channelExtractor);
             auto resampledBand = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
-            descriptor.redEdgeBands.push_back(resampledBand);
+            descriptor.bands.push_back(resampledBand);
         }
     }
 /*
