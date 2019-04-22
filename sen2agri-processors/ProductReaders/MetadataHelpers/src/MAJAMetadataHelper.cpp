@@ -29,6 +29,11 @@ MAJAMetadataHelper<PixelType, MasksPixelType>::MAJAMetadataHelper()
     this->m_ReflQuantifVal = 1;
 }
 
+template <typename PixelType, typename MasksPixelType>
+typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer MAJAMetadataHelper<PixelType, MasksPixelType>::GetImage(const std::vector<std::string> &bandNames, int outRes)
+{
+    return GetImage(bandNames, NULL, outRes);
+}
 
 template <typename PixelType, typename MasksPixelType>
 typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer MAJAMetadataHelper<PixelType, MasksPixelType>::GetImage(const std::vector<std::string> &bandNames,

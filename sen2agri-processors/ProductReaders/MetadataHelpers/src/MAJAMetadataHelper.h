@@ -152,6 +152,7 @@ public:
 
     const char * GetNameOfClass() { return "MAJAMetadataHelper"; }
 
+    virtual typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer GetImage(const std::vector<std::string> &bandNames, int outRes = -1);
     virtual typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer GetImage(const std::vector<std::string> &bandNames,
                                                 std::vector<int> *pRetRelBandIdxs, int outRes = -1);
     virtual typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer GetImageList(const std::vector<std::string> &bandNames,

@@ -81,6 +81,7 @@ protected:
 
 private:
     std::string getImageFileName(int res);
+    bool is_number(const std::string& s);
 
     typename MetadataHelper<PixelType, MasksPixelType>::AotInfos aotInfos10M;
     typename MetadataHelper<PixelType, MasksPixelType>::AotInfos aotInfos20M;
