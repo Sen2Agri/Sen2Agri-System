@@ -796,14 +796,19 @@ class ProcessorBase(object):
                 print("No training data found inside any of the strata, exiting")
                 sys.exit(1)
 
+            tiles_to_exclude = []
             for tile in self.tiles:
                 for stratum in self.strata:
-                    if stratum.extent.Intersection(tile.footprint_wgs84).Area() > 0 and (self.args.stratum_filter is None or stratum.id in self.args.stratum_filter):
-                        tile.strata.append(stratum)
-                        stratum.tiles.append(tile)
+                    if self.args.stratum_filter is None or stratum.id in self.args.stratum_filter:
+                        if stratum.extent.Intersection(tile.footprint_wgs84).Area() > 0 and ():
+                            tile.strata.append(stratum)
+                            stratum.tiles.append(tile)
+                    else:
+                        tiles_to_exclude.add(tile)
 
                 print("Strata for tile {}: {}".format(tile.id, map(lambda s: s.id, tile.strata)))
 
+            self.tiles = [tile for tile in self.tiles if tile not in tiles_to_exclude]
         else:
             stratum = Stratum(0, self.site_footprint_wgs84)
             stratum.tiles = self.tiles
