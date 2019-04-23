@@ -140,7 +140,7 @@ def get_reference_raster(product):
     if extension == ".xml":
         files = glob.glob(os.path.join(directory, "*_FRE_B4.tif"))
         if files:
-            return files[0]    
+            return files[0]
         else:
             files = glob.glob(os.path.join(directory, "*PENTE*"))
             if files:
@@ -780,11 +780,13 @@ class ProcessorBase(object):
 
         if not self.single_stratum:
             if self.args.stratum_filter is not None:
-                self.args.filtered_strata = self.get_output_path("filtered-strata.shp")
+                strata_ids_str = map(str, self.args.stratum_filter)
+                filtered_strata = "filtered-strata-{}.shp".format("-".join(strata_ids_str))
+                self.args.filtered_strata = self.get_output_path(filtered_strata)
 
                 run_step(Step("Filter strata",
                               ["ogr2ogr",
-                               "-where", "id in ({})".format(", ".join(map(str, self.args.stratum_filter))),
+                               "-where", "id in ({})".format(", ".join(strata_ids_str)),
                                self.args.filtered_strata, self.args.strata]))
             else:
                 self.args.filtered_strata = self.args.strata
