@@ -28,9 +28,10 @@ add_library(Sen2AgriProductReaders SHARED ${Sen2AgriProductReaders_HEADERS} ${Se
 target_link_libraries(Sen2AgriProductReaders
     Sen2AgriCommonUtils
     MACCSMetadata
-    "${Boost_LIBRARIES}"
-    "${OTBCommon_LIBRARIES}"
-    "${OTBITK_LIBRARIES}")
+    ${Boost_LIBRARIES}
+    ${OTB_LIBRARIES}
+    ${OTBCommon_LIBRARIES}
+    ${OTBITK_LIBRARIES})
 
 target_include_directories(Sen2AgriProductReaders PUBLIC ../include)
 
