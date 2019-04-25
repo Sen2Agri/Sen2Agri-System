@@ -16,8 +16,6 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
-#include "itkFlatStructuringElement.h"
-#include "itkLabelErodeImageFilter.h"
 //#include "otbStreamingHistogramImageFilter.h"
 
 /*=========================================================================
@@ -56,12 +54,7 @@ typedef Application                   Superclass;
 typedef itk::SmartPointer<Self>       Pointer;
 typedef itk::SmartPointer<const Self> ConstPointer;
 
-
-typedef itk::FlatStructuringElement<2>                                         StructuringType;
-typedef StructuringType::RadiusType                                            RadiusType;
-
 typedef Int32ImageType                                                         ImageType;
-typedef itk::LabelErodeImageFilter<ImageType, ImageType, StructuringType>      ErodeFilterType;
 typedef otb::StreamingHistogramImageFilter<ImageType>                          StreamingHistogramFilterType;
 
 /** Standard macro */

@@ -1,8 +1,6 @@
 otb_create_application(
 	NAME           ComputeClassCounts
 	SOURCES        ComputeClassCounts.cxx
-                       itkLabelErodeImageFilter.h
-                       itkLabelErodeImageFilter.hxx
 		       otbStreamingHistogramImageFilter.h
 		       otbStreamingHistogramImageFilter.hxx
 	LINK_LIBRARIES ${OTB_LIBRARIES}
