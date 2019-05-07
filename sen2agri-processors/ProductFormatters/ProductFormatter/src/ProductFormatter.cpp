@@ -26,8 +26,10 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef _WIN32
 #include <sys/wait.h>
 #include <spawn.h>
+#endif
 #include <fstream>
 
 #include "ProductMetadataWriter.hpp"
@@ -2018,21 +2020,24 @@ private:
   }
 
   bool ExecuteExternalProgram(const char *appExe, std::vector<const char *> appArgs) {
-      int error, status;
-      pid_t pid, waitres;
       std::vector<const char *> args;
       std::string cmdInfo;
       args.emplace_back(appExe);
       cmdInfo = appExe;
-      for(unsigned int i = 0; i<appArgs.size(); i++) {
-            args.emplace_back(appArgs[i]);
-            cmdInfo += " ";
-            cmdInfo += appArgs[i];
+      for (auto arg : appArgs) {
+          cmdInfo += " ";
+          cmdInfo += arg;
       }
       otbAppLogINFO("Executing external command: " << cmdInfo);
 
+ #ifndef _WIN32
+      for (auto arg : appArgs) {
+          args.emplace_back(arg);
+      }
       args.emplace_back(nullptr);
 
+      int error, status;
+      pid_t pid, waitres;
       posix_spawnattr_t attr;
       posix_spawnattr_init(&attr);
       posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
@@ -2045,6 +2050,15 @@ private:
       if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
         return true;
       }
+#else
+      int status = system(cmdInfo.c_str());
+      if (status == -1) {
+          otbAppLogWARNING("Error creating process for " << appExe << ". The resulting files will not be created. Error was: " << errno);
+          return false;
+      } else if (status == 0) {
+          return true;
+      }
+#endif
       otbAppLogWARNING("Error running " << appExe << ". The resulting file(s) might not be created. The return was: " << status);
       return false;
   }
