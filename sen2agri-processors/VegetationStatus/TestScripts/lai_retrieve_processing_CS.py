@@ -379,7 +379,7 @@ if __name__ == '__main__':
                 "-processor.vegetation.laindvi", tileID, curOutSingleNDVIImg,
                 "-processor.vegetation.laimonodate", tileID, curOutLaiShortImg,
                 "-processor.vegetation.laimonodateerr", tileID, curOutLaiErrShortImg,
-                "-processor.vegetation.laimdateflgs", tileID, allMskFlagsParam[idx],
+                "-processor.vegetation.laistatusflgs", tileID, allMskFlagsParam[idx],
                 "-il", xml, 
                 "-gipp", paramsLaiModelFilenameXML])
 
@@ -398,7 +398,7 @@ if __name__ == '__main__':
 #           "-processor.vegetation.laindvi", tileID] + allSingleNdviFilesList + [
 #           "-processor.vegetation.laimonodate", tileID] + allLaiShortParam + [
 #           "-processor.vegetation.laimonodateerr", tileID] + allErrShortParam + [
-#           "-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + [
+#           "-processor.vegetation.laistatusflgs", tileID] + allMskFlagsParam + [
 #           "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
 #           "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,
 #           "-processor.vegetation.filelaifit", tileID, fittedRastersListFile,

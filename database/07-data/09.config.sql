@@ -241,4 +241,8 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s1.for
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.skip.existing', NULL, 'false', '2019-04-12 14:56:57.501918+02');
 
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.crop-mask', NULL, '', '2019-04-12 14:56:57.501918+02');
+
+
+
 

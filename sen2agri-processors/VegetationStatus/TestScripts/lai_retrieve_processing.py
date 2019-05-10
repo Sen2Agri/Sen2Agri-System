@@ -455,7 +455,7 @@ class LaiMonoDate(object):
                     "-processor.vegetation.laimonodate", tileID, curOutLaiShortImg,
                     "-processor.vegetation.faparmonodate", tileID, curOutFaparShortImg,
                     "-processor.vegetation.fcovermonodate", tileID, curOutFCoverShortImg,
-                    "-processor.vegetation.laimdateflgs", tileID, curOutLaiMonoMskFlgsImg,
+                    "-processor.vegetation.laistatusflgs", tileID, curOutLaiMonoMskFlgsImg,
                     "-il", xml, 
                     "-gipp", paramsLaiModelFilenameXML])        
                 
@@ -513,7 +513,7 @@ class LaiMonoDate(object):
                     "-processor.vegetation.laindvi", tileID, curOutSingleNDVIImg,
                     "-processor.vegetation.laimonodate", tileID, curOutLaiShortImg,
                     "-processor.vegetation.laimonodateerr", tileID, curOutLaiErrShortImg,
-                    "-processor.vegetation.laimdateflgs", tileID, curOutLaiMonoMskFlgsImg,
+                    "-processor.vegetation.laistatusflgs", tileID, curOutLaiMonoMskFlgsImg,
                     "-il", xml, 
                     "-gipp", paramsLaiModelFilenameXML])        
         
