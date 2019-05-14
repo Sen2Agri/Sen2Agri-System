@@ -106,7 +106,9 @@ private:
         SetParameterOutputImage("out", (MetadataHelper<short>::VectorImageType*) img);
 
         SetParameterOutputImagePixelType("outmsk", ImagePixelType_uint8);
-        MetadataHelper<short>::SingleBandImageType::Pointer mskImg = m_pHelper->GetMasksImage(ALL, false);
+        //MasksFlagType flgs = ALL;
+        MasksFlagType flgs = MSK_CLOUD;
+        MetadataHelper<short>::SingleBandImageType::Pointer mskImg = m_pHelper->GetMasksImage(flgs, false);
         SetParameterOutputImage("outmsk", (MetadataHelper<short>::SingleBandImageType*) mskImg);
 
     }

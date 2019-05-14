@@ -27,8 +27,10 @@ public:
         int dateIdxInName;
         // The expected extension of the tile metadata file
         QString extension;
-        //NOT Used yet: maybe a pattern should be used
-        QString tileNamePattern;
+        //Regext for the product name
+        QString tileNameRegex;
+        // TODO: Not used for now
+        int tileIdxInName;
     } L2MetaTileNameInfos;
 
     typedef struct InfoTileFile {

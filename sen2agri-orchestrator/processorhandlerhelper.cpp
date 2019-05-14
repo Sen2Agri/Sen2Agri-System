@@ -16,11 +16,11 @@
 //       not the name of the satellite as it appears inside the file metadata of product (that can be SENTINEL-2A, LANDSAT_8 etc.)
 /* static */
 QMap<QString, ProcessorHandlerHelper::L2MetaTileNameInfos> ProcessorHandlerHelper::m_mapSensorL2ATileMetaFileInfos =
-    {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 8, "hdr", "S2A|S2B_*_*_L2VALD_<TILEID>_*_*_*_<DATE>.HDR"}},
-     {"SENTINEL2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 8, "xml", "SENTINEL2A|SENTINEL2B_*_L2A_<TILEID>_*_MTD_ALL.xml"}},
-     {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, 5, "hdr", "L8_*_L8C_L2VALD_<TILEID>_<DATE>.HDR"}},
-     {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, 3, "xml", "SPOT4_*_*_<DATE>_*_*.xml"}},
-     {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, 3, "xml", "SPOT5_*_*_<DATE>_*_*.xml"}},
+    {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 8, "hdr", ""}}, //"S2A|S2B_*_*_L2VALD_<TILEID>_*_*_*_<DATE>.HDR"
+     {"SENTINEL2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 1, "xml", R"(SENTINEL2[A-D]_(\d{8})-(\d{6})-(\d{3})_L2A_T(\d{2})([A-Za-z]{3})_.*_MTD_ALL\.xml)"}},
+     {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, 5, "hdr", ""}}, //L8_*_L8C_L2VALD_<TILEID>_<DATE>.HDR
+     {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, 3, "xml", ""}}, //SPOT4_*_*_<DATE>_*_*.xml
+     {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, 3, "xml", ""}}, //SPOT5_*_*_<DATE>_*_*.xml
      // this prefix is impossible to occur in the file name
      {INVALID_FILE_SEQUENCE, {ProcessorHandlerHelper::L2_PRODUCT_TYPE_UNKNOWN, ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN, -1, INVALID_FILE_SEQUENCE, ""}}
 };
@@ -88,6 +88,7 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &
             const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(fileNameWithoutExtension);
             satelliteId = infos.satelliteIdType;
             if(infos.productType == L2_PRODUCT_TYPE_S2) {
+                // TODO: Here we should do it generic and use the REGEX from the L2MetaTileNameInfos
                 if((pieces.size() == 9) && (pieces[5] == "")) {
                     return QString(pieces[4]);
                 } else {
@@ -637,13 +638,30 @@ QDateTime ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path)
     if(info.isDir()) {
         name = info.dir().dirName();
     } else {
-        name = info.baseName();
+        name = info.fileName();
     }
 
-    int idx = GetL2AProductTileNameInfos(name).dateIdxInName;
-    QStringList nameWords = name.split("_");
-    if(idx >= 0 && idx < nameWords.size())
-        return QDateTime::fromString(nameWords[idx], "yyyyMMdd");
+    const ProcessorHandlerHelper::L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(name);
+    int dateIdxInName = infos.dateIdxInName;
+    QString dateStr;
+    if (infos.tileNameRegex.size() > 0 && dateIdxInName >= 0) {
+        static QRegularExpression rex(infos.tileNameRegex);
+        QRegularExpression re(rex);
+        const QRegularExpressionMatch &match = re.match(name);
+        if (match.hasMatch()) {
+            dateStr = match.captured(dateIdxInName);
+        }
+    } else {
+        QStringList nameWords = name.split("_");
+        if(dateIdxInName >= 0 && dateIdxInName < nameWords.size()) {
+            dateStr = nameWords[dateIdxInName];
+        }
+    }
+
+    if (dateStr.size() > 0) {
+        return QDateTime::fromString(dateStr, "yyyyMMdd");
+    }
+
     return QDateTime();
 }
 
