@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<entity-mappings xmlns="http://xmlns.jcp.org/xml/ns/persistence/orm"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence/orm
+                 http://xmlns.jcp.org/xml/ns/persistence/orm/orm_2_2.xsd"
+                 version="2.2">
+
+    <persistence-unit-metadata>
+        <persistence-unit-defaults>
+            <entity-listeners>
+                <entity-listener class="org.springframework.data.jpa.domain.support.AuditingEntityListener" />
+            </entity-listeners>
+        </persistence-unit-defaults>
+    </persistence-unit-metadata>
+
+    <entity class="org.esa.sen2agri.entities.ConfigurationItem" access="PROPERTY" name="Config">
+        <table name="config"/>
+        <attributes>
+            <id name="id">
+                <column name="id" nullable="false" column-definition="integer NOT NULL"/>
+                <generated-value strategy="IDENTITY" />
+            </id>
+            <basic name="key">
+                <column name="key" nullable="false" column-definition="character varying NOT NULL"/>
+            </basic>
+            <basic name="value">
+                <column name="value" nullable="false" column-definition="character varying NOT NULL"/>
+            </basic>
+            <basic name="siteId">
+                <column name="site_id" nullable="true" column-definition="smallint"/>
+            </basic>
+        </attributes>
+    </entity>
+
+    <entity class="org.esa.sen2agri.entities.Site" access="PROPERTY" name="Site">
+        <table name="site"/>
+        <attributes>
+            <id name="id">
+                <column name="id" nullable="false" column-definition="smallserial NOT NULL"/>
+                <generated-value strategy="IDENTITY" />
+            </id>
+            <basic name="name">
+                <column name="name" nullable="false" column-definition="character varying NOT NULL"/>
+            </basic>
+            <basic name="shortName">
+                <column name="short_name" nullable="false" column-definition="character varying NOT NULL"/>
+            </basic>
+            <basic name="extent">
+                <column name="geog" nullable="false" column-definition="geography(MultiPolygon,4326) NOT NULL"/>
+            </basic>
+            <basic name="enabled">
+                <column name="enabled" nullable="false" column-definition="boolean NOT NULL"/>
+            </basic>
+        </attributes>
+    </entity>
+
+    <entity class="org.esa.sen2agri.entities.Season" access="PROPERTY" name="Season">
+        <table name="season"/>
+        <attributes>
+            <id name="id">
+                <column name="id" nullable="false" column-definition="smallserial NOT NULL"/>
+                <generated-value strategy="IDENTITY" />
+            </id>
+            <basic name="siteId">
+                <column name="site_id" nullable="false" column-definition="smallserial NOT NULL"/>
+            </basic>
+            <basic name="name">
+                <column name="name" nullable="false" column-definition="character varying NOT NULL"/>
+            </basic>
+            <basic name="startDate">
+                <column name="start_date" nullable="false" column-definition="date NOT NULL"/>
+            </basic>
+            <basic name="endDate">
+                <column name="end_date" nullable="false" column-definition="date NOT NULL"/>
+            </basic>
+            <basic name="midDate">
+                <column name="mid_date" nullable="false" column-definition="date NOT NULL"/>
+            </basic>
+            <basic name="enabled">
+                <column name="enabled" nullable="false" column-definition="boolean NOT NULL"/>
+            </basic>
+        </attributes>
+    </entity>
+
+    <entity class="org.esa.sen2agri.entities.DataSourceConfiguration" name="DataSourceConfiguration">
+        <table name="datasource"/>
+        <convert converter="org.esa.sen2agri.entities.converters.SatelliteConverter" attribute-name="satellite" />
+        <convert converter="org.esa.sen2agri.entities.converters.FetchModeConverter" attribute-name="fetchMode" />
+        <convert converter="org.esa.sen2agri.entities.converters.ParameterListConverter" attribute-name="specificParameters" />
+        <attributes>
+            <id name="id">
+                <column name="id" nullable="false" column-definition="smallserial NOT NULL"/>
+                <generated-value strategy="IDENTITY"/>
+            </id>
+            <basic name="siteId">
+                <column name="site_id" nullable="false" column-definition="smallint NOT NULL"/>
+            </basic>
+            <basic name="satellite">
+                <column name="satellite_id" nullable="false" column-definition="smallint NOT NULL"/>
+            </basic>
+            <basic name="dataSourceName">
+                <column name="name" nullable="false" column-definition="character varying(50) NOT NULL"/>
+            </basic>
+            <basic name="scope">
+                <column name="scope" nullable="false" column-definition="smallint NOT NULL DEFAULT 3"/>
+            </basic>
+            <basic name="user">
+                <column name="username" nullable="true" column-definition="character varying(100)"/>
+            </basic>
+            <basic name="password">
+                <column name="passwrd" nullable="true" column-definition="character varying(100)"/>
+            </basic>
+            <basic name="fetchMode">
+                <column name="fetch_mode" nullable="false" column-definition="smallint NOT NULL DEFAULT 1"/>
+            </basic>
+            <basic name="maxRetries">
+                <column name="max_retries" nullable="false" column-definition="integer NOT NULL DEFAULT 3"/>
+            </basic>
+            <basic name="retryInterval">
+                <column name="retry_interval_minutes" nullable="false" column-definition="integer NOT NULL DEFAULT 3600"/>
+            </basic>
+            <basic name="maxConnections">
+                <column name="max_connections" nullable="false" column-definition="integer NOT NULL DEFAULT 1"/>
+            </basic>
+            <basic name="downloadPath">
+                <column name="download_path" nullable="true" column-definition="character varying(255)"/>
+            </basic>
+            <basic name="localArchivePath">
+                <column name="local_root" nullable="true" column-definition="character varying(255)"/>
+            </basic>
+            <basic name="enabled">
+                <column name="enabled" nullable="false" column-definition="boolean NOT NULL DEFAULT false"/>
+            </basic>
+            <basic name="specificParameters">
+                <column name="specific_params" nullable="true" column-definition="json"/>
+            </basic>
+            <basic name="secondaryDatasourceId">
+                <column name="secondary_datasource_id" nullable="true" column-definition="integer" />
+            </basic>
+            <transient name="additionalSettings" />
+        </attributes>
+    </entity>
+
+    <entity class="org.esa.sen2agri.entities.Processor" access="PROPERTY" name="Processor">
+        <table name="processor"/>
+        <attributes>
+            <id name="id">
+                <column name="id" nullable="false" column-definition="smallint NOT NULL"/>
+            </id>
+            <basic name="name">
+                <column name="name" nullable="false" column-definition="character varying NOT NULL"/>
+            </basic>
+            <basic name="description">
+                <column name="description" nullable="true" column-definition="character varying"/>
+            </basic>
+            <basic name="shortName">
+                <column name="short_name" nullable="false" column-definition="character varying NOT NULL"/>
+            </basic>
+        </attributes>
+    </entity>
+
+    <entity class="org.esa.sen2agri.entities.ProductTypeInfo" access="PROPERTY" name="ProductTypeInfo">
+        <table name="product_type"/>
+        <attributes>
+            <id name="id">
+                <column name="id" nullable="false" column-definition="smallint NOT NULL"/>
+                <generated-value strategy="IDENTITY" />
+            </id>
+            <basic name="shortName">
+                <column name="name" nullable="false" column-definition="character varying NOT NULL"/>
+            </basic>
+            <basic name="description">
+                <column name="description" nullable="true" column-definition="character varying"/>
+            </basic>
+        </attributes>
+    </entity>
+
+</entity-mappings>
