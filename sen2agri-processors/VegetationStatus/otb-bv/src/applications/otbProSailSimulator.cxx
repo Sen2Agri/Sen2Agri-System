@@ -34,7 +34,11 @@
 
 #include <fstream>
 #include <string>
-#include <thread>
+#ifdef _WIN32
+    #include <mingw.thread.h>
+#else
+    #include <thread>
+#endif
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <random>

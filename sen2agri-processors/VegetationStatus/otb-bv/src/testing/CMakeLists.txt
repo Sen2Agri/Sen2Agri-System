@@ -11,6 +11,10 @@
 # PURPOSE.  See the above copyright notices for more information.
 #
 # =========================================================================
+IF (WIN32)
+    link_directories(C:/OTB-release-xdk-win32/lib)
+ENDIF(WIN32)
+
 
 ### Test the applications
 add_test(appBvGenInputVars otbApplicationLauncherCommandLine 

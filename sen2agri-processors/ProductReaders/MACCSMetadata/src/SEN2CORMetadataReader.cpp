@@ -27,7 +27,7 @@
 
 namespace itk
 {
-std::unique_ptr<MACCSFileMetadata> SEN2CORMetadataReader::ReadMetadata(const std::string &path)
+std::unique_ptr<MACCSFileMetadata> SEN2COR_METADATA_READER_EXPORT SEN2CORMetadataReader::ReadMetadata(const std::string &path)
 {
     TiXmlDocument doc(path);
     if (!doc.LoadFile()) {

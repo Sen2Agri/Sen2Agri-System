@@ -14,6 +14,7 @@
  =========================================================================*/
  
 #include "totalweightcomputation.h"
+#include "TimeFunctions.h"
 
 TotalWeightComputation::TotalWeightComputation()
 {

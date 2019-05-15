@@ -1,4 +1,4 @@
-find_package(Boost REQUIRED COMPONENTS filesystem)
+find_package(Boost REQUIRED COMPONENTS regex)
 
 include_directories(../../Common/include)
 
@@ -25,7 +25,7 @@ otb_create_application(
                  GSAAShpAttributesTablesReader.cpp
                  GSAAShpAttributesTablesReader.h
 
-  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata boost_regex)
+  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata ${Boost_LIBRARIES})
 
 #if(BUILD_TESTING)
 #  add_subdirectory(test)

@@ -7,9 +7,15 @@
 
 #include "MACCSMetadata.hpp"
 
+#if (defined(WIN32) || defined(_WIN32))
+#  define SEN2COR_METADATA_READER_EXPORT __declspec(dllexport)
+#else
+#  define SEN2COR_METADATA_READER_EXPORT
+#endif
+
 namespace itk
 {
-class SEN2CORMetadataReader : public itk::LightObject
+class SEN2COR_METADATA_READER_EXPORT SEN2CORMetadataReader : public itk::LightObject
 {
 public:
     typedef SEN2CORMetadataReader Self;

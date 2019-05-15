@@ -5,9 +5,15 @@
 #include "FluentXML.hpp"
 #include "MACCSMetadata.hpp"
 
+#if (defined(WIN32) || defined(_WIN32))
+#  define MACCS_METADATA_WRITER_EXPORT __declspec(dllexport)
+#else
+#  define MACCS_METADATA_WRITER_EXPORT
+#endif
+
 namespace itk
 {
-class MACCSMetadataWriter : public itk::LightObject
+class MACCS_METADATA_WRITER_EXPORT MACCSMetadataWriter : public itk::LightObject
 {
 public:
     typedef MACCSMetadataWriter Self;

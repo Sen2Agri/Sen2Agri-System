@@ -23,7 +23,7 @@ import shutil
 import glob
 import argparse
 import csv
-from sys import argv
+from sys import argv, platform
 import datetime
 import subprocess
 import pipes
@@ -33,6 +33,10 @@ import math
 from xml.dom import minidom
 import ntpath
 
+def getScriptNameOSDepending(scriptName):
+    if platform.startswith('win32'):
+	    return scriptName + '.bat'
+    return scriptName	
 
 def runCmd(cmdArray):
     start = time.time()
@@ -127,11 +131,11 @@ def buildReprocessedTimeSeries(xmlList, siteId, simpleTileId, inLaiMonoDir, laiT
         deqString = []
     
     # Create the LAI and Error time series
-    runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allLaiParam + ["-out", laiTimeSeriesFile] + deqString)
+    runCmd([getScriptNameOSDepending("otbcli"), "TimeSeriesBuilder", appLocation, "-il"] + allLaiParam + ["-out", laiTimeSeriesFile] + deqString)
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-    runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allErrParam + ["-out", errTimeSeriesFile] + deqString)
+    runCmd([getScriptNameOSDepending("otbcli"), "TimeSeriesBuilder", appLocation, "-il"] + allErrParam + ["-out", errTimeSeriesFile] + deqString)
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-    runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allMskFlagsParam + ["-out", mskTimeSeriesFile])
+    runCmd([getScriptNameOSDepending("otbcli"), "TimeSeriesBuilder", appLocation, "-il"] + allMskFlagsParam + ["-out", mskTimeSeriesFile])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 def generateReprocessedLAI(tileID, siteId, allXmlParam, laiTimeSeriesFile, errTimeSeriesFile,\
@@ -157,14 +161,14 @@ def generateReprocessedLAI(tileID, siteId, allXmlParam, laiTimeSeriesFile, errTi
         paramsFileXML.write(prettify(root))
 
     # Compute the reprocessed time series (On-line Retrieval)
-    runCmd(["otbcli", "ProfileReprocessing", appLocation, "-lai", laiTimeSeriesFile, "-err", errTimeSeriesFile, "-msks", mskTimeSeriesFile, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "1", "-algo", "local", "-algo.local.bwr", str(ALGO_LOCAL_BWR), "-algo.local.fwr", str(ALGO_LOCAL_FWR)])
+    runCmd([getScriptNameOSDepending("otbcli"), "ProfileReprocessing", appLocation, "-lai", laiTimeSeriesFile, "-err", errTimeSeriesFile, "-msks", mskTimeSeriesFile, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "1", "-algo", "local", "-algo.local.bwr", str(ALGO_LOCAL_BWR), "-algo.local.fwr", str(ALGO_LOCAL_FWR)])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
     #split the Reprocessed time series to a number of images
-    runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
+    runCmd([getScriptNameOSDepending("otbcli"), "ReprocessedProfileSplitter2", appLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     # Generate the product for the Reprocessed LAI
-    runCmd(["otbcli", "ProductFormatter", appLocation,
+    runCmd([getScriptNameOSDepending("otbcli"), "ProductFormatter", appLocation,
             "-destroot", outDir,
             "-fileclass", "SVT1", "-level", "L3C", "-baseline", "01.00", "-siteid", siteId,
             "-processor", "vegetation",
@@ -179,14 +183,14 @@ def generateFittedLAI(tileID, siteId, allXmlParam, laiTimeSeriesFile, errTimeSer
     outFittedTimeSeries = "{}/FittedTimeSeries.tif".format(outDir)
 
     # Compute the fitted time series (CSDM Fitting)
-    runCmd(["otbcli", "ProfileReprocessing", appLocation, "-lai", laiTimeSeriesFile, "-err", errTimeSeriesFile, "-msks", mskTimeSeriesFile, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-genall", "1", "-algo", "fit"])
+    runCmd([getScriptNameOSDepending("otbcli"), "ProfileReprocessing", appLocation, "-lai", laiTimeSeriesFile, "-err", errTimeSeriesFile, "-msks", mskTimeSeriesFile, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-genall", "1", "-algo", "fit"])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
     #split the Fitted time series to a number of images
-    runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outFittedTimeSeries, "-outrlist", fittedRastersListFile, "-outflist", fittedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
+    runCmd([getScriptNameOSDepending("otbcli"), "ReprocessedProfileSplitter2", appLocation, "-in", outFittedTimeSeries, "-outrlist", fittedRastersListFile, "-outflist", fittedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     # Generate the product for the Fitted LAI
-    runCmd(["otbcli", "ProductFormatter", appLocation,
+    runCmd([getScriptNameOSDepending("otbcli"), "ProductFormatter", appLocation,
             "-destroot", outDir,
             "-fileclass", "SVT1", "-level", "L3D", "-baseline", "01.00", "-siteid", siteId,
             "-processor", "vegetation",
@@ -242,7 +246,7 @@ class LaiModel(object):
         print("\tmodala: {}".format(args.modala))
         print("\tstdala: {}".format(args.stdala))
         
-        runCmd(["otbcli", "BVInputVariableGeneration", appLocation,
+        runCmd([getScriptNameOSDepending("otbcli"), "BVInputVariableGeneration", appLocation,
                 "-samples", str(GENERATED_SAMPLES_NO),
                 "-out",  outGeneratedSampleFile,
                 "-minlai", args.minlai,
@@ -267,7 +271,7 @@ class LaiModel(object):
                 print("Please provide the rsrcfg or rsrfile!")
                 exit(1)
             else:
-                runCmd(["otbcli", "ProSailSimulatorNew", appLocation,
+                runCmd([getScriptNameOSDepending("otbcli"), "ProSailSimulatorNew", appLocation,
                         "-xml", curXml,
                         "-bvfile", outGeneratedSampleFile,
                         "-rsrfile", rsrFile,
@@ -275,7 +279,7 @@ class LaiModel(object):
                         "-outangles", outAnglesFile,
                         "-laicfgs", args.laiBandsCfg])
         else:
-            runCmd(["otbcli", "ProSailSimulatorNew", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "ProSailSimulatorNew", appLocation,
                     "-xml", curXml,
                     "-bvfile", outGeneratedSampleFile,
                     "-rsrcfg", rsrCfg,
@@ -285,7 +289,7 @@ class LaiModel(object):
 
         # Generating training file
         print("Generating training file ...")
-        runCmd(["otbcli", "TrainingDataGeneratorNew", appLocation,
+        runCmd([getScriptNameOSDepending("otbcli"), "TrainingDataGeneratorNew", appLocation,
                 "-xml", curXml,
                 "-biovarsfile", outGeneratedSampleFile,
                 "-simureflsfile", outSimuReflsFile,
@@ -312,7 +316,7 @@ class LaiModel(object):
 
         # Generating model
         print("Generating model ...")
-        runCmd(["otbcli", "InverseModelLearning", appLocation,
+        runCmd([getScriptNameOSDepending("otbcli"), "InverseModelLearning", appLocation,
                 "-training", outTrainingFile,
                 "-out", imgModelFileName,
                 "-errest", errEstModelFileName,
@@ -400,54 +404,54 @@ class LaiMonoDate(object):
         curOutFCoverShortImg = outFCoverShortImg.replace("#", counterString)
         curOutLaiErrShortImg = outLaiErrShortImg.replace("#", counterString)
 
-        runCmd(["otbcli", "GenerateLaiMonoDateMaskFlags", appLocation,
+        runCmd([getScriptNameOSDepending("otbcli"), "GenerateLaiMonoDateMaskFlags", appLocation,
                 "-inxml", xml,
                 "-out", curOutLaiMonoMskFlgsImg])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         
         if self.useInraVersion == True :
-            runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "NdviRviExtractionNew", appLocation,
             "-xml", xml,
             "-msks", curOutLaiMonoMskFlgsImg,
             "-ndvi", curOutSingleNDVIImg,
             "-laicfgs", args.laiBandsCfg])
         
             # Execute LAI processor
-            runCmd(["otbcli", "BVLaiNewProcessor", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "BVLaiNewProcessor", appLocation,
                     "-xml", xml,
                     "-outlai", curOutLaiImg,
                     "-laicfgs", args.laiBandsCfg])
             print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
             if self.genFapar == True :
                 # Execute fAPAR processor
-                runCmd(["otbcli", "BVLaiNewProcessor", appLocation,
+                runCmd([getScriptNameOSDepending("otbcli"), "BVLaiNewProcessor", appLocation,
                         "-xml", xml,
                         "-outfapar", curOutFaparImg,
                         "-laicfgs", args.laiBandsCfg])
                 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
             if self.genFCover == True :
                 # Execute fAPAR processor
-                runCmd(["otbcli", "BVLaiNewProcessor", appLocation,
+                runCmd([getScriptNameOSDepending("otbcli"), "BVLaiNewProcessor", appLocation,
                         "-xml", xml,
                         "-outfcover", curOutFCoverImg,
                         "-laicfgs", args.laiBandsCfg])
                 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-            runCmd(["otbcli", "QuantifyImage", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "QuantifyImage", appLocation,
                     "-in", curOutLaiImg,
                     "-out", curOutLaiShortImg])
             print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-            runCmd(["otbcli", "QuantifyImage", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "QuantifyImage", appLocation,
                     "-in", curOutFaparImg,
                     "-out", curOutFaparShortImg])
             print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-            runCmd(["otbcli", "QuantifyImage", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "QuantifyImage", appLocation,
                     "-in", curOutFCoverImg,
                     "-out", curOutFCoverShortImg])
             print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
                 
             # Generate the product for the monodate
-            runCmd(["otbcli", "ProductFormatter", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "ProductFormatter", appLocation,
                     "-destroot", outDir,
                     "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-siteid", siteId,
                     "-processor", "vegetation",
@@ -462,14 +466,14 @@ class LaiMonoDate(object):
         else :
             #Compute NDVI and RVI
             if resolution == 0:
-                runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
+                runCmd([getScriptNameOSDepending("otbcli"), "NdviRviExtractionNew", appLocation,
                 "-xml", xml,
                 "-msks", curOutLaiMonoMskFlgsImg,
                 "-ndvi", curOutSingleNDVIImg,
                 "-fts", curOutNDVIRVIImg,
                 "-laicfgs", args.laiBandsCfg])
             else:
-                runCmd(["otbcli", "NdviRviExtractionNew", appLocation,
+                runCmd([getScriptNameOSDepending("otbcli"), "NdviRviExtractionNew", appLocation,
                 "-xml", xml,
                 "-msks", curOutLaiMonoMskFlgsImg,
                 "-ndvi", curOutSingleNDVIImg,
@@ -479,7 +483,7 @@ class LaiMonoDate(object):
             print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         
             # Retrieve the LAI model
-            runCmd(["otbcli", "BVImageInversion", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "BVImageInversion", appLocation,
                     "-in", curOutNDVIRVIImg,
                     "-msks", curOutLaiMonoMskFlgsImg,
                     "-out", curOutLaiImg,
@@ -487,7 +491,7 @@ class LaiMonoDate(object):
                     "-modelsfolder", modelsFolder,
                     "-modelprefix", "Model_"])
             print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-            runCmd(["otbcli", "BVImageInversion", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "BVImageInversion", appLocation,
                     "-in", curOutNDVIRVIImg,
                     "-msks", curOutLaiMonoMskFlgsImg,
                     "-out", curOutLaiErrImg,
@@ -496,17 +500,17 @@ class LaiMonoDate(object):
                     "-modelprefix", "Err_Est_Model_"])
             print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-            runCmd(["otbcli", "QuantifyImage", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "QuantifyImage", appLocation,
                     "-in", curOutLaiImg,
                     "-out", curOutLaiShortImg])
             print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-            runCmd(["otbcli", "QuantifyImage", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "QuantifyImage", appLocation,
                     "-in", curOutLaiErrImg,
                     "-out", curOutLaiErrShortImg])
             print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
             # Generate the product for the monodate
-            runCmd(["otbcli", "ProductFormatter", appLocation,
+            runCmd([getScriptNameOSDepending("otbcli"), "ProductFormatter", appLocation,
                     "-destroot", outDir,
                     "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-siteid", siteId,
                     "-processor", "vegetation",
@@ -654,6 +658,7 @@ if __name__ == '__main__':
     for idx, xml in enumerate(args.input):
         if GENERATE_MODEL:
             laiModel = LaiModel()
+            print("paramsLaiModelFilenameXML = {}".format(paramsLaiModelFilenameXML))
             laiModel.generateModel(xml,outDir,paramsLaiModelFilenameXML)
         
         if  generatemonodate:

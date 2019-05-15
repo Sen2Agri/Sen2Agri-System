@@ -48,6 +48,7 @@
 #include "phenoFunctions.h"
 #include "otbProfileReprocessing.h"
 #include "MetadataHelperFactory.h"
+#include "TimeFunctions.h"
 
 //VectorType date_vect1 = {37, 57, 77, 92, 102, 107, 112, 117, 122, 127, 132, 137, 147, 152, 157, 162, 167};
 //VectorType ts1 = {0, 0, 0, 0, 0.316361, 0.320108, 0.284682, 0.287518, 0.291294, 0.300072, 0, 0, 0, 1.21381, 1.18754, 0, 0};

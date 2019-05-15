@@ -75,7 +75,7 @@ TOutput DirectionalCorrectionFunctor<TInput,TOutput>::operator()( const TInput &
             } else {
                 double thetaV = A[m_nSensoAnglesBandStartIdx + 2*i];
                 double phiV = A[m_nSensoAnglesBandStartIdx + 2*i + 1];
-                if(isnan(thetaV) || isnan(phiV)) {
+                if(std::isnan(thetaV) || std::isnan(phiV)) {
                     var[i] = fReflVal;
                 } else {
                     DirectionalModel dirModel0(thetaS, 0, 0, 0);

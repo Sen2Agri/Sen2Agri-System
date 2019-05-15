@@ -5,10 +5,14 @@ set(Sen2AgriCommonUtils_HEADERS
     ../include/BandsCfgMappingParser.h
     ../include/ResamplingBandExtractor.h
     ../include/ImageResampler.h
-    ../include/GenericRSImageResampler.h)
+    ../include/GenericRSImageResampler.h
+    ../include/TimeFunctions.h
+    ../include/WStringToString.h)
 
 set(Sen2AgriCommonUtils_SOURCES
-    BandsCfgMappingParser.cpp)
+    BandsCfgMappingParser.cpp
+    TimeFunctions.cpp
+    WStringToString.cpp)
 
 add_library(Sen2AgriCommonUtils SHARED ${Sen2AgriCommonUtils_HEADERS} ${Sen2AgriCommonUtils_SOURCES})
 target_link_libraries(Sen2AgriCommonUtils

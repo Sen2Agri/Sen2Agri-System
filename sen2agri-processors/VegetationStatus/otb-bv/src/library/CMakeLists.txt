@@ -21,5 +21,6 @@ set(BelcamNeural_SRCS
 add_executable(ApplyTrainedNeuralNetwork ${BelcamNeural_SRCS})
 
 target_link_libraries(ApplyTrainedNeuralNetwork ${OTB_LIBRARIES})
+target_link_libraries(OTBBVUtil ${OTB_LIBRARIES})
 
 install(TARGETS OTBBVUtil DESTINATION usr/lib/)

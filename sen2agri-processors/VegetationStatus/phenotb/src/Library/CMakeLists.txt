@@ -11,8 +11,9 @@
 # PURPOSE.  See the above copyright notices for more information.
 #
 # =========================================================================
+find_package(Boost REQUIRED COMPONENTS regex)
 
 add_library(OTBPheno dateUtils.cxx phenoFunctions.cxx miscUtils.cxx)
-target_link_libraries(OTBPheno ITKOptimizers boost_regex)
+target_link_libraries(OTBPheno ITKOptimizers ${Boost_LIBRARIES})
 
 install(TARGETS OTBPheno DESTINATION usr/lib/)

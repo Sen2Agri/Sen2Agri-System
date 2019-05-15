@@ -14,11 +14,18 @@
  =========================================================================*/
  
 #include "MetadataHelper.h"
+#include "TimeFunctions.h"
 #include <time.h>
 #include <ctime>
 #include <cmath>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <ctype.h>
+#include <limits.h>
+#include <string.h>
+#ifdef _WIN32
+    extern std::string ConvertFromUtf16ToUtf8(const wchar_t * wstr);
+#endif
 
 template<typename PixelType, typename MasksPixelType>
 MetadataHelper<PixelType, MasksPixelType>::MetadataHelper()
@@ -39,7 +46,13 @@ bool MetadataHelper<PixelType, MasksPixelType>::LoadMetadataFile(const std::stri
 
     boost::filesystem::path p(m_inputMetadataFileName);
     p.remove_filename();
+#ifdef _WIN32
+    auto tmp = p.make_preferred();
+    m_DirName = tmp.string();
+    m_DirName = ConvertFromUtf16ToUtf8(p.native().c_str());
+#else
     m_DirName = p.native();
+#endif
 
     return DoLoadMetadata(file);
 }

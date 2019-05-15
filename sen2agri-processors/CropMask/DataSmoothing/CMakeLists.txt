@@ -1,7 +1,7 @@
 otb_create_application(
   NAME           DataSmoothing
   SOURCES        DataSmoothing.cpp DataSmoothing.hxx
-  LINK_LIBRARIES ${OTB_LIBRARIES})
+  LINK_LIBRARIES Sen2AgriCommonUtils ${OTB_LIBRARIES})
 
 if(BUILD_TESTING)
   add_subdirectory(test)

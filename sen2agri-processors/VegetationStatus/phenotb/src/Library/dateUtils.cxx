@@ -69,7 +69,12 @@ void reduce_to_first_year(std::vector<std::time_t> &times)
     return;
 
   std::tm tm, tm2 = { };
+  	
+#ifdef _WIN32
+  memcpy(&tm, localtime(&*it), sizeof(std::tm));
+#else
   localtime_r(&*it, &tm);
+#endif
 
   tm2.tm_year = tm.tm_year;
   tm2.tm_mon = 0;

@@ -20,7 +20,7 @@
 #include "MACCSL8MetadataHelper.h"
 
 template <typename PixelType, typename MasksPixelType>
-std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName)
+std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> METADATA_HELPER_FACTORY_EXPORT MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName)
 {
     // std::cout << "Getting metadata helper" << std::endl;
 

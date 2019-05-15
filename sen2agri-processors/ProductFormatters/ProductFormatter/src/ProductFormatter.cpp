@@ -22,14 +22,16 @@
 #include "otbOGRIOHelper.h"
 #include "ogr_geometry.h"
 #include <iostream>
-
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#ifndef _WIN32
-#include <sys/wait.h>
-#include <spawn.h>
+#ifdef _WIN32
+     #include "WStringToString.h"		
+#else
+     #include <sys/wait.h>
+     #include <spawn.h>
 #endif
+
 #include <fstream>
 
 #include "ProductMetadataWriter.hpp"
@@ -435,7 +437,9 @@ private:
   void DoExecute()
   {
       // The Quicklook OTB app spawns thousands of threads, try to avoid that
+#ifndef _WIN32
       setenv("ITK_USE_THREADPOOL", "1", 0);
+#endif
 
       m_bVectPrd = (this->GetParameterInt("vectprd") != 0);
 
@@ -1872,12 +1876,20 @@ private:
           if (boost::filesystem::is_directory(filePath)) {
               for(const boost::filesystem::directory_entry& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(filePath), {})) {
                 //std::cout << entry.path(). << "\n";
+#ifdef _WIN32
+                std::string fileName = ConvertFromUtf16ToUtf8(entry.path().filename().c_str());
+#else
                 std::string fileName = entry.path().filename().c_str();
+#endif
                 CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + fileName, entry.path().string());
 
               }
           } else {
+#ifdef _WIN32
+              std::string fileName = ConvertFromUtf16ToUtf8(filePath.filename().c_str());
+#else
               std::string fileName = filePath.filename().c_str();
+#endif
               CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + fileName, file);
           }
       }
@@ -1978,7 +1990,11 @@ private:
       args.emplace_back("-rescaleval");
       std::string rescaleStr = std::to_string(rescaleRes);
       args.emplace_back(rescaleStr.c_str());
+#ifndef _WIN32
       return ExecuteExternalProgram("aggregate_tiles.py", args);
+#else
+      return true;
+#endif
   }
 
   bool ExecuteGdalTranslateOps(const std::string &rasterFileName, bool bHasDiscreteValues) {

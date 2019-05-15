@@ -1,7 +1,10 @@
-find_package(Boost REQUIRED COMPONENTS filesystem)
+find_package(Boost REQUIRED COMPONENTS regex)
 
 include_directories(../../../Common/OTBExtensions)
 include_directories(../../Common/include)
+IF (WIN32)
+    link_directories(C:/OTB-release-xdk-win32/lib)
+ENDIF(WIN32)
 
 otb_create_application(
   NAME           TimeSeriesAnalysis
@@ -29,7 +32,7 @@ otb_create_application(
                  StatisticsInfosSingleCsvReader.cpp
 
 
-  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata Sen2AgriPrdMetaWriters boost_regex gsl)
+  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata Sen2AgriPrdMetaWriters ${Boost_LIBRARIES} gsl)
 
 #if(BUILD_TESTING)
 #  add_subdirectory(test)
