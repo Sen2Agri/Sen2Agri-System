@@ -1,0 +1,4 @@
+SPOT4#HRVIR1=C:/sen2agri-processors_src/sen2agri-processors/VegetationStatus\otb-bv\data\spot4hrvir1.rsr
+SPOT5#HRG1=C:/sen2agri-processors_src/sen2agri-processors/VegetationStatus\otb-bv\data\spot5hrg1.rsr
+LANDSAT_8=C:/sen2agri-processors_src/sen2agri-processors/VegetationStatus\otb-bv\data\landsat8_7b.rsr
+SENTINEL-?2[A-D]=C:/sen2agri-processors_src/sen2agri-processors/VegetationStatus/otb-bv/data/Sentinel2_real.rsr
