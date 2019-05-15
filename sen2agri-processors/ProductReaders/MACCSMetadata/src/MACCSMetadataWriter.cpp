@@ -127,7 +127,7 @@ XDocument MACCSMetadataWriter::CreateMetadataXml(const MACCSFileMetadata &metada
     return doc;
 }
 
-void MACCSMetadataWriter::WriteMetadata(const MACCSFileMetadata &metadata, const std::string &path)
+void MACCS_METADATA_WRITER_EXPORT MACCSMetadataWriter::WriteMetadata(const MACCSFileMetadata &metadata, const std::string &path)
 {
     CreateMetadataXml(metadata).Save(path);
 }

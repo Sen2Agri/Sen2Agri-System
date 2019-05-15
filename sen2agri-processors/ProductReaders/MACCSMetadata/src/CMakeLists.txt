@@ -27,6 +27,7 @@ set(MACCSMetadata_SOURCES
 add_library(MACCSMetadata SHARED ${MACCSMetadata_HEADERS} ${MACCSMetadata_SOURCES})
 target_link_libraries(MACCSMetadata 
     Sen2AgriXmlUtils
+    Sen2AgriCommonUtils
     "${Boost_LIBRARIES}"
     "${OTBCommon_LIBRARIES}"
     "${OTBTinyXML_LIBRARIES}"

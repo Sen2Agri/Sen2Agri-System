@@ -13,9 +13,17 @@
 
  =========================================================================*/
  
+#if (defined(WIN32) || defined(_WIN32))
+  #define _USE_MATH_DEFINES
+#endif
+
 #include <math.h>
 #include <algorithm>    // std::min, std::max
 #include "DirectionalModel.h"
+
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
 
 #define xsi_0 (1.5*M_PI/180.)
 

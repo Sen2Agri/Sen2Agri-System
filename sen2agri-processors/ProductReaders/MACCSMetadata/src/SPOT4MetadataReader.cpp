@@ -32,7 +32,7 @@ static SPOT4Radiometry ReadRadiometry(const TiXmlElement *el);
 
 namespace itk
 {
-std::unique_ptr<SPOT4Metadata> SPOT4MetadataReader::ReadMetadata(const std::string &path)
+std::unique_ptr<SPOT4Metadata> SPOT4_METADATA_READER_EXPORT SPOT4MetadataReader::ReadMetadata(const std::string &path)
 {
     TiXmlDocument doc(path);
     if (!doc.LoadFile()) {

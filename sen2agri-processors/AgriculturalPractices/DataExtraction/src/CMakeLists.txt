@@ -2,6 +2,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem)
 
 include_directories(../../../Common/OTBExtensions)
 include_directories(../../Common/include)
+find_package(Boost REQUIRED COMPONENTS regex)
 
 otb_create_application(
   NAME           AgricPractDataExtraction
@@ -10,24 +11,24 @@ otb_create_application(
                  otbMaskedIteratorDecorator.h otbMaskedIteratorDecorator.txx otbStopwatch.h otbStopwatch.cxx
                  otbAgricPractDataExtrFileWriter2.h otbAgricPractDataExtrFileWriter2.txx
                  ../../Common/include/CommonFunctions.h ../../Common/include/CommonDefs.h
-  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata Sen2AgriPrdMetaWriters boost_regex Sen2AgriCommonUtils)
+  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata Sen2AgriPrdMetaWriters ${Boost_LIBRARIES} Sen2AgriCommonUtils)
 
 otb_create_application(
   NAME           AgricPractMergeDataExtractionFiles
   SOURCES        otbAgricPractMergeDataExtractionFiles.cxx
                  ../../Common/include/CommonFunctions.h ../../Common/include/CommonDefs.h
-  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata boost_regex)
+  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata ${Boost_LIBRARIES})
 
 otb_create_application(
   NAME           IndexAgricPracticesXml
   SOURCES        otbIndexAgricPracticesXml.cxx
                  ../../Common/include/CommonFunctions.h ../../Common/include/CommonDefs.h
-  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata boost_regex)
+  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata ${Boost_LIBRARIES})
 
 #otb_create_application(
 #  NAME           AgricPracticesXmlToTxtFiles
 #  SOURCES        CommonFunctions.h otbAgricPracticesXmlToTxtFiles.cxx
-#  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata boost_regex)
+#  LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata ${Boost_LIBRARIES})
 
 #if(BUILD_TESTING)
 #  add_subdirectory(test)

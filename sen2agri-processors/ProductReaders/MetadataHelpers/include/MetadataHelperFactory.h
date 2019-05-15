@@ -29,7 +29,13 @@
 #include "../src/MACCSL8MetadataHelper.h"
 */
 
-class MetadataHelperFactory : public itk::LightObject
+#if (defined(WIN32) || defined(_WIN32))
+#  define METADATA_HELPER_FACTORY_EXPORT __declspec(dllexport)
+#else
+#  define METADATA_HELPER_FACTORY_EXPORT
+#endif
+
+class METADATA_HELPER_FACTORY_EXPORT MetadataHelperFactory : public itk::LightObject
 {
 public:
     typedef MetadataHelperFactory Self;

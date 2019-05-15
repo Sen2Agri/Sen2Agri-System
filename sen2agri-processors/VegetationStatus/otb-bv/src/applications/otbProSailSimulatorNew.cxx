@@ -34,7 +34,11 @@
 
 #include <fstream>
 #include <string>
-#include <thread>
+#ifdef _WIN32
+    #include <mingw.thread.h>
+#else
+    #include <thread>
+#endif
 #include <boost/lexical_cast.hpp>
 #include <boost/filesystem.hpp>
 #include <random>
@@ -43,6 +47,10 @@
 #include "otbProSailSimulatorFunctor.h"
 #include "MetadataHelperFactory.h"
 #include "CommonFunctions.h"
+
+#ifdef _WIN32
+   #define sleep Sleep
+#endif
 
 namespace otb
 {
@@ -426,6 +434,10 @@ private:
                                input_start,
                                input_end,
                                output_start);
+      //TODO: Add implementation with  thread start sync:
+      // e.q.: start the next thread only after the previous one announced it started
+      // mutexes (linux) waitforsingleobj (windows)
+      sleep(1000);
       input_start = input_end;
       std::advance(output_start, block_size);
       }

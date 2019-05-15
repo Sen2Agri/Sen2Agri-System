@@ -1,4 +1,5 @@
 #include "TimeSeriesReader.h"
+#include "TimeFunctions.h"
 #include "MetadataHelperFactory.h"
 
 int getDaysFromEpoch(const std::string &date)
@@ -7,7 +8,11 @@ int getDaysFromEpoch(const std::string &date)
     if (strptime(date.c_str(), "%Y%m%d", &tm) == NULL) {
         itkGenericExceptionMacro("Invalid value for a date: " + date);
     }
+#ifdef _WIN32
+    int days = internal_timegm(&tm) / 86400;
+#else
     int days = timegm(&tm) / 86400;
+#endif
     return days;
 }
 

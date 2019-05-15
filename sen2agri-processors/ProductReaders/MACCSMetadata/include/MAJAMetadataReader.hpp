@@ -8,9 +8,15 @@
 #include "MAJAMetadata.hpp"
 #include "MACCSMetadata.hpp"
 
+#if (defined(WIN32) || defined(_WIN32))
+#  define MAJA_METADATA_READER_EXPORT __declspec(dllexport)
+#else
+#  define MAJA_METADATA_READER_EXPORT
+#endif
+
 namespace itk
 {
-class MAJAMetadataReader : public itk::LightObject
+class MAJA_METADATA_READER_EXPORT MAJAMetadataReader : public itk::LightObject
 {
 public:
     typedef MAJAMetadataReader Self;

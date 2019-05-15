@@ -8,6 +8,18 @@ find_package(OTB REQUIRED)
 
 include(${OTB_USE_FILE})
 
+if (WIN32)
+   if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+      message("-- Compiler: Clang")
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+      message("-- Compiler: GNU")
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+      message("-- Compiler: Intel")
+    elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+      message("-- Compiler: MSVC")
+    endif()
+endif()
+
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-missing-field-initializers -flto -mno-avx -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-missing-field-initializers")
 
@@ -16,19 +28,21 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 add_definitions(-DVCL_CAN_STATIC_CONST_INIT_FLOAT=0)
 
 add_subdirectory(Composite)
-add_subdirectory(CropType)
-add_subdirectory(CropMask)
 add_subdirectory(VegetationStatus)
-add_subdirectory(DEM-WB)
 add_subdirectory(CreateFootprint)
 add_subdirectory(Common)
 add_subdirectory(ContinuousColorMapping)
 add_subdirectory(ProductFormatters)
 add_subdirectory(ProductReaders)
-add_subdirectory(AgriculturalPractices)
-add_subdirectory(Sen4CAP)
-#add_subdirectory(AppDimensionalityReduction)
-add_subdirectory(merge-statistics)
+
+if (NOT WIN32)
+    add_subdirectory(CropType)
+    add_subdirectory(CropMask)
+    add_subdirectory(DEM-WB)
+    add_subdirectory(AgriculturalPractices)
+    add_subdirectory(Sen4CAP)
+    add_subdirectory(merge-statistics)
+endif()
 
 install(FILES ../scripts/sen2agri_common.py
               ../scripts/split_shapefile.py

@@ -7,9 +7,15 @@
 #include "SPOT4Metadata.hpp"
 #include "otb_tinyxml.h"
 
+#if (defined(WIN32) || defined(_WIN32))
+#  define SPOT4_METADATA_READER_EXPORT __declspec(dllexport)
+#else
+#  define SPOT4_METADATA_READER_EXPORT
+#endif
+
 namespace itk
 {
-class SPOT4MetadataReader : public itk::LightObject
+class SPOT4_METADATA_READER_EXPORT SPOT4MetadataReader : public itk::LightObject
 {
 public:
     typedef SPOT4MetadataReader Self;

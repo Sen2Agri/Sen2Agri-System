@@ -23,7 +23,7 @@ import shutil
 import glob
 import argparse
 import csv
-from sys import argv
+from sys import argv, platform
 import datetime
 import subprocess
 import pipes
@@ -32,6 +32,11 @@ import os.path
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
+def getScriptNameOSDepending(scriptName):
+    if platform.startswith('win32'):
+	    return scriptName + '.bat'
+    return scriptName	
+	
 def runCmd(cmdArray):
     start = time.time()
     print(" ".join(map(pipes.quote, cmdArray)))
@@ -277,10 +282,11 @@ for resolution in resolutions :
     outAot = outDir + '/aot' + resolution + '.tif'
     tmpFilesToRemove = [outExtractedMasks, outImgBands, outCld, outWat, outSnow, outAot]
 
-    fullScatCoeffs = ["-scatcoef", getFileName("/usr/share/sen2agri/scattering_coeffs_%m.txt", "", resolution)]
+    if not platform.startswith('win32'):
+        fullScatCoeffs = ["-scatcoef", getFileName("/usr/share/sen2agri/scattering_coeffs_%m.txt", "", resolution)]
     for xml in args.input:
     
-        runCmd(["otbcli", "MaskHandler", appLocation, "-xml", xml, "-out", outExtractedMasks, "-sentinelres", resolution])
+        runCmd([getScriptNameOSDepending("otbcli"), "MaskHandler", appLocation, "-xml", xml, "-out", outExtractedMasks, "-sentinelres", resolution])
 
         counterString = str(i)
         mod=getFileName(outL3AFile, counterString, resolution)
@@ -296,17 +302,17 @@ for resolution in resolutions :
         curMasterInfoFile=getFileName(masterInfoFile, counterString, resolution)
 
         if (not multisatelites) or isMasterMissionFile(xml, bandsMap):
-            runCmd(["otbcli", "CompositePreprocessing", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile])
+            runCmd([getScriptNameOSDepending("otbcli"), "CompositePreprocessing", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile])
         else:
-            runCmd(["otbcli", "CompositePreprocessing", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile, "-pmxml", firstMasterFile])
+            runCmd([getScriptNameOSDepending("otbcli"), "CompositePreprocessing", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outExtractedMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot, "-masterinfo", curMasterInfoFile, "-pmxml", firstMasterFile])
         
-        runCmd(["otbcli", "WeightAOT", appLocation, "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
+        runCmd([getScriptNameOSDepending("otbcli"), "WeightAOT", appLocation, "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
 
-        runCmd(["otbcli", "WeightOnClouds", appLocation, "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
+        runCmd([getScriptNameOSDepending("otbcli"), "WeightOnClouds", appLocation, "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
 
-        runCmd(["otbcli", "TotalWeight", appLocation, "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
+        runCmd([getScriptNameOSDepending("otbcli"), "TotalWeight", appLocation, "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
 
-        runCmd(["otbcli", "UpdateSynthesis", appLocation, "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
+        runCmd([getScriptNameOSDepending("otbcli"), "UpdateSynthesis", appLocation, "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
 
         tmpOut_w = out_w
         tmpOut_d = out_d
@@ -321,7 +327,7 @@ for resolution in resolutions :
             tmpOut_f += '?gdal:co:COMPRESS=DEFLATE'
             tmpOut_rgb += '?gdal:co:COMPRESS=DEFLATE'
 
-        runCmd(["otbcli", "CompositeSplitter2", appLocation, "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
+        runCmd([getScriptNameOSDepending("otbcli"), "CompositeSplitter2", appLocation, "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
 
         prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
 
@@ -341,7 +347,7 @@ for resolution in resolutions :
     l3aOutRgbs.append(out_rgb)
 
 
-runCmd(["otbcli", "ProductFormatter", appLocation, 
+runCmd([getScriptNameOSDepending("otbcli"), "ProductFormatter", appLocation, 
     "-destroot", outDir, 
     "-fileclass", "SVT1", 
     "-level", "L3A", 

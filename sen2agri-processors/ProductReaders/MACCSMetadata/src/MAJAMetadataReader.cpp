@@ -29,7 +29,7 @@
 namespace itk
 {
 
-std::unique_ptr<MACCSFileMetadata> MAJAMetadataReader::ReadMetadata(const std::string &path)
+std::unique_ptr<MACCSFileMetadata> MAJA_METADATA_READER_EXPORT MAJAMetadataReader::ReadMetadata(const std::string &path)
 {
     TiXmlDocument doc(path);
     if (!doc.LoadFile()) {

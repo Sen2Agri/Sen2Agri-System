@@ -12,6 +12,10 @@
 #
 # =========================================================================
 
+IF (WIN32)
+    link_directories(C:/OTB-release-xdk-win32/lib)
+ENDIF(WIN32)
+
 OTB_CREATE_APPLICATION(NAME           BVInputVariableGeneration
   SOURCES        otbBVInputVariableGeneration.cxx
   LINK_LIBRARIES ${OTB_LIBRARIES};OTBBVUtil)

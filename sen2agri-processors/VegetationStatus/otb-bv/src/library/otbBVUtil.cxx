@@ -54,7 +54,7 @@ size_t countColumns(std::string fileName)
     {
     itkGenericExceptionMacro(<< "Could not open file " << fileName);
     }
-
+  return 0;
 }
 }
 

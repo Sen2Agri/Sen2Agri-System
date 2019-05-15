@@ -7,9 +7,15 @@
 
 #include "MACCSMetadata.hpp"
 
+#if (defined(WIN32) || defined(_WIN32))
+#  define MACCS_METADATA_READER_EXPORT __declspec(dllexport)
+#else
+#  define MACCS_METADATA_READER_EXPORT
+#endif
+
 namespace itk
 {
-class MACCSMetadataReader : public itk::LightObject
+class MACCS_METADATA_READER_EXPORT MACCSMetadataReader : public itk::LightObject
 {
 public:
     typedef MACCSMetadataReader Self;

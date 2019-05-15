@@ -24,10 +24,13 @@
 #include "MetadataUtil.hpp"
 #include "tinyxml_utils.hpp"
 #include "string_utils.hpp"
+#ifdef _WIN32
+	extern std::string ConvertFromUtf16ToUtf8(const wchar_t * wstr);
+#endif
 
 namespace itk
 {
-std::unique_ptr<MACCSFileMetadata> MACCSMetadataReader::ReadMetadata(const std::string &path)
+std::unique_ptr<MACCSFileMetadata> MACCS_METADATA_READER_EXPORT MACCSMetadataReader::ReadMetadata(const std::string &path)
 {
     TiXmlDocument doc(path);
     if (!doc.LoadFile()) {
@@ -586,7 +589,11 @@ static void FixProductOrganization(CommonProductOrganization &po)
             if (dir.empty()) {
                 boost::filesystem::path p(file.FileLocation);
                 p.remove_filename();
+#ifdef _WIN32
+                dir = ConvertFromUtf16ToUtf8(p.native().c_str());
+#else   
                 dir = p.native();
+#endif
             }
         }
     }
