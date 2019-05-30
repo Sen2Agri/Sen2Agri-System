@@ -217,10 +217,6 @@ def main():
             polarization = get_polarization(m.group(6))
             type = get_type(m.group(7))
 
-            # ignore absolute amplitudes for now
-            if type == TYPE_BACKSCATTER and polarization != POLARIZATION_RATIO:
-                continue
-
             group = TileGroup(prefix, period_type, period, orbit_type, polarization, type, name)
             tile_groups[tile_id].append(group)
             all_groups.add(group)
