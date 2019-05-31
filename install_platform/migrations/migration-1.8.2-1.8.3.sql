@@ -1072,6 +1072,7 @@ begin
             
             _statement := $str$
                 DROP FUNCTION if exists sp_get_products_sites(smallint);
+                DROP FUNCTION if exists sp_get_products_sites(integer[])
             $str$;
             raise notice '%', _statement;
             execute _statement;

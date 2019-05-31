@@ -1,4 +1,38 @@
 <?php
+function getSubSteps($processorId, $stepAreSubPrds) {
+    $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
+    $result = pg_query($db, "SELECT id, short_name FROM sp_get_processors() WHERE name NOT LIKE '%NDVI%'") or die ("Could not execute.");
+    if (pg_num_rows($result) > 0) {
+        while ( $row = pg_fetch_row ( $result ) ) {
+            $id = $row[0];
+            if ($id == $processorId) {
+                $short = strtolower($row[1]); 
+                $subkey = ".sub_steps";
+                if ($stepAreSubPrds === true) {
+                    $subkey = ".sub_products";
+                }
+                $key = "processor." . $short . $subkey;
+                $sql = "SELECT site_id,value FROM sp_get_parameters('$key')";
+                $result2 = pg_query ( $db, $sql ) or die ( "Could not execute." );
+                while ( $row2 = pg_fetch_row ( $result2 ) ) {
+                    $site_id = $row2 [0];
+                    $value = $row2 [1];
+                    if (is_null($site_id)) {
+                        if (!is_null($value)) {
+                            $values = explode(',', $value);
+                            if (isset($values) && is_array($values) && !empty($values))
+                                return $values;                            
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+    return array();
+}
+
 function getAction($processorId) {
 	$action = "dashboard.php";
 	/*
@@ -77,18 +111,38 @@ function add_new_scheduled_jobs_layout($processorId) {
 				<?= $option_season ?>
 			</select>
 		</span>
-		<?php if ($processorId == 3) { ?>
+        <?php 
+        $prdOrStep = "product";
+        $subPrds = getSubSteps($processorId, true);
+        if (empty($subPrds)) {
+            $subPrds = getSubSteps($processorId, false);
+            if (!empty($subPrds)) {
+                $prdOrStep = "step";
+            }
+        } 
+        if (!empty($subPrds)) { ?>
+            <span class="schedule_format">        
+                <select id="product_add<?= $processorId ?>" name="product_add" required="true">
+                    <option value="" selected>Select a <?= $prdOrStep ?></option>
+            <?php foreach ($subPrds as $step) { ?>
+                    <option value="<?= $step ?>"><?= $step ?></option>
+           <?php } ?>
+                </select>
+            </span>
+        <?php } ?>
+<!--		<?php //if ($processorId == 3) { ?>
 		<span class="schedule_format">
-			<select id="product_add<?= $processorId ?>" name="product_add" required="true">
+			<select id="product_add<?//= $processorId ?>" name="product_add" required="true">
 				<option value="" selected>Select a product</option>
 				<option value="L3B">L3B</option>
 				<option value="L3C">L3C</option>
-				<?php if (ConfigParams::isSen2Agri()) { ?>                
+				<?php// if (ConfigParams::isSen2Agri()) { ?>                
 				    <option value="L3D">L3D</option>
-				<?php } ?>
+				<?php// } ?>
 			</select>
 		</span>
-		<?php } ?>
+		<?php// } ?>
+-->        
 		<span class="schedule_format">
 			<select id="schedule_add<?= $processorId ?>" name="schedule_add" onchange="selectedScheduleAdd(event, <?= $processorId ?>)">
 				<option value="" selected>Select a schedule</option>

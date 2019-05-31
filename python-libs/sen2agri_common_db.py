@@ -1689,7 +1689,9 @@ class L1CInfo(object):
                                %(quicklook_image)s :: character varying,
                                %(footprint)s,
                                %(orbit_id)s :: integer,
-                               %(tiles)s :: json)""",
+                               %(tiles)s :: json,
+                               %(orbit_type_id)s :: smallint,
+                               %(downloader_history_id)s :: integer)""",
                                 {
                                     "product_type_id" : 1,
                                     "processor_id" : processor_id,
@@ -1702,7 +1704,10 @@ class L1CInfo(object):
                                     "quicklook_image" : "mosaic.jpg",
                                     "footprint" : footprint,
                                     "orbit_id" : orbit_id,
-                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']'
+                                    "downloader_history_id" : l1c_id,
+                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']',
+                                    "orbit_type_id" : None,
+                                    "downloader_history_id" : l1c_id
                                 })
             self.conn.commit()
         except Exception, e:
@@ -1753,7 +1758,9 @@ class L1CInfo(object):
                                %(quicklook_image)s :: character varying,
                                %(footprint)s,
                                %(orbit_id)s :: integer,
-                               %(tiles)s :: json)""",
+                               %(tiles)s :: json,
+                               %(orbit_type_id)s :: smallint,
+                               %(downloader_history_id)s :: integer)""",
                                 {
                                     "product_type_id" : 1,
                                     "processor_id" : processor_id,
@@ -1766,7 +1773,9 @@ class L1CInfo(object):
                                     "quicklook_image" : "mosaic.jpg",
                                     "footprint" : footprint,
                                     "orbit_id" : orbit_id,
-                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']'
+                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']',
+                                    "orbit_type_id" : None,
+                                    "downloader_history_id" : l1c_id
                                 })
             #self.conn.commit()
         except psycopg2.Error as e:

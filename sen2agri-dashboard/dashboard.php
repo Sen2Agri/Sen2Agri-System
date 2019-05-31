@@ -38,13 +38,24 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 	$retry_seconds = 60;
 	$priority = 1;
 	$processor_params = null;
+    
+    $subPrds = getSubSteps($processorId, true);
+    if (empty($subPrds)) {
+        $subPrds = getSubSteps($processorId, false);
+    }
+    if (!empty($subPrds)) {
+        $processor_params = json_encode ( array (
+                "general_params" => array (
+                        "product_type" =>  $_REQUEST['product_add']))
+                );
+    }
 
-	if($processorId == '3'){
-	$processor_params = json_encode ( array (
-			"general_params" => array (
-					"product_type" =>  $_REQUEST['product_add']))
-			);
-	}
+//	if($processorId == '3'){
+//	$processor_params = json_encode ( array (
+//			"general_params" => array (
+//					"product_type" =>  $_REQUEST['product_add']))
+//			);
+//	}
 	//save new job in database
 	$res = pg_query_params ( $db, "SELECT sp_insert_scheduled_task($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)", array (
 			$job_name,
