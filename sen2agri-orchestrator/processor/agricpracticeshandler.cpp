@@ -11,126 +11,60 @@
 #define NDVI_PRD_NAME_REGEX R"(S2AGRI_L3B_SNDVI_A(\d{8}T\d{6})_.+\.TIF)"
 #define S1_L2A_PRD_NAME_REGEX   R"(SEN4CAP_L2A_.+_V(\d{8}T\d{6})_(\d{8}T\d{6})_.+\.tif)"
 
-#define L4C_AP_CFG_PREFIX   "processor.s4c_l3c."
+#define L4C_AP_CFG_PREFIX   "processor.s4c_l4c."
 
 void AgricPracticesHandler::CreateTasks(const AgricPracticesSiteCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList,
-                                                      const QStringList &ndviPrds, const QStringList &ampPrds, const QStringList &cohePrds)
+                                        const QStringList &ndviPrds, const QStringList &ampPrds, const QStringList &cohePrds,
+                                        AgricPractOperation operation)
 {
     int curTaskIdx = 0;
-    int idsFilterExtrIdx = curTaskIdx++;
-    outAllTasksList.append(TaskToSubmit{ "ids-filter-file-extraction", {} });
 
-    // if the products per group is 0 or negative, then create a group with all products
-    int ndviPrdsPerGroup = siteCfg.prdsPerGroup > 0 ? siteCfg.prdsPerGroup : ndviPrds.size();
-    int ampPrdsPerGroup = siteCfg.prdsPerGroup > 0 ? siteCfg.prdsPerGroup : ampPrds.size();
-    int cohePrdsPerGroup = siteCfg.prdsPerGroup > 0 ? siteCfg.prdsPerGroup : cohePrds.size();
+    int minNdviDataExtrIndex = -1;
+    int maxNdviDataExtrIndex = -1;
+    int minAmpDataExtrIndex = -1;
+    int maxAmpDataExtrIndex = -1;
+    int minCoheDataExtrIndex = -1;
+    int maxCoheDataExtrIndex = -1;
 
-    int ndviGroups = (ndviPrds.size()/ndviPrdsPerGroup) + ((ndviPrds.size()%ndviPrdsPerGroup) == 0 ? 0 : 1);
-    int ampGroups = (ampPrds.size()/ampPrdsPerGroup) + ((ampPrds.size()%ampPrdsPerGroup) == 0 ? 0 : 1);
-    int coheGroups = (cohePrds.size()/cohePrdsPerGroup) + ((cohePrds.size()%cohePrdsPerGroup) == 0 ? 0 : 1);
+    if (IsOperationEnabled(operation, dataExtraction)) {
+        int idsFilterExtrIdx = curTaskIdx++;
+        outAllTasksList.append(TaskToSubmit{ "ids-filter-file-extraction", {} });
 
-    // create the tasks for the NDVI - they depend only on the ids extraction
-    int minNdviDataExtrIndex = curTaskIdx;
-    int maxNdviDataExtrIndex = curTaskIdx + ndviGroups - 1;
-    for(int i  = 0; i<ndviGroups; i++) {
-        outAllTasksList.append(TaskToSubmit{ "ndvi-data-extraction", {outAllTasksList[idsFilterExtrIdx]} });
-        curTaskIdx++;
+        // create the data extraction tasks
+        CreatePrdDataExtrTasks(siteCfg, outAllTasksList, "ndvi-data-extraction", ndviPrds, {outAllTasksList[idsFilterExtrIdx]},
+                               operation, minNdviDataExtrIndex, maxNdviDataExtrIndex, curTaskIdx);
+        CreatePrdDataExtrTasks(siteCfg, outAllTasksList, "amp-data-extraction", ampPrds, {outAllTasksList[idsFilterExtrIdx]},
+                               operation, minNdviDataExtrIndex, maxNdviDataExtrIndex, curTaskIdx);
+        CreatePrdDataExtrTasks(siteCfg, outAllTasksList, "cohe-data-extraction", cohePrds, {outAllTasksList[idsFilterExtrIdx]},
+                               operation, minNdviDataExtrIndex, maxNdviDataExtrIndex, curTaskIdx);
     }
+    if (operation == all || operation == catchCrop || operation == fallow ||
+        operation == nfc || operation == harvestOnly) {
+        // create the merging tasks
+        int ndviMergeTaskIdx = CreateMergeTasks(outAllTasksList, "ndvi-data-extraction-merge", minNdviDataExtrIndex, maxNdviDataExtrIndex, curTaskIdx);
+        int ampMergeTaskIdx = CreateMergeTasks(outAllTasksList, "amp-data-extraction-merge", minAmpDataExtrIndex, maxAmpDataExtrIndex, curTaskIdx);
+        int coheMergeTaskIdx = CreateMergeTasks(outAllTasksList, "cohe-data-extraction-merge", minCoheDataExtrIndex, maxCoheDataExtrIndex, curTaskIdx);
 
-    // create the tasks for the AMP - they depend only on the ids extraction
-    int minAmpDataExtrIndex = curTaskIdx;
-    int maxAmpDataExtrIndex = curTaskIdx + ampGroups - 1;
-    for(int i  = 0; i<ampGroups; i++) {
-        outAllTasksList.append(TaskToSubmit{ "amp-data-extraction", {outAllTasksList[idsFilterExtrIdx]} });
-        curTaskIdx++;
-    }
+        int ccTsaIdx = CreateTSATasks(siteCfg, outAllTasksList, "CC", operation, ndviMergeTaskIdx, ampMergeTaskIdx, coheMergeTaskIdx, curTaskIdx);
+        int flTsaIdx = CreateTSATasks(siteCfg, outAllTasksList, "FL", operation, ndviMergeTaskIdx, ampMergeTaskIdx, coheMergeTaskIdx, curTaskIdx);
+        int nfcTsaIdx = CreateTSATasks(siteCfg, outAllTasksList, "NFC", operation, ndviMergeTaskIdx, ampMergeTaskIdx, coheMergeTaskIdx, curTaskIdx);
+        int naTsaIdx = CreateTSATasks(siteCfg, outAllTasksList, "NA", operation, ndviMergeTaskIdx, ampMergeTaskIdx, coheMergeTaskIdx, curTaskIdx);
 
-    // create the tasks for the COHE - they depend only on the ids extraction
-    int minCoheDataExtrIndex = curTaskIdx;
-    int maxCoheDataExtrIndex = curTaskIdx + coheGroups - 1;
-    for(int i  = 0; i<coheGroups; i++) {
-        outAllTasksList.append(TaskToSubmit{ "cohe-data-extraction", {outAllTasksList[idsFilterExtrIdx]} });
-        curTaskIdx++;
-    }
-
-    outAllTasksList.append(TaskToSubmit{ "ndvi-data-extraction-merge", {} });
-    int ndviMergeTaskIdx = curTaskIdx++;
-    // update the parents for this task
-    for (int i = minNdviDataExtrIndex; i <= maxNdviDataExtrIndex; i++) {
-        outAllTasksList[ndviMergeTaskIdx].parentTasks.append(outAllTasksList[i]);
-    }
-
-    outAllTasksList.append(TaskToSubmit{ "amp-data-extraction-merge", {} });
-    int ampMergeTaskIdx = curTaskIdx++;
-    // update the parents for this task
-    for (int i = minAmpDataExtrIndex; i <= maxAmpDataExtrIndex; i++) {
-        outAllTasksList[ampMergeTaskIdx].parentTasks.append(outAllTasksList[i]);
-    }
-
-    outAllTasksList.append(TaskToSubmit{ "cohe-data-extraction-merge", {} });
-    int coheMergeTaskIdx = curTaskIdx++;
-    // update the parents for this task
-    for (int i = minCoheDataExtrIndex; i <= maxCoheDataExtrIndex; i++) {
-        outAllTasksList[coheMergeTaskIdx].parentTasks.append(outAllTasksList[i]);
-    }
-
-
-    int ccTsaIdx = -1;
-    if (siteCfg.practices.contains("CC")) {
-        // this task is independent and can be executed before any others
-        outAllTasksList.append(TaskToSubmit{ "cc-practices-extraction", {} });
-        int ccPractExtrIdx = curTaskIdx++;
-        outAllTasksList.append(TaskToSubmit{ "cc-time-series-analysis", {outAllTasksList[ccPractExtrIdx],
-                                                                         outAllTasksList[ndviMergeTaskIdx], outAllTasksList[ampMergeTaskIdx],
-                                                                         outAllTasksList[coheMergeTaskIdx]} });
-        ccTsaIdx = curTaskIdx++;
-    }
-    int flTsaIdx = -1;
-    if (siteCfg.practices.contains("FL")) {
-        // this task is independent and can be executed before any others
-        outAllTasksList.append(TaskToSubmit{ "fl-practices-extraction", {} });
-        int flPractExtrIdx = curTaskIdx++;
-        outAllTasksList.append(TaskToSubmit{ "fl-time-series-analysis", {outAllTasksList[flPractExtrIdx],
-                                                                         outAllTasksList[ndviMergeTaskIdx], outAllTasksList[ampMergeTaskIdx],
-                                                                         outAllTasksList[coheMergeTaskIdx]} });
-        flTsaIdx = curTaskIdx++;
-    }
-    int nfcTsaIdx = -1;
-    if (siteCfg.practices.contains("NFC")) {
-        // this task is independent and can be executed before any others
-        outAllTasksList.append(TaskToSubmit{ "nfc-practices-extraction", {} });
-        int nfcPractExtrIdx = curTaskIdx++;
-        outAllTasksList.append(TaskToSubmit{ "nfc-time-series-analysis", {outAllTasksList[nfcPractExtrIdx],
-                                                                          outAllTasksList[ndviMergeTaskIdx], outAllTasksList[ampMergeTaskIdx],
-                                                                          outAllTasksList[coheMergeTaskIdx]} });
-        nfcTsaIdx = curTaskIdx++;
-
-    }
-    int naTsaIdx = -1;
-    if (siteCfg.practices.contains("NA")) {
-        // this task is independent and can be executed before any others
-        outAllTasksList.append(TaskToSubmit{ "na-practices-extraction", {} });
-        int naPractExtrIdx = curTaskIdx++;
-        outAllTasksList.append(TaskToSubmit{ "na-time-series-analysis", {outAllTasksList[naPractExtrIdx],
-                                             outAllTasksList[ndviMergeTaskIdx], outAllTasksList[ampMergeTaskIdx],
-                                             outAllTasksList[coheMergeTaskIdx]} });
-        naTsaIdx = curTaskIdx++;
-    }
-
-    int productFormatterIdx = curTaskIdx++;
-    outAllTasksList.append(TaskToSubmit{ "product-formatter", {} });
-    // product formatter needs completion of time-series-analisys tasks
-    if (ccTsaIdx != -1) {
-        outAllTasksList[productFormatterIdx].parentTasks.append(outAllTasksList[ccTsaIdx]);
-    }
-    if (flTsaIdx != -1) {
-        outAllTasksList[productFormatterIdx].parentTasks.append(outAllTasksList[flTsaIdx]);
-    }
-    if (nfcTsaIdx != -1) {
-        outAllTasksList[productFormatterIdx].parentTasks.append(outAllTasksList[nfcTsaIdx]);
-    }
-    if (naTsaIdx != -1) {
-        outAllTasksList[productFormatterIdx].parentTasks.append(outAllTasksList[naTsaIdx]);
+        int productFormatterIdx = curTaskIdx++;
+        outAllTasksList.append(TaskToSubmit{ "product-formatter", {} });
+        // product formatter needs completion of time-series-analisys tasks
+        if (ccTsaIdx != -1) {
+            outAllTasksList[productFormatterIdx].parentTasks.append(outAllTasksList[ccTsaIdx]);
+        }
+        if (flTsaIdx != -1) {
+            outAllTasksList[productFormatterIdx].parentTasks.append(outAllTasksList[flTsaIdx]);
+        }
+        if (nfcTsaIdx != -1) {
+            outAllTasksList[productFormatterIdx].parentTasks.append(outAllTasksList[nfcTsaIdx]);
+        }
+        if (naTsaIdx != -1) {
+            outAllTasksList[productFormatterIdx].parentTasks.append(outAllTasksList[naTsaIdx]);
+        }
     }
 }
 
@@ -138,33 +72,58 @@ void AgricPracticesHandler::CreateSteps(EventProcessingContext &ctx,
                                         const JobSubmittedEvent &event, QList<TaskToSubmit> &allTasksList,
                                         const AgricPracticesSiteCfg &siteCfg,
                                         const QStringList &ndviPrds, const QStringList &ampPrds, const QStringList &cohePrds,
-                                        NewStepList &steps, const QDateTime &minDate, const QDateTime &maxDate)
+                                        NewStepList &steps, const QDateTime &minDate, const QDateTime &maxDate,
+                                        AgricPractOperation operation)
 {
+    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.s4c_l4c.");
+
     int curTaskIdx = 0;
-    TaskToSubmit &idsExtractorTask = allTasksList[curTaskIdx++];
-    const QString &idsFileName = idsExtractorTask.GetFilePath("SEN4CAP_L4C_FilterIds.csv");
-    const QStringList &idsExtractorArgs = GetIdsExtractorArgs(siteCfg, idsFileName);
-    steps.append(idsExtractorTask.CreateStep("LPISDataSelection", idsExtractorArgs));
 
-    // create the tasks for the NDVI, AMP and COHE - they depend only on the ids extraction
-    const QStringList &ndviDataExtrDirs = CreateStepsForDataExtraction(siteCfg, "NDVI", ndviPrds, idsFileName, allTasksList, steps, curTaskIdx);
-    const QStringList &ampDataExtrDirs = CreateStepsForDataExtraction(siteCfg, "AMP", ampPrds, idsFileName, allTasksList, steps, curTaskIdx);
-    const QStringList &coheDataExtrDirs = CreateStepsForDataExtraction(siteCfg, "COHE", cohePrds, idsFileName, allTasksList, steps, curTaskIdx);
+    QString idsFileName;
 
-    const QString &ndviMergedFile = CreateStepsForFilesMerge(siteCfg, "NDVI", ndviDataExtrDirs, steps, allTasksList, curTaskIdx);
-    const QString &ampMergedFile = CreateStepsForFilesMerge(siteCfg, "AMP", ampDataExtrDirs, steps, allTasksList, curTaskIdx);
-    const QString &coheMergedFile = CreateStepsForFilesMerge(siteCfg, "COHE", coheDataExtrDirs, steps, allTasksList, curTaskIdx);
+    // if only data extraction is needed, then we create the filter ids step into the general configured directory
+    QStringList ndviDataExtrDirs;
+    QStringList ampDataExtrDirs;
+    QStringList coheDataExtrDirs;
+    if (IsOperationEnabled(operation, dataExtraction)) {
+        idsFileName = CreateStepForLPISSelection(parameters, configParameters, operation, "", siteCfg,
+                                                        allTasksList, steps, curTaskIdx);
 
-    QStringList productFormatterFiles;
-    productFormatterFiles += CreateTimeSeriesAnalysisSteps(siteCfg, "CC", ndviMergedFile, ampMergedFile, coheMergedFile, steps, allTasksList, curTaskIdx);
-    productFormatterFiles += CreateTimeSeriesAnalysisSteps(siteCfg, "FL", ndviMergedFile, ampMergedFile, coheMergedFile, steps, allTasksList, curTaskIdx);
-    productFormatterFiles += CreateTimeSeriesAnalysisSteps(siteCfg, "NFC", ndviMergedFile, ampMergedFile, coheMergedFile, steps, allTasksList, curTaskIdx);
-    productFormatterFiles += CreateTimeSeriesAnalysisSteps(siteCfg, "NA", ndviMergedFile, ampMergedFile, coheMergedFile, steps, allTasksList, curTaskIdx);
+        // create the tasks for the NDVI, AMP and COHE - they depend only on the ids extraction
+        ndviDataExtrDirs = CreateStepsForDataExtraction(parameters, configParameters, operation, siteCfg, "NDVI",
+                                                        ndviPrds, idsFileName, allTasksList, steps, curTaskIdx);
+        ampDataExtrDirs = CreateStepsForDataExtraction(parameters, configParameters, operation, siteCfg, "AMP",
+                                                       ampPrds, idsFileName, allTasksList, steps, curTaskIdx);
+        coheDataExtrDirs = CreateStepsForDataExtraction(parameters, configParameters, operation, siteCfg, "COHE",
+                                                       cohePrds, idsFileName, allTasksList, steps, curTaskIdx);
+    }
 
-    TaskToSubmit &productFormatterTask = allTasksList[curTaskIdx++];
-    const QStringList &productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event,
-                                                                      productFormatterFiles, minDate, maxDate);
-    steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
+    if (operation == all || operation == catchCrop || operation == fallow ||
+            operation == nfc || operation == harvestOnly) {
+        const QString &ndviMergedFile = CreateStepsForFilesMerge(siteCfg, "NDVI", ndviDataExtrDirs, steps, allTasksList, curTaskIdx);
+        const QString &ampMergedFile = CreateStepsForFilesMerge(siteCfg, "AMP", ampDataExtrDirs, steps, allTasksList, curTaskIdx);
+        const QString &coheMergedFile = CreateStepsForFilesMerge(siteCfg, "COHE", coheDataExtrDirs, steps, allTasksList, curTaskIdx);
+
+        QStringList productFormatterFiles;
+        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, siteCfg, "CC",
+                                                               ndviMergedFile, ampMergedFile, coheMergedFile, steps,
+                                                               allTasksList, curTaskIdx, operation);
+        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, siteCfg, "FL",
+                                                               ndviMergedFile, ampMergedFile, coheMergedFile, steps,
+                                                               allTasksList, curTaskIdx, operation);
+        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, siteCfg, "NFC",
+                                                               ndviMergedFile, ampMergedFile, coheMergedFile, steps,
+                                                               allTasksList, curTaskIdx, operation);
+        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, siteCfg, "NA",
+                                                               ndviMergedFile, ampMergedFile, coheMergedFile, steps,
+                                                               allTasksList, curTaskIdx, operation);
+
+        TaskToSubmit &productFormatterTask = allTasksList[curTaskIdx++];
+        const QStringList &productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event,
+                                                                          productFormatterFiles, minDate, maxDate);
+        steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
+    }
 }
 
 void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -173,36 +132,21 @@ void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.s4c_l4c.");
     const QString &siteName = ctx.GetSiteShortName(event.siteId);
-    const QString &siteCfgFilePath = GetSiteConfigFilePath(siteName, parameters, configParameters);
-    if (siteCfgFilePath == "") {
+    AgricPracticesSiteCfg siteCfg;
+    if (!GetSiteConfigForSiteId(ctx, event.siteId, parameters, configParameters, siteCfg)) {
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(
             QStringLiteral("Cannot find L4C configuration file for site %1\n").arg(siteName).toStdString());
     }
 
+    const AgricPractOperation &execOper = GetExecutionOperation(parameters, configParameters);
+
     QDateTime minDate, maxDate;
-    const AgricPracticesSiteCfg &siteCfg = LoadSiteConfigFile(siteCfgFilePath, parameters, configParameters);
-    const QStringList &ndviFiles = ExtractNdviFiles(ctx, event, minDate, maxDate);
-    if (ndviFiles.size() == 0) {
-        ctx.MarkJobFailed(event.jobId);
-        throw std::runtime_error(
-            QStringLiteral("Cannot find L4C configuration file for site %1. No NDVI files available!\n").arg(siteName).toStdString());
-    }
-    const QStringList &ampFiles = ExtractAmpFiles(ctx, event, minDate, maxDate);
-    if (ampFiles.size() == 0) {
-        ctx.MarkJobFailed(event.jobId);
-        throw std::runtime_error(
-            QStringLiteral("Cannot find L4C configuration file for site %1. No Amplitude files available!\n").arg(siteName).toStdString());
-    }
-    const QStringList &coheFiles = ExtractCoheFiles(ctx, event, minDate, maxDate);
-    if (coheFiles.size() == 0) {
-        ctx.MarkJobFailed(event.jobId);
-        throw std::runtime_error(
-            QStringLiteral("Cannot find L4C configuration file for site %1. No Coherence files available!\n").arg(siteName).toStdString());
-    }
+    QStringList ndviFiles, ampFiles, coheFiles;
+    ExtractProductFiles(ctx, event, ndviFiles, ampFiles, coheFiles, minDate, maxDate, execOper);
 
     QList<TaskToSubmit> allTasksList;
-    CreateTasks(siteCfg, allTasksList, ndviFiles, ampFiles, coheFiles);
+    CreateTasks(siteCfg, allTasksList, ndviFiles, ampFiles, coheFiles, execOper);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: allTasksList) {
@@ -210,10 +154,10 @@ void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
     SubmitTasks(ctx, event.jobId, allTasksListRef);
     NewStepList allSteps;
-    CreateSteps(ctx, event, allTasksList, siteCfg, ndviFiles, ampFiles, coheFiles, allSteps, minDate, maxDate);
+    CreateSteps(ctx, event, allTasksList, siteCfg, ndviFiles, ampFiles, coheFiles, allSteps, minDate, maxDate,
+                execOper);
     ctx.SubmitSteps(allSteps);
 }
-
 
 void AgricPracticesHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                               const TaskFinishedEvent &event)
@@ -319,6 +263,20 @@ ProcessorJobDefinitionParams AgricPracticesHandler::GetProcessingDefinitionImpl(
     return params;
 }
 
+bool AgricPracticesHandler::GetSiteConfigForSiteId(EventProcessingContext &ctx, int siteId, const QJsonObject &parameters,
+                                                                    std::map<QString, QString> &configParameters,
+                                                                    AgricPracticesSiteCfg &retCfg)
+{
+    const QString &siteName = ctx.GetSiteShortName(siteId);
+    const QString &siteCfgFilePath = GetSiteConfigFilePath(siteName, parameters, configParameters);
+    if (siteCfgFilePath == "") {
+        return false;
+    }
+
+    retCfg = LoadSiteConfigFile(siteCfgFilePath, parameters, configParameters);
+    return true;
+}
+
 QString AgricPracticesHandler::GetSiteConfigFilePath(const QString &siteName, const QJsonObject &parameters, std::map<QString, QString> &configParameters)
 {
     QString strCfgPath;
@@ -407,6 +365,39 @@ AgricPracticesSiteCfg AgricPracticesHandler::LoadSiteConfigFile(const QString &s
     return cfg;
 }
 
+void AgricPracticesHandler::ExtractProductFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                                        QStringList &ndviFiles, QStringList &ampFiles, QStringList &coheFiles,
+                                                        QDateTime &minDate, QDateTime &maxDate, const AgricPractOperation &execOper)
+{
+    ndviFiles.append(ExtractNdviFiles(ctx, event, minDate, maxDate));
+    if ((execOper == all) && (ndviFiles.size() == 0)) {
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(
+            QStringLiteral("No NDVI files provided for site %1 for ALL mode!\n").
+                    arg(ctx.GetSiteShortName(event.siteId)).toStdString());
+    }
+    ampFiles.append(ExtractAmpFiles(ctx, event, minDate, maxDate));
+    if  ((execOper == all) && (ampFiles.size() == 0)) {
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(
+            QStringLiteral("No Amplitude files provided for site %1 for ALL mode!\n").
+                    arg(ctx.GetSiteShortName(event.siteId)).toStdString());
+    }
+    coheFiles.append(ExtractCoheFiles(ctx, event, minDate, maxDate));
+    if  ((execOper == all) && (coheFiles.size() == 0)) {
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(
+            QStringLiteral("No Coherence files provided for site %1 for ALL mode!\n").
+                    arg(ctx.GetSiteShortName(event.siteId)).toStdString());
+    }
+    if ((execOper == dataExtraction) && (ndviFiles.size() == 0) && (ampFiles.size() == 0) && (coheFiles.size() == 0)) {
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(
+            QStringLiteral("No NDVI, Amplitude or Coherence files provided for site %1 for data extraction mode!\n").
+                    arg(ctx.GetSiteShortName(event.siteId)).toStdString());
+    }
+}
+
 QStringList AgricPracticesHandler::ExtractNdviFiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                                     QDateTime &minDate, QDateTime &maxDate)
 {
@@ -426,7 +417,8 @@ QStringList AgricPracticesHandler::ExtractCoheFiles(EventProcessingContext &ctx,
 }
 
 
-QStringList AgricPracticesHandler::GetIdsExtractorArgs(const AgricPracticesSiteCfg &siteCfg, const QString &outFile)
+QStringList AgricPracticesHandler::GetIdsExtractorArgs(const AgricPracticesSiteCfg &siteCfg, const QString &outFile,
+                                                       const QString &finalTargetDir)
 {
     QStringList retArgs = { "LPISDataSelection",
                             "-inshp", siteCfg.fullShapePath,
@@ -434,6 +426,10 @@ QStringList AgricPracticesHandler::GetIdsExtractorArgs(const AgricPracticesSiteC
                             "-seqidsonly", "1",
                             "-out", outFile
                       };
+    if (finalTargetDir.size() > 0) {
+        retArgs += "-copydir";
+        retArgs += finalTargetDir;
+    }
     if (siteCfg.naPracticeParams.additionalFiles.size() > 0) {
         retArgs += "-addfiles";
         retArgs += siteCfg.naPracticeParams.additionalFiles;
@@ -443,7 +439,7 @@ QStringList AgricPracticesHandler::GetIdsExtractorArgs(const AgricPracticesSiteC
 }
 
 QStringList AgricPracticesHandler::GetPracticesExtractionArgs(const AgricPracticesSiteCfg &siteCfg, const QString &outFile,
-                                                              const QString &practice)
+                                                              const QString &practice, const QString &finalTargetDir)
 {
     const PracticesTableExtractionParams *pPracticeParams = 0;
     QString dataSelPractice = GetTsaExpectedPractice(practice);
@@ -464,6 +460,11 @@ QStringList AgricPracticesHandler::GetPracticesExtractionArgs(const AgricPractic
                             "-year", siteCfg.year,
                             "-out", outFile
                       };
+
+    if (finalTargetDir.size() > 0) {
+        retArgs += "-copydir";
+        retArgs += finalTargetDir;
+    }
 
     if (pPracticeParams->vegStart.size() > 0) {
         retArgs += "-vegstart";
@@ -691,26 +692,129 @@ QString AgricPracticesHandler::BuildMergeResultFileName(const AgricPracticesSite
     return QString(siteCfg.country).append("_").append(siteCfg.year).append("_").append(prdsType).append("_Extracted_Data.csv");
 }
 
-QString AgricPracticesHandler::BuildPracticesTableResultFileName(const AgricPracticesSiteCfg &siteCfg, const QString &practice)
+QString AgricPracticesHandler::BuildPracticesTableResultFileName(const AgricPracticesSiteCfg &siteCfg, const QString &suffix)
 {
-    return QString("Sen4CAP_L4C_").append(practice).append("_").append(siteCfg.country).
+    return QString("Sen4CAP_L4C_").append(suffix).append("_").append(siteCfg.country).
             append("_").append(siteCfg.year).append(".csv");
 }
 
-QStringList AgricPracticesHandler::CreateStepsForDataExtraction(const AgricPracticesSiteCfg &siteCfg, const QString &prdType,
-                                                                const QStringList &prds, const QString &idsFileName, QList<TaskToSubmit> &allTasksList,
+void AgricPracticesHandler::CreatePrdDataExtrTasks(const AgricPracticesSiteCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList,
+                                        const QString &taskName,
+                                        const QStringList &prdsList, const QList<std::reference_wrapper<const TaskToSubmit>> &dataExtParents,
+                                        AgricPractOperation operation, int &minPrdDataExtrIndex, int &maxPrdDataExtrIndex, int &curTaskIdx) {
+    // if the products per group is 0 or negative, then create a group with all products
+    int prdsPerGroup = siteCfg.prdsPerGroup > 0 ? siteCfg.prdsPerGroup : prdsList.size();
+    // if operation is exactly data extraction, then we the groups will have exactly 1 item
+    if (operation == dataExtraction) {
+        prdsPerGroup = 1;
+    }
+
+    int groups = (prdsList.size()/prdsPerGroup) + ((prdsList.size()%prdsPerGroup) == 0 ? 0 : 1);
+
+    // create the tasks for the NDVI - they depend only on the ids extraction
+    if (groups > 0) {
+        minPrdDataExtrIndex = curTaskIdx;
+        maxPrdDataExtrIndex = curTaskIdx + groups - 1;
+        for(int i  = 0; i<groups; i++) {
+            outAllTasksList.append(TaskToSubmit{ taskName, dataExtParents });
+            curTaskIdx++;
+        }
+    }
+}
+
+int AgricPracticesHandler::CreateMergeTasks(QList<TaskToSubmit> &outAllTasksList, const QString &taskName,
+                                        int minPrdDataExtrIndex, int maxPrdDataExtrIndex, int &curTaskIdx) {
+    outAllTasksList.append(TaskToSubmit{ taskName, {} });
+    int mergeTaskIdx = curTaskIdx++;
+    // update the parents for this task
+    if (minPrdDataExtrIndex != -1) {
+        for (int i = minPrdDataExtrIndex; i <= maxPrdDataExtrIndex; i++) {
+            outAllTasksList[mergeTaskIdx].parentTasks.append(outAllTasksList[i]);
+        }
+    }
+    return mergeTaskIdx;
+}
+
+int AgricPracticesHandler::CreateTSATasks(const AgricPracticesSiteCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList,
+                                        const QString &practiceName, AgricPractOperation operation,
+                                        int ndviMergeTaskIdx, int ampMergeTaskIdx, int coheMergeTaskIdx, int &curTaskIdx) {
+    int ccTsaIdx = -1;
+    AgricPractOperation expectedOper = GetExecutionOperation(practiceName);
+    if (siteCfg.practices.contains(practiceName) && IsOperationEnabled(operation, expectedOper)) {
+        // this task is independent and can be executed before any others
+        const QString &lowerPracticeName = practiceName.toLower();
+        outAllTasksList.append(TaskToSubmit{ lowerPracticeName + "-practices-extraction", {} });
+        int ccPractExtrIdx = curTaskIdx++;
+        outAllTasksList.append(TaskToSubmit{ lowerPracticeName + "-time-series-analysis", {outAllTasksList[ccPractExtrIdx],
+                                                                         outAllTasksList[ndviMergeTaskIdx], outAllTasksList[ampMergeTaskIdx],
+                                                                         outAllTasksList[coheMergeTaskIdx]} });
+        ccTsaIdx = curTaskIdx++;
+    }
+    return ccTsaIdx;
+}
+
+QString AgricPracticesHandler::CreateStepForLPISSelection(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                                AgricPractOperation operation, const QString &practice,
+                                                                const AgricPracticesSiteCfg &siteCfg,
+                                                                QList<TaskToSubmit> &allTasksList,
+                                                                NewStepList &steps, int &curTaskIdx) {
+    QString tsInputTablesDir ;
+    TaskToSubmit &lpisSelectionTask = allTasksList[curTaskIdx++];
+    QString fileName;
+    if (practice.size() == 0) {
+        fileName = BuildPracticesTableResultFileName(siteCfg, "FilterIds");
+    } else {
+        fileName = BuildPracticesTableResultFileName(siteCfg, practice);
+    }
+
+    const QString &tmpLpisSelFilePath = lpisSelectionTask.GetFilePath(fileName);
+    QString lpisSelFilePath = tmpLpisSelFilePath;
+    if (operation == dataExtraction) {
+        // get the directory where the ids file should be finally moved
+        tsInputTablesDir = GetStringConfigValue(parameters, configParameters, "ts_input_tables_dir", L4C_AP_CFG_PREFIX);
+        lpisSelFilePath = QDir(tsInputTablesDir).filePath(fileName);
+        QDir().mkpath(tsInputTablesDir);
+    }
+    QStringList lpisSelectionArgs;
+    if (practice.size() == 0) {
+        lpisSelectionArgs = GetIdsExtractorArgs(siteCfg, tmpLpisSelFilePath, tsInputTablesDir);
+    } else {
+        lpisSelectionArgs = GetPracticesExtractionArgs(siteCfg, tmpLpisSelFilePath, practice, tsInputTablesDir);
+    }
+
+    steps.append(lpisSelectionTask.CreateStep("LPISDataSelection", lpisSelectionArgs));
+
+    return lpisSelFilePath;
+}
+
+QStringList AgricPracticesHandler::CreateStepsForDataExtraction(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                                AgricPractOperation operation,
+                                                                const AgricPracticesSiteCfg &siteCfg, const QString &prdType,
+                                                                const QStringList &prds, const QString &idsFileName,
+                                                                QList<TaskToSubmit> &allTasksList,
                                                                 NewStepList &steps, int &curTaskIdx)
 {
     // if the products per group is 0 or negative, then create a group with all products
     int prdsPerGroup = siteCfg.prdsPerGroup > 0 ? siteCfg.prdsPerGroup : prds.size();
+    if (operation == dataExtraction) {
+        prdsPerGroup = 1;
+    }
     int groups = (prds.size()/prdsPerGroup) + ((prds.size()%prdsPerGroup) == 0 ? 0 : 1);
 
     // create the tasks for the NDVI, AMP and COHE - they depend only on the ids extraction
     QStringList dataExtrDirs;
     for(int i  = 0; i<groups; i++) {
         TaskToSubmit &dataExtractionTask = allTasksList[curTaskIdx++];
-        const QString &taskDataExtrDirName = dataExtractionTask.GetFilePath("");
-        dataExtrDirs.append(taskDataExtrDirName);
+        QString dataExtrDirName;
+        if (operation == all) {
+            dataExtrDirName = dataExtractionTask.GetFilePath("");
+            dataExtrDirs.append(dataExtrDirName);
+        } else {
+            QString key(prdType.toLower().append("_data_extr_dir"));
+            dataExtrDirName = GetStringConfigValue(parameters, configParameters, key, L4C_AP_CFG_PREFIX);
+            QDir().mkpath(dataExtrDirName);
+            dataExtrDirs.append(dataExtrDirName);
+        }
 
         // Extract the list of products from the current group
         int grpStartIdx = i * prdsPerGroup;
@@ -720,7 +824,7 @@ QStringList AgricPracticesHandler::CreateStepsForDataExtraction(const AgricPract
             sublist.append(prds.at(j));
         }
 
-        const QStringList &dataExtractionArgs = GetDataExtractionArgs(siteCfg, idsFileName, prdType, "NewID", prds, taskDataExtrDirName);
+        const QStringList &dataExtractionArgs = GetDataExtractionArgs(siteCfg, idsFileName, prdType, "NewID", prds, dataExtrDirName);
         steps.append(dataExtractionTask.CreateStep("AgricPractDataExtraction", dataExtractionArgs));
     }
     return dataExtrDirs;
@@ -737,18 +841,19 @@ QString AgricPracticesHandler::CreateStepsForFilesMerge(const AgricPracticesSite
     return mergedFile;
 }
 
-QStringList AgricPracticesHandler::CreateTimeSeriesAnalysisSteps(const AgricPracticesSiteCfg &siteCfg,
+QStringList AgricPracticesHandler::CreateTimeSeriesAnalysisSteps(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                                 AgricPractOperation operation, const AgricPracticesSiteCfg &siteCfg,
                                                                  const QString &practice, const QString &ndviMergedFile,
                                                                  const QString &ampMergedFile, const QString &coheMergedFile,
                                                                  NewStepList &steps,
-                                                                 QList<TaskToSubmit> &allTasksList, int &curTaskIdx)
+                                                                 QList<TaskToSubmit> &allTasksList, int &curTaskIdx,
+                                                                 AgricPractOperation activeOper)
 {
     QStringList retList;
-    if (siteCfg.practices.contains(practice)) {
-        TaskToSubmit &practicesExtractionTask = allTasksList[curTaskIdx++];
-        const QString &practicesFile = practicesExtractionTask.GetFilePath(BuildPracticesTableResultFileName(siteCfg, practice));
-        const QStringList &ccPracticesExtractionArgs = GetPracticesExtractionArgs(siteCfg, practicesFile, practice);
-        steps.append(practicesExtractionTask.CreateStep("LPISDataSelection", ccPracticesExtractionArgs));
+    AgricPractOperation oper = GetExecutionOperation(practice);
+    if (siteCfg.practices.contains(practice) && ((oper & activeOper) != none)) {
+        const QString &practicesFile = CreateStepForLPISSelection(parameters, configParameters, operation, practice, siteCfg,
+                                                                allTasksList, steps, curTaskIdx);
 
         TaskToSubmit &timeSeriesAnalysisTask = allTasksList[curTaskIdx++];
         const QString &timeSeriesExtrDir = timeSeriesAnalysisTask.GetFilePath("");
@@ -815,14 +920,21 @@ QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
 
             ProductList productsList = ctx.GetProducts(event.siteId, (int)prdType, startDate, endDate);
             for(const auto &product: productsList) {
-                listProducts.append(product.fullPath);
+                if (prdType == ProductType::L3BProductTypeId) {
+                    const QStringList &tiffFiles = FindNdviProductTiffFile(ctx, event.siteId, product.fullPath, s2L8Tiles);
+                    if (tiffFiles.size() > 0) {
+                        listProducts.append(tiffFiles);
+                    }
+                } else {
+                    listProducts.append(product.fullPath);
+                }
             }
         }
     } else {
         for (const auto &inputProduct : inputProducts) {
             // if the product is an LAI, we need to extract the TIFF file for the NDVI
             if (prdType == ProductType::L3BProductTypeId) {
-                const QStringList &tiffFiles = FindNdviProductTiffFile(ctx, event, inputProduct.toString(), s2L8Tiles);
+                const QStringList &tiffFiles = FindNdviProductTiffFile(ctx, event.siteId, inputProduct.toString(), s2L8Tiles);
                 if (tiffFiles.size() > 0) {
                     listProducts.append(tiffFiles);
                     for (const auto &tiffFile: tiffFiles) {
@@ -848,7 +960,7 @@ QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
     return listProducts;
 }
 
-QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContext &ctx, int siteId,
                                                            const QString &path, const QStringList &s2L8TilesFilter)
 {
     QFileInfo fileInfo(path);
@@ -861,7 +973,7 @@ QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContex
     QString absPath = path;
     if(!fileInfo.isAbsolute()) {
         // if we have the product name, we need to get the product path from the database
-        absPath = ctx.GetProductAbsolutePath(event.siteId, path);
+        absPath = ctx.GetProductAbsolutePath(siteId, path);
     }
     const QMap<QString, QString> &prdTiles = ProcessorHandlerHelper::GetHighLevelProductTilesDirs(absPath);
     QStringList retList;
@@ -1016,5 +1128,77 @@ QString AgricPracticesHandler::GetTsaExpectedPractice(const QString &practice)
         retPractice = "Fallow";
     }
     return retPractice;
+}
+
+AgricPractOperation AgricPracticesHandler::GetExecutionOperation(const QJsonObject &parameters, const std::map<QString, QString> &configParameters)
+{
+    const QString &execOper = GetStringConfigValue(parameters, configParameters, "execution_operation", L4C_AP_CFG_PREFIX);
+    return GetExecutionOperation(execOper);
+}
+
+AgricPractOperation AgricPracticesHandler::GetExecutionOperation(const QString &str)
+{
+    if (QString::compare(str, "DataExtraction", Qt::CaseInsensitive) == 0) {
+        return dataExtraction;
+    } else if (QString::compare(str, "CatchCrop", Qt::CaseInsensitive) == 0 ||
+               QString::compare(str, "CC", Qt::CaseInsensitive) == 0) {
+        return catchCrop;
+    } else if (QString::compare(str, "Fallow", Qt::CaseInsensitive) == 0 ||
+               QString::compare(str, "FL", Qt::CaseInsensitive) == 0) {
+        return fallow;
+    } else if (QString::compare(str, "NFC", Qt::CaseInsensitive) == 0) {
+        return nfc;
+    } else if (QString::compare(str, "HarvestOnly", Qt::CaseInsensitive) == 0 ||
+               QString::compare(str, "NA", Qt::CaseInsensitive) == 0) {
+        return harvestOnly;
+    } else if (QString::compare(str, "ALL", Qt::CaseInsensitive) == 0) {
+        return all;
+    }
+    return none;
+}
+
+bool AgricPracticesHandler::IsOperationEnabled(AgricPractOperation oper, AgricPractOperation expected) {
+    return ((oper & expected) != none);
+}
+
+void AgricPracticesHandler::HandleProductAvailableImpl(EventProcessingContext &ctx,
+                                const ProductAvailableEvent &event)
+{
+    // Get the product description from the database
+    const Product &prd = ctx.GetProduct(event.productId);
+    // Check that the product type is NDVI, AMP or COHE
+    QString prdKey;
+    switch (prd.productTypeId) {
+        case ProductType::L3BProductTypeId:
+            prdKey = "input_NDVI";
+            break;
+        case ProductType::S4CS1L2AmpProductTypeId:
+            prdKey = "input_AMP";
+            break;
+        case ProductType::S4CS1L2CoheProductTypeId:
+            prdKey = "input_COHE";
+            break;
+        default:
+            return;
+    }
+    QJsonObject parameters;
+    // check if the NRT data extraction is configured for the site
+    auto configParameters = ctx.GetConfigurationParameters(L4C_AP_CFG_PREFIX, prd.siteId);
+    bool nrtDataExtrEnabled = GetBoolConfigValue(parameters, configParameters, "nrt_data_extr_enabled", L4C_AP_CFG_PREFIX);
+    if (nrtDataExtrEnabled) {
+        // Create a new JOB
+        NewJob newJob;
+        newJob.processorId = processorDescr.processorId;  //send the job to this processor
+        newJob.siteId = prd.siteId;
+        newJob.startType = JobStartType::Triggered;
+
+        QJsonObject processorParamsObj;
+        QJsonArray prodsJsonArray;
+        prodsJsonArray.append(prd.fullPath);
+        processorParamsObj[prdKey] = prodsJsonArray;
+        processorParamsObj["execution_operation"] = "DataExtraction";
+        newJob.parametersJson = jsonToString(processorParamsObj);
+        ctx.SubmitJob(newJob);
+    }
 }
 
