@@ -433,6 +433,30 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
+            _statement := $str$
+                create or replace function sp_clear_pending_l1_tiles()
+                    returns void
+                    as
+                    $$
+                    begin
+                        delete
+                        from l1_tile_history
+                        where status_id = 1; -- processing
+
+                        update downloader_history
+                        set status_id = 2 -- downloaded
+                        where status_id = 7 -- processing
+                          and not exists (
+                            select *
+                            from l1_tile_history
+                            where status_id = 1 -- processing
+                        );
+                    end;
+                $$ language plpgsql volatile;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+           
             UPDATE processor SET label = 'L2A &mdash; Atmospheric Corrections' WHERE id = 1;
             UPDATE processor SET label = 'L3A &mdash; Cloud-free Composite' WHERE id = 2;
             UPDATE processor SET label = 'L3B &mdash; LAI/NDVI' WHERE id = 3;
@@ -440,6 +464,8 @@ begin
             UPDATE processor SET label = 'L4A &mdash; Cropland Mask' WHERE id = 5;
             UPDATE processor SET label = 'L4B &mdash; Crop Type Map' WHERE id = 6;
 
+            UPDATE config SET value = 8082 WHERE key = 'http-listener.listen-port';
+            
             UPDATE config_metadata SET type = 'file' WHERE key = 'executor.module.path.gdal_translate';
             UPDATE config_metadata SET type = 'file' WHERE key = 'executor.module.path.gdalbuildvrt';
             

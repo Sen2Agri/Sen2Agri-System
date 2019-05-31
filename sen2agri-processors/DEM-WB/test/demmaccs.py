@@ -31,6 +31,7 @@ from sen2agri_common_db import *
 from threading import Thread
 import threading
 import tempfile
+from bs4 import BeautifulSoup as Soup
 
 general_log_path = "/tmp/"
 general_log_filename = "demmaccs.log"
@@ -85,6 +86,43 @@ def get_prev_l2a_tile_path(tile_id, prev_l2a_product_path):
     print("STOP get_prev_l2a_tile_path")
     return tile_files
 
+def get_maja_jpi_log_extract(maja_working_dir, demmaccs_context, log_filename):
+    log(demmaccs_context.output, "Checking for MAJA JPI file in directory {} ...".format(maja_working_dir), log_filename)
+    
+    files = []
+    # r=root, d=directories, f = files
+    for r, d, f in os.walk(maja_working_dir):
+        for file in f:
+            if '_JPI_ALL.xml' in file:
+                files.append(os.path.join(r, file))
+    if (len(files) == 0) :
+        # No JPI file found ... return true from here
+        log(demmaccs_context.output, "No _JPI_ALL.xml found in the maja working dir {}. Not considering an error ...".format(maja_working_dir), log_filename)
+        return True
+    
+    # normally we should have only one file like this
+    maja_jpi_file = files[0]
+    
+    log(demmaccs_context.output, "Checking MAJA JPI file {} ...".format(maja_jpi_file), log_filename)
+
+    try:
+        xml_handler = open(maja_jpi_file).read()
+        soup = Soup(xml_handler)
+        for message in soup.find_all('processing_flags_and_modes'):
+            key = message.find('key').get_text()
+            if key == 'Validity_Flag' :
+                value = message.find('value').get_text()
+                if value == 'L2NOTV' :
+                    log(demmaccs_context.output, "L2NOTV found in the Validity_Flag Processing_Flags_And_Modes element from MAJA JPI file {}. The product will be invalidated ... ".format(maja_jpi_file), log_filename)
+                    # copy the file also in the MAJA root directory (near EEF)
+                    new_file = os.path.join(demmaccs_context.output, os.path.basename(maja_jpi_file))
+                    shutil.copy(maja_jpi_file, new_file)
+                    return False
+    except Exception, e:
+        print("Exception received when trying to read the MAJA JPI from file {}: {}".format(maja_jpi_file, e))
+        log(demmaccs_context.output, "Exception received when trying to read the MAJA JPI from file {}: {}".format(maja_jpi_file, e), log_filename)
+        pass
+    return True
 
 def copy_common_gipp_file(working_dir, gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, full_gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id, common_tile_id):
     #take the common one
@@ -356,9 +394,14 @@ def maccs_launcher(demmaccs_context):
                 os.remove(new_file)
             else: #the dest does not exist, so it will be moved without problems
                 pass
-            log(demmaccs_context.output, "Moving {} to {}".format(maja_dir, new_file), tile_log_filename)
-            shutil.move(maja_dir, new_file)
-            return_tile_id = "{}".format(tile_id)
+            
+            is_valid_maja_jpi = get_maja_jpi_log_extract(maccs_working_dir, demmaccs_context, tile_log_filename)
+            if is_valid_maja_jpi == True :
+                log(demmaccs_context.output, "Moving {} to {}".format(maja_dir, new_file), tile_log_filename)
+                shutil.move(maja_dir, new_file)
+                return_tile_id = "{}".format(tile_id)
+            else :
+                log(demmaccs_context.output, "No valid products (JPI L2NOTV status) found in: {}.".format(maccs_working_dir), tile_log_filename)
         else:
             log(demmaccs_context.output, "No valid products (MACCS VALD status or THEIA/MUSCATE formats) found in: {}.".format(maccs_working_dir), tile_log_filename)
         log(demmaccs_context.output, "Erasing the MACCS/MAJA working directory: rmtree: {}".format(maccs_working_dir), tile_log_filename)

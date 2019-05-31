@@ -449,10 +449,43 @@ def get_maccs_log_extract(maccs_report_file):
         pass
     return demmaccs_log_extract
 
+def checkForMajaJpiValidityStatus(path, tile_id, demmaccs_log_extract) :
+    # if already set to False, there is no need to do anything as the scope of this function is only to set it to False
+#    if demmaccs_log_extract.should_retry == False :
+#        return
+    
+    path_to_use = path[:len(path) - 1] if path.endswith("/") else path
+    tile_log_filename = "{}/demmaccs_{}.log".format(path_to_use, tile_id)
+    
+    tmp_jpi = glob.glob("{}/*_JPI_ALL.xml".format(path_to_use))
+    if len(tmp_jpi) > 0:
+        jpi_file = tmp_jpi[0];
+        try:
+            # Normally, if the file exists here it would be enough but we check just to be sure that we also have L2NOTV
+            xml_handler = open(jpi_file).read()
+            soup = Soup(xml_handler)
+            for message in soup.find_all('processing_flags_and_modes'):
+                key = message.find('key').get_text()
+                if key == 'Validity_Flag' :
+                    value = message.find('value').get_text()
+                    if value == 'L2NOTV' :
+                        log(path, "L2NOTV found in the MAJA JPI file {}. The product will not be retried ... ".format(jpi_file), tile_log_filename)
+                        demmaccs_log_extract.should_retry = False
+                        demmaccs_log_extract.error_message = '\n'.join([demmaccs_log_extract.error_message, "L2NOTV found in the MAJA JPI file {}. The product will not be retried!".format(jpi_file)])
+        except Exception, e:
+            print("Exception received when trying to read the MAJA JPI from file {}: {}".format(jpi_file, e))
+            log(path, "Exception received when trying to read the MAJA JPI from file {}: {}".format(jpi_file, e), tile_log_filename)
+            pass
+
 def get_log_info(path, tile_id):
     path_to_use = path[:len(path) - 1] if path.endswith("/") else path
     maccs_report_file = "{}/MACCS_L2REPT_{}.EEF".format(path_to_use, tile_id)
     demmaccs_log_extract = get_maccs_log_extract(maccs_report_file)
+    
+    majaJpiValidity = checkForMajaJpiValidityStatus(path, tile_id, demmaccs_log_extract)
+    if majaJpiValidity == False : 
+        maccs_report_file.should_retry = False
+    
     tile_log_filename = "{}/demmaccs_{}.log".format(path_to_use, tile_id)
     if len(demmaccs_log_extract.error_message) > 0:
         demmaccs_log_extract.error_message = "MACCS/MAJA: \n" + demmaccs_log_extract.error_message
@@ -810,8 +843,7 @@ if not os.path.isdir(demmaccs_config.working_dir) and not create_recursive_dirs(
     sys.exit(-1)
 
 #delete all the temporary content from a previous run
-#remove_dir_content(demmaccs_config.working_dir)
-
+remove_dir_content(demmaccs_config.working_dir)
 #create directory for the eventual archives like l1c products
 create_recursive_dirs(os.path.join(demmaccs_config.working_dir, ARCHIVES))
 l1c_queue = Queue.Queue(maxsize=int(args.processes_number))

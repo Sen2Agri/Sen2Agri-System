@@ -1,14 +1,29 @@
 #!/bin/sh
 
+INSTAL_CONFIG_FILE="./config/install_config.conf"
 HAS_S2AGRI_SERVICES=false
+
+function get_install_config_property
+{
+    grep "^$1=" "${INSTAL_CONFIG_FILE}" | cut -d'=' -f2 | sed -e 's/\r//g'
+}
+
 function install_sen2agri_services() 
 {
-    # Check if directory does not exists or is empty
-    if [ ! -d "/usr/share/sen2agri/sen2agri-services" ] || [ ! "$(ls -A /usr/share/sen2agri/sen2agri-services)" ] ; then
+    SERVICES_ARCHIVE=$(get_install_config_property "SERVICES_ARCHIVE")
+    if [ -z "$SERVICES_ARCHIVE" ]; then
         if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
             zipArchive=$(ls -at ../sen2agri-services/sen2agri-services*.zip| head -n 1)
-            filename="${zipArchive%.*}"
+        fi
+    else
+        if [ -f "../sen2agri-services/${SERVICES_ARCHIVE}" ]; then
+            zipArchive=$(ls -at "../sen2agri-services/${SERVICES_ARCHIVE}" | head -n 1)
+        fi
+    fi
 
+    # Check if directory does not exists or is empty
+    if [ ! -d "/usr/share/sen2agri/sen2agri-services" ] || [ ! "$(ls -A /usr/share/sen2agri/sen2agri-services)" ] ; then
+        if [ -f ../sen2agri-services/${SERVICES_ARCHIVE} ]; then
             echo "Extracting into /usr/share/sen2agri/sen2agri-services from archive $zipArchive ..."
             
             mkdir -p /usr/share/sen2agri/sen2agri-services && unzip ${zipArchive} -d /usr/share/sen2agri/sen2agri-services
@@ -29,8 +44,7 @@ function install_sen2agri_services()
     else
         echo "sen2agri-services already exist in /usr/share/sen2agri/sen2agri-services"
         if [ -d "/usr/share/sen2agri/sen2agri-services/bin" ] && [ -d "/usr/share/sen2agri/sen2agri-services/config" ] ; then 
-            if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
-                zipArchive=$(ls -at ../sen2agri-services/sen2agri-services*.zip| head -n 1)
+            if [ -f ../sen2agri-services/${SERVICES_ARCHIVE} ]; then
                 echo "Updating /usr/share/sen2agri/sen2agri-services/lib folder ..."
                 mkdir -p /usr/share/sen2agri/sen2agri-services/lib && rm -f /usr/share/sen2agri/sen2agri-services/lib/*.jar && unzip -o ${zipArchive} 'lib/*' -d /usr/share/sen2agri/sen2agri-services
                 echo "Updating /usr/share/sen2agri/sen2agri-services/modules folder ..."
@@ -89,8 +103,8 @@ function enableSciHubDwnDS()
     sed -i 's/AWSDataSource.Sentinel2.local_archive_path=/SciHubDataSource.Sentinel2.local_archive_path=/g' /usr/share/sen2agri/sen2agri-services/config/services.properties
     sed -i 's/AWSDataSource.Sentinel2.fetch_mode=/SciHubDataSource.Sentinel2.fetch_mode=/g' /usr/share/sen2agri/sen2agri-services/config/services.properties
     
-    sudo -u postgres psql sen2agri -c "update datasource set scope = 3 where satellite_id = 1 and name = 'Scientific Data Hub';"
-    sudo -u postgres psql sen2agri -c "update datasource set enabled = 'false' where satellite_id = 1 and name = 'Amazon Web Services';"
+    sudo -u postgres psql $DB_NAME -c "update datasource set scope = 3 where satellite_id = 1 and name = 'Scientific Data Hub';"
+    sudo -u postgres psql $DB_NAME -c "update datasource set enabled = 'false' where satellite_id = 1 and name = 'Amazon Web Services';"
     echo "Disabling Amazon datasource ... Done!"
     
 #    sudo -u postgres psql sen2agri -c "update datasource set local_root = (select local_root from datasource where satellite_id = 1 and name = 'Amazon Web Services') where satellite_id = 1 and name = 'Scientific Data Hub';"
@@ -116,9 +130,9 @@ function updateWebRestPort()
 function resetDownloadFailedProducts()
 {
     echo "Resetting failed downloaded products from downloader_history ..."
-    sudo -u postgres psql sen2agri -c "update downloader_history set no_of_retries = '0' where status_id = '3' "
-    sudo -u postgres psql sen2agri -c "update downloader_history set no_of_retries = '0' where status_id = '4' "
-    sudo -u postgres psql sen2agri -c "update downloader_history set status_id = '3' where status_id = '4' "
+    sudo -u postgres psql $DB_NAME -c "update downloader_history set no_of_retries = '0' where status_id = '3' "
+    sudo -u postgres psql $DB_NAME -c "update downloader_history set no_of_retries = '0' where status_id = '4' "
+    sudo -u postgres psql $DB_NAME -c "update downloader_history set status_id = '3' where status_id = '4' "
     echo "Resetting failed downloaded products from downloader_history ... Done!"
 }
 
@@ -135,10 +149,12 @@ install_sen2agri_services
 
 ldconfig
 
-DB_NAME=$(head -q -n 1 ./config/db_name.conf 2>/dev/null)
+DB_NAME=$(get_install_config_property "DB_NAME")
 if [ -z "$DB_NAME" ]; then
     DB_NAME="sen2agri"
 fi
+
+echo "$DB_NAME"
 
 cat migrations/migration-1.3-1.3.1.sql | su -l postgres -c "psql $DB_NAME"
 cat migrations/migration-1.3.1-1.4.sql | su -l postgres -c "psql $DB_NAME"
@@ -151,6 +167,7 @@ cat migrations/migration-1.8.0-1.8.1.sql | su -l postgres -c "psql $DB_NAME"
 cat migrations/migration-1.8.1-1.8.2.sql | su -l postgres -c "psql $DB_NAME"
 cat migrations/migration-1.8.2-1.8.3.sql | su -l postgres -c "psql $DB_NAME"
 cat migrations/migration-1.8.3-2.0.sql | su -l postgres -c "psql $DB_NAME"
+cat migrations/migration-2.0.0-2.0.1.sql | su -l postgres -c "psql $DB_NAME"
 
 systemctl daemon-reload
 

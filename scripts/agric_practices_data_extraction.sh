@@ -87,7 +87,7 @@ case "${COUNTRY}" in
         fi    
         ;;
     ROU)
-        INSITU_REL_PATH="TODO.shp"
+        INSITU_REL_PATH="ROM_2018_32634_buf_${INSITU_BUFFER_SIZE}.shp"
         ;;
     *)
         echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU}"

@@ -243,6 +243,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.skip.e
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.crop-mask', NULL, '', '2019-04-12 14:56:57.501918+02');
 
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b_lai.sub_products', NULL, 'L3B,L3C,L3D', '2019-04-12 14:56:57.501918+02');
 
 
 

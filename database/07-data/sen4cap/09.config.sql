@@ -167,3 +167,12 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.for
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s1.forcestart', NULL, 'false', '2019-04-12 14:56:57.501918+02');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.skip.existing', NULL, 'false', '2019-04-12 14:56:57.501918+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b_lai.sub_products', NULL, 'L3B,L3C', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.sub_steps', NULL, 'ALL,DataExtraction,CatchCrop,Fallow,NFC,HarvestOnly', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.nrt_data_extr_enabled', NULL, 'true', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ts_input_tables_dir', NULL, '/mnt/archive/agric_practices_files/input_files', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ndvi_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/data_extraction/ndvi', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.amp_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/data_extraction/amp', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.cohe_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/data_extraction/cohe', '2019-04-12 14:56:57.501918+02');
+

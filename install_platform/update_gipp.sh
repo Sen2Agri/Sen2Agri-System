@@ -1,9 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 function install_gipp_files() 
 {
+    L2A_PROCESSOR_PATH=$(sudo -u postgres psql sen2agri -qtA -c "select value from config where key='demmaccs.maccs-launcher';")
     GIPP_PATH=$(sudo -u postgres psql sen2agri -qtA -c "select value from config where key='demmaccs.gips-path';")
     GIPP_PATH=${GIPP_PATH%/}
+    l1c_processor=0
     if ! [[ -z "${GIPP_PATH}" ]] ; then
         echo "GIPP files found configured in ${GIPP_PATH}. Replacing ..."
         DATE=$(date +"%Y_%m_%dT%H_%M_%S")
@@ -17,12 +19,22 @@ function install_gipp_files()
 	    printf "\n"
 	    case $answer in
 		1)
-		    echo "MACCS GIPP files will be copied"
-		    l1c_processor=1
+            if [[ $L2A_PROCESSOR_PATH != *"maccs"* ]]; then
+                echo "MACCS GIPP were selected to be set but MACCS is not set in demmaccs.maccs-launcher from config table!"
+                echo "Please update first this path to be MACCS (ex. /opt/maccs/core/5.1/bin/maccs)!"
+            else
+                echo "MACCS GIPP files will be copied"
+                l1c_processor=1
+            fi
 		    ;;
 		2)
-		    echo "MAJA GIPP files will be copied"
-		    l1c_processor=2
+            if [[ $L2A_PROCESSOR_PATH != *"maja"* ]]; then
+                echo "MAJA GIPP were selected to be set but MAJA is not set in demmaccs.maccs-launcher from config table!"
+                echo "Please update first this path to be MAJA (ex. /opt/maja/3.2.2/bin/maja)!"
+            else
+                echo "MAJA GIPP files will be copied"
+                l1c_processor=2
+            fi
 		    ;;
 		*)
 		    echo "Unknown answer"

@@ -74,6 +74,16 @@ BEGIN
             _downloader_history_id
         )
         RETURNING id INTO return_id;
+        
+        INSERT INTO event(
+            type_id,
+            data,
+            submitted_timestamp)
+            VALUES (
+            3, -- "ProductAvailable"
+            ('{"product_id":' || return_id || '}') :: json,
+            now()
+        );
     END IF;
 
 	RETURN return_id;
