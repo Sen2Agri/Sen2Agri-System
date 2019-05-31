@@ -11,13 +11,12 @@
 void PhenoNdviHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
 {
-    outAllTasksList.append(TaskToSubmit{ "bands-extractor", {} });
-    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[0]} });
-    outAllTasksList.append(TaskToSubmit{ "pheno-ndvi-metrics", {outAllTasksList[1]} });
-    outAllTasksList.append(TaskToSubmit{ "pheno-ndvi-metrics-splitter", {outAllTasksList[2]} });
+    outAllTasksList.append(TaskToSubmit{ "ndvi-mask-series-extractor", {} });
+    outAllTasksList.append(TaskToSubmit{ "pheno-ndvi-metrics", {outAllTasksList[0]} });
+    outAllTasksList.append(TaskToSubmit{ "pheno-ndvi-metrics-splitter", {outAllTasksList[1]} });
 
     // product formatter needs completion of pheno-ndvi-metrics-splitter
-    outProdFormatterParentsList.append(outAllTasksList[3]);
+    outProdFormatterParentsList.append(outAllTasksList[2]);
 }
 
 void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
@@ -45,26 +44,22 @@ void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
     }
     SubmitTasks(ctx, event.jobId, allTasksListRef);
 
-    TaskToSubmit &bandsExtractorTask = allTasksList[0];
-    TaskToSubmit &featureExtractionTask = allTasksList[1];
-    TaskToSubmit &metricsEstimationTask = allTasksList[2];
-    TaskToSubmit &metricsSplitterTask = allTasksList[3];
+    TaskToSubmit &ndviMaskSeriesExtractorTask = allTasksList[0];
+    TaskToSubmit &metricsEstimationTask = allTasksList[1];
+    TaskToSubmit &metricsSplitterTask = allTasksList[2];
 
-    const auto &rawReflBands = bandsExtractorTask.GetFilePath("reflectances.tif");
-    const auto &allMasksImg = bandsExtractorTask.GetFilePath("mask_summary.tif");
-    const auto &dates = bandsExtractorTask.GetFilePath("dates.txt");
-    const auto &ndviImg = featureExtractionTask.GetFilePath("ndvi.tif");
+    const auto &allMasksImg = ndviMaskSeriesExtractorTask.GetFilePath("mask_summary.tif");
+    const auto &dates = ndviMaskSeriesExtractorTask.GetFilePath("dates.txt");
+    const auto &ndviImg = ndviMaskSeriesExtractorTask.GetFilePath("ndvis.tif");
     const auto &metricsEstimationImg = metricsEstimationTask.GetFilePath("metric_estimation.tif");
     const auto &metricsParamsImg = metricsSplitterTask.GetFilePath("metric_parameters_img.tif");
     const auto &metricsFlagsImg = metricsSplitterTask.GetFilePath("metric_flags_img.tif");
 
     QStringList bandsExtractorArgs = {
-        "BandsExtractor", "-pixsize",   resolutionStr,  "-merge",    "true",     "-ndh", "true",
-        "-out",           rawReflBands, "-allmasks", allMasksImg, "-outdate", dates,  "-il"
+        "NdviMaskSeriesExtractor", "-pixsize", resolutionStr,
+            "-outndvis", ndviImg, "-outmasks", allMasksImg, "-ndh", "true", "-outdate", dates, "-mission", "SENTINEL",  "-il"
     };
     bandsExtractorArgs += listProducts;
-
-    QStringList featureExtractionArgs = { "FeatureExtraction", "-rtocr", rawReflBands, "-ndvi", ndviImg };
 
     QStringList metricsEstimationArgs = {"PhenologicalNDVIMetrics",
         "-in", ndviImg, "-mask", allMasksImg, "-dates", dates, "-out", metricsEstimationImg
@@ -78,8 +73,7 @@ void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                       };
 
     globalExecInfos.allStepsList = {
-        bandsExtractorTask.CreateStep("BandsExtractor", bandsExtractorArgs),
-        featureExtractionTask.CreateStep("FeatureExtraction", featureExtractionArgs),
+        ndviMaskSeriesExtractorTask.CreateStep("NdviMaskSeriesExtractor", bandsExtractorArgs),
         metricsEstimationTask.CreateStep("PhenologicalNDVIMetrics", metricsEstimationArgs),
         metricsSplitterTask.CreateStep("PhenoMetricsSplitter", metricsSplitterArgs),
     };
