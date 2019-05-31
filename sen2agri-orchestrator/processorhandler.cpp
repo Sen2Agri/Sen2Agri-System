@@ -497,6 +497,13 @@ QString ProcessorHandler::GetMapValue(const std::map<QString, QString> &configPa
 
 bool ProcessorHandler::GetBoolConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
                                                 const QString &key, const QString &cfgPrefix) {
+    const QString &strVal = GetStringConfigValue(parameters, configParameters, key, cfgPrefix);
+    if (QString::compare(strVal, "true", Qt::CaseInsensitive) == 0) {
+        return true;
+    }
+    if (QString::compare(strVal, "false", Qt::CaseInsensitive) == 0) {
+        return false;
+    }
     return (GetIntConfigValue(parameters, configParameters, key, cfgPrefix) != 0);
 }
 
