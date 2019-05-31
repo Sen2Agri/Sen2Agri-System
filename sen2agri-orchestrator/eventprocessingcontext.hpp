@@ -16,7 +16,8 @@ class EventProcessingContext
 public:
     EventProcessingContext(PersistenceManagerDBProvider &persistenceManager);
 
-    std::map<QString, QString> GetJobConfigurationParameters(int jobId, QString prefix);
+    std::map<QString, QString> GetConfigurationParameters(const QString &prefix, int siteId = -1);
+    std::map<QString, QString> GetJobConfigurationParameters(int jobId, const QString &prefix);
 
     int SubmitJob(const NewJob &job);
 
@@ -48,6 +49,7 @@ public:
 
     int InsertProduct(const NewProduct &product);
 
+    Product GetProduct(int productId);
     ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
     ProductList GetProductsForTile(int siteId, const QString &tileId, ProductType productType, int tileSatelliteId, int targetSatelliteId);
     TileList GetSiteTiles(int siteId, int satelliteId);

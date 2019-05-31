@@ -957,6 +957,43 @@ ProductList PersistenceManagerDBProvider::GetProductsByInsertedTime(int siteId,
     });
 }
 
+Product PersistenceManagerDBProvider::GetProduct(int productId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(
+        __func__, [&] {
+            auto query = db.prepareQuery(QStringLiteral("select * from sp_get_product_by_id("
+                                                        ":productId)"));
+            query.bindValue(QStringLiteral(":productId"), productId);
+            query.setForwardOnly(true);
+            if (!query.exec()) {
+                throw_query_error(db, query);
+            }
+
+            auto dataRecord = query.record();
+            auto productIdCol = dataRecord.indexOf(QStringLiteral("product_id"));
+            auto processorIdCol = dataRecord.indexOf(QStringLiteral("processor_id"));
+            auto productTypeIdCol = dataRecord.indexOf(QStringLiteral("product_type_id"));
+            auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
+            auto fullPathCol = dataRecord.indexOf(QStringLiteral("full_path"));
+            auto creationDateCol = dataRecord.indexOf(QStringLiteral("created_timestamp"));
+            auto insertionDateCol = dataRecord.indexOf(QStringLiteral("inserted_timestamp"));
+
+            Product result;
+            while (query.next()) {
+                result = { query.value(productIdCol).toInt(), query.value(processorIdCol).toInt(),
+                           static_cast<ProductType>(query.value(productTypeIdCol).toInt()),
+                           query.value(siteIdCol).toInt(), query.value(fullPathCol).toString(),
+                           QDateTime().fromString(query.value(creationDateCol).toString(),
+                                                  Qt::ISODate),
+                           QDateTime().fromString(query.value(insertionDateCol).toString(),
+                                                  Qt::ISODate) };
+            }
+
+            return result;
+        });
+}
 
 Product PersistenceManagerDBProvider::GetProduct(int siteId, const QString &productName)
 {

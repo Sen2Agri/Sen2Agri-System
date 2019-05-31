@@ -11,8 +11,22 @@ EventProcessingContext::EventProcessingContext(PersistenceManagerDBProvider &per
 {
 }
 
+std::map<QString, QString> EventProcessingContext::GetConfigurationParameters(const QString &prefix, int siteId)
+{
+    const auto &paramList = persistenceManager.GetConfigurationParameters(prefix);
+
+    std::map<QString, QString> result;
+    for (const auto &p : paramList) {
+        if (siteId == -1 || p.siteId.value_or(-1) == -1 || p.siteId == siteId) {
+            result.emplace(p.key, p.value);
+        }
+    }
+
+    return result;
+}
+
 std::map<QString, QString> EventProcessingContext::GetJobConfigurationParameters(int jobId,
-                                                                                 QString prefix)
+                                                                                 const QString &prefix)
 {
     const auto &paramList = persistenceManager.GetJobConfigurationParameters(jobId, prefix);
 
@@ -181,6 +195,11 @@ void EventProcessingContext::SubmitTasks(int jobId,
 
         task.outputPath = GetOutputPath(jobId, task.taskId, task.moduleName, submitterProcName);
     }
+}
+
+Product EventProcessingContext::GetProduct(int productId)
+{
+    return persistenceManager.GetProduct(productId);
 }
 
 ProductList EventProcessingContext::GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate)
