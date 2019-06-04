@@ -368,8 +368,8 @@ private:
         MandatoryOff("outputs.lry");
 
         // Existing ortho image that can be used to compute size, origin and spacing of the output
-        AddParameter(ParameterType_InputImage, "ref", "Model ortho-image");
-        SetParameterDescription("ref","A model ortho-image that can be used to compute size, origin and spacing of the output");
+//        AddParameter(ParameterType_InputImage, "ref", "Model ortho-image");
+//        SetParameterDescription("ref","A model ortho-image that can be used to compute size, origin and spacing of the output");
 
         // Interpolators
         AddParameter(ParameterType_Choice,   "interpolator", "Interpolation");
@@ -401,7 +401,7 @@ private:
         AddRAMParameter();
 
         SetDocExampleParameterValue("il", "image1.tif image2.tif");
-        SetDocExampleParameterValue("ref", "reference.tif");
+//        SetDocExampleParameterValue("ref", "reference.tif");
         SetDocExampleParameterValue("out", "output.tif");
     }
 
@@ -427,27 +427,44 @@ private:
         DisableParameter("outputs.lrx");
         DisableParameter("outputs.lry");
 
-        if (!HasValue("ref"))
-        {
-            return;
+//        if (!HasValue("ref"))
+//        {
+//            return;
+//        }
+
+//        auto inOrtho = GetParameterImage("ref");
+
+//        ResampleFilterType::OriginType orig = inOrtho->GetOrigin();
+//        ResampleFilterType::SpacingType spacing = inOrtho->GetSpacing();
+//        ResampleFilterType::SizeType size = inOrtho->GetLargestPossibleRegion().GetSize();
+//        m_OutputProjectionRef = inOrtho->GetProjectionRef();
+
+//        SetParameterInt("outputs.sizex",size[0]);
+//        SetParameterInt("outputs.sizey",size[1]);
+//        SetParameterFloat("outputs.spacingx",spacing[0]);
+//        SetParameterFloat("outputs.spacingy",spacing[1]);
+//        SetParameterFloat("outputs.ulx",orig[0] - 0.5 * spacing[0]);
+//        SetParameterFloat("outputs.uly",orig[1] - 0.5 * spacing[1]);
+
+        if (!HasUserValue("outputs.sizex") && HasUserValue("outputs.lrx") && HasUserValue("outputs.spacingx") && std::abs(GetParameterFloat("outputs.spacingx")) > 0.0) {
+          SetParameterInt("outputs.sizex",static_cast<int>(std::ceil((GetParameterFloat("outputs.lrx")-GetParameterFloat("outputs.ulx"))/GetParameterFloat("outputs.spacingx"))));
+        }
+        if (!HasUserValue("outputs.sizey") && HasUserValue("outputs.lry") && HasUserValue("outputs.spacingy") && std::abs(GetParameterFloat("outputs.spacingy")) > 0.0) {
+          SetParameterInt("outputs.sizey",static_cast<int>(std::ceil((GetParameterFloat("outputs.lry")-GetParameterFloat("outputs.uly"))/GetParameterFloat("outputs.spacingy"))));
         }
 
-        auto inOrtho = GetParameterImage("ref");
-
-        ResampleFilterType::OriginType orig = inOrtho->GetOrigin();
-        ResampleFilterType::SpacingType spacing = inOrtho->GetSpacing();
-        ResampleFilterType::SizeType size = inOrtho->GetLargestPossibleRegion().GetSize();
-        m_OutputProjectionRef = inOrtho->GetProjectionRef();
-
-        SetParameterInt("outputs.sizex",size[0]);
-        SetParameterInt("outputs.sizey",size[1]);
-        SetParameterFloat("outputs.spacingx",spacing[0]);
-        SetParameterFloat("outputs.spacingy",spacing[1]);
-        SetParameterFloat("outputs.ulx",orig[0] - 0.5 * spacing[0]);
-        SetParameterFloat("outputs.uly",orig[1] - 0.5 * spacing[1]);
         // Update lower right
-        SetParameterFloat("outputs.lrx",GetParameterFloat("outputs.ulx") + GetParameterFloat("outputs.spacingx") * static_cast<double>(GetParameterInt("outputs.sizex")));
-        SetParameterFloat("outputs.lry",GetParameterFloat("outputs.uly") + GetParameterFloat("outputs.spacingy") * static_cast<double>(GetParameterInt("outputs.sizey")));
+        if (!HasUserValue("outputs.lrx") && HasUserValue("outputs.ulx") && HasUserValue("outputs.spacingx") && HasUserValue("outputs.sizex")) {
+            SetParameterFloat("outputs.lrx",GetParameterFloat("outputs.ulx") + GetParameterFloat("outputs.spacingx") * static_cast<double>(GetParameterInt("outputs.sizex")));
+        }
+        if (!HasUserValue("outputs.lry") && HasUserValue("outputs.uly") && HasUserValue("outputs.spacingy") && HasUserValue("outputs.sizey")) {
+            SetParameterFloat("outputs.lry",GetParameterFloat("outputs.uly") + GetParameterFloat("outputs.spacingy") * static_cast<double>(GetParameterInt("outputs.sizey")));
+        }
+
+        if (!HasValue("outputs.ulx") || !HasValue("outputs.spacingx") || !HasValue("outputs.sizex") ||
+                !HasValue("outputs.uly") || !HasValue("outputs.spacingy") || !HasValue("outputs.sizey")) {
+            return;
+        }
 
         if (!HasUserValue("opt.gridspacing"))
           {
@@ -494,7 +511,7 @@ private:
           else
             {
             // Use the smallest spacing (more precise grid)
-            double optimalSpacing = std::min( std::abs(spacing[0]), std::abs(spacing[1]) );
+            double optimalSpacing = std::min( std::abs(GetParameterFloat("outputs.spacingx")), std::abs(GetParameterFloat("outputs.spacingy")) );
             otbAppLogINFO( "Setting grid spacing to " << optimalSpacing );
             SetParameterFloat("opt.gridspacing",optimalSpacing);
             }
@@ -518,31 +535,6 @@ private:
 
             const auto inImage = reader->GetOutput();
 
-//            itk::Point<float, 2> ulp;
-//            itk::Point<float, 2> lrp;
-//            ulp[0] = GetParameterFloat("srcwin.ulx");
-//            ulp[1] = GetParameterFloat("srcwin.uly");
-//            lrp[0] = GetParameterFloat("srcwin.lrx");
-//            lrp[1] = GetParameterFloat("srcwin.lry");
-
-//            InputImageType::IndexType uli;
-//            InputImageType::IndexType lri;
-//            inImage->TransformPhysicalPointToIndex(ulp, uli);
-//            inImage->TransformPhysicalPointToIndex(lrp, lri);
-
-//            std::cout << uli << '\n';
-//            std::cout << lri << '\n';
-
-//            auto extractROIFilter = ExtractROIFilterType::New();
-//            extractROIFilter->SetInput(inImage);
-//            extractROIFilter->SetStartX(uli[0]);
-//            extractROIFilter->SetStartY(uli[1]);
-//            extractROIFilter->SetSizeX(lri[0] - uli[0] + 1);
-//            extractROIFilter->SetSizeY(lri[1] - uli[1] + 1);
-//            m_ExtractROIFilters->PushBack(extractROIFilter);
-//            extractROIFilter->UpdateOutputInformation();
-//            m_ReprojectedImages->PushBack(extractROIFilter->GetOutput());
-
             // Resampler Instantiation
             auto resampleFilter = ResampleFilterType::New();
             m_ResampleFilters.emplace_back(resampleFilter);
@@ -550,8 +542,9 @@ private:
 
             // Set the output projection Ref
             resampleFilter->SetInputProjectionRef(inImage->GetProjectionRef());
+            resampleFilter->SetOutputProjectionRef(inImage->GetProjectionRef());
             resampleFilter->SetInputKeywordList(inImage->GetImageKeywordlist());
-            resampleFilter->SetOutputProjectionRef(m_OutputProjectionRef);
+//            resampleFilter->SetOutputProjectionRef(m_OutputProjectionRef);
 
             // Check size
             if (GetParameterInt("outputs.sizex") <= 0 || GetParameterInt("outputs.sizey") <= 0)
@@ -678,138 +671,6 @@ private:
 
         m_CompositeFilter = CompositeFilterType::New();
         m_CompositeFilter->SetInput(m_ReprojectedImages);
-
-        // Resampler Instantiation
-//        auto resampleFilter = ResampleFilterType::New();
-//        m_ResampleFilters.emplace_back(resampleFilter);
-//        m_CompositeFilter->UpdateOutputInformation();
-//        resampleFilter->SetInput(m_CompositeFilter->GetOutput());
-
-//        // Set the output projection Ref
-//        resampleFilter->SetInputProjectionRef(m_CompositeFilter->GetOutput()->GetProjectionRef());
-//        resampleFilter->SetInputKeywordList(m_CompositeFilter->GetOutput()->GetImageKeywordlist());
-//        resampleFilter->SetOutputProjectionRef(m_OutputProjectionRef);
-
-//        // Check size
-//        if (GetParameterInt("outputs.sizex") <= 0 || GetParameterInt("outputs.sizey") <= 0)
-//          {
-//          otbAppLogCRITICAL("Wrong value : negative size : ("<<GetParameterInt("outputs.sizex")<<" , "<<GetParameterInt("outputs.sizey")<<")");
-//          }
-
-//        //Check spacing sign
-//        if (GetParameterFloat("outputs.spacingy") > 0.)
-//          {
-//          otbAppLogWARNING(<<"Wrong value for outputs.spacingy: Pixel size along Y axis should be negative, (outputs.spacingy=" <<GetParameterFloat("outputs.spacingy") << ")" )
-//          }
-
-//        // Get Interpolator
-//        switch ( GetParameterInt("interpolator") )
-//          {
-//          case Interpolator_Linear:
-//          {
-//          if (first)
-//            {
-//            otbAppLogINFO(<< "Using linear interpolator");
-//            }
-//          LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
-//          resampleFilter->SetInterpolator(interpolator);
-//          }
-//          break;
-//          case Interpolator_NNeighbor:
-//          {
-//          if (first)
-//            {
-//            otbAppLogINFO(<< "Using nn interpolator");
-//            }
-//          NearestNeighborInterpolationType::Pointer interpolator = NearestNeighborInterpolationType::New();
-//          resampleFilter->SetInterpolator(interpolator);
-//          }
-//          break;
-//          case Interpolator_BCO:
-//          {
-//          if (first)
-//            {
-//              otbAppLogINFO(<< "Using BCO interpolator");
-//            }
-//          BCOInterpolationType::Pointer interpolator = BCOInterpolationType::New();
-//          interpolator->SetRadius(GetParameterInt("interpolator.bco.radius"));
-//          resampleFilter->SetInterpolator(interpolator);
-//          }
-//          break;
-//          }
-
-//        // Set Output information
-//        ResampleFilterType::SizeType size;
-//        size[0] = GetParameterInt("outputs.sizex");
-//        size[1] = GetParameterInt("outputs.sizey");
-//        resampleFilter->SetOutputSize(size);
-
-//        ResampleFilterType::SpacingType spacing;
-//        spacing[0] = GetParameterFloat("outputs.spacingx");
-//        spacing[1] = GetParameterFloat("outputs.spacingy");
-//        resampleFilter->SetOutputSpacing(spacing);
-
-//        ResampleFilterType::OriginType origin;
-//        origin[0] = GetParameterFloat("outputs.ulx") + 0.5 * GetParameterFloat("outputs.spacingx");
-//        origin[1] = GetParameterFloat("outputs.uly") + 0.5 * GetParameterFloat("outputs.spacingy");
-//        resampleFilter->SetOutputOrigin(origin);
-
-//        // Build the default pixel
-//        InputImageType::PixelType defaultValue = GetParameterFloat("bv");
-//        resampleFilter->SetEdgePaddingValue(defaultValue);
-
-//        if (first)
-//          {
-//          otbAppLogINFO("Generating output with size = " << size);
-//          otbAppLogINFO("Generating output with pixel spacing = " << spacing);
-//          otbAppLogINFO("Generating output with origin = " << origin);
-//          otbAppLogINFO("Area outside input image bounds will have a pixel value of " << defaultValue);
-//          }
-
-//        // Displacement Field spacing
-//        ResampleFilterType::SpacingType gridSpacing;
-//        if (IsParameterEnabled("opt.gridspacing"))
-//          {
-//          gridSpacing[0] = GetParameterFloat("opt.gridspacing");
-//          gridSpacing[1] = -GetParameterFloat("opt.gridspacing");
-
-//          if ( GetParameterFloat( "opt.gridspacing" ) == 0 )
-//            {
-//            otbAppLogFATAL( "opt.gridspacing must be different from 0 " );
-//            }
-
-//          // Predict size of deformation grid
-//          ResampleFilterType::SpacingType deformationGridSize;
-//          deformationGridSize[0] = static_cast<ResampleFilterType::SpacingType::ValueType >(std::abs(
-//              GetParameterInt("outputs.sizex") * GetParameterFloat("outputs.spacingx") / GetParameterFloat("opt.gridspacing") ));
-//          deformationGridSize[1] = static_cast<ResampleFilterType::SpacingType::ValueType>(std::abs(
-//              GetParameterInt("outputs.sizey") * GetParameterFloat("outputs.spacingy") / GetParameterFloat("opt.gridspacing") ));
-//          if (first)
-//            {
-//            otbAppLogINFO("Using a deformation grid with a physical spacing of " << GetParameterFloat("opt.gridspacing"));
-//            otbAppLogINFO("Using a deformation grid of size " << deformationGridSize);
-//            }
-
-//          if (deformationGridSize[0] * deformationGridSize[1] == 0)
-//            {
-//            otbAppLogFATAL("Deformation grid degenerated (size of 0). "
-//                "You shall set opt.gridspacing appropriately. "
-//                "opt.gridspacing units are the same as outputs.spacing units");
-//            }
-
-//          if (std::abs(GetParameterFloat("opt.gridspacing")) < std::abs(GetParameterFloat("outputs.spacingx"))
-//               || std::abs(GetParameterFloat("opt.gridspacing")) < std::abs(GetParameterFloat("outputs.spacingy")) )
-//            {
-//            otbAppLogWARNING("Spacing of deformation grid should be at least equal to "
-//                "spacing of output image. Otherwise, computation time will be slow, "
-//                "and precision of output will not be better. "
-//                "You shall set opt.gridspacing appropriately. "
-//                "opt.gridspacing units are the same as outputs.spacing units");
-//            }
-
-//          resampleFilter->SetDisplacementFieldSpacing(gridSpacing);
-////              m_ReprojectedImages->PushBack(resampleFilter->GetOutput());
-//          }
 
         if (HasValue("bv"))
           {
