@@ -11,6 +11,9 @@ import multiprocessing.dummy
 import os
 import os.path
 from osgeo import ogr
+from osgeo import osr
+from osgeo import gdal
+from gdal import gdalconst
 import pipes
 import psycopg2
 from psycopg2.sql import SQL, Literal
@@ -607,6 +610,7 @@ def get_tile_footprints(conn, site_id):
         query = SQL(
             """
             select shape_tiles_s2.tile_id,
+                   shape_tiles_s2.epsg_code,
                    ST_AsBinary(shape_tiles_s2.geog) as geog
             from shape_tiles_s2
             where shape_tiles_s2.tile_id in (
@@ -625,10 +629,10 @@ def get_tile_footprints(conn, site_id):
         conn.commit()
 
         tiles = {}
-        for (tile_id, geog) in results:
+        for (tile_id, epsg_code, geog) in results:
             geog = bytes(geog)
             geog = ogr.CreateGeometryFromWkb(geog)
-            tiles[tile_id] = geog
+            tiles[tile_id] = (geog, epsg_code)
 
         return tiles
 
@@ -712,13 +716,17 @@ def get_statistics_invocation(input, ref):
 
 
 class WeeklyComposite(object):
-    def __init__(self, output, tile_ref, xmin, xmax, ymin, ymax, inputs):
+    def __init__(self, output, temp, tile_ref, xmin, xmax, ymin, ymax, tile_epsg_code, tile_srs, tile_extent, inputs):
         self.output = output
+        self.temp = temp
         self.tile_ref = tile_ref
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
         self.ymax = ymax
+        self.tile_epsg_code = tile_epsg_code
+        self.tile_srs = tile_srs
+        self.tile_extent = tile_extent
         self.inputs = inputs
 
     def run(self):
@@ -734,16 +742,48 @@ class WeeklyComposite(object):
         command = []
         command += ["otbcli", "Composite"]
         command += ["-progress", "false"]
-        command += ["-out", self.output]
-        command += ["-ref", self.tile_ref]
-        command += ["-srcwin.ulx", self.xmin]
-        command += ["-srcwin.uly", self.ymax]
-        command += ["-srcwin.lrx", self.xmax]
-        command += ["-srcwin.lry", self.ymin]
+        command += ["-out", self.temp]
+        command += ["-outputs.ulx", self.xmin]
+        command += ["-outputs.uly", self.ymax]
+        command += ["-outputs.lrx", self.xmax]
+        command += ["-outputs.lry", self.ymin]
+        command += ["-outputs.spacingx", 20]
+        command += ["-outputs.spacingy", -20]
         command += ["-il"] + self.inputs
         command += ["-bv", 0]
         command += ["-opt.gridspacing", 240]
         run_command(command, env)
+
+        # command = []
+        # command += ["pkcomposite"]
+        # command += ["-srcnodata", 0]
+        # command += ["-dstnodata", 0]
+        # command += ["-crule", "mean"]
+        # command += ["-r", "bilinear"]
+        # command += ["-ulx", self.xmin]
+        # command += ["-uly", self.ymax]
+        # command += ["-lrx", self.xmax]
+        # command += ["-lry", self.ymin]
+        # command += ["-o", self.temp]
+
+        for input in self.inputs:
+            command += ["-i", input]
+        run_command(command)
+
+        (xmin, ymax) = self.tile_extent[0]
+        (xmax, ymin) = self.tile_extent[2]
+
+        command = []
+        command += ["gdalwarp", "-q"]
+        command += ["-r", "cubic"]
+        command += ["-t_srs", "EPSG:{}".format(self.tile_epsg_code)]
+        command += ["-tr", 20, 20]
+        command += ["-te", xmin, ymin, xmax, ymax]
+        command += [self.temp]
+        command += [self.output]
+        run_command(command)
+
+        os.remove(self.temp)
 
         command = []
         command += ["optimize_gtiff.py"]
@@ -889,22 +929,79 @@ class CoherenceSeasonComposite(object):
         run_command(command, env)
 
 
+def get_projection(file):
+    ds = gdal.Open(file, gdalconst.GA_ReadOnly)
+    srs = osr.SpatialReference()
+    srs.ImportFromWkt(ds.GetProjectionRef())
+    return srs
+
+
+def get_extent(raster):
+    gt = raster.GetGeoTransform()
+    (cols, rows) = raster.RasterXSize, raster.RasterYSize
+
+    extent = []
+
+    x = gt[0]
+    y = gt[3]
+    extent.append((x, y))
+
+    x = gt[0] + rows * gt[2]
+    y = gt[3] + rows * gt[5]
+    extent.append((x, y))
+
+    x = gt[0] + cols * gt[1] + rows * gt[2]
+    y = gt[3] + cols * gt[4] + rows * gt[5]
+    extent.append((x, y))
+
+    x = gt[0] + cols * gt[1]
+    y = gt[3] + cols * gt[4]
+    extent.append((x, y))
+
+    return extent
+
+
 def process_radar(config, conn, pool):
     tiles = get_tile_footprints(conn, config.site_id)
 
     products = get_radar_products(config, conn, config.site_id)
     groups = defaultdict(list)
+    input_srs = None
     for product in products:
         if config.tiles is not None and product.tile_id not in config.tiles:
             continue
         if not os.path.exists(product.path):
             print("product {} does not exist".format(product.path))
             continue
+
+        if input_srs is None:
+            input_srs = get_projection(product.path)
+
         group = RadarGroup(product.year, product.month, product.week, product.tile_id, product.orbit_type_id, product.polarization, product.product_type)
         groups[group].append(product)
 
+    wgs84_srs = osr.SpatialReference()
+    wgs84_srs.ImportFromEPSG(4326)
+
+    transform = osr.CoordinateTransformation(wgs84_srs, input_srs)
+    tiles_input_srs = {}
+    for (tile_id, (geog, epsg_code)) in tiles.items():
+        geom = geog.Clone()
+        geom.Transform(transform)
+        tiles_input_srs[tile_id] = geom
+
     groups = sorted(list(groups.items()))
     ref_map = get_lpis_map(config.lpis_path, 20)
+    ref_srs_map = {}
+    ref_extent_map = {}
+    for (tile_id, path) in ref_map.items():
+        ds = gdal.Open(path, gdalconst.GA_ReadOnly)
+
+        ref_extent_map[tile_id] = get_extent(ds)
+
+        tile_srs = osr.SpatialReference()
+        tile_srs.ImportFromWkt(ds.GetProjection())
+        ref_srs_map[tile_id] = tile_srs
 
     weekly_composites = []
     backscatter_groups = defaultdict(list)
@@ -918,15 +1015,17 @@ def process_radar(config, conn, pool):
             hdrs.append(product.path)
 
         tile_ref = ref_map.get(group.tile_id)
-        if tile_ref is None:
+        tile_srs = ref_srs_map.get(group.tile_id)
+        tile_extent = ref_extent_map.get(group.tile_id)
+        if tile_ref is None or tile_srs is None or tile_extent is None:
             continue
 
         output = os.path.join(config.path, group.format(config.site_id))
+        temp = os.path.splitext(output)[0] + "_TMP.tif"
 
-        geog = tiles[group.tile_id]
-        (xmin, xmax, ymin, ymax) = geog.GetEnvelope()
-
-        composite = WeeklyComposite(output, tile_ref, xmin, xmax, ymin, ymax, hdrs)
+        epsg_code = tiles[group.tile_id][1]
+        (xmin, xmax, ymin, ymax) = tiles_input_srs[group.tile_id].GetEnvelope()
+        composite = WeeklyComposite(output, temp, tile_ref, xmin, xmax, ymin, ymax, epsg_code, tile_srs, tile_extent, hdrs)
         weekly_composites.append(composite)
 
         if group.product_type == PRODUCT_TYPE_ID_BCK:
