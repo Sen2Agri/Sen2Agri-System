@@ -144,7 +144,7 @@ print(paste('Dimensions after filtering out small parcels:',dim(data_joined)))
 # Filter out crop types with few parcels
 
 dj2 <- count(data_joined,TARGET)
-dj3 <- subset(dj2, n >= 30)
+dj3 <- subset(dj2, n >= PaMIN)
 ctlist <- dj3[, "TARGET", drop=TRUE]
 print(paste('Crop types after filtering out crop types with few parcels:',ctlist))
 data_joined <- subset(data_joined, TARGET %in% ctlist)
