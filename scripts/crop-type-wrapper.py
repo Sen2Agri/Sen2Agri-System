@@ -99,13 +99,19 @@ def main():
     parser.add_argument('--out-path', default='.', help="output path")
     parser.add_argument('--working-path', default='.', help="working path")
     parser.add_argument('--tiles', default=None, nargs="+", help="tile filter")
-    parser.add_argument('--training-ratio', type=float, help="training/total samples ratio", default=0.5)
-    parser.add_argument('--num-trees', type=int, help="number of RF trees", default=300)
-    parser.add_argument('--sample-size', type=float, help="sample size", default=0.2)
-    parser.add_argument('--count-threshold', type=int, help="count threshold", default=1000)
-    parser.add_argument('--count-min', type=int, help="minimum count", default=10)
+    parser.add_argument('--lc', help="LC classes to assess", default='1234')
+    parser.add_argument('--min-s2-pix', type=int, help="minimum number of S2 pixels", default=3)
+    parser.add_argument('--min-s1-pix', type=int, help="minimum number of S1 pixels", default=1)
+    parser.add_argument('--best-s2-pix', type=int, help="minimum number of S2 pixels for parcels to use in training", default=10)
+    parser.add_argument('--pa-min', type=int, help="minimum parcels to assess a crop type", default=30)
+    parser.add_argument('--pa-train-h', type=int, help="upper threshold for parcel counts by crop type", default=4000)
+    parser.add_argument('--pa-train-l', type=int, help="lower threshold for parcel counts by crop type", default=1100)
+    parser.add_argument('--sample-ratio-h', type=int, help="training ratio for common crop types", default=0.25)
+    parser.add_argument('--sample-ratio-l', type=int, help="training ratio for uncommon crop types", default=0.75)
     parser.add_argument('--smote-target', type=int, help="target sample count for SMOTE", default=1000)
     parser.add_argument('--smote-k', type=int, help="number of SMOTE neighbours", default=5)
+    parser.add_argument('--num-trees', type=int, help="number of RF trees", default=300)
+    parser.add_argument('--min-node-size', type=int, help="minimum node size", default=10)
 
     args = parser.parse_args()
 
@@ -190,14 +196,22 @@ def main():
     command += [os.path.join(args.working_path, "features/optical-features.csv")]
     command += [os.path.join(args.working_path, "features/sar-temporal.csv")]
     command += [os.path.join(lpis_path, "parcels.csv")]
-    command += [args.training_ratio]
+    command += ["CTnumL4A"]
+    command += [args.lc]
+    command += ["Area_meters"]
+    command += [args.min_s2_pix]
+    command += [args.min_s1_pix]
+    command += [args.pa_min]
+    command += [args.best_s2_pix]
+    command += [args.pa_train_h]
+    command += [args.pa_train_l]
+    command += [args.sample_ratio_h]
+    command += [args.sample_ratio_l]
     command += ["Smote"]
-    command += [args.num_trees]
-    command += [args.sample_size]
-    command += [args.count_threshold]
-    command += [args.count_min]
     command += [args.smote_target]
     command += [args.smote_k]
+    command += [args.num_trees]
+    command += [args.min_node_size]
 
     run_command(command)
 
