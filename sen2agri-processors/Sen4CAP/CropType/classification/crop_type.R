@@ -334,6 +334,9 @@ if (samplingmethod=="Smote") {
 parcels_predict = data.frame(data_joined$NewID, data_joined$AreaDeclared, data_joined$TARGET)
 colnames(parcels_predict)=c("NewID", "AreaDeclared", "TARGET")
 
+parcels_predict_name = paste("Parcels_predict",format(Sys.time(),"%m%d-%H%M"), sep="_")
+saveRDS(parcels_predict, paste0(workdir, parcels_predict_name, ".rds"))
+
 data_predict_red <- data_joined %>% dplyr:: select(starts_with("XX"))
 data_predict_red_name = paste("Data_predict",format(Sys.time(),"%m%d-%H%M"),sep="_")
 saveRDS(data_predict_red, paste0(workdir,data_predict_red_name,".rds"))
