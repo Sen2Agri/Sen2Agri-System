@@ -147,7 +147,7 @@ def prepare_lpis(conn, lpis_table, lut_table, tiles):
             from (
                 select ogc_fid,
                         row_number() over (order by ogc_fid) as new_id,
-                        row_number() over (order by ori_hold) as hold_id
+                        dense_rank() over (order by ori_hold) as hold_id
                 from {}
             ) t
             where t.ogc_fid = {}.ogc_fid
