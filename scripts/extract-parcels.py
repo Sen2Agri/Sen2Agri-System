@@ -53,7 +53,7 @@ def save_to_csv(cursor, path):
     with open(path, 'wb') as csvfile:
         writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
 
-        writer.writerow(['NewID', 'AREA', 'CTnum', 'LC'])
+        writer.writerow(['NewID', 'Area_meters', 'S1Pix', 'S2Pix', 'CTnumL4A', 'LC'])
         for row in cursor:
             writer.writerow(row)
 
@@ -62,8 +62,10 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
     with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
         q1 = """
             select lpis."NewID",
-                lpis."Area_meters" as "AREA",
-                lut."ctnuml4a" as "CTnum",
+                lpis."Area_meters",
+                lpis."S1Pix",
+                lpis."S2Pix",
+                lut."ctnuml4a" as "CTnumL4A",
                 lpis."LC"
             from {} lpis
             inner join {} lut on lut.ctnum :: int = lpis."CTnum"
@@ -80,8 +82,10 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
                 select ST_Transform(ST_GeomFromText({}, {}), Find_SRID('public', {}, 'wkb_geometry')) as geom
             )
             select lpis."NewID",
-                lpis."Area_meters" as "AREA",
-                lut."ctnuml4a" as "CTnum",
+                lpis."Area_meters",
+                lpis."S1Pix",
+                lpis."S2Pix",
+                lut."ctnuml4a" as "CTnumL4A",
                 lpis."LC"
             from stratum
             inner join {} lpis on lpis.wkb_geometry && stratum.geom and ST_Relate(lpis.wkb_geometry, stratum.geom, '2********')
