@@ -4,6 +4,7 @@ from __future__ import print_function
 import argparse
 from datetime import date
 import multiprocessing.dummy
+from osgeo import osr
 import pipes
 import psycopg2
 from psycopg2.sql import SQL, Literal, Identifier
@@ -80,10 +81,16 @@ def get_site_epsg_codes(conn, site_id):
 
         result = []
         for (epsg_code, ) in rows:
-            print(epsg_code)
             result.append(epsg_code)
 
         return result
+
+
+def get_esri_wkt(epsg_code):
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(epsg_code)
+    srs.MorphToESRI()
+    return srs.ExportToWkt()
 
 
 def main():
@@ -118,9 +125,16 @@ def main():
         commands.append(command)
 
         epsg_codes = get_site_epsg_codes(conn, config.site_id)
+
         for epsg_code in epsg_codes:
+            wkt = get_esri_wkt(epsg_code)
+
             for buf in [5, 10]:
                 output = "{}_{}_buf_{}m.shp".format(lpis_table, epsg_code, buf)
+                prj = "{}_{}_buf_{}m.prj".format(lpis_table, epsg_code, buf)
+
+                with open(prj, 'wb') as f:
+                    f.write(wkt)
 
                 sql = SQL(
                     """
