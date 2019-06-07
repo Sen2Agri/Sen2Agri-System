@@ -754,22 +754,6 @@ class WeeklyComposite(object):
         command += ["-opt.gridspacing", 240]
         run_command(command, env)
 
-        # command = []
-        # command += ["pkcomposite"]
-        # command += ["-srcnodata", 0]
-        # command += ["-dstnodata", 0]
-        # command += ["-crule", "mean"]
-        # command += ["-r", "bilinear"]
-        # command += ["-ulx", self.xmin]
-        # command += ["-uly", self.ymax]
-        # command += ["-lrx", self.xmax]
-        # command += ["-lry", self.ymin]
-        # command += ["-o", self.temp]
-
-        for input in self.inputs:
-            command += ["-i", input]
-        run_command(command)
-
         (xmin, ymax) = self.tile_extent[0]
         (xmax, ymin) = self.tile_extent[2]
 
