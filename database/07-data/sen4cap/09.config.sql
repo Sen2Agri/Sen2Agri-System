@@ -147,6 +147,8 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.config_path', NULL, '/usr/share/sen2agri/S4C_L4B_Configurations/S4C_L4B_Config.cfg', '2019-02-18 15:27:41.861613+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.config_path', NULL, '/usr/share/sen2agri/S4C_L4C_Configurations/S4C_L4C_Config_NLD.cfg', '2019-02-18 15:27:41.861613+02');
 
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.lpis.path', NULL, '/mnt/archive/lpis/{site}', '2019-06-11 16:15:00.0+02');
+
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('resources.working-mem', NULL, '1024', '2015-09-08 11:03:21.87284+03');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('s1.enabled', NULL, 'false', '2017-10-24 14:56:57.501918+02');

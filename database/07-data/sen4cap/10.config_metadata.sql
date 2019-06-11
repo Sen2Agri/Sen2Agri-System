@@ -146,6 +146,7 @@ INSERT INTO config_metadata VALUES ('processor.s4c_l4c.input_ndvi', 'The list of
 INSERT INTO config_metadata VALUES ('processor.s4c_l4b.config_path', 'The default configuration files for all L4B processors', 'file', FALSE, 19);
 INSERT INTO config_metadata VALUES ('processor.s4c_l4c.config_path', 'The default configuration files for all L4C processors', 'file', FALSE, 20);
 
+INSERT INTO config_metadata VALUES ('processor.lpis.path', 'The path to the pre-processed LPIS products', 'string', false, 21);
 
 INSERT INTO config_metadata VALUES ('resources.working-mem', 'OTB applications working memory (MB)', 'int', true, 14);
 
