@@ -560,6 +560,27 @@ def main():
         psycopg2.extras.execute_batch(cursor, sql, args, page_size=1000)
         conn.commit()
 
+        sql = SQL(
+            """
+            update {}
+            set "S2Pix" = coalesce("S2Pix", 0),
+                "S1Pix" = coalesce("S1Pix", 0)
+            where "S2Pix" is null or "S1Pix" is null;
+            """)
+        sql = sql.format(Identifier(lpis_table))
+        print(sql.as_string(conn))
+        cursor.execute(sql)
+
+        sql = SQL(
+            """
+            alter {}
+            alter column "S2Pix" set not null,
+            alter column "S1Pix" set not null;
+            """)
+        sql = sql.format(Identifier(lpis_table))
+        print(sql.as_string(conn))
+        cursor.execute(sql)
+
 
 if __name__ == "__main__":
     main()
