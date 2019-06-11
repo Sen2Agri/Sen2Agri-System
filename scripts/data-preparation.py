@@ -23,6 +23,10 @@ except ImportError:
     from ConfigParser import ConfigParser
 
 
+PRODUCT_TYPE_LPIS = 14
+PROCESSOR_LPIS = 8
+
+
 class Config(object):
     def __init__(self, args):
         parser = ConfigParser()
@@ -35,7 +39,6 @@ class Config(object):
         self.password = parser.get("Database", "Password")
 
         self.site_id = args.site_id
-        self.path = args.path
         self.tiles = args.tiles
 
 
@@ -380,6 +383,26 @@ def get_site_tiles(conn, site_id):
         return result
 
 
+def get_lpis_path(conn, site_id):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+            select value
+            from sp_get_parameters('processor.lpis.path')
+            where site_id is null or site_id = {}
+            order by site_id
+            """
+        )
+        query = query.format(Literal(site_id))
+        print(query.as_string(conn))
+        cursor.execute(query)
+
+        path = cursor.fetchone()[0]
+        conn.commit()
+
+        return path
+
+
 def read_counts_csv(path):
     counts = {}
 
@@ -407,7 +430,6 @@ def main():
     parser = argparse.ArgumentParser(description="Crops and recompresses S1 L2A products")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
     parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
-    parser.add_argument('-p', '--path', default='.', help="working path")
     parser.add_argument('-y', '--year', help="year")
     parser.add_argument('--force', help="overwrite field", action='store_true')
     parser.add_argument('--tiles', nargs='+', help="tile filter")
@@ -432,6 +454,13 @@ def main():
         year = args.year or date.today().year
         lpis_table = "decl_{}_{}".format(site_name, year)
         lut_table = "lut_{}_{}".format(site_name, year)
+
+        lpis_path = get_lpis_path(conn, config.site_id)
+        lpis_path = lpis_path.replace('{site}', site_name)
+        try:
+            os.makedirs(lpis_path)
+        except OSError:
+            pass
 
         print("Importing LPIS...")
         commands = []
@@ -464,7 +493,7 @@ def main():
                 satellite = "S1"
 
             output = "{}_{}_{}.tif".format(base, tile.tile_id, satellite)
-            output = os.path.join(args.path, output)
+            output = os.path.join(lpis_path, output)
 
             zone_srs = osr.SpatialReference()
             zone_srs.ImportFromEPSG(tile.epsg_code)
@@ -500,17 +529,17 @@ def main():
     class_counts_20m = []
     for tile in tiles:
         output = "{}_{}_S2.tif".format(base, tile.tile_id)
-        output = os.path.join(args.path, output)
+        output = os.path.join(lpis_path, output)
 
         counts = "counts_{}.csv".format(tile.tile_id)
-        counts = os.path.join(args.path, counts)
+        counts = os.path.join(lpis_path, counts)
         class_counts.append(counts)
 
         output_20m = "{}_{}_S1.tif".format(base, tile.tile_id)
-        output_20m = os.path.join(args.path, output_20m)
+        output_20m = os.path.join(lpis_path, output_20m)
 
         counts_20m = "counts_{}_20m.csv".format(tile.tile_id)
-        counts_20m = os.path.join(args.path, counts_20m)
+        counts_20m = os.path.join(lpis_path, counts_20m)
         class_counts_20m.append(counts_20m)
 
         compute_class_counts = ComputeClassCountsCommand(output, counts)
@@ -523,10 +552,10 @@ def main():
     print("Merging pixel counts...")
     commands = []
     counts = "counts.csv"
-    counts = os.path.join(args.path, counts)
+    counts = os.path.join(lpis_path, counts)
 
     counts_20m = "counts_20m.csv"
-    counts_20m = os.path.join(args.path, counts_20m)
+    counts_20m = os.path.join(lpis_path, counts_20m)
 
     merge_class_counts = MergeClassCountsCommand(class_counts, counts)
     commands.append(merge_class_counts)
@@ -570,16 +599,30 @@ def main():
         sql = sql.format(Identifier(lpis_table))
         print(sql.as_string(conn))
         cursor.execute(sql)
+        conn.commit()
 
         sql = SQL(
             """
-            alter {}
+            alter table {}
             alter column "S2Pix" set not null,
             alter column "S1Pix" set not null;
             """)
         sql = sql.format(Identifier(lpis_table))
         print(sql.as_string(conn))
         cursor.execute(sql)
+        conn.commit()
+
+        tiles = [t.tile_id for t in tiles]
+        sql = SQL(
+            """
+            insert into product(product_type_id, processor_id, site_id, full_path, created_timestamp, tiles)
+            values({}, {}, {}, {}, {}, {})
+            """
+        )
+        sql = sql.format(Literal(PRODUCT_TYPE_LPIS), Literal(PROCESSOR_LPIS), Literal(config.site_id), Literal(lpis_path), Literal(date.today()), Literal(tiles))
+        print(sql.as_string(conn))
+        cursor.execute(sql)
+        conn.commit()
 
 
 if __name__ == "__main__":
