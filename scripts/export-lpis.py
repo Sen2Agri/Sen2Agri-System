@@ -125,11 +125,15 @@ def main():
         commands.append(command)
 
         epsg_codes = get_site_epsg_codes(conn, config.site_id)
+        epsg_codes.append(3035)
 
         for epsg_code in epsg_codes:
             wkt = get_esri_wkt(epsg_code)
 
             for buf in [5, 10]:
+                if buf == 2 and epsg_code == 3035:
+                    continue
+
                 output = "{}_{}_buf_{}m.shp".format(lpis_table, epsg_code, buf)
                 prj = "{}_{}_buf_{}m.prj".format(lpis_table, epsg_code, buf)
 
