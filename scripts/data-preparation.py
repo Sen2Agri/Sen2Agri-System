@@ -624,6 +624,12 @@ def main():
         cursor.execute(sql)
         conn.commit()
 
+    command = []
+    command += ["export-lpis.py"]
+    command += ["-s", config.site_id]
+    command += ["-p", lpis_path]
+    run_command(command)
+
 
 if __name__ == "__main__":
     main()
