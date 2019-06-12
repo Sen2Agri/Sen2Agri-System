@@ -28,6 +28,11 @@ except ImportError:
 PRODUCT_TYPE_CROP_TYPE = 4
 PRODUCT_TYPE_AGRICULTURAL_PRACTICES = 6
 
+PRACTICE_NA = 1
+PRACTICE_CATCH_CROP = 2
+PRACTICE_NFC = 3
+PRACTICE_FALLOW = 4
+
 
 class Config(object):
     def __init__(self, args):
@@ -57,6 +62,19 @@ def get_product_info(conn, product_id):
         row = cursor.fetchone()
         conn.commit()
         return row
+
+
+def get_practice(name):
+    if name == "NA":
+        return PRACTICE_NA
+    elif name == "CatchCrop":
+        return PRACTICE_CATCH_CROP
+    elif name == "NFC":
+        return PRACTICE_NFC
+    elif name == "Fallow":
+        return PRACTICE_FALLOW
+    else:
+        return None
 
 
 def get_import_table_command(destination, source, *options):
@@ -130,6 +148,12 @@ def import_agricultural_practices(conn, pg_path, product_id, path):
     path = os.path.join(path, "VECTOR_DATA", "*.csv")
     for file in glob(path):
         practice = os.path.basename(file).split("_")[2]
+        practice_id = get_practice(practice)
+
+        if not practice_id:
+            print("Unknown practice {}".format(practice))
+            sys.exit(1)
+
         table_name = "pd_ap_staging_{}_{}".format(product_id, practice.lower())
 
         drop_table(conn, table_name)
@@ -143,6 +167,7 @@ def import_agricultural_practices(conn, pg_path, product_id, path):
                     insert into product_details_l4c(
                         product_id,
                         "NewID",
+                        practice_id,
                         orig_id,
                         country,
                         year,
@@ -178,6 +203,7 @@ def import_agricultural_practices(conn, pg_path, product_id, path):
                     select
                         {},
                         field_id :: int,
+                        {},
                         orig_id,
                         country,
                         year :: int,
@@ -211,7 +237,7 @@ def import_agricultural_practices(conn, pg_path, product_id, path):
                         p_s1gaps
                     from {}
                     """
-            ).format(Literal(product_id), Identifier(table_name))
+            ).format(Literal(product_id), Literal(practice_id), Identifier(table_name))
             print(query.as_string(conn))
             cursor.execute(query)
             conn.commit()

@@ -28,6 +28,24 @@ except ImportError:
 PRODUCT_TYPE_CROP_TYPE = 4
 PRODUCT_TYPE_AGRICULTURAL_PRACTICES = 6
 
+PRACTICE_NA = 1
+PRACTICE_CATCH_CROP = 2
+PRACTICE_NFC = 3
+PRACTICE_FALLOW = 4
+
+
+def get_practice_name(practice_id):
+    if practice_id == PRACTICE_NA:
+        return "NA"
+    elif practice_id == PRACTICE_CATCH_CROP:
+        return "CatchCrop"
+    elif practice_id == PRACTICE_NFC:
+        return "NFC"
+    elif practice_id == PRACTICE_FALLOW:
+        return "Fallow"
+    else:
+        return None
+
 
 class Config(object):
     def __init__(self, args):
@@ -100,50 +118,78 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, path):
 
 
 def export_agricultural_practices(conn, pg_path, product_id, lpis_table, path):
-    query = SQL(
-        """
-            select
-                lpis.*,
-                orig_id as "ORIG_ID",
-                country as "COUNTRY",
-                year as "YEAR",
-                main_crop as "MAIN_CROP",
-                veg_start as "VEG_START",
-                h_start as "H_START",
-                h_end as "H_END",
-                practice as "PRACTICE",
-                p_type as "P_TYPE",
-                p_start as "P_START",
-                p_end as "P_END",
-                l_week as "L_WEEK",
-                m1 as "M1",
-                m2 as "M2",
-                m3 as "M3",
-                m4 as "M4",
-                m5 as "M5",
-                h_week as "H_WEEK",
-                h_w_start as "H_W_START",
-                h_w_end as "H_W_END",
-                h_w_s1 as "H_W_S1",
-                m6 as "M6",
-                m7 as "M7",
-                m8 as "M8",
-                m9 as "M9",
-                m10 as "M10",
-                c_index as "C_INDEX",
-                s1_pix as "S1PIX",
-                s1_gaps as "S1GAPS",
-                h_s1_gaps as "H_S1GAPS",
-                p_s1_gaps as "P_S1GAPS"
-            from product_details_l4c ap
-            inner join {} lpis on (lpis."NewID", {}) = (ap."NewID", ap.product_id)
+    practices = []
+    with conn.cursor() as cursor:
+        query = SQL(
             """
-    ).format(Identifier(lpis_table), Literal(product_id))
-    query = query.as_string(conn)
+            select distinct practice_id
+            from product_details_l4c
+            where product_id = {}
+            """
+        )
+        query = query.format(Literal(product_id))
+        print(query.as_string(conn))
 
-    name = os.path.splitext(os.path.basename(path))[0]
-    command = get_export_table_command(path, pg_path, "-nln", name, "-sql", query, "-gt", 100000)
-    run_command(command)
+        cursor.execute(query)
+        for row in cursor:
+            practices.append(row[0])
+        conn.commit()
+
+    for practice_id in practices:
+        query = SQL(
+            """
+                select
+                    lpis.*,
+                    orig_id as "ORIG_ID",
+                    country as "COUNTRY",
+                    year as "YEAR",
+                    main_crop as "MAIN_CROP",
+                    veg_start as "VEG_START",
+                    h_start as "H_START",
+                    h_end as "H_END",
+                    practice as "PRACTICE",
+                    p_type as "P_TYPE",
+                    p_start as "P_START",
+                    p_end as "P_END",
+                    l_week as "L_WEEK",
+                    m1 as "M1",
+                    m2 as "M2",
+                    m3 as "M3",
+                    m4 as "M4",
+                    m5 as "M5",
+                    h_week as "H_WEEK",
+                    h_w_start as "H_W_START",
+                    h_w_end as "H_W_END",
+                    h_w_s1 as "H_W_S1",
+                    m6 as "M6",
+                    m7 as "M7",
+                    m8 as "M8",
+                    m9 as "M9",
+                    m10 as "M10",
+                    c_index as "C_INDEX",
+                    s1_pix as "S1PIX",
+                    s1_gaps as "S1GAPS",
+                    h_s1_gaps as "H_S1GAPS",
+                    p_s1_gaps as "P_S1GAPS"
+                from product_details_l4c ap
+                inner join {} lpis on lpis."NewID" = ap."NewID"
+                where (ap.product_id, ap.practice_id) = ({}, {})
+                """
+        ).format(Identifier(lpis_table), Literal(product_id), Literal(practice_id))
+        query = query.as_string(conn)
+
+        practice_name = get_practice_name(practice_id)
+        if not practice_name:
+            print("Unknown practice id {}".format(practice_id))
+            sys.exit(1)
+
+        (dir, name) = (os.path.dirname(path), os.path.basename(path))
+        name = name.replace("PRACTICE", practice_name)
+
+        file = os.path.join(dir, name)
+        table_name = os.path.splitext(name)[0].lower()
+        command = get_export_table_command(file, pg_path, "-nln", table_name, "-sql", query, "-gt", 100000)
+        run_command(command)
 
 
 def main():
