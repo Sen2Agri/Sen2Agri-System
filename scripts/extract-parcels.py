@@ -68,7 +68,7 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
                 lut."ctnuml4a" as "CTnumL4A",
                 lpis."LC"
             from {} lpis
-            inner join {} lut on lut.ctnum :: int = lpis."CTnum"
+            inner join {} lut on lut.ctnum = lpis."CTnum"
             where lpis."LC" = any({})
             and lpis."S1Pix" >= {}
             and lpis."S2Pix" >= {}
@@ -89,7 +89,7 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
                 lpis."LC"
             from stratum
             inner join {} lpis on lpis.wkb_geometry && stratum.geom and ST_Relate(lpis.wkb_geometry, stratum.geom, '2********')
-            inner join {} lut on lut.ctnum :: int = lpis."CTnum"
+            inner join {} lut on lut.ctnum = lpis."CTnum"
             where lpis."LC" = any({})
             and lpis."S1Pix" >= {}
             and lpis."S2Pix" >= {}

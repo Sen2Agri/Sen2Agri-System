@@ -115,6 +115,7 @@ def prepare_lpis(conn, lpis_table, lut_table, tiles):
     with conn.cursor() as cursor:
         lpis_pkey_name = Identifier("{}_pkey".format(lpis_table))
         lut_pkey_name = Identifier("{}_pkey".format(lut_table))
+        lut_key_name = Identifier("{}_ori_crop_key".format(lut_table))
         idx_name = Identifier("idx_{}_wkb_geometry".format(lpis_table))
         lpis_table_str = Literal(lpis_table)
         lpis_table = Identifier(lpis_table)
@@ -124,9 +125,14 @@ def prepare_lpis(conn, lpis_table, lut_table, tiles):
             """
             alter table {}
             drop column ogc_fid,
-            add constraint {} primary key(ori_crop)
+            alter column ctnum type int using ctnum :: int,
+            alter column ctnum set not null,
+            alter column lc type int using lc :: int,
+            alter column lc set not null,
+            add constraint {} primary key(ctnum),
+            add constraint {} unique(ori_crop)
             """
-        ).format(lut_table, lut_pkey_name)
+        ).format(lut_table, lut_pkey_name, lut_key_name)
         print(query.as_string(conn))
         cursor.execute(query)
         conn.commit()
@@ -297,25 +303,25 @@ def prepare_lpis(conn, lpis_table, lut_table, tiles):
         if col_type != 'text':
             query = SQL(
                 """
-                update {}
-                set "CTnum" = {}.ctnum :: int,
-                    "CT" = {}.ct,
-                    "LC" = {}.lc :: int
-                from {}
-                where {}.ori_crop = {}.ori_crop :: text
+                update {} lpis
+                set "CTnum" = lut.ctnum,
+                    "CT" = lut.ct,
+                    "LC" = lut.lc
+                from {} lut
+                where lut.ori_crop = lpis.ori_crop :: text
                 """
-            ).format(lpis_table, lut_table, lut_table, lut_table, lut_table, lut_table, lpis_table)
+            ).format(lpis_table, lut_table)
         else:
             query = SQL(
                 """
-                update {}
-                set "CTnum" = {}.ctnum :: int,
-                    "CT" = {}.ct,
-                    "LC" = {}.lc :: int
-                from {}
-                where {}.ori_crop = {}.ori_crop
+                update {} lpis
+                set "CTnum" = lut.ctnum,
+                    "CT" = lut.ct,
+                    "LC" = lut.lc
+                from {} lut
+                where lut.ori_crop = lpis.ori_crop
                 """
-            ).format(lpis_table, lut_table, lut_table, lut_table, lut_table, lut_table, lpis_table)
+            ).format(lpis_table, lut_table)
 
         print(query.as_string(conn))
         cursor.execute(query)
