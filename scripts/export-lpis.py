@@ -4,6 +4,7 @@ from __future__ import print_function
 import argparse
 from datetime import date
 import multiprocessing.dummy
+import os.path
 from osgeo import osr
 import pipes
 import psycopg2
@@ -117,10 +118,12 @@ def main():
 
         commands = []
 
-        gpkg_name = "{}.gpkg".format(lpis_table)
+        gpkg = "{}.gpkg".format(lpis_table)
+        gpkg = os.path.join(args.path, gpkg)
+
         command = []
         command += ["ogr2ogr"]
-        command += [gpkg_name]
+        command += [gpkg]
         command += [pg_path, lpis_table]
         commands.append(command)
 
@@ -135,7 +138,9 @@ def main():
                     continue
 
                 output = "{}_{}_buf_{}m.shp".format(lpis_table, epsg_code, buf)
+                output = os.path.join(args.path, output)
                 prj = "{}_{}_buf_{}m.prj".format(lpis_table, epsg_code, buf)
+                prj = os.path.join(args.path, prj)
 
                 with open(prj, 'wb') as f:
                     f.write(wkt)
