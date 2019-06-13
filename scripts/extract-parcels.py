@@ -69,10 +69,7 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
                 lpis."LC"
             from {} lpis
             inner join {} lut on lut.ctnum = lpis."CTnum"
-            where lpis."LC" = any({})
-            and lpis."S1Pix" >= {}
-            and lpis."S2Pix" >= {}
-            and "GeomValid"
+            where "GeomValid"
             and not "Duplic"
             and not "Overlap"
             order by "NewID"
@@ -90,10 +87,7 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
             from stratum
             inner join {} lpis on lpis.wkb_geometry && stratum.geom and ST_Relate(lpis.wkb_geometry, stratum.geom, '2********')
             inner join {} lut on lut.ctnum = lpis."CTnum"
-            where lpis."LC" = any({})
-            and lpis."S1Pix" >= {}
-            and lpis."S2Pix" >= {}
-            and "GeomValid"
+            where "GeomValid"
             and not "Duplic"
             and not "Overlap"
             order by "NewID"
@@ -102,7 +96,7 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
         with conn.cursor() as cursor:
             if args.strata is None:
                 output = args.output
-                query = SQL(q1).format(Identifier(lpis_table), Identifier(lut_table), Literal(args.lc), Literal(args.min_s1_pix), Literal(args.min_s2_pix))
+                query = SQL(q1).format(Identifier(lpis_table), Identifier(lut_table))
                 print(query.as_string(conn))
 
                 cursor.execute(query)
@@ -113,7 +107,7 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
                 basename = os.path.basename(args.output)
                 split = os.path.splitext(basename)
 
-                query = SQL(q2).format(Literal(geom.ExportToWkt()), Literal(args.srid), Literal(lpis_table), Identifier(lpis_table), Identifier(lut_table), Literal(args.lc), Literal(args.min_s1_pix), Literal(args.min_s2_pix))
+                query = SQL(q2).format(Literal(geom.ExportToWkt()), Literal(args.srid), Literal(lpis_table), Identifier(lpis_table), Identifier(lut_table))
 
                 print(query.as_string(conn))
 
@@ -128,9 +122,6 @@ def main():
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
     parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
     parser.add_argument('-y', '--year', help="year")
-    parser.add_argument('--lc', help="LC values", nargs='+', type=int, default=[1, 2, 3, 4])
-    parser.add_argument('--min-s1-pix', help="minimum number of S1 pixels", type=int, default=1)
-    parser.add_argument('--min-s2-pix', help="minimum number of S2 pixels", type=int, default=3)
     parser.add_argument('--strata', help="strata definition")
     parser.add_argument('--srid', help="strata SRID")
     parser.add_argument('output', help="output file", default="parcels.csv")
