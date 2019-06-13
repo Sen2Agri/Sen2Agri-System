@@ -636,6 +636,16 @@ def main():
     command += ["-p", lpis_path]
     run_command(command)
 
+    output = "parcels.csv"
+    output = os.path.join(lpis_path, output)
+
+    command = []
+    command += ["data-preparation.py"]
+    command += ["-s", config.site_id]
+    command += ["-y", year]
+    command += [output]
+    run_command(command)
+
 
 if __name__ == "__main__":
     main()
