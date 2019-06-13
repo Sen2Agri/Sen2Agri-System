@@ -115,8 +115,7 @@ def main():
             area_nc = 0.
             areas_dict = {}
 
-            for fid in aggDict[agri]:
-                row = aggDict[agri][fid]
+            for (fid, row) in aggDict[agri].items():
                 if row['Classif_r'] == 'Classified_conform':
                     if row[crop_divers_field_decl] == '':
                         cType = str(row[crop_divers_field_decl])
@@ -417,7 +416,6 @@ def main():
                         newrow[field] = debug[agri][field]
 
             for agri in aggDict:
-                listFields = aggDict[agri]
                 firstKey = aggDict[agri].keys()[0]
                 row = aggDict[agri][firstKey]
                 newrow = {}
