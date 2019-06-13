@@ -55,6 +55,9 @@ install(FILES ../scripts/insert_l2a_product_to_db.py
               ../scripts/filter_site_download_tiles.py
               ../scripts/optimize_gtiff.py
               ../scripts/export-lpis.py
+              ../scripts/extract-parcels.py
+              ../scripts/import-product-details.py
+              ../scripts/export-product.py
               ../scripts/crop-type-parcels.py
               ../scripts/crop-type-wrapper.py
               ../scripts/data-preparation.py
