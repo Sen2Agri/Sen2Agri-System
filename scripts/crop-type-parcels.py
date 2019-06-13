@@ -237,7 +237,7 @@ def extract_optical_features(path, satellite_id, tile, products, ref, dates_file
     command += ["-pixsize", resolution]
     command += ["-mission", satellite]
     command += ["-ref", ref]
-#    command += ["-rededge", "true"]
+    command += ["-rededge", "true"]
     command += ["-dates", dates_file]
     command += ["-outmean", mean]
     command += ["-outdev", dev]
@@ -1128,8 +1128,7 @@ def generate_headers(date_file, headers_mean, headers_dev):
             dt = epoch_days_to_date(days)
             dates.append(dt)
 
-    # bands = ["b3", "b4", "b8", "b11", "b5", "b6", "b7", "b8a", "ndvi", "ndwi", "brightness"]
-    bands = ["b3", "b4", "b8", "b11", "ndvi", "ndwi", "brightness"]
+    bands = ["b3", "b4", "b8", "b11", "b5", "b6", "b7", "b8a", "ndvi", "ndwi", "brightness"]
 
     with open(headers_mean, "w") as file:
         file.write("NewID")
