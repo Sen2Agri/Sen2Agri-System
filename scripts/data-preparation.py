@@ -457,6 +457,7 @@ def main():
     with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
         site_name = get_site_name(conn, config.site_id)
         year = args.year or date.today().year
+        dt = date(year, 1, 1)
         lpis_table = "decl_{}_{}".format(site_name, year)
         lut_table = "lut_{}_{}".format(site_name, year)
 
@@ -466,6 +467,31 @@ def main():
             os.makedirs(lpis_path)
         except OSError:
             pass
+
+        print("Clearing existing data...")
+        with conn.cursor() as cursor:
+            sql = SQL(
+                """
+                delete from product
+                where site_id = {}
+                and product_type_id = {}
+                and created_timestamp = {}
+                """
+            )
+            sql = sql.format(Literal(config.site_id), Literal(PRODUCT_TYPE_LPIS), Literal(dt))
+            print(sql.as_string(conn))
+            cursor.execute(sql)
+            conn.commit()
+
+            sql = SQL(
+                """
+                drop table if exists {}, {}
+                """
+            )
+            sql = sql.format(Identifier(lpis_table), Identifier(lut_table))
+            print(sql.as_string(conn))
+            cursor.execute(sql)
+            conn.commit()
 
         print("Importing LPIS...")
         commands = []
@@ -624,11 +650,12 @@ def main():
         tiles = [t.tile_id for t in tiles]
         sql = SQL(
             """
-            insert into product(product_type_id, processor_id, site_id, full_path, created_timestamp, tiles)
-            values({}, {}, {}, {}, {}, {})
+            insert into product(product_type_id, processor_id, site_id, name, full_path, created_timestamp, tiles)
+            values({}, {}, {}, {}, {}, {}, {})
             """
         )
-        sql = sql.format(Literal(PRODUCT_TYPE_LPIS), Literal(PROCESSOR_LPIS), Literal(config.site_id), Literal(lpis_path), Literal(date.today()), Literal(tiles))
+        name = os.path.basename(lpis_path)
+        sql = sql.format(Literal(PRODUCT_TYPE_LPIS), Literal(PROCESSOR_LPIS), Literal(config.site_id), Literal(name), Literal(lpis_path), Literal(dt), Literal(tiles))
         print(sql.as_string(conn))
         cursor.execute(sql)
         conn.commit()
