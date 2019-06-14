@@ -643,7 +643,7 @@ def main():
     output = os.path.join(lpis_path, output)
 
     command = []
-    command += ["data-preparation.py"]
+    command += ["extract-parcels.py"]
     command += ["-s", config.site_id]
     command += ["-y", year]
     command += [output]
