@@ -365,13 +365,16 @@ function install_and_config_postgresql()
     SEN2AGRI_DATABASE_NAME=${DB_NAME}
 
     if ! [[ "${SEN2AGRI_DATABASE_NAME}" == "sen2agri" ]] ; then
+        yum install -y R-devel
+        echo 'install.packages(c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily"), repos = c(CRAN = "https://cran.rstudio.com"))' | Rscript -
+
         echo "Using database '${SEN2AGRI_DATABASE_NAME}'"
         sed -i -- "s/-- DataBase Create: sen2agri/-- DataBase Create: ${SEN2AGRI_DATABASE_NAME}/g" ./database/00-database/sen2agri.sql
         sed -i -- "s/CREATE DATABASE sen2agri/CREATE DATABASE ${SEN2AGRI_DATABASE_NAME}/g" ./database/00-database/sen2agri.sql
         sed -i -- "s/-- Privileges: sen2agri/-- Privileges: ${SEN2AGRI_DATABASE_NAME}/g" ./database/09-privileges/privileges.sql
         sed -i -- "s/GRANT ALL PRIVILEGES ON DATABASE sen2agri/GRANT ALL PRIVILEGES ON DATABASE ${SEN2AGRI_DATABASE_NAME}/g" ./database/09-privileges/privileges.sql
     fi
-   
+
    # first, the database is created. the privileges will be set after all
    # the tables, data and other stuff is created (see down, privileges.sql
    cat "$(find ./ -name "database")/00-database"/sen2agri.sql | su - postgres -c 'psql'
@@ -409,7 +412,7 @@ function populate_from_scripts()
         scriptToExecute=${scriptName}
         if [ -d "$customDbPath" ]; then
             scriptFileName=$(basename -- "$scriptName")
-            
+
             if [ -f ${customDbPath}/${scriptFileName} ]; then
                 scriptToExecute=${customDbPath}/${scriptFileName}
             fi
@@ -483,7 +486,7 @@ function install_RPMs()
 
    ##install gdal 2.3 from the local repository
    yum -y install ../rpm_binaries/gdal-local-*.centos7.x86_64.rpm
-   
+
    ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-*.rpm
 
@@ -517,7 +520,7 @@ function install_RPMs()
 function maccs_or_maja()
 {
     while [[ $answer != '1' ]] && [[ $answer != '2' ]]
-    do	
+    do
 	read -n1 -p "What L1C processor should be used? (1 for MACCS / 2 for MAJA): " -r answer
 	printf "\n"
 	case $answer in
@@ -651,7 +654,7 @@ function find_l1c_processor()
             l1c_processor_location=${l1c_processor_bin_find_out[0]}
 	    echo "${l1c_processor_name} found at ${l1c_processor_location}"
             return 0
-        else            
+        else
 	    echo "Multiple ${l1c_processor_name} executables found under ${l1c_processor_path}:"
             printf '%s\n' "${l1c_processor_bin_find_out[@]}"
             return 2
@@ -665,7 +668,7 @@ function find_l1c_processor()
 function install_l1c_processor()
 {
     yum -y install libxslt gd
-    
+
     echo "Looking for $l1c_processor_name ..."
     l1c_processor_location=$(type -P $l1c_processor_bin)
     if [ $? -eq 0 ]; then
@@ -687,7 +690,7 @@ function install_l1c_processor()
     echo "$l1c_processor_name not found, trying to install it"
 
     found_kit=1
-    if [ $l1c_processor -eq $L1C_PROCESSOR_MACCS ]; then	
+    if [ $l1c_processor -eq $L1C_PROCESSOR_MACCS ]; then
 	cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>&-)
 	if [ $? -ne 0 ] || [ -z "$cots_installer" ]; then
 	    echo "Unable to find MACCS COTS installer"
@@ -701,17 +704,17 @@ function install_l1c_processor()
 	    fi
 	fi
     fi
-    if [ $l1c_processor -eq $L1C_PROCESSOR_MAJA ]; then	
+    if [ $l1c_processor -eq $L1C_PROCESSOR_MAJA ]; then
 	core_installer=$(find ../maja -name "MAJA*.run" 2>&-)
 	if [ $? -ne 0 ] || [ -z "$core_installer" ]; then
 	    echo "Unable to find MAJA installer"
 	    found_kit=0
 	fi
     fi
-    
+
     if [ $found_kit -eq 1 ]; then
-	if [ $l1c_processor -eq $L1C_PROCESSOR_MACCS ]; then	
-            yum -y install redhat-lsb-core	
+	if [ $l1c_processor -eq $L1C_PROCESSOR_MACCS ]; then
+            yum -y install redhat-lsb-core
 
 	    echo "Installing MACCS COTS"
 	    sh $cots_installer || {
@@ -732,7 +735,7 @@ function install_l1c_processor()
 	    }
 	    echo "chmoding"
 	    chmod -R a+rx $l1c_processor_path
-	fi	
+	fi
 	echo "find_l1c_processor"
         find_l1c_processor
         if [ $? -eq 0 ]; then
@@ -770,7 +773,7 @@ function updateWebConfigParams()
      if [[ !  -z  $REST_SERVER_PORT  ]] ; then
         sed -i -e "s|static \$REST_SERVICES_URL = \x27http:\/\/localhost:8080|static \$REST_SERVICES_URL = \x27http:\/\/localhost:$REST_SERVER_PORT|g" /var/www/html/ConfigParams.php
      fi
-     
+
     DB_NAME=$(get_install_config_property "DB_NAME")
     if [[ ! -z $DB_NAME ]] ; then
         sed -i -e "s|static \$DB_NAME = \x27sen2agri|static \$DB_NAME = \x27${DB_NAME}|g" /var/www/html/ConfigParams.php
@@ -793,12 +796,12 @@ function install_sen2agri_services()
     if [ -f ../sen2agri-services/sen2agri-services*.zip ]; then
         zipArchive=$(ls -at ../sen2agri-services/sen2agri-services*.zip| head -n 1)
         fi
-    else 
+    else
         if [ -f "../sen2agri-services/${SERVICES_ARCHIVE}" ]; then
             zipArchive=$(ls -at "../sen2agri-services/${SERVICES_ARCHIVE}" | head -n 1)
         fi
     fi
-    
+
     if [ -z ${zipArchive} ] ; then
         echo "No sen2agri-services zip archive provided in ../sen2agri-services"
         echo "Exiting now"
