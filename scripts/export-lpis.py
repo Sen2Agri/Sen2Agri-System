@@ -118,12 +118,12 @@ def main():
 
         commands = []
 
-        gpkg = "{}.gpkg".format(lpis_table)
-        gpkg = os.path.join(args.path, gpkg)
+        csv = "{}.csv".format(lpis_table)
+        csv = os.path.join(args.path, csv)
 
         command = []
         command += ["ogr2ogr"]
-        command += [gpkg]
+        command += [csv]
         command += [pg_path, lpis_table]
         commands.append(command)
 
