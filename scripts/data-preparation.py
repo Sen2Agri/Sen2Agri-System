@@ -166,7 +166,6 @@ def prepare_lpis(conn, lpis_table, lut_table, tiles):
         cursor.execute(query)
         conn.commit()
 
-        lpis_pkey_name = Identifier("{}_pkey".format(lpis_table))
         query = SQL(
             """
             alter table {}
@@ -516,7 +515,8 @@ def main():
                 select {}, ST_Buffer(ST_Transform({}, epsg_code), {})
                 from {}, transformed
                 where ST_Intersects({}, transformed.geom);
-                """)
+                """
+            )
             sql = sql.format(Literal(schema),
                              Literal(lpis_table), Literal(column), Literal(tile.tile_id), Identifier(field),
                              Identifier(column), Literal(int(-resolution / 2)),
@@ -586,7 +586,8 @@ def main():
         set "S2Pix" = %s,
             "S1Pix" = %s
         where {} = %s
-        """)
+        """
+    )
     sql = sql.format(Identifier(lpis_table), Identifier(field))
     sql = sql.as_string(conn)
 
@@ -601,7 +602,8 @@ def main():
             set "S2Pix" = coalesce("S2Pix", 0),
                 "S1Pix" = coalesce("S1Pix", 0)
             where "S2Pix" is null or "S1Pix" is null;
-            """)
+            """
+        )
         sql = sql.format(Identifier(lpis_table))
         print(sql.as_string(conn))
         cursor.execute(sql)
@@ -612,7 +614,8 @@ def main():
             alter table {}
             alter column "S2Pix" set not null,
             alter column "S1Pix" set not null;
-            """)
+            """
+        )
         sql = sql.format(Identifier(lpis_table))
         print(sql.as_string(conn))
         cursor.execute(sql)
