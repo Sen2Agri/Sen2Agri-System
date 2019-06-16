@@ -39,7 +39,7 @@ def main():
             
         os.system("import-product-details.py -p ".join(prdId))
         
-        exportCmd = "export-product.py -p " + prdId + " " + os.path.join(prdPath, "VECTOR_DATA", args.out))
+        exportCmd = "export-product.py -p " + prdId + " " + os.path.join(prdPath, "VECTOR_DATA", args.out)
         
         os.system(exportCmd)
                 
