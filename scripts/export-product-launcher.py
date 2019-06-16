@@ -9,6 +9,8 @@ from glob import glob
 import multiprocessing.dummy
 import os
 import os.path
+import subprocess
+import sys
 
 def get_practice(name):
     if name == "NA":
