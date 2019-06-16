@@ -26,8 +26,7 @@ def get_practice(name):
 def main():
     parser = argparse.ArgumentParser(description="Imports product contents into the database")
     parser.add_argument('-f', '--product-ids-file', help="product ids file")
-    parser.add_argument('-c', '--country', help="the country")
-    parser.add_argument('-y', '--year', type=int, help="year")
+    parser.add_argument('-o', '--out', default="", help="Out file name")
 
     args = parser.parse_args()
     
@@ -37,11 +36,12 @@ def main():
         if len(line) == 2 :
             prdId = line[1]
             prdPath = line[2]
-            os.system("import-product-details.py -p ".join(prdId))
-
-            fileName = "Sen4CAP_L4C_PRACTICE_" + country + "_" + year + ".gpkg"
-            vectDataDirPath = os.path.join(prdPath, "VECTOR_DATA", fileName)
-            os.system("export-product.py -p " + prdId + " " + vectDataDirPath)
+            
+        os.system("import-product-details.py -p ".join(prdId))
+        
+        exportCmd = "export-product.py -p " + prdId + " " + os.path.join(prdPath, "VECTOR_DATA", args.out))
+        
+        os.system(exportCmd)
                 
 if __name__ == "__main__":
     sys.exit(main())
