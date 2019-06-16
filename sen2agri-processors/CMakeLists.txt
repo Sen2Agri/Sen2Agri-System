@@ -58,6 +58,7 @@ install(FILES ../scripts/insert_l2a_product_to_db.py
               ../scripts/extract-parcels.py
               ../scripts/import-product-details.py
               ../scripts/export-product.py
+              ../scripts/export-product-launcher.py
               ../scripts/crop-type-parcels.py
               ../scripts/crop-type-wrapper.py
               ../scripts/data-preparation.py

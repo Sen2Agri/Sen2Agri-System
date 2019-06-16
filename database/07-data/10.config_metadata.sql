@@ -216,6 +216,7 @@ INSERT INTO config_metadata VALUES ('scheduled.lookup.enabled', 'Scheduled looku
 INSERT INTO config_metadata VALUES ('scheduled.retry.enabled', 'Scheduled retry is enabled', 'bool', false, 15);
 
 INSERT INTO config_metadata VALUES ('s1.preprocessing.path', 'The path where the S1 L2 products will be created', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('s1.preprocessing.work.dir', 'The path where to create the temporary S1 L2A files', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('s1.preprocessing.enabled', 'S1 preprocessing is enabled', 'bool', false, 15);
 
 INSERT INTO config_metadata VALUES ('scheduled.object.storage.move.enabled', 'Scheduled object storage move enabled', 'bool', false, 15);

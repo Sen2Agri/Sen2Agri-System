@@ -17,6 +17,16 @@
  - When deleting a site, the folders for the L2A products that were not processed by MACCS are not deleted and should be deleted manually. Normally these folders contain no valid product and contain only log and EEF files.
 
 # Change Log
+## [2.0.1]
+
+### Fixed
+  - Upgrades from previous system installations when the first installed version was older than 1.8.3
+  - Corrections for SciHub downloads when sites are defined near equator or prime meridian
+  - Corrections for USGS queries according to the latest changes in the USGS responses
+  - Corrections for MAJA "MTD_ALL.xml is not valid according to JPI" issue.
+  - PhenoNDVI processor corrections
+
+# Change Log
 ## [2.0]
 
 ### Added

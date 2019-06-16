@@ -27,6 +27,7 @@ INSERT INTO config_metadata VALUES ('downloader.s2.enabled', 'S2 downloader is e
 INSERT INTO config_metadata VALUES ('downloader.s2.max-retries', 'Maximum retries for downloading a product', 'int', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.s2.write-dir', 'Write directory for Sentinel2', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.start.offset', 'Season start offset in months', 'int', false, 15);
+INSERT INTO config_metadata VALUES ('downloader.s1.write-dir', 'Write directory for Sentinel1', 'string', false, 15);
 
 INSERT INTO config_metadata VALUES ('executor.listen-ip', 'Executor IP Address', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.listen-port', 'Executor Port', 'int', true, 8);
@@ -153,6 +154,7 @@ INSERT INTO config_metadata VALUES ('resources.working-mem', 'OTB applications w
 INSERT INTO config_metadata VALUES ('s1.enabled', 'S1 is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('s1.preprocessing.enabled', 'S1 preprocessing is enabled', 'bool', false, 15);
 INSERT INTO config_metadata VALUES ('s1.preprocessing.path', 'The path where the S1 L2 products will be created', 'string', false, 15);
+INSERT INTO config_metadata VALUES ('s1.preprocessing.work.dir', 'The path where to create the temporary S1 L2A files', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('s2.enabled', 'S2 is enabled', 'bool', false, 15);
 
 INSERT INTO config_metadata VALUES ('scheduled.lookup.enabled', 'Scheduled lookup is enabled', 'bool', false, 15);

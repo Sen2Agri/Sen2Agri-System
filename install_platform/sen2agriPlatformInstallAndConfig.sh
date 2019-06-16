@@ -28,6 +28,7 @@
 ## sudo ./sen2agriPlatormInstallAndConfig.sh
 ################################################################################################
 : ${INSTAL_CONFIG_FILE:="./config/install_config.conf"}
+: ${GPT_CONFIG_FILE:="./config/gpt.vmoptions"}
 #-----------------------------------------------------------------------------------------#
 : ${SYS_ACC_NAME:="sen2agri-service"}
 : ${SLURM_ACC_NAME:="slurm"}
@@ -365,6 +366,15 @@ function install_and_config_postgresql()
     SEN2AGRI_DATABASE_NAME=${DB_NAME}
 
     if ! [[ "${SEN2AGRI_DATABASE_NAME}" == "sen2agri" ]] ; then
+        wget http://step.esa.int/downloads/6.0/installers/esa-snap_sentinel_unix_6_0.sh && \
+        chmod +x esa-snap_sentinel_unix_6_0.sh && \
+        ./esa-snap_sentinel_unix_6_0.sh -q && \
+        snap --nosplash --nogui --modules --update-all \
+        rm -f esa-snap_sentinel_unix_6_0.sh
+        if [ ! -h /usr/local/bin/gpt ]; then sudo ln -s /opt/snap/bin/gpt /usr/local/bin/gpt;fi
+        
+        cp -f $(find ./ -name ${GPT_CONFIG_FILE}) /opt/snap/bin/
+        
         yum install -y R-devel
         echo 'install.packages(c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily"), repos = c(CRAN = "https://cran.rstudio.com"))' | Rscript -
 
@@ -379,8 +389,13 @@ function install_and_config_postgresql()
    # the tables, data and other stuff is created (see down, privileges.sql
    cat "$(find ./ -name "database")/00-database"/sen2agri.sql | su - postgres -c 'psql'
 
-   sed -i -re "s|'demmaccs.maccs-launcher',([^,]+),\s+'[^']+'|'demmaccs.maccs-launcher',\1, '${l1c_processor_location}'|" $(find ./ -name "database")/07-data/09.config.sql
-   sed -i -re "s|'demmaccs.gips-path',([^,]+),\s+'[^']+'|'demmaccs.gips-path',\1, '${l1c_processor_gipp_destination}'|" $(find ./ -name "database")/07-data/09.config.sql
+    if ! [[ "${SEN2AGRI_DATABASE_NAME}" == "sen2agri" ]] ; then
+        sed -i -re "s|'demmaccs.maccs-launcher',([^,]+),\s+'[^']+'|'demmaccs.maccs-launcher',\1, '${l1c_processor_location}'|" $(find ./ -name "database")/07-data/${SEN2AGRI_DATABASE_NAME}/09.config.sql
+        sed -i -re "s|'demmaccs.gips-path',([^,]+),\s+'[^']+'|'demmaccs.gips-path',\1, '${l1c_processor_gipp_destination}'|" $(find ./ -name "database")/07-data/${SEN2AGRI_DATABASE_NAME}/09.config.sql
+    else
+        sed -i -re "s|'demmaccs.maccs-launcher',([^,]+),\s+'[^']+'|'demmaccs.maccs-launcher',\1, '${l1c_processor_location}'|" $(find ./ -name "database")/07-data/09.config.sql
+        sed -i -re "s|'demmaccs.gips-path',([^,]+),\s+'[^']+'|'demmaccs.gips-path',\1, '${l1c_processor_gipp_destination}'|" $(find ./ -name "database")/07-data/09.config.sql
+    fi
 
    #run scripts populating database
    populate_from_scripts "$(find ./ -name "database")/01-extensions"
