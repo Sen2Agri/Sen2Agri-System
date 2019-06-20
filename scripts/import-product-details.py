@@ -105,7 +105,7 @@ def drop_table(conn, name):
 
 
 def import_crop_type(conn, pg_path, product_id, path):
-    path = os.path.join(path, "VECTOR_DATA", "*.csv")
+    path = os.path.join(path, "VECTOR_DATA", "Predict_classif_*.csv")
     for file in glob(path):
         table_name = "pd_ct_staging_{}".format(product_id)
 
