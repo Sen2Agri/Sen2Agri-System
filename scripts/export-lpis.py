@@ -134,7 +134,7 @@ def main():
             wkt = get_esri_wkt(epsg_code)
 
             for buf in [5, 10]:
-                if buf == 2 and epsg_code == 3035:
+                if buf == 5 and epsg_code == 3035:
                     continue
 
                 output = "{}_{}_buf_{}m.shp".format(lpis_table, epsg_code, buf)
