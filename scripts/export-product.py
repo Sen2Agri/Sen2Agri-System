@@ -96,7 +96,21 @@ def run_command(args, env=None):
     subprocess.call(args, env=env)
 
 
+def get_srid(conn, lpis_table):
+    with conn.cursor() as cursor:
+        query = SQL("select Find_SRID('public', {}, 'wkb_geometry')")
+        query = query.format(Literal(lpis_table))
+        print(query.as_string(conn))
+
+        cursor.execute(query)
+        srid = cursor.fetchone()[0]
+        conn.commit()
+        return srid
+
+
 def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
+    srid = get_srid(conn, lpis_table)
+
     query = SQL(
         """
         select
@@ -113,7 +127,7 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
     query = query.as_string(conn)
 
     name = os.path.splitext(os.path.basename(path))[0]
-    command = get_export_table_command(path, pg_path, "-nln", name, "-sql", query, "-gt", 100000)
+    command = get_export_table_command(path, pg_path, "-nln", name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
     run_command(command)
 
     query = SQL(
@@ -152,6 +166,8 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
 
 
 def export_agricultural_practices(conn, pg_path, product_id, lpis_table, path):
+    srid = get_srid(conn, lpis_table)
+
     practices = []
     with conn.cursor() as cursor:
         query = SQL(
@@ -222,7 +238,7 @@ def export_agricultural_practices(conn, pg_path, product_id, lpis_table, path):
 
         file = os.path.join(dir, name)
         table_name = os.path.splitext(name)[0].lower()
-        command = get_export_table_command(file, pg_path, "-nln", table_name, "-sql", query, "-gt", 100000)
+        command = get_export_table_command(file, pg_path, "-nln", table_name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
         run_command(command)
 
 
