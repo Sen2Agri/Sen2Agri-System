@@ -84,8 +84,8 @@ def get_product_info(conn, product_id):
 def get_export_table_command(destination, source, *options):
     command = []
     command += ["ogr2ogr"]
-    command += options
     command += [destination, source]
+    command += options
     return command
 
 
@@ -96,24 +96,58 @@ def run_command(args, env=None):
     subprocess.call(args, env=env)
 
 
-def export_crop_type(conn, pg_path, product_id, lpis_table, path):
+def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
     query = SQL(
         """
-            select
-                lpis.*,
-                ct."CT_decl",
-                ct."CT_pred_1",
-                ct."CT_conf_1",
-                ct."CT_pred_2",
-                ct."CT_conf_2"
-            from {} lpis
-            left outer join product_details_l4a ct on (ct."NewID", ct.product_id) = (lpis."NewID", {})
-            """
+        select
+            lpis.*,
+            ct."CT_decl",
+            ct."CT_pred_1",
+            ct."CT_conf_1",
+            ct."CT_pred_2",
+            ct."CT_conf_2"
+        from {} lpis
+        left outer join product_details_l4a ct on (ct."NewID", ct.product_id) = (lpis."NewID", {})
+        """
     ).format(Identifier(lpis_table), Literal(product_id))
     query = query.as_string(conn)
 
     name = os.path.splitext(os.path.basename(path))[0]
     command = get_export_table_command(path, pg_path, "-nln", name, "-sql", query, "-gt", 100000)
+    run_command(command)
+
+    query = SQL(
+        """
+        select
+            lpis."NewID",
+            lpis."HoldID",
+            lpis."GeomValid",
+            lpis."Duplic",
+            lpis."Overlap",
+            lpis."Area_meters",
+            lpis."LC",
+            lpis."S2Pix",
+            lpis."S1Pix",
+            lut.ctnumdiv as "CTnumDIV",
+            product_details_l4a."CT_decl",
+            product_details_l4a."CT_pred_1",
+            product_details_l4a."CT_conf_1",
+            product_details_l4a."CT_pred_2",
+            product_details_l4a."CT_conf_2"
+        from {} lpis
+        inner join {} lut on lut.ctnum = lpis."CTnum"
+        left outer join product_details_l4a on (product_details_l4a."NewID", product_details_l4a.product_id) = (lpis."NewID", {})
+        """
+    ).format(Identifier(lpis_table), Identifier(lut_table), Literal(product_id))
+    query = query.as_string(conn)
+
+    name = os.path.basename(path)
+    path = os.path.splitext(name)[0] + ".csv"
+    command = get_export_table_command(path, pg_path, "-sql", query, "-gt", 100000)
+    run_command(command)
+
+    path = os.path.splitext(path)[0] + "_LUT" + ".csv"
+    command = get_export_table_command(path, pg_path, lut_table, "-gt", 100000)
     run_command(command)
 
 
@@ -138,43 +172,43 @@ def export_agricultural_practices(conn, pg_path, product_id, lpis_table, path):
     for practice_id in practices:
         query = SQL(
             """
-                select
-                    lpis.*,
-                    orig_id as "ORIG_ID",
-                    country as "COUNTRY",
-                    year as "YEAR",
-                    main_crop as "MAIN_CROP",
-                    veg_start as "VEG_START",
-                    h_start as "H_START",
-                    h_end as "H_END",
-                    practice as "PRACTICE",
-                    p_type as "P_TYPE",
-                    p_start as "P_START",
-                    p_end as "P_END",
-                    l_week as "L_WEEK",
-                    m1 as "M1",
-                    m2 as "M2",
-                    m3 as "M3",
-                    m4 as "M4",
-                    m5 as "M5",
-                    h_week as "H_WEEK",
-                    h_w_start as "H_W_START",
-                    h_w_end as "H_W_END",
-                    h_w_s1 as "H_W_S1",
-                    m6 as "M6",
-                    m7 as "M7",
-                    m8 as "M8",
-                    m9 as "M9",
-                    m10 as "M10",
-                    c_index as "C_INDEX",
-                    s1_pix as "S1PIX",
-                    s1_gaps as "S1GAPS",
-                    h_s1_gaps as "H_S1GAPS",
-                    p_s1_gaps as "P_S1GAPS"
-                from product_details_l4c ap
-                inner join {} lpis on lpis."NewID" = ap."NewID"
-                where (ap.product_id, ap.practice_id) = ({}, {})
-                """
+            select
+                lpis.*,
+                orig_id as "ORIG_ID",
+                country as "COUNTRY",
+                year as "YEAR",
+                main_crop as "MAIN_CROP",
+                veg_start as "VEG_START",
+                h_start as "H_START",
+                h_end as "H_END",
+                practice as "PRACTICE",
+                p_type as "P_TYPE",
+                p_start as "P_START",
+                p_end as "P_END",
+                l_week as "L_WEEK",
+                m1 as "M1",
+                m2 as "M2",
+                m3 as "M3",
+                m4 as "M4",
+                m5 as "M5",
+                h_week as "H_WEEK",
+                h_w_start as "H_W_START",
+                h_w_end as "H_W_END",
+                h_w_s1 as "H_W_S1",
+                m6 as "M6",
+                m7 as "M7",
+                m8 as "M8",
+                m9 as "M9",
+                m10 as "M10",
+                c_index as "C_INDEX",
+                s1_pix as "S1PIX",
+                s1_gaps as "S1GAPS",
+                h_s1_gaps as "H_S1GAPS",
+                p_s1_gaps as "P_S1GAPS"
+            from product_details_l4c ap
+            inner join {} lpis on lpis."NewID" = ap."NewID"
+            where (ap.product_id, ap.practice_id) = ({}, {})
+            """
         ).format(Identifier(lpis_table), Literal(product_id), Literal(practice_id))
         query = query.as_string(conn)
 
@@ -213,9 +247,10 @@ def main():
 
         (product_type, created_timestamp, site_short_name) = r
         lpis_table = "decl_{}_{}".format(site_short_name, created_timestamp.year)
+        lut_table = "lut_{}_{}".format(site_short_name, created_timestamp.year)
 
         if product_type == PRODUCT_TYPE_CROP_TYPE:
-            export_crop_type(conn, pg_path, args.product_id, lpis_table, args.output)
+            export_crop_type(conn, pg_path, args.product_id, lpis_table, lut_table, args.output)
         elif product_type == PRODUCT_TYPE_AGRICULTURAL_PRACTICES:
             export_agricultural_practices(conn, pg_path, args.product_id, lpis_table, args.output)
         else:
