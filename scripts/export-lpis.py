@@ -121,6 +121,9 @@ def main():
         csv = "{}.csv".format(lpis_table)
         csv = os.path.join(args.path, csv)
 
+        gpkg = "{}.gpkg".format(lpis_table)
+        gpkg = os.path.join(args.path, gpkg)
+
         sql = SQL('select "NewID", * from {}')
         sql = sql.format(Identifier(lpis_table))
         sql = sql.as_string(conn)
@@ -130,6 +133,12 @@ def main():
         command += ["-sql", sql]
         command += [csv]
         command += [pg_path]
+        commands.append(command)
+
+        command = []
+        command += ["ogr2ogr"]
+        command += [gpkg]
+        command += [pg_path, lpis_table]
         commands.append(command)
 
         epsg_codes = get_site_epsg_codes(conn, config.site_id)
