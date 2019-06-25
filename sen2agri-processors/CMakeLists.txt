@@ -61,6 +61,7 @@ install(FILES ../scripts/insert_l2a_product_to_db.py
               ../scripts/export-product-launcher.py
               ../scripts/crop-type-parcels.py
               ../scripts/crop-type-wrapper.py
+              ../scripts/crop-diversification.py
               ../scripts/data-preparation.py
               ../scripts/merge-sar.py
         DESTINATION usr/bin/
