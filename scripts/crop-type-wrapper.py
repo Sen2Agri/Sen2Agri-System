@@ -189,12 +189,23 @@ def main():
 
     os.chdir(current_path)
 
+    optical_features = os.path.join(args.working_path, "features/optical-features.csv")
+    sar_features = os.path.join(args.working_path, "features/sar-features.csv")
+    sar_temporal = os.path.join(args.working_path, "features/sar-temporal.csv")
+
+    if not os.path.exists(optical_features):
+        optical_features = "0"
+    if not os.path.exists(sar_features):
+        sar_features = "0"
+    if not os.path.exists(sar_temporal):
+        sar_temporal = "0"
+
     command = []
     command += ["crop_type.R"]
     command += [args.out_path + "/"]
-    command += [os.path.join(args.working_path, "features/sar-features.csv")]
-    command += [os.path.join(args.working_path, "features/optical-features.csv")]
-    command += [os.path.join(args.working_path, "features/sar-temporal.csv")]
+    command += [sar_features]
+    command += [optical_features]
+    command += [sar_temporal]
     command += [os.path.join(lpis_path, "parcels.csv")]
     command += ["CTnumL4A"]
     command += [args.lc]
