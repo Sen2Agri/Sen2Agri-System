@@ -48,17 +48,17 @@ def main():
         lut_in = csv.DictReader(l_in, delimiter=';')
 
         for row in lut_in:
-            if row['EAA'] == '1':
+            if (row.get('eaa') or row.get('EAA')) == '1':
                 eaa_codes.add(str(row['CTnumDIV']))
-            if row['AL'] == '1':
+            if (row.get('eaa') or row.get('AL')) == '1':
                 tal_codes.add(str(row['CTnumDIV']))
-            if row['PGrass'] == '1':
+            if (row.get('pgrass') or row.get('PGrass')) == '1':
                 permGrass_codes.add(str(row['CTnumDIV']))
-            if row['TGrass'] == '1':
+            if (row.get('tgrass') or row.get('TGrass')) == '1':
                 tempGrass_codes.add(str(row['CTnumDIV']))
-            if row['Fallow'] == '1':
+            if (row.get('fallow') or row.get('Fallow')) == '1':
                 llf_codes.add(str(row['CTnumDIV']))
-            if row['Cwater'] == '1':
+            if (row.get('cwater') or row.get('Cwater')) == '1':
                 cwater_codes.add(str(row['CTnumDIV']))
 
     # --------------------------------------------------------------------------------
