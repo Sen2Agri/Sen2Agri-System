@@ -180,6 +180,18 @@ print(paste("Crop types belonging to strategy 3:",strategy3list))
 
 data_strategy1 <- subset(data_calib, TARGET %in% strategy1list)
 
+
+if (nrow(data_strategy1)==0) {
+  data_strategy1_valid=data_strategy1
+  data_strategy1_calib=data_strategy1
+
+  print('No crop type in strategy1')
+
+  print(paste('Dimensions data_strategy1_valid:',dim(data_strategy1_valid)))
+  print(paste('Dimensions data_strategy1_calib:',dim(data_strategy1_calib)))
+
+} else {
+
 set.seed(42)
 trainindex1=createDataPartition(data_strategy1$TARGET, times = 1, p = Sample_ratioH, list = FALSE)
 data_strategy1_valid=data_strategy1[-trainindex1,]
@@ -188,9 +200,22 @@ data_strategy1_calib=data_strategy1[trainindex1,]
 print(paste('Dimensions data_strategy1_valid:',dim(data_strategy1_valid)))
 print(paste('Dimensions data_strategy1_calib:',dim(data_strategy1_calib)))
 
+}
+
 # Strategy 2
 
 data_strategy2 <- subset(data_calib, TARGET %in% strategy2list)
+
+if (nrow(data_strategy2)==0) {
+  data_strategy2_valid=data_strategy2
+  data_strategy2_calib=data_strategy2
+
+  print('No crop type in strategy2')
+
+  print(paste('Dimensions data_strategy2_valid:',dim(data_strategy2_valid)))
+  print(paste('Dimensions data_strategy2_calib:',dim(data_strategy2_calib)))
+
+} else {
 
 set.seed(42)
 sample_temp <- data_strategy2 %>%
@@ -205,9 +230,22 @@ data_strategy2_valid=data_strategy2[which(!(data_strategy2$NewID %in% sample_ID)
 print(paste('Dimensions data_strategy2_valid:',dim(data_strategy2_valid)))
 print(paste('Dimensions data_strategy2_calib:',dim(data_strategy2_calib)))
 
+}
+
 # Strategy 3
 
 data_strategy3 <- subset(data_calib, TARGET %in% strategy3list)
+
+if (nrow(data_strategy3)==0) {
+  data_strategy3_valid=data_strategy3
+  data_strategy3_calib=data_strategy3
+
+  print('No crop type in strategy3')
+
+  print(paste('Dimensions data_strategy3_valid:',dim(data_strategy3_valid)))
+  print(paste('Dimensions data_strategy3_calib:',dim(data_strategy3_calib)))
+
+} else {
 
 set.seed(42)
 trainindex3=createDataPartition(data_strategy3$TARGET, times = 1, p = Sample_ratioL, list = FALSE)
@@ -216,6 +254,8 @@ data_strategy3_calib=data_strategy3[trainindex3,]
 
 print(paste('Dimensions data_strategy3_valid:',dim(data_strategy3_valid)))
 print(paste('Dimensions data_strategy3_calib:',dim(data_strategy3_calib)))
+
+}
 
 ## Compilation of the calibration and validation datasets
 
