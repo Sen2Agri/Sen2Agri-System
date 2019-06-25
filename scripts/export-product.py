@@ -217,7 +217,7 @@ def export_agricultural_practices(conn, pg_path, product_id, lpis_table, path):
                 m9 as "M9",
                 m10 as "M10",
                 c_index as "C_INDEX",
-                s1_pix as "S1PIX",
+                s1_pix as "S1PIX_",
                 s1_gaps as "S1GAPS",
                 h_s1_gaps as "H_S1GAPS",
                 p_s1_gaps as "P_S1GAPS"
