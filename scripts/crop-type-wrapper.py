@@ -209,9 +209,6 @@ def main():
     if not check_file(sar_temporal):
         sar_temporal = "0"
 
-    sar_features = "0"
-    sar_temporal = "0"
-
     command = []
     command += ["crop_type.R"]
     command += [args.out_path + "/"]
