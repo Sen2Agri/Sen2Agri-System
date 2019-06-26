@@ -45,21 +45,21 @@ def main():
     cwater_codes = set()
 
     with open(input_lut) as l_in:
-        lut_in = csv.DictReader(l_in, delimiter=';')
+        lut_in = csv.DictReader(l_in, delimiter=',')
 
         for row in lut_in:
             if (row.get('eaa') or row.get('EAA')) == '1':
-                eaa_codes.add(str(row['CTnumDIV']))
+                eaa_codes.add(str(row['ctnumdiv']))
             if (row.get('eaa') or row.get('AL')) == '1':
-                tal_codes.add(str(row['CTnumDIV']))
+                tal_codes.add(str(row['ctnumdiv']))
             if (row.get('pgrass') or row.get('PGrass')) == '1':
-                permGrass_codes.add(str(row['CTnumDIV']))
+                permGrass_codes.add(str(row['ctnumdiv']))
             if (row.get('tgrass') or row.get('TGrass')) == '1':
-                tempGrass_codes.add(str(row['CTnumDIV']))
+                tempGrass_codes.add(str(row['ctnumdiv']))
             if (row.get('fallow') or row.get('Fallow')) == '1':
-                llf_codes.add(str(row['CTnumDIV']))
+                llf_codes.add(str(row['ctnumdiv']))
             if (row.get('cwater') or row.get('Cwater')) == '1':
-                cwater_codes.add(str(row['CTnumDIV']))
+                cwater_codes.add(str(row['ctnumdiv']))
 
     # --------------------------------------------------------------------------------
     # Import data file
