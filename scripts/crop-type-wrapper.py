@@ -90,6 +90,15 @@ def get_lpis_path(conn, site_id, season_end):
         return results[0][0]
 
 
+def check_file(p):
+    if not os.path.exists(p):
+        return False
+    with open(p) as f:
+        if f.readline() and f.readline():
+            return True
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="Crop type processor wrapper")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
@@ -193,11 +202,11 @@ def main():
     sar_features = os.path.join(args.working_path, "features/sar-features.csv")
     sar_temporal = os.path.join(args.working_path, "features/sar-temporal.csv")
 
-    if not os.path.exists(optical_features):
+    if not check_file(optical_features):
         optical_features = "0"
-    if not os.path.exists(sar_features):
+    if not check_file(sar_features):
         sar_features = "0"
-    if not os.path.exists(sar_temporal):
+    if not check_file(sar_temporal):
         sar_temporal = "0"
 
     command = []
