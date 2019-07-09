@@ -188,15 +188,24 @@ def insert_product(product_dir):
         else:
             satellite_id = LANDSAT8_SATELLITE_ID
         tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(product_dir)))
-        log(product_dir, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
-        for tile_dir in tiles_dir_list:
-            if satellite_id == SENTINEL2_SATELLITE_ID:
-                tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
-            else:  # satellite_id is LANDSAT8_SATELLITE_ID:
-                tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
-
-            if len(tile_img) > 0:
-                wgs84_extent_list.append(get_footprint(tile_img[0]))
+        tile_img = []
+        if len(tiles_dir_list) > 0 :
+            log(product_dir, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
+            for tile_dir in tiles_dir_list:
+                if satellite_id == SENTINEL2_SATELLITE_ID:
+                    tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
+                else:  # satellite_id is LANDSAT8_SATELLITE_ID:
+                    tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
+        else :
+            # Check for MAJA format
+            tiles_dir_list = (glob.glob("{}SENTINEL2*".format(product_dir)))
+            if len(tiles_dir_list) > 0 :
+                log(product_dir, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
+                for tile_dir in tiles_dir_list:
+                    if satellite_id == SENTINEL2_SATELLITE_ID:
+                        tile_img = (glob.glob("{}/*_FRE_B2.tif".format(tile_dir)))                
+        if len(tile_img) > 0:
+            wgs84_extent_list.append(get_footprint(tile_img[0]))
     else:
         if product_name.startswith("S2AGRI_"):
             mosaic_files_list = (glob.glob("{}*_PVI_*.jpg".format(product_dir)))
@@ -236,6 +245,9 @@ def insert_product(product_dir):
                     print("tile_dbl_dir {}".format(tile_dbl_dir))
                     if satellite_id == SENTINEL2_SATELLITE_ID:
                         tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)
+                        if tile is None:
+                            # Check for MAJA format
+                            tile = re.search(r"_L2A_T(\d\d[a-zA-Z]{3})_.+$", tile_dbl_dir)
                     else:
                         tile = re.search(r"_L2VALD_([\d]{6})_[\w\.]+$", tile_dbl_dir)
                     if tile is not None and not tile.group(1) in l2a_processed_tiles:
