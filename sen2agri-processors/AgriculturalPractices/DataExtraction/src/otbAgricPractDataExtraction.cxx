@@ -633,6 +633,8 @@ private:
         {
             inputGeomSet = GeometriesType::New(vectors);
             otb::ogr::DataSource::Pointer reprojVector = otb::ogr::DataSource::New();
+//            otb::ogr::DataSource::Pointer reprojVector = otb::ogr::DataSource::New(this->GetParameterString("vec"),
+//                                                                                   otb::ogr::DataSource::Modes::Update_LayerOverwrite);
             outputGeomSet = GeometriesType::New(reprojVector);
             // Filter instantiation
             geometriesProjFilter = ProjectionFilterType::New();

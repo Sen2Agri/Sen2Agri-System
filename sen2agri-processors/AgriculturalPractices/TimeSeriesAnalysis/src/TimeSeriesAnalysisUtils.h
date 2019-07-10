@@ -4,14 +4,13 @@
 #include <time.h>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <gsl/gsl_fit.h>
 #include <gsl/gsl_cdf.h>
 
 #include "CommonFunctions.h"
 
-#define NOT_AVAILABLE               -10000
-#define NR                          -10001
 #define SEC_IN_DAY                   86400          // seconds in day = 24 * 3600
 #define SEC_IN_WEEK                  604800         // seconds in week = 7 * 24 * 3600
 
@@ -21,7 +20,7 @@ boost::gregorian::greg_weekday const FirstDayOfWeek = boost::gregorian::Monday;
 
 template <typename T>
 inline bool IsNA(T val) {
-    return (val == NOT_AVAILABLE || val == NR);
+    return (val == NOT_AVAILABLE || val == NR || val == NOT_AVAILABLE_1);
 }
 
 inline bool IsEqual(const double &val1, const double &val2) {
@@ -189,26 +188,6 @@ bool ComputePValue(const std::vector<T>& xData, const std::vector<T>& yData, dou
     return true;
 }
 
-template <typename T>
-inline std::string ValueToString(T value, bool isBool = false)
-{
-    if (value == NOT_AVAILABLE) {
-        return "NA";
-    }
-    if (value == NR) {
-        return "NR";
-    }
-    if (isBool) {
-        return value == true ? "TRUE" : "FALSE";
-    }
-    if (std::is_same<T, double>::value) {
-        std::stringstream stream;
-        stream << std::fixed << std::setprecision(7) << value;
-        return stream.str();
-    }
-    return std::to_string(value);
-}
-
 inline time_t GetTimeFromString(const std::string &strDate) {
     try {
         boost::gregorian::date const d = boost::gregorian::from_simple_string(strDate);
@@ -367,5 +346,25 @@ inline bool GetWeekFromDate(const std::string &dateStr, int &retYear, int &retWe
 
     return true;
 }
+
+inline std::vector<std::string> LineToVector(const std::string &line, const std::string &separators = {';'})
+{
+    std::vector<std::string> results;
+    if (separators.size() > 0) {
+        boost::split(results,line,boost::is_any_of(separators));
+    }
+    return results;
+}
+
+inline int GetPosInVector(const std::vector<std::string> &vect, const std::string &item)
+{
+    auto result = std::find(vect.begin(), vect.end(), item);
+    if (result != vect.end()) {
+        return std::distance(vect.begin(), std::find(vect.begin(), vect.end(), item));
+    }
+    return -1;
+}
+
+
 
 #endif

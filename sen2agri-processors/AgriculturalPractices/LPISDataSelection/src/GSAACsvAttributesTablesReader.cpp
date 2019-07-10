@@ -30,7 +30,7 @@ std::vector<std::string> GSAACsvAttributesTablesReader::CsvFeatureDescription::L
 {
     std::vector<std::string> results;
     boost::algorithm::split(results, line, [](char c){return (c == ',' || c == ';');});
-    for(int i = 0; i < results.size(); i++) {
+    for(size_t i = 0; i < results.size(); i++) {
         results[i] = trim(results[i]);
     }
     return results;
@@ -45,8 +45,11 @@ bool GSAACsvAttributesTablesReader::CsvFeatureDescription::ExtractHeaderInfos(co
         std::cout << "Header with size 0 found for file " << m_source << std::endl;
         return false;
     }
+    // we are filling the header values as lowercase
     for (size_t i = 0; i<inputFileHeader.size(); i++) {
-        m_InputFileHeader[inputFileHeader[i]] = i;
+        std::string str = inputFileHeader[i];
+        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+        m_InputFileHeader[str] = i;
     }
     return true;
 }
@@ -64,7 +67,9 @@ bool GSAACsvAttributesTablesReader::CsvFeatureDescription::ExtractLineInfos(cons
 
 int GSAACsvAttributesTablesReader::CsvFeatureDescription::GetFieldIndex(const char *pszName) const
 {
-    std::map<std::string, int>::const_iterator itMap = m_InputFileHeader.find(pszName);
+    std::string strName(pszName);
+    std::transform(strName.begin(), strName.end(), strName.begin(), ::tolower);
+    std::map<std::string, int>::const_iterator itMap = m_InputFileHeader.find(strName);
     if (itMap == m_InputFileHeader.end()) {
         return -1;
     }

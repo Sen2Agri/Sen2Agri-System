@@ -3,6 +3,12 @@
 
 #define NOT_AVAILABLE               -10000
 #define NR                          -10001
+#define NOT_AVAILABLE_1             -10002
+
+#define NA_STR                      "NA"
+#define NR_STR                      "NR"
+#define NA1_STR                     "NA1"
+
 
 // TODO: To remove the CR_CAT_VAL and all its references. LC should be used instead
 #define CR_CAT_VAL                      "CR_CAT"
@@ -10,6 +16,7 @@
 
 // The unique sequencial ID as it appears in the database or in the shapefile
 #define SEQ_UNIQUE_ID                       "NewID"
+#define ORIG_UNIQUE_ID                      "ori_id"
 
 #define CATCH_CROP_VAL                  "CatchCrop"
 #define FALLOW_LAND_VAL                 "Fallow"

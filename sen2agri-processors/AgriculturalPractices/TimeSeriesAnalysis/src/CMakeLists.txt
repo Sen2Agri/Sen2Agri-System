@@ -30,6 +30,16 @@ otb_create_application(
                  StatisticsInfosXmlReader.h
                  StatisticsInfosSingleCsvReader.h
                  StatisticsInfosSingleCsvReader.cpp
+                 TsaCSVWriter.h
+                 TsaCSVWriter.cpp
+                 TsaPlotsWriter.h
+                 TsaPlotsWriter.cpp
+                 TsaContinuousFileWriter.h
+                 TsaContinuousFileWriter.cpp
+                 TsaDebugPrinter.h
+                 TsaDebugPrinter.cpp
+                 TsaPrevPrdReader.h
+                 TsaPrevPrdReader.cpp
 
 
   LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata Sen2AgriPrdMetaWriters ${Boost_LIBRARIES} gsl)

@@ -32,6 +32,12 @@
 #include "StatisticsInfosReaderFactory.h"
 #include "PracticeReaderFactory.h"
 
+#include "TsaPlotsWriter.h"
+#include "TsaCSVWriter.h"
+#include "TsaContinuousFileWriter.h"
+#include "TsaDebugPrinter.h"
+#include "TsaPrevPrdReader.h"
+
 #define INPUT_SHP_DATE_PATTERN      "%4d-%2d-%2d"
 
 #define CATCH_CROP_VAL                  "CatchCrop"
@@ -72,7 +78,7 @@ private:
     TimeSeriesAnalysis()
     {
         m_countryName = "UNKNOWN";
-        m_practiceName = "NA";
+        m_practiceName = NA_STR;
         m_year = "UNKNOWN";
         m_bAllowGaps = true;
         m_bGapsFill = false;
@@ -122,11 +128,6 @@ private:
         m_CatchCropVal = CATCH_CROP_VAL;
         m_FallowLandVal = FALLOW_LAND_VAL;
         m_NitrogenFixingCropVal = NITROGEN_FIXING_CROP_VAL;
-
-        // # optional: in case graphs shall be generated set the value to TRUE otherwise set to FALSE
-        m_bPlotOutputGraph = false;
-        // # optional: in case continuos products (csv file) shall be generated set the value to TRUE otherwise set to FALSE
-        m_bResultContinuousProduct = false;
 
         m_bVerbose = false;
     }
@@ -355,6 +356,16 @@ private:
         SetDefaultParameterInt("debug", 1);
         MandatoryOff("debug");
 
+        AddParameter(ParameterType_String, "prevprd", "The previous product");
+        SetParameterDescription("prevprd", "The previous product of this practice (if any) to be used for extracting "
+                                           "the H_WEEK that needs to be preserved");
+        MandatoryOff("prevprd");
+
+        AddParameter(ParameterType_Int, "minacqs", "The minimum numner of coherence acquision dates in the time series");
+        SetParameterDescription("minacqs", "The minimum numner of coherence acquision dates in the time series");
+        SetDefaultParameterInt("minacqs", MIN_REQUIRED_COHE_VALUES);
+        MandatoryOff("minacqs");
+
         // Doc example parameter settings
         //SetDocExampleParameterValue("in", "support_image.tif");
     }
@@ -367,7 +378,7 @@ private:
         m_outputDir = trim(GetParameterAsString("outdir"));
         m_bAllowGaps = GetParameterInt("allowgaps") != 0;
         m_bGapsFill = GetParameterInt("gapsfill") != 0;
-        m_bDebugMode = GetParameterInt("debug") != 0;
+        m_debugPrinter.SetDebugMode(GetParameterInt("debug") != 0);
         m_nMinS1PixCnt = GetParameterInt("s1pixthr");
 
         if (HasValue("country")) {
@@ -473,10 +484,14 @@ private:
             m_flMarkersEndDateStr = GetParameterString("flmarkstenddate");
         }
         if (HasValue("plotgraph")) {
-            m_bPlotOutputGraph = GetParameterInt("plotgraph") != 0;
+            m_plotsWriter.SetEnabled(GetParameterInt("plotgraph") != 0);
         }
         if (HasValue("rescontprd")) {
-            m_bResultContinuousProduct = GetParameterInt("rescontprd") != 0;
+            m_contFileWriter.SetEnabled(GetParameterInt("rescontprd") != 0);
+        }
+
+        if (HasValue("prevprd")) {
+            m_prevPrdReader.Initialize(GetParameterString("prevprd"));
         }
 
         if (m_practiceName == m_CatchCropVal) {
@@ -521,7 +536,7 @@ private:
 
         m_pCoheReader = factory->GetInfosReader(inputType);
         m_pCoheReader->Initialize(GetParameterAsString("dircohe"), {"VV", "VH"}, curYear);
-        m_pCoheReader->SetMinRequiredEntries(MIN_REQUIRED_COHE_VALUES);
+        m_pCoheReader->SetMinRequiredEntries(GetParameterInt("minacqs"));
 
         m_pCoheReader->SetUseDate2(true);
         m_pCoheReader->SetSwitchDates(true);
@@ -539,13 +554,16 @@ private:
         m_pPracticeReader->SetSource(practicesInfoFile);
 
         // write first the CSV header
-        WriteCSVHeader(m_practiceName, m_countryName, curYear);
+        if (!m_csvWriter.WriteCSVHeader(m_outputDir, m_practiceName, m_countryName, curYear)) {
+            otbAppLogFATAL("Error opening output file for practice " << m_practiceName << " and year "
+                           << curYear << " in the directory " << m_outputDir << ". Exiting...");
+        }
 
         // create the plots file
-        CreatePlotsFile(m_practiceName, m_countryName, curYear);
+        m_plotsWriter.CreatePlotsFile(m_outputDir, m_practiceName, m_countryName, curYear);
 
         // create the continous products file
-        CreateContinousProductFile(m_practiceName, m_countryName, curYear);
+        m_contFileWriter.CreateContinousProductFile(m_outputDir, m_practiceName, m_countryName, curYear);
 
         // start processing features
         using namespace std::placeholders;
@@ -553,7 +571,7 @@ private:
         m_pPracticeReader->ExtractFeatures(f);
 
         // close the plots file
-        ClosePlotsFile();
+        m_plotsWriter.ClosePlotsFile();
 
         otbAppLogINFO("Execution DONE!");
     }
@@ -596,9 +614,9 @@ private:
 //            return false;
 //        }
 
-//        if (fieldId != "216024-97-a") {
-//            return false;
-//        }
+        if (feature.GetFieldSeqId() != "170616") {
+            return false;
+        }
 
         FieldInfoType fieldInfos(fieldId);
 
@@ -652,14 +670,15 @@ private:
         }
 
 //      DEBUG
-        PrintFieldGeneralInfos(fieldInfos);
+        m_debugPrinter.PrintFieldGeneralInfos(fieldInfos);
 //      DEBUG
 
         bool bOK = true;
-        bool bInitializeWithNR = false;
-        if (std::atoi(fieldInfos.s1PixValue.c_str()) < m_nMinS1PixCnt) {
+        int harvestStatusInitVal = NOT_AVAILABLE;
+        int s1PixVal = std::atoi(fieldInfos.s1PixValue.c_str());
+        if (s1PixVal < m_nMinS1PixCnt) {
             bOK = false;
-            bInitializeWithNR = true;
+            harvestStatusInitVal = NOT_AVAILABLE_1;
         }
 
         if (m_bVerbose) {
@@ -690,10 +709,15 @@ private:
             bOK = false;
         }
         if (!bOK) {
+            fieldInfos.gapsInfos = harvestStatusInitVal;
+            fieldInfos.hS1GapsInfos = harvestStatusInitVal;
+            fieldInfos.pS1GapsInfos = harvestStatusInitVal;
+
             // in case an error occurred, write in the end the parcel but with invalid infos
-            HarvestInfoType harvestInfos(bInitializeWithNR);
+            HarvestInfoType harvestInfos(harvestStatusInitVal);
+
             harvestInfos.evaluation.Initialize(fieldInfos);
-            WriteHarvestInfoToCsv(fieldInfos, harvestInfos, harvestInfos);
+            m_csvWriter.WriteHarvestInfoToCsv(fieldInfos, harvestInfos, harvestInfos);
         }
 
         return bOK;
@@ -912,7 +936,7 @@ private:
         }
 
         // DEBUG
-//        PrintAmplitudeInfos(fieldInfos);
+//        m_debugPrinter.PrintAmplitudeInfos(fieldInfos);
         // DEBUG
 
         if (m_bVerbose) {
@@ -924,7 +948,7 @@ private:
         }
 
         // DEBUG
-        //PrintAmpGroupedMeanValues(ampRatioGroups);
+        //m_debugPrinter.PrintAmpGroupedMeanValues(ampRatioGroups);
         // DEBUG
 
         if (m_bVerbose) {
@@ -937,11 +961,11 @@ private:
         }
 
         // DEBUG
-//        PrintAmpGroupedMeanValues(ampRatioGroups);
+//        m_debugPrinter.PrintAmpGroupedMeanValues(ampRatioGroups);
         // DEBUG
 
         // DEBUG
-//        PrintNdviInfos(fieldInfos);
+//        m_debugPrinter.PrintNdviInfos(fieldInfos);
         // DEBUG
 
         if (m_bVerbose) {
@@ -959,11 +983,11 @@ private:
         });
 
         // DEBUG
-        PrintNdviGroupedMeanValues(ndviGroups);
+        m_debugPrinter.PrintNdviGroupedMeanValues(ndviGroups);
         // DEBUG
 
         // DEBUG
-        PrintCoherenceInfos(fieldInfos);
+        m_debugPrinter.PrintCoherenceInfos(fieldInfos);
         // DEBUG
 
         if (m_bVerbose) {
@@ -982,7 +1006,7 @@ private:
         });
 
         // DEBUG
-//        PrintCoherenceGroupedMeanValues(coherenceGroups);
+//        m_debugPrinter.PrintCoherenceGroupedMeanValues(coherenceGroups);
         // DEBUG
 
         if (m_bVerbose) {
@@ -1018,20 +1042,20 @@ private:
         UpdateMarker4Infos(fieldInfos, allMergedValues, ampThrValue);
 
         // DEBUG
-        PrintMergedValues(allMergedValues, ampThrValue);
+        m_debugPrinter.PrintMergedValues(allMergedValues, ampThrValue);
         // DEBUG
 
         HarvestInfoType harvestInfos;
         HarvestEvaluation(fieldInfos, allMergedValues, harvestInfos);
 
 //      DEBUG
-        PrintHarvestEvaluation(fieldInfos, harvestInfos);
+        m_debugPrinter.PrintHarvestEvaluation(fieldInfos, harvestInfos);
 //      DEBUG
 
         HarvestInfoType efaHarvestInfos;
 
         // ### TIME SERIES ANALYSIS FOR EFA PRACTICES ###
-        if (fieldInfos.practiceName != "NA" && fieldInfos.ttPracticeStartTime != 0) {
+        if (fieldInfos.practiceName != NA_STR && fieldInfos.ttPracticeStartTime != 0) {
             if (fieldInfos.practiceName.find(m_CatchCropVal) != std::string::npos) {
                 CatchCropPracticeAnalysis(fieldInfos, allMergedValues, harvestInfos, efaHarvestInfos);
             } else if (fieldInfos.practiceName == m_FallowLandVal) {
@@ -1041,16 +1065,19 @@ private:
             } else {
                 otbAppLogWARNING("Practice name " << fieldInfos.practiceName << " not supported!");
             }
+            if (FloorDateToWeekStart(efaHarvestInfos.evaluation.ttPracticeEndTime) > harvestInfos.evaluation.ttLWeekStartTime) {
+                efaHarvestInfos.evaluation.efaIndex = NA_STR;
+            }
         }
 
         // write infos to be generated as plots (png graphs)
-        WritePlotEntry(fieldInfos, harvestInfos);
+        m_plotsWriter.WritePlotEntry(fieldInfos, harvestInfos);
 
         // Write the continuous field infos into the file
-        WriteContinousToCsv(fieldInfos, allMergedValues);
+        m_contFileWriter.WriteContinousToCsv(fieldInfos, allMergedValues);
 
         // write the harvest information to the final file
-        WriteHarvestInfoToCsv(fieldInfos, harvestInfos, efaHarvestInfos);
+        m_csvWriter.WriteHarvestInfoToCsv(fieldInfos, harvestInfos, efaHarvestInfos);
 
         return true;
     }
@@ -1498,7 +1525,9 @@ private:
                 continue;
             }
             if (retAllMergedValues[i].vegWeeks == true) {
-                nVegWeeksCnt++;
+                if (retAllMergedValues[i].ndviPresence == true) {
+                    nVegWeeksCnt++;
+                }
 
                 if ((IsNA(retAllMergedValues[i].ndviPresence) || retAllMergedValues[i].ndviPresence == true) && !IsNA(prevValidNdviMeanVal)) {
                     // update the NDVI drop only to the ones that have NDVI presence true
@@ -1697,12 +1726,10 @@ private:
                            HarvestInfoType &harvestInfos) {
         // TODO: This can be done using a flag in a structure encapsulating also retAllMergedValues
         //      in order to avoid this iteration (can be done in an iteration previously made)
-//        if (fieldInfos.fieldSeqId == "568110") {
-//            std::cout << "!!!! " << fieldInfos.fieldSeqId << " !!!!" << std::endl;
-//        }
-
         harvestInfos.harvestConfirmed = NOT_AVAILABLE;
         harvestInfos.evaluation.Initialize(fieldInfos);
+        // Update the L_Week time
+        harvestInfos.evaluation.ttLWeekStartTime = retAllMergedValues[retAllMergedValues.size() - 1].ttDate;
 
         if (!HasValidNdviValues(retAllMergedValues, m_OpticalThrVegCycle, true)) {
             harvestInfos.evaluation.ndviPresence = false;               // M1
@@ -1711,17 +1738,25 @@ private:
             harvestInfos.evaluation.amplitudePresence = NR;          // M4
             harvestInfos.evaluation.candidateCoherence = NR;         // M5
             harvestInfos.evaluation.harvestConfirmWeek = NR;
-            harvestInfos.evaluation.ttHarvestConfirmWeekStart = 0;
+            harvestInfos.evaluation.ttS1HarvestWeekStart = NR;
+            harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
             return false;
         }
 
         int idxFirstHarvest = -1;
+        int idxFirstS1Harvest = -1;
+        bool harvestS1;
         for(size_t i = 0; i<retAllMergedValues.size(); i++) {
-            retAllMergedValues[i].harvest = ((retAllMergedValues[i].ndviPresence == true) &&
-                    (retAllMergedValues[i].candidateOptical == true) &&
-                    (retAllMergedValues[i].candidateAmplitude == true) &&
-                    (retAllMergedValues[i].amplitudePresence == true) &&
-                    (retAllMergedValues[i].candidateCoherence == true));
+            harvestS1 = ((retAllMergedValues[i].ndviPresence == true) && (retAllMergedValues[i].candidateAmplitude == true) &&
+                         (retAllMergedValues[i].amplitudePresence == true) && (retAllMergedValues[i].candidateCoherence == true) &&
+                         retAllMergedValues[i].ttDate >= fieldInfos.ttHarvestStartWeekFloorTime);
+
+            if (idxFirstS1Harvest == -1 && harvestS1) {
+                idxFirstS1Harvest = i;
+            }
+
+            retAllMergedValues[i].harvest = (harvestS1 && (retAllMergedValues[i].candidateOptical == true));
+
             // save the first == week of harvest
             if (retAllMergedValues[i].harvest && idxFirstHarvest == -1) {
                 idxFirstHarvest = i;
@@ -1729,25 +1764,36 @@ private:
             }
         }
 
+        // update the harvestConfirmed with the value from the previous file, if present and different
+        const std::string &prevHWeek = m_prevPrdReader.GetHWeekForFieldId(std::atoi(fieldInfos.fieldSeqId.c_str()));
+        if (prevHWeek.size() > 0) {
+            time_t ttTime = GetTimeFromString(prevHWeek);
+            if (ttTime != 0 && harvestInfos.harvestConfirmed > ttTime) {
+                harvestInfos.harvestConfirmed = ttTime;
+            }
+        }
+
+        int lastAvailableIdx = retAllMergedValues.size() - 1;
+        harvestInfos.evaluation.ndviPresence = retAllMergedValues[lastAvailableIdx].ndviPresence;               // M1
+        harvestInfos.evaluation.candidateOptical = retAllMergedValues[lastAvailableIdx].candidateOptical;       // M2
+        harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[lastAvailableIdx].candidateAmplitude;   // M3
+        harvestInfos.evaluation.amplitudePresence = retAllMergedValues[lastAvailableIdx].amplitudePresence;     // M4
+        harvestInfos.evaluation.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;   // M5
+
         // "HARVESTED CONDITIONS NOT DETECTED"
         if (IsNA(harvestInfos.harvestConfirmed)) {
             // report results from last available week
-            int lastAvailableIdx = retAllMergedValues.size() - 1;
-            harvestInfos.evaluation.ndviPresence = retAllMergedValues[lastAvailableIdx].ndviPresence;               // M1
-            harvestInfos.evaluation.candidateOptical = retAllMergedValues[lastAvailableIdx].candidateOptical;       // M2
-            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[lastAvailableIdx].candidateAmplitude;   // M3
-            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[lastAvailableIdx].amplitudePresence;     // M4
-            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;   // M5
             harvestInfos.evaluation.harvestConfirmWeek = NR;
-            harvestInfos.evaluation.ttHarvestConfirmWeekStart = 0;
-        } else if (idxFirstHarvest != -1) {
-            harvestInfos.evaluation.ndviPresence = retAllMergedValues[idxFirstHarvest].ndviPresence;                // M1
-            harvestInfos.evaluation.candidateOptical = retAllMergedValues[idxFirstHarvest].candidateOptical;        // M2
-            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[idxFirstHarvest].candidateAmplitude;    // M3
-            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[idxFirstHarvest].amplitudePresence;      // M4
-            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[idxFirstHarvest].candidateCoherence;    // M5
+            harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
+        } else {
             harvestInfos.evaluation.harvestConfirmWeek = GetWeekFromDate(retAllMergedValues[idxFirstHarvest].ttDate);
             harvestInfos.evaluation.ttHarvestConfirmWeekStart = retAllMergedValues[idxFirstHarvest].ttDate;
+        }
+
+        if (idxFirstS1Harvest != -1) {
+            harvestInfos.evaluation.ttS1HarvestWeekStart = retAllMergedValues[idxFirstS1Harvest].ttDate;
+        } else {
+            harvestInfos.evaluation.ttS1HarvestWeekStart = NR;
         }
 
         return true;
@@ -1801,8 +1847,9 @@ private:
             }
             // set the start of the catch-crop (first possible date)
             ttDateC = catchStart;
+            time_t ttCatchPeriodStart =  0;
             if (m_CatchPeriodStart.size() > 0) {
-                time_t ttCatchPeriodStart = GetTimeFromString(m_CatchPeriodStart);
+                ttCatchPeriodStart = GetTimeFromString(m_CatchPeriodStart);
                 if (ttDateC < ttCatchPeriodStart) {
                     // a variable can be used to define the earliest date the catch-crop can be sown (???)
                     ttDateC = ttCatchPeriodStart;
@@ -1864,6 +1911,17 @@ private:
                         // the potential bare-land conditions are set to FALSE
                         retAllMergedValues[i].candidateEfa = false;
                     }
+
+                    // # update
+                    if (ttCatchPeriodStart > 0) {
+                        time_t ttFlooredCatchPeriodStart = FloorDateToWeekStart(ttCatchPeriodStart);
+                        if (retAllMergedValues[i].ttDate < ttFlooredCatchPeriodStart) {
+                            // after the last possible start of catch-crop period days all the weeks with
+                            // the potential bare-land conditions are set to FALSE
+                            retAllMergedValues[i].candidateEfa = false;
+                        }
+                    }
+
                     // before the date.d all the weeks with the potential bare-land conditions are set to FALSE
                     if (retAllMergedValues[i].ttDate < ttDateD) {
                         retAllMergedValues[i].candidateEfa = false;
@@ -1904,9 +1962,8 @@ private:
             }
             if (m_CatchPeriodStart.size() > 0) {
                 // a variable can be used to define the earliest start of the catch-crop period
-                time_t catchPeriodStart = GetTimeFromString(m_CatchPeriodStart);
-                if (catchStart < catchPeriodStart) {
-                    catchStart = catchPeriodStart;
+                if (catchStart < ttCatchPeriodStart) {
+                    catchStart = ttCatchPeriodStart;
                 }
             }
             // set the first day of the catch-crop period
@@ -2231,7 +2288,7 @@ private:
                     harvestInfos.evaluation.harvestConfirmWeek = NR;
                     harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
                     flHarvestInfos.evaluation.harvestConfirmWeek = NR;
-                    flHarvestInfos.evaluation.ttHarvestConfirmWeekStart = 0;
+                    flHarvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
                 } else {
                     // # if there is no-loss of coherence in all the 9 subsequent
                     // weeks (if M10 is TRUE) - return WEAK evaluation for the black fallow practice
@@ -2251,7 +2308,7 @@ private:
                     // # in such case harvest is not evaluated
                     flHarvestInfos.evaluation.efaIndex = "WEAK";
                     //flHarvestInfos.evaluation.harvestConfirmWeek = NR;
-                    //flHarvestInfos.evaluation.ttHarvestConfirmWeekStart = 0;
+                    //flHarvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
                 } else if (flHarvestInfos.evaluation.ndviPresence == false) {
                     // # if there is no evidence of vegetation in NDVI - return WEAK evaluation for the green fallow practice
                     // # green fallow shall be inserted to soil up to the end of the efa period - harvest shall be detected
@@ -2489,7 +2546,7 @@ private:
 //      DEBUG
         // std::cout << TimeToString(ttStartTime) << std::endl;
         // std::cout << TimeToString(ttEndTime) << std::endl;
-        PrintEfaMarkers(allMergedValues, efaMarkers);
+        m_debugPrinter.PrintEfaMarkers(allMergedValues, efaMarkers);
 //      DEBUG
 
         // ### COMPUTE EFA MARKERS ###
@@ -2581,7 +2638,7 @@ private:
 
         // ### MARKER 9 - $grd.noloss ###
 //      DEBUG
-//        PrintEfaMarkers(allMergedValues, efaMarkers);
+//        m_debugPrinter.PrintEfaMarkers(allMergedValues, efaMarkers);
 //      DEBUG
 
 /*
@@ -2712,7 +2769,7 @@ private:
         }
 
 //      DEBUG
-        PrintEfaMarkers(allMergedValues, efaMarkers);
+        m_debugPrinter.PrintEfaMarkers(allMergedValues, efaMarkers);
 //      DEBUG
 
         return true;
@@ -2834,201 +2891,53 @@ private:
         return true;
     }
 
+    void UpdateGapsInformation(time_t startTime, time_t endTime,
+                               time_t ttPrevDate, time_t ttCurDate, int &sumVal) {
+        // Check for gaps between harvest start and harvest end interval
+        if (startTime != 0 && endTime != 0) {
+            if (ttPrevDate < startTime) {
+                ttPrevDate = startTime;
+            }
+            if (ttPrevDate < endTime && ttCurDate >= endTime) {
+                ttCurDate = endTime;
+            }
+            int diffInDays = (ttCurDate - ttPrevDate) / SEC_IN_DAY;
+            if (diffInDays > 7) {
+                sumVal += (diffInDays / 7) - 1;
+            }
+        }
+    }
+
     void UpdateGapsInformation(const std::vector<MergedAllValInfosType> &values, FieldInfoType &fieldInfos) {
         int sum = 0;
+        int sumHGaps = 0;
+        int sumPGaps = 0;
         int diffInDays;
 
         // according to ISO calendar, the first week of the year is the one that contains 4th of January
         time_t ttFirstWeekStart = GetTimeFromString(std::to_string(fieldInfos.year).append("-01-01"));
         time_t ttPrevDate = ttFirstWeekStart;
+        time_t ttCurDate;
         for(size_t i = 0; i<values.size(); i++) {
             if (i > 0) {
                 ttPrevDate = values[i-1].ttDate;
             }
-            diffInDays = (values[i].ttDate - ttPrevDate) / SEC_IN_DAY;
+            ttCurDate = values[i].ttDate;
+            diffInDays = (ttCurDate - ttPrevDate) / SEC_IN_DAY;
             if (diffInDays > 7) {
                 sum += (diffInDays / 7) - 1;
             }
+
+            // Check for gaps between harvest start and harvest end interval
+            UpdateGapsInformation(fieldInfos.ttHarvestStartWeekFloorTime, fieldInfos.ttHarvestEndWeekFloorTime,
+                                  ttPrevDate, ttCurDate, sumHGaps);
+            // Check for gaps between practice start and harvest end interval
+            UpdateGapsInformation(fieldInfos.ttPracticeStartWeekFloorTime, fieldInfos.ttPracticeEndWeekFloorTime,
+                                  ttPrevDate, ttCurDate, sumPGaps);
         }
         fieldInfos.gapsInfos = sum;
-    }
-
-    std::string GetResultsCsvFilePath(const std::string &practiceName, const std::string &countryCode,
-                                      int year) {
-        const std::string &fileName = "Sen4CAP_L4C_" + practiceName + "_" +
-                countryCode + "_" + std::to_string(year) + "_CSV.csv";
-        boost::filesystem::path rootFolder(m_outputDir);
-        return (rootFolder / fileName).string();
-    }
-
-    std::string GetContinousProductCsvFilePath(const std::string &practiceName, const std::string &countryCode,
-                                      int year) {
-        const std::string &fileName = "Sen4CAP_L4C_" + practiceName + "_" +
-                countryCode + "_" + std::to_string(year) + "_CSV_ContinousProduct.csv";
-        boost::filesystem::path rootFolder(m_outputDir);
-        return (rootFolder / fileName).string();
-    }
-
-    std::string GetPlotsFilePath(const std::string &practiceName, const std::string &countryCode,
-                                      int year) {
-        const std::string &fileName = "Sen4CAP_L4C_" + practiceName + "_" +
-                countryCode + "_" + std::to_string(year) + "_PLOT.xml";
-        boost::filesystem::path rootFolder(m_outputDir);
-        return (rootFolder / fileName).string();
-    }
-
-    void WriteCSVHeader(const std::string &practiceName, const std::string &countryCode,
-                        int year) {
-        if (m_OutFileStream.is_open()) {
-            return;
-        }
-        const std::string &fullPath = GetResultsCsvFilePath(practiceName, countryCode, year);
-        m_OutFileStream.open(fullPath, std::ios_base::trunc | std::ios_base::out);
-        if( m_OutFileStream.fail() ) {
-            otbAppLogFATAL("Error opening output file " << fullPath << ". Exiting...");
-            return;
-        }
-
-        // # create result csv file for harvest and EFA practice evaluation
-        m_OutFileStream << "FIELD_ID;ORIG_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;"
-                   "PRACTICE;P_TYPE;P_START;P_END;M1;M2;M3;M4;M5;H_WEEK;M6;M7;M8;M9;M10;C_INDEX;W_GAPS;H_W_START;H_W_END;S1PIX \n";
-    }
-
-    void WriteHarvestInfoToCsv(const FieldInfoType &fieldInfo, const HarvestInfoType &harvestInfo, const HarvestInfoType &efaHarvestInfo) {
-        //"FIELD_ID;COUNTRY;YEAR;MAIN_CROP
-        m_OutFileStream << fieldInfo.fieldSeqId << ";" << fieldInfo.fieldId << ";" << fieldInfo.countryCode << ";" << ValueToString(fieldInfo.year) << ";" << fieldInfo.mainCrop << ";" <<
-                   // VEG_START;H_START;H_END;"
-                   TimeToString(fieldInfo.ttVegStartTime) << ";" << TimeToString(fieldInfo.ttHarvestStartTime) << ";" << TimeToString(fieldInfo.ttHarvestEndTime) << ";" <<
-                   // "PRACTICE;P_TYPE;P_START;P_END;
-                   fieldInfo.practiceName << ";" << fieldInfo.practiceType << ";" << TimeToString(efaHarvestInfo.evaluation.ttPracticeStartTime) << ";" <<
-                   TimeToString(efaHarvestInfo.evaluation.ttPracticeEndTime) << ";" <<
-                   // M1;M2;
-                   ValueToString(harvestInfo.evaluation.ndviPresence, true) << ";" << ValueToString(harvestInfo.evaluation.candidateOptical, true) << ";" <<
-                   // M3;M4;
-                   ValueToString(harvestInfo.evaluation.candidateAmplitude, true) << ";" << ValueToString(harvestInfo.evaluation.amplitudePresence, true) << ";" <<
-                   // M5;H_WEEK;
-                   ValueToString(harvestInfo.evaluation.candidateCoherence, true) << ";" << ValueToString(harvestInfo.evaluation.harvestConfirmWeek) << ";" <<
-                   // M6;M7;
-                   ValueToString(efaHarvestInfo.evaluation.ndviPresence, true) << ";" << ValueToString(efaHarvestInfo.evaluation.ndviGrowth, true) << ";" <<
-                   // M8;M9;
-                   ValueToString(efaHarvestInfo.evaluation.ndviNoLoss, true) << ";" << ValueToString(efaHarvestInfo.evaluation.ampNoLoss, true) << ";" <<
-                    //M10;C_INDEX
-                   ValueToString(efaHarvestInfo.evaluation.cohNoLoss, true) << ";" << efaHarvestInfo.evaluation.efaIndex << ";" <<
-                   ValueToString(fieldInfo.gapsInfos) << ";" << TimeToString(harvestInfo.evaluation.ttHarvestConfirmWeekStart) << ";" <<
-                   TimeToString((IsNA(harvestInfo.evaluation.ttHarvestConfirmWeekStart) || harvestInfo.evaluation.ttHarvestConfirmWeekStart == 0) ?
-                                    harvestInfo.evaluation.ttHarvestConfirmWeekStart :
-                                    harvestInfo.evaluation.ttHarvestConfirmWeekStart + (6 * SEC_IN_DAY)) << ";" <<
-                   fieldInfo.s1PixValue << "\n";
-        m_OutFileStream.flush();
-    }
-
-    void CreateContinousProductFile(const std::string &practiceName, const std::string &countryCode, int year) {
-        if (!m_bResultContinuousProduct) {
-            return;
-        }
-        if (m_OutContinousPrdFileStream.is_open()) {
-            return;
-        }
-        const std::string &fullPath = GetContinousProductCsvFilePath(practiceName, countryCode, year);
-        m_OutContinousPrdFileStream.open(fullPath, std::ios_base::trunc | std::ios_base::out);
-
-        // # create continous product result csv file header
-        m_OutContinousPrdFileStream << "FIELD_ID;ORIG_ID;WEEK;M1;M2;M3;M4;M5\n";
-    }
-
-    void WriteContinousToCsv(const FieldInfoType &fieldInfo, const std::vector<MergedAllValInfosType> &allMergedVals) {
-        if (!m_bResultContinuousProduct) {
-            return;
-        }
-
-        std::vector<MergedAllValInfosType>::const_iterator it;
-        for (it = allMergedVals.begin(); it != allMergedVals.end(); ++it) {
-           //"FIELD_ID;Week
-            m_OutContinousPrdFileStream << fieldInfo.fieldSeqId << ";" << fieldInfo.fieldId << ";" << ValueToString(GetWeekFromDate(it->ttDate)) << ";" <<
-                   // M1;M2;
-                   ValueToString(it->ndviPresence, true) << ";" << ValueToString(it->candidateOptical, true) << ";" <<
-                   // M3;M4;
-                   ValueToString(it->candidateAmplitude, true) << ";" << ValueToString(it->amplitudePresence, true) << ";" <<
-                   // M5
-                   ValueToString(it->candidateCoherence, true) << "\n";
-        }
-    }
-
-    void CreatePlotsFile(const std::string &practiceName, const std::string &countryCode, int year) {
-        if (!m_bPlotOutputGraph) {
-            return;
-        }
-        const std::string &fullPath = GetPlotsFilePath(practiceName, countryCode, year);
-        otbAppLogINFO("Creating plot file " << fullPath);
-        m_OutPlotsFileStream.open(fullPath, std::ios_base::trunc | std::ios_base::out);
-        std::string plotsStart("<plots>\n");
-        m_OutPlotsFileStream << plotsStart.c_str();
-
-        std::string outIdxPath;
-        boost::filesystem::path path(fullPath);
-        outIdxPath = (path.parent_path() / path.filename()).string() + ".idx";
-        m_OutPlotsIdxFileStream.open(outIdxPath, std::ios_base::trunc | std::ios_base::out);
-        // initialize also the index
-        m_OutPlotsIdxCurIdx = plotsStart.size();
-    }
-
-    void ClosePlotsFile() {
-        if (!m_bPlotOutputGraph) {
-            return;
-        }
-        otbAppLogINFO("Closing plot file");
-        m_OutPlotsFileStream << "</plots>\n";
-        m_OutPlotsFileStream.flush();
-        m_OutPlotsFileStream.close();
-
-        m_OutPlotsIdxFileStream.flush();
-        m_OutPlotsIdxFileStream.close();
-    }
-
-    void WritePlotEntry(const FieldInfoType &fieldInfos, const HarvestInfoType &harvestInfo) {
-        if (!m_bPlotOutputGraph) {
-            return;
-        }
-
-        std::stringstream ss;
-
-        ss << " <fid id=\"" << fieldInfos.fieldSeqId.c_str() << "\" orig_id=\"" << fieldInfos.fieldId.c_str() << "\">\n";
-        ss << " <practice start=\"" << TimeToString(harvestInfo.evaluation.ttHarvestStartTime).c_str() <<
-                               "\" end=\"" << TimeToString(harvestInfo.evaluation.ttHarvestEndTime).c_str() <<
-                               "\"/>\n";
-        ss << " <harvest start=\"" << TimeToString(harvestInfo.evaluation.ttHarvestConfirmWeekStart).c_str() <<
-                              "\" end=\"" << TimeToString((IsNA(harvestInfo.evaluation.ttHarvestConfirmWeekStart) || harvestInfo.evaluation.ttHarvestConfirmWeekStart == 0) ?
-                                            harvestInfo.evaluation.ttHarvestConfirmWeekStart :
-                                            harvestInfo.evaluation.ttHarvestConfirmWeekStart + (6 * SEC_IN_DAY)).c_str() <<
-                                "\"/>\n";
-
-        ss << "  <ndvis>\n";
-        for (size_t i = 0; i<fieldInfos.ndviLines.size(); i++) {
-            ss << "   <ndvi date=\"" << fieldInfos.ndviLines[i].strDate.c_str() <<
-                                    "\" val=\"" << ValueToString(fieldInfos.ndviLines[i].meanVal).c_str() << "\"/>\n";
-        }
-        ss << "  </ndvis>\n";
-        ss << "  <amps>\n";
-        for (size_t i = 0; i<fieldInfos.mergedAmpInfos.size(); i++) {
-            ss << "   <amp date=\"" << TimeToString(fieldInfos.mergedAmpInfos[i].ttDate).c_str() <<
-                                    "\" val=\"" << ValueToString(fieldInfos.mergedAmpInfos[i].ampRatio).c_str() << "\"/>\n";
-        }
-        ss << "  </amps>\n";
-        ss << "  <cohs>\n";
-        for (size_t i = 0; i<fieldInfos.coheVVLines.size(); i++) {
-            ss << "   <coh date=\"" << fieldInfos.coheVVLines[i].strDate.c_str() <<
-                                    "\" val=\"" << ValueToString(fieldInfos.coheVVLines[i].meanVal).c_str() << "\"/>\n";
-        }
-        ss << "  </cohs>\n</fid>\n";
-
-        const std::string &ssStr = ss.str();
-        size_t byteToWrite = ssStr.size();
-        if (m_OutPlotsIdxFileStream.is_open()) {
-            m_OutPlotsIdxFileStream << fieldInfos.fieldSeqId.c_str() << ";" << m_OutPlotsIdxCurIdx << ";" << byteToWrite <<"\n";
-        }
-        m_OutPlotsIdxCurIdx += byteToWrite;
-        m_OutPlotsFileStream << ssStr.c_str();
-
+        fieldInfos.hS1GapsInfos = sumHGaps;
+        fieldInfos.pS1GapsInfos = sumPGaps;
     }
 
     double ComputeOpticalThresholdBuffer(int nVegWeeksCnt, double maxMeanNdviDropVal, double OpticalThresholdValue) {
@@ -3058,407 +2967,6 @@ private:
         return ampThrBreak;
     }
 
-
-    void PrintFieldGeneralInfos(const FieldInfoType &fieldInfos) {
-        if (!m_bDebugMode) {
-            return;
-        }
-        std::cout << "Field ID: " << fieldInfos.fieldId << std::endl;
-        std::cout << "Vegetation start: " << TimeToString(fieldInfos.ttVegStartTime) << std::endl;
-        std::cout << "Vegetation start floor time: " << TimeToString(fieldInfos.ttVegStartWeekFloorTime) << std::endl;
-        std::cout << "Vegetation start WEEK No: " <<  fieldInfos.vegStartWeekNo << std::endl;
-        std::cout << "Harvest start: " << TimeToString(fieldInfos.ttHarvestStartTime) << std::endl;
-        std::cout << "Harvest start floor time: " << TimeToString(fieldInfos.ttHarvestStartWeekFloorTime) << std::endl;
-        std::cout << "Harvest start WEEK No: " <<  fieldInfos.harvestStartWeekNo << std::endl;
-        std::cout << "Harvest end : " << TimeToString(fieldInfos.ttHarvestEndTime) << std::endl;
-        std::cout << "Harvest end floor time: " << TimeToString(fieldInfos.ttHarvestEndWeekFloorTime) << std::endl;
-
-    }
-    void PrintMergedValues(const std::vector<MergedAllValInfosType> &mergedVals, double ampThrValue) {
-        if (!m_bDebugMode) {
-            return;
-        }
-
-        std::cout << "Printing merged values" << std::endl;
-        std::cout << "Amplitude threshold value is: " << ValueToString(ampThrValue) << std::endl;
-
-        std::cout << "   Date  coh.max   coh.change  grd.mean  grd.max grd.change " << std::endl;
-
-        for(size_t i = 0; i < mergedVals.size(); i++) {
-            const MergedAllValInfosType &val = mergedVals[i];
-            std::cout << i + 1 << " " <<
-                         TimeToString(val.ttDate) << " " <<
-                         ValueToString(val.cohMax) << " " <<
-                         ValueToString(val.cohChange) << " " <<
-                         ValueToString(val.ampMean) << " " <<
-                         ValueToString(val.ampMax) << " " <<
-                         ValueToString(val.ampChange) << std::endl;
-        }
-        std::cout << "   ndvi.mean ndvi.prev   ndvi.next  veg.weeks ndvi.presence  ndvi.drop" << std::endl;
-        for(size_t i = 0; i < mergedVals.size(); i++) {
-            const MergedAllValInfosType &val = mergedVals[i];
-            std::cout << i + 1 << " " <<
-                         ValueToString(val.ndviMeanVal) << " " <<
-                         ValueToString(val.ndviPrev) << " " <<
-                         ValueToString(val.ndviNext) << " " <<
-                         ValueToString(val.vegWeeks, true) << " " <<
-                         ValueToString(val.ndviPresence, true) << " " <<
-                         ValueToString(val.ndviDrop, true) << " " <<
-                         std::endl;
-        }
-        std::cout << "   candidate.opt coh.base   coh.high  coh.presence candidate.coh  candidate.grd" << std::endl;
-        for(size_t i = 0; i < mergedVals.size(); i++) {
-            const MergedAllValInfosType &val = mergedVals[i];
-            std::cout << i + 1 << " " <<
-                         ValueToString(val.candidateOptical, true) << " " <<
-                         ValueToString(val.coherenceBase, true) << " " <<
-                         ValueToString(val.coherenceHigh, true) << " " <<
-                         ValueToString(val.coherencePresence, true) << " " <<
-                         ValueToString(val.candidateCoherence, true) << " " <<
-                         ValueToString(val.candidateAmplitude, true) << " " <<
-                         std::endl;
-        }
-        std::cout << "   grd.presence " << std::endl;
-        for(size_t i = 0; i < mergedVals.size(); i++) {
-            const MergedAllValInfosType &val = mergedVals[i];
-            std::cout << i + 1 << " " <<
-                         ValueToString(val.amplitudePresence, true) << " " <<
-                         std::endl;
-        }
-
-    }
-
-    void PrintAmplitudeInfos(const FieldInfoType &fieldInfos) {
-        if (!m_bDebugMode) {
-            return;
-        }
-
-        std::cout << "Printing amplitude values:" << std::endl;
-        for (size_t i = 0; i<fieldInfos.mergedAmpInfos.size(); i++) {
-            const MergedDateAmplitudeType &val = fieldInfos.mergedAmpInfos[i];
-            std::cout << i + 1 << " " <<
-                         TimeToString(val.ttDate) << " " <<
-                         ValueToString(val.vvInfo.meanVal) << " " <<
-                         ValueToString(val.vvInfo.stdDev) << " " <<
-                         ValueToString(val.vvInfo.weekNo) << " " <<
-                         TimeToString(val.vvInfo.ttDateFloor) << " " <<
-
-                         ValueToString(val.vhInfo.meanVal) << " " <<
-                         ValueToString(val.vhInfo.stdDev) << " " <<
-                         ValueToString(val.vhInfo.weekNo) << " " <<
-                         TimeToString(val.vhInfo.ttDateFloor) << " " <<
-
-                         ValueToString(val.ampRatio) << std::endl;
-        }
-    }
-
-    void PrintAmpGroupedMeanValues(const std::vector<GroupedMeanValInfosType> &values) {
-        if (!m_bDebugMode) {
-            return;
-        }
-
-        std::cout << "Printing amplitude grouped mean values:" << std::endl;
-        for (size_t i = 0; i<values.size(); i++) {
-            const GroupedMeanValInfosType &val = values[i];
-            std::cout << i + 1 << " " <<
-                         TimeToString(val.ttDate) << " " <<
-                         ValueToString(val.meanVal) << " " <<
-                         ValueToString(val.maxVal) << " " <<
-                         ValueToString(val.ampChange) << std::endl;
-        }
-    }
-
-    void PrintNdviInfos(const FieldInfoType &fieldInfos) {
-        if (!m_bDebugMode) {
-            return;
-        }
-
-        std::cout << "Printing NDVI values:" << std::endl;
-        for (size_t i = 0; i<fieldInfos.ndviLines.size(); i++) {
-            const InputFileLineInfoType &val = fieldInfos.ndviLines[i];
-            std::cout << i + 1 << " " <<
-                         TimeToString(val.ttDate) << " " <<
-                         ValueToString(val.meanVal) << " " <<
-                         ValueToString(val.stdDev) << " " <<
-                         ValueToString(val.weekNo) << " " <<
-                         TimeToString(val.ttDateFloor) << std::endl;
-        }
-    }
-
-    void PrintNdviGroupedMeanValues(const std::vector<GroupedMeanValInfosType> &values) {
-        if (!m_bDebugMode) {
-            return;
-        }
-
-        std::cout << "Printing NDVI Grouped mean values:" << std::endl;
-        for (size_t i = 0; i<values.size(); i++) {
-            const GroupedMeanValInfosType &val = values[i];
-            std::cout << i + 1 << " " <<
-                         TimeToString(val.ttDate) << " " <<
-                         ValueToString(val.meanVal) << std::endl;
-        }
-    }
-
-    void PrintCoherenceInfos(const FieldInfoType &fieldInfos) {
-        if (!m_bDebugMode) {
-            return;
-        }
-
-        std::cout << "Printing Coherence values:" << std::endl;
-        for (size_t i = 0; i<fieldInfos.coheVVLines.size(); i++) {
-            const InputFileLineInfoType &val = fieldInfos.coheVVLines[i];
-            std::cout << i + 1 << " " <<
-                         TimeToString(val.ttDate) << " " <<
-                         TimeToString(val.ttDate2) << " " <<
-                         ValueToString(val.meanVal) << " " <<
-                         ValueToString(val.stdDev) << " " <<
-                         ValueToString(val.weekNo) << " " <<
-                         TimeToString(val.ttDateFloor) << " " <<
-                         ValueToString(val.meanValChange) << " " <<
-                         std::endl;
-        }
-    }
-
-    void PrintCoherenceGroupedMeanValues(const std::vector<GroupedMeanValInfosType> &values) {
-        if (!m_bDebugMode) {
-            return;
-        }
-
-        std::cout << "Printing Coherence Grouped Mean values:" << std::endl;
-        for (size_t i = 0; i<values.size(); i++) {
-            const GroupedMeanValInfosType &val = values[i];
-            std::cout << i + 1 << " " <<
-                         TimeToString(val.ttDate) << " " <<
-                         ValueToString(val.maxVal) << " " <<
-                         ValueToString(val.maxChangeVal) << std::endl;
-        }
-    }
-
-    void PrintHarvestEvaluation(const FieldInfoType &fieldInfo, HarvestInfoType &harvestInfo) {
-        if (!m_bDebugMode) {
-            return;
-        }
-
-        std::cout << "Printing Harvest Evaluation:" << std::endl;
-        std::cout << "FIELD_ID COUNTRY YEAR MAIN_CROP VEG_START H_START H_END PRACTICE" << std::endl;
-        std::cout << 0 << fieldInfo.fieldId << " " << fieldInfo.countryCode << " " << fieldInfo.mainCrop << " " <<
-                     // VEG_START H_START H_END;"
-                     TimeToString(fieldInfo.ttVegStartTime) << " " << TimeToString(fieldInfo.ttHarvestStartTime) << " " <<
-                     // H_END PRACTICE
-                     TimeToString(fieldInfo.ttHarvestEndTime) << " " << fieldInfo.practiceName << std::endl;
-
-        std::cout << "P_TYPE P_START P_END M1 M2 M3 M4 M5 H_WEEK M6 M7 M8 M9" << std::endl;
-        // "P_TYPE P_START P_END;
-        std::cout << fieldInfo.practiceName << " " << fieldInfo.practiceType << " " << TimeToString(fieldInfo.ttPracticeStartTime) << " " <<
-                     TimeToString(fieldInfo.ttPracticeEndTime) << " " <<
-                    // M1;M2;
-                    ValueToString(harvestInfo.evaluation.ndviPresence, true) << " " << ValueToString(harvestInfo.evaluation.candidateOptical, true) << " " <<
-                    // M3;M4;
-                    ValueToString(harvestInfo.evaluation.candidateAmplitude, true) << " " << ValueToString(harvestInfo.evaluation.amplitudePresence, true) << " " <<
-                    // M5;H_WEEK;
-                    ValueToString(harvestInfo.evaluation.candidateCoherence, true) << " " << ValueToString(harvestInfo.evaluation.harvestConfirmWeek) << " "
-                  << std::endl;
-
-        std::cout << "M10 C_INDEX" << std::endl;
-
-        //                     // M6;M7;
-        //                     efaHarvestInfo.evaluation.ndviPresence << ";" << efaHarvestInfo.evaluation.ndviGrowth << ";" <<
-        //                     // M8;M9;
-        //                     efaHarvestInfo.evaluation.ndviNoLoss << ";" << efaHarvestInfo.evaluation.ampNoLoss << ";" <<
-        //                      //M10;C_INDEX
-        //                     efaHarvestInfo.evaluation.cohNoLoss << ";" << efaHarvestInfo.evaluation.efaIndex
-
-    }
-
-
-    void PrintEfaMarkers(const std::vector<MergedAllValInfosType> &allMergedValues,
-                         const std::vector<EfaMarkersInfoType> &efaMarkers) {
-        if (!m_bDebugMode) {
-            return;
-        }
-        std::cout << "Printing EFA Markers:" << std::endl;
-        std::cout << "Group.1   coh.max coh.change grd.mean  grd.max ndvi.mean ndvi.presence" << std::endl;
-        for (size_t i = 0; i<efaMarkers.size(); i++) {
-            std::cout << i+1 << " " << TimeToString(allMergedValues[i].ttDate) <<  " " << ValueToString(allMergedValues[i].cohMax) <<  " "
-                      << ValueToString(allMergedValues[i].cohChange) << " " << ValueToString(allMergedValues[i].ampMean) << " " <<
-                         ValueToString(allMergedValues[i].ampMax) <<  " " << ValueToString(allMergedValues[i].ndviMeanVal) << " " <<
-                         ValueToString(efaMarkers[i].ndviPresence, true)
-                      << std::endl;
-        }
-        std::cout << "ndvi.drop ndvi.growth ndvi.noloss grd.noloss coh.noloss" << std::endl;
-        for (size_t i = 0; i<efaMarkers.size(); i++) {
-            std::cout << i + 1 << " " << ValueToString(efaMarkers[i].ndviDrop, true) << " " << ValueToString(efaMarkers[i].ndviGrowth, true) << " "  <<
-                         ValueToString(efaMarkers[i].ndviNoLoss, true) << " "  << ValueToString(efaMarkers[i].ampNoLoss, true) << " "  <<
-                         ValueToString(efaMarkers[i].cohNoLoss, true) << " "
-                         << std::endl;
-        }
-    }
-
-    bool FillAmpCoheGroupsGaps(const std::vector<GroupedMeanValInfosType> &ampRatioGroups,
-                               const std::vector<GroupedMeanValInfosType> &coherenceGroups,
-                               std::vector<MergedAllValInfosType> &retAllMergedValues) {
-        if(!m_bAllowGaps || !m_bGapsFill || retAllMergedValues.size() == 0) {
-            return false;
-        }
-        AddMissingGapEntries(ampRatioGroups, retAllMergedValues, true);
-        AddMissingGapEntries(coherenceGroups, retAllMergedValues, false);
-        FillNotAvailableGaps(retAllMergedValues);
-
-        return true;
-    }
-
-    void AddMissingGapEntries(const std::vector<GroupedMeanValInfosType> &groups,
-                           std::vector<MergedAllValInfosType> &retAllMergedValues, bool bIsAmp) {
-        for(size_t i = 0; i<groups.size(); i++) {
-            bool bFound = false;
-            for (size_t j = 0; j<retAllMergedValues.size(); j++) {
-                if (groups[i].ttDate == retAllMergedValues[j].ttDate) {
-                    bFound = true;
-                    break;
-                }
-            }
-            if (!bFound) {
-                MergedAllValInfosType mergedVal;
-                const GroupedMeanValInfosType &item = groups[i];
-
-                mergedVal.ttDate = item.ttDate;
-                mergedVal.ampMean = bIsAmp ? item.meanVal : NOT_AVAILABLE;
-                mergedVal.ampMax = bIsAmp ? item.maxVal : NOT_AVAILABLE;
-                mergedVal.ampChange = bIsAmp ? item.ampChange : NOT_AVAILABLE;
-
-                mergedVal.cohChange = bIsAmp ? NOT_AVAILABLE : item.maxChangeVal;
-                mergedVal.cohMax = bIsAmp ? NOT_AVAILABLE : item.maxVal;
-
-                // add it at the end, it will be sorted later
-                retAllMergedValues.push_back(mergedVal);
-            }
-        }
-        // Now sort by date retAllMergedValues
-        std::sort(retAllMergedValues.begin(), retAllMergedValues.end(),
-                  TimedValInfosComparator<MergedAllValInfosType>());
-    }
-
-    void FillNotAvailableGaps(std::vector<MergedAllValInfosType> &retAllMergedValues) {
-        int prevValidAmpIdx = -1;
-        int prevValidCoheIdx = -1;
-        for (size_t i = 0; i<retAllMergedValues.size(); i++) {
-            if (IsNA(retAllMergedValues[i].ampMean)) {
-                // we have a gap filled item for amplitude
-                if (prevValidAmpIdx != -1) {
-                    retAllMergedValues[i].ampMean = retAllMergedValues[prevValidAmpIdx].ampMean;
-                    retAllMergedValues[i].ampMax = retAllMergedValues[prevValidAmpIdx].ampMax;
-                    retAllMergedValues[i].ampChange = retAllMergedValues[prevValidAmpIdx].ampChange;
-                    prevValidAmpIdx = i;    // make it a valid one
-                }
-            } else {
-                // make it a valid one
-                prevValidAmpIdx = i;
-            }
-            if (IsNA(retAllMergedValues[i].cohChange)) {
-                if (prevValidCoheIdx != -1) {
-                    retAllMergedValues[i].cohChange = retAllMergedValues[prevValidCoheIdx].cohChange;
-                    retAllMergedValues[i].cohMax = retAllMergedValues[prevValidCoheIdx].cohMax;
-                    prevValidCoheIdx = i;    // make it a valid one
-                }
-            } else {
-                // make it a valid one
-                prevValidCoheIdx = i;
-            }
-        }
-
-        // second iteration to fill items that were not filled at the first iteration due to unavailable of prev
-        // now use next to fill the first ones
-        prevValidAmpIdx = -1;
-        prevValidCoheIdx = -1;
-        for (int i = (int)retAllMergedValues.size()-1; i >= 0; i--) {
-            if (IsNA(retAllMergedValues[i].ampMean)) {
-                if (prevValidAmpIdx != -1) {
-                    // normally, this should happen all the time
-                    retAllMergedValues[i].ampMean = retAllMergedValues[prevValidAmpIdx].ampMean;
-                    retAllMergedValues[i].ampMax = retAllMergedValues[prevValidAmpIdx].ampMax;
-                    retAllMergedValues[i].ampChange = retAllMergedValues[prevValidAmpIdx].ampChange;
-                    prevValidAmpIdx = i;    // make it a valid one
-                }
-            } else {
-                prevValidAmpIdx = i;    // make it a valid one
-            }
-            if (IsNA(retAllMergedValues[i].cohChange)) {
-                if (prevValidCoheIdx != -1) {
-                    // normally, this should happen all the time
-                    retAllMergedValues[i].cohChange = retAllMergedValues[prevValidCoheIdx].cohChange;
-                    retAllMergedValues[i].cohMax = retAllMergedValues[prevValidCoheIdx].cohMax;
-                    prevValidCoheIdx = i;    // make it a valid one
-                }
-            } else {
-                // make it a valid one
-                prevValidCoheIdx = i;
-            }
-        }
-    }
-
-//    void TestBoostGregorian() {
-//        time_t ttTime = FloorWeekDate(2012, 1);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2012, 2);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2012, 3);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2012, 4);
-//        PrintTime(ttTime);
-
-//        ttTime = FloorWeekDate(2015, 1);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2015, 2);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2015, 3);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2015, 4);
-//        PrintTime(ttTime);
-
-//        ttTime = FloorWeekDate(2016, 1);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2016, 2);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2016, 3);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2016, 4);
-//        PrintTime(ttTime);
-//        ttTime = FloorWeekDate(2016, 24);
-//        PrintTime(ttTime);
-//    }
-
-
-//    void PrintTime(time_t ttTime) {
-//        std::tm * ptm = std::localtime(&ttTime);
-//        char buffer[32];
-//        // Format: Mo, 15.06.2009 20:20:00
-//        std::strftime(buffer, 32, "%a, %Y-%m-%d", ptm);
-//        std::cout << "Formatted time_t: " << buffer << std::endl;
-//    }
-
-//    void TestComputeSlope() {
-//        std::vector<std::string> xStr = {"2017-10-03", "2017-10-05", "2017-10-06", "2017-10-09", "2017-10-11", "2017-10-12",
-//                                         "2017-10-15", "2017-10-17", "2017-10-18", "2017-10-21", "2017-10-23", "2017-10-24",
-//                                         "2017-10-27", "2017-10-29", "2017-10-30", "2017-11-02", "2017-11-04"};
-//        std::vector<double> y = {3.466435, 3.906034, 3.566496, 4.002097, 3.786935, 4.099542, 3.795383, 3.575887, 3.239278,
-//                                 3.495796, 3.542520, 3.855183, 3.756771, 2.588200, 2.889339, 3.709943, 3.188229};
-//        std::vector<double> x;
-//        x.reserve(xStr.size());
-//        std::transform(xStr.begin(), xStr.end(),
-//                       std::back_inserter(x), [](std::string f){return GetTimeFromString(f) / SEC_IN_DAY;});
-//        double slope;
-//        ComputeSlope(x, y, slope);
-//        std::vector<double> result = GetLinearFit(x, y);
-
-//        // Compute the standard deviation
-//        double meanVal = 0;
-//        double stdDevVal = 0;
-//        ComputeMeanAndStandardDeviation(x, meanVal, stdDevVal);
-//        double stdErr = meanVal/std::sqrt(x.size());
-//        std::cout << stdErr << std::endl;
-
-//    }
-
 private:
     std::unique_ptr<StatisticsInfosReaderBase> m_pAmpReader;
     std::unique_ptr<StatisticsInfosReaderBase> m_pNdviReader;
@@ -3467,17 +2975,9 @@ private:
     std::unique_ptr<PracticeReaderBase> m_pPracticeReader;
 
     std::string m_outputDir;
-    std::ofstream m_OutFileStream;
-    std::ofstream m_OutContinousPrdFileStream;
     std::string m_countryName;
     std::string m_practiceName;
     std::string m_year;
-
-    std::ofstream m_OutPlotsFileStream;
-    std::ofstream m_OutPlotsIdxFileStream;
-    uintmax_t m_OutPlotsIdxCurIdx;
-
-
 
     double m_OpticalThrVegCycle;
     // for MARKER 2 - NDVI loss
@@ -3528,9 +3028,12 @@ private:
     std::string m_NitrogenFixingCropVal;
 
     // # optional: in case graphs shall be generated set the value to TRUE otherwise set to FALSE
-    bool m_bPlotOutputGraph;
-    // # optional: in case continuos products (csv file) shall be generated set the value to TRUE otherwise set to FALSE
-    bool m_bResultContinuousProduct;
+    TsaPlotsWriter m_plotsWriter;
+    TsaCSVWriter m_csvWriter;
+    TsaContinuousFileWriter m_contFileWriter;
+    TsaDebugPrinter m_debugPrinter;
+
+    TsaPrevPrdReader m_prevPrdReader;
 
     bool m_bAllowGaps;
     bool m_bGapsFill;

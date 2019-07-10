@@ -1,4 +1,5 @@
 #include "CountryInfoBase.h"
+#include "CommonFunctions.h"
 
 CountryInfoBase::CountryInfoBase()
 {
@@ -19,6 +20,7 @@ CountryInfoBase::CountryInfoBase()
 void CountryInfoBase::InitializeIndexes(const AttributeEntry &firstOgrFeat)
 {
     m_SeqIdFieldIdx = firstOgrFeat.GetFieldIndex(SEQ_UNIQUE_ID);
+    m_OrigIdFieldIdx = firstOgrFeat.GetFieldIndex(ORIG_UNIQUE_ID);
     m_LandCoverFieldIdx = firstOgrFeat.GetFieldIndex(LC_VAL);
     if (m_LandCoverFieldIdx == -1) {
         // Check if maybe we have the the old CR_CAT_VAL Field
@@ -34,7 +36,6 @@ void CountryInfoBase::InitializeIndexes(const AttributeEntry &firstOgrFeat)
     m_CTIdx = firstOgrFeat.GetFieldIndex("CT");
     m_S1PixIdx = firstOgrFeat.GetFieldIndex("S1Pix");
     m_S2PixIdx = firstOgrFeat.GetFieldIndex("S2Pix");
-
 }
 
 void CountryInfoBase::SetAdditionalFiles(const std::vector<std::string> &additionalFiles) {
@@ -115,6 +116,7 @@ void CountryInfoBase::ParseCsvFile(const std::string &filePath,
     MapHdrIdx headerLineMap;
     while (std::getline(fileStream, line))
     {
+        line = trim(line, " \"\r");
         // first line should be the header
         std::vector<std::string> lineItems = GetInputFileLineElements(line);
         if (curLine++ == 0) {

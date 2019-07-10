@@ -240,6 +240,9 @@ private:
         }
         const std::string &outFileName = GetParameterAsString("out");
         m_outPracticesFileStream.open(outFileName, std::ios_base::trunc | std::ios_base::out );
+        if (!m_outPracticesFileStream.is_open()) {
+            otbAppLogFATAL("Cannot open output file " << outFileName);
+        }
         WritePracticesFileHeader();
 
         if (HasValue("addfiles")) {
@@ -315,7 +318,7 @@ private:
             m_outPracticesFileStream << "SEQ_ID\n";
         } else {
             // # create result csv file for harvest and EFA practice evaluation
-            m_outPracticesFileStream << "FIELD_ID;SEQ_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;PRACTICE;P_TYPE;P_START;P_END;"
+            m_outPracticesFileStream << "SEQ_ID;FIELD_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;PRACTICE;P_TYPE;P_START;P_END;"
                                         "GeomValid;Duplic;Overlap;Area_meter;ShapeInd;CTnum;CT;LC;S1Pix;S2Pix\n";
         }
     }
@@ -336,7 +339,7 @@ private:
         if (m_bWriteIdsOnlyFile) {
             m_outPracticesFileStream << seqId << "\n";
         } else {
-            m_outPracticesFileStream << uid.c_str() << ";" << seqId << ";" << m_country.c_str() << ";" << m_year.c_str() << ";";
+            m_outPracticesFileStream << seqId << ";" << uid.c_str() << ";" << m_country.c_str() << ";" << m_year.c_str() << ";";
             m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetMainCrop(ogrFeat)).c_str() << ";";
             m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetVegStart()).c_str() << ";";
             m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetHStart(ogrFeat)).c_str() << ";";

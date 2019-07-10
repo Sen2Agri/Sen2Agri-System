@@ -5,6 +5,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time.hpp>
 
 #include "CommonDefs.h"
 
@@ -31,11 +32,37 @@ inline time_t to_time_t(const boost::gregorian::date& date ){
     return time_t(secs);
 }
 
+template <typename T>
+inline std::string ValueToString(T value, bool isBool = false)
+{
+    if (value == NOT_AVAILABLE) {
+        return NA_STR;
+    }
+    if (value == NR) {
+        return NR_STR;
+    }
+    if (value == NOT_AVAILABLE_1) {
+        return NA1_STR;
+    }
+
+    if (isBool) {
+        return value == true ? "TRUE" : "FALSE";
+    }
+    if (std::is_same<T, double>::value) {
+        std::stringstream stream;
+        stream << std::fixed << std::setprecision(7) << value;
+        return stream.str();
+    }
+    return std::to_string(value);
+}
+
 inline std::string TimeToString(time_t ttTime) {
     if (ttTime == 0 || ttTime == NOT_AVAILABLE) {
-        return "NA";
+        return NA_STR;
     } else if (ttTime == NR) {
-        return "NR";
+        return NR_STR;
+    } else if (ttTime == NOT_AVAILABLE_1) {
+        return NA1_STR;
     }
     std::tm * ptm = std::gmtime(&ttTime);
     char buffer[20];
@@ -43,6 +70,25 @@ inline std::string TimeToString(time_t ttTime) {
     return buffer;
 }
 
+inline std::time_t pt_to_time_t(const boost::posix_time::ptime& pt)
+{
+    boost::posix_time::ptime timet_start(boost::gregorian::date(1970,1,1));
+    boost::posix_time::time_duration diff = pt - timet_start;
+    return diff.ticks()/boost::posix_time::time_duration::rep_type::ticks_per_second;
+
+}
+
+inline time_t GetTimeFromString(const std::string &strDate, const std::string &formatStr) {
+    std::locale format = std::locale(std::locale::classic(), new boost::posix_time::time_input_facet(formatStr));
+    std::istringstream is(strDate);
+    boost::posix_time::ptime pt;
+    is.imbue(format);
+    is >> pt;
+    if(pt != boost::posix_time::ptime())  {
+        return pt_to_time_t(pt);
+    }
+    return 0;
+}
 
 inline void NormalizeFieldId(std::string &fieldId) {
     std::replace( fieldId.begin(), fieldId.end(), '/', '_');
@@ -203,6 +249,5 @@ inline std::string DoubleToString(double value, int precission = 7)
     stream << std::fixed << std::setprecision(precission) << value;
     return stream.str();
 }
-
 
 #endif
