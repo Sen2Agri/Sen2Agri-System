@@ -9,7 +9,6 @@ from glob import glob
 import multiprocessing.dummy
 import os
 import os.path
-import subprocess
 import sys
 
 def get_practice(name):
@@ -33,17 +32,28 @@ def main():
     args = parser.parse_args()
     
     file=open( args.product_ids_file, "r")
-    reader = csv.reader(file)
+    reader = csv.reader(file, delimiter=";")
     for line in reader:
         if len(line) == 2 :
-            prdId = line[1]
-            prdPath = line[2]
-            
-        os.system("import-product-details.py -p ".join(prdId))
+            prdId = line[0]
+            prdPath = line[1]
         
-        exportCmd = "export-product.py -p " + prdId + " " + os.path.join(prdPath, "VECTOR_DATA", args.out)
-        
+        importCmd = "/usr/bin/import-product-details.py -p " + prdId
+        print("Executing import cmd: {}".format(importCmd))
+        os.system(importCmd)
+
+        vectDataDirPath = os.path.join(prdPath, "VECTOR_DATA")        
+        vectDataPath = os.path.join(vectDataDirPath, args.out)
+        exportCmd = "/usr/bin/export-product.py -p " + prdId + " " + vectDataPath
+        print("Executing export cmd: {}".format(exportCmd))
         os.system(exportCmd)
+
+        print ("Checking files in {}".format(vectDataDirPath))        
+        for f in glob(os.path.join(vectDataDirPath,'*.gpkg')):  
+            gpkgFileName = os.path.splitext(os.path.basename(f))[0]
+            ogr2ogrCmd = "ogr2ogr " + os.path.join(vectDataDirPath, gpkgFileName + '.shp') + " " + os.path.join(vectDataDirPath, gpkgFileName + '.gpkg') + " -lco ENCODING=UTF-8"
+            print ("Executing ogr2ogr command : {}".format(ogr2ogrCmd))
+            os.system(ogr2ogrCmd)
                 
 if __name__ == "__main__":
     sys.exit(main())

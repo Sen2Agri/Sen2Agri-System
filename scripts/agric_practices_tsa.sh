@@ -1,12 +1,47 @@
 #!/bin/bash
 
-if [ "$#" -lt 1 ]; then
-    echo "Please provide the country code (NLD|CZE|LTU|ESP|ITA|ROU)"
+function usage() {
+    echo "Usage: ./agric_practices_tsa.sh -c <COUNTRY_CODE - (NLD|CZE|LTU|ESP|ITA|ROU)> -y <YEAR>"
     exit 1
-fi
+}
 
-YEAR=2018
-COUNTRY_AND_REGION="$1"
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -c|--country)
+    COUNTRY_AND_REGION="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    -y|--year)
+    YEAR="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    *)    # unknown option
+    POSITIONAL+=("$1") # save it in an array for later
+    shift # past argument
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+echo COUNTRY        = "${COUNTRY_AND_REGION}"
+echo YEAR           = "${YEAR}"
+
+if [ -z ${COUNTRY_AND_REGION} ] ; then
+    echo "No country provided!"
+    usage
+fi 
+
+if [ -z ${YEAR} ] ; then
+    echo "No year provided!"
+    usage
+fi 
+
 COUNTRY="${COUNTRY_AND_REGION%%_*}"
 COUNTRY_REGION=""
 if [ "$1" != "$COUNTRY" ] ; then
@@ -14,34 +49,32 @@ if [ "$1" != "$COUNTRY" ] ; then
     COUNTRY_REGION="${1##*_}"
 fi    
 
-PRD_TYPE="$2"
-
 SHP_PATH=""
 IN_SHP_NAME=""
 
 WORKING_DIR_ROOT="/mnt/archive/agric_practices"
 INSITU_ROOT="$WORKING_DIR_ROOT/insitu/PracticesInfos"
 OUTPUTS_ROOT="${WORKING_DIR_ROOT}/Outputs/${COUNTRY_AND_REGION}/"
-OUT_FILE_NAME="${COUNTRY}_2018_${PRD_TYPE}_Extracted_Data.csv"
 INPUTS_EXTRACTED_DATA_ROOT="${OUTPUTS_ROOT}/DataExtractionResults/Compact/"
 OUT_DIR="$OUTPUTS_ROOT/TimeSeriesAnalysisResults/"
 
-FILTER_IDS_FILE="${OUT_DIR}/Sen4CAP_L4C_2018_FilterIDs.csv"
+FILTER_IDS_FILE="${OUT_DIR}/Sen4CAP_L4C_${YEAR}_FilterIDs.csv"
 
-CC_INPUT_PRACTICES_TABLE="${INSITU_ROOT}/Sen4CAP_L4C_Catch_${COUNTRY_AND_REGION}_2018.csv"
-NFC_INPUT_PRACTICES_TABLE="${INSITU_ROOT}/Sen4CAP_L4C_NFC_${COUNTRY_AND_REGION}_2018.csv"
-FL_INPUT_PRACTICES_TABLE="${INSITU_ROOT}/Sen4CAP_L4C_Fallow_${COUNTRY_AND_REGION}_2018.csv"
-NA_INPUT_PRACTICES_TABLE="${INSITU_ROOT}/Sen4CAP_L4C_NA_${COUNTRY_AND_REGION}_2018.csv"
+CC_INPUT_PRACTICES_TABLE="${INSITU_ROOT}/Sen4CAP_L4C_Catch_${COUNTRY_AND_REGION}_${YEAR}.csv"
+NFC_INPUT_PRACTICES_TABLE="${INSITU_ROOT}/Sen4CAP_L4C_NFC_${COUNTRY_AND_REGION}_${YEAR}.csv"
+FL_INPUT_PRACTICES_TABLE="${INSITU_ROOT}/Sen4CAP_L4C_Fallow_${COUNTRY_AND_REGION}_${YEAR}.csv"
+NA_INPUT_PRACTICES_TABLE="${INSITU_ROOT}/Sen4CAP_L4C_NA_${COUNTRY_AND_REGION}_${YEAR}.csv"
 
-IN_AMP_PATH="${INPUTS_EXTRACTED_DATA_ROOT}/${COUNTRY_AND_REGION}_2018_AMP_Extracted_Data.csv"
-IN_COHE_PATH="${INPUTS_EXTRACTED_DATA_ROOT}/${COUNTRY_AND_REGION}_2018_COHE_Extracted_Data.csv"
-IN_NDVI_PATH="${INPUTS_EXTRACTED_DATA_ROOT}/${COUNTRY_AND_REGION}_2018_NDVI_Extracted_Data.csv"
+IN_AMP_PATH="${INPUTS_EXTRACTED_DATA_ROOT}/${COUNTRY_AND_REGION}_${YEAR}_AMP_Extracted_Data.csv"
+IN_COHE_PATH="${INPUTS_EXTRACTED_DATA_ROOT}/${COUNTRY_AND_REGION}_${YEAR}_COHE_Extracted_Data.csv"
+IN_NDVI_PATH="${INPUTS_EXTRACTED_DATA_ROOT}/${COUNTRY_AND_REGION}_${YEAR}_NDVI_Extracted_Data.csv"
 
 DEBUG_MODE=0
 ALLOW_GAPS=1
 FILL_GAPS=0
 PLOT_GRAPH=1
 RES_CONT_PRD=0
+MIN_ACQS=15
 
 EXECUTE_CC=1
 EXECUTE_FL=1
@@ -73,7 +106,7 @@ EFAAMPTHR="-10000"
 STDDEVINAMPTHR=1 
 OPTTHRBUFDEN=4 
 AMPTHRBREAKDEN=6
-AMPTHRVALUEDEN=2
+AMPTHRVALDEN=2
 FLMARKSTARTDATE=""
 FLMARKSTENDDATE=""
 
@@ -87,7 +120,7 @@ NA_EFACOHVALUE="-10000"
 case "$COUNTRY" in
     NLD)
         CC_CATCHMAIN="CatchCrop_3" 
-        CC_CATCHPERIODSTART="2018-07-15"
+        CC_CATCHPERIODSTART="${YEAR}-07-15"
         
         CC_NDVIUP=500
         CC_AMPTHRMIN=0.2
@@ -95,14 +128,14 @@ case "$COUNTRY" in
         CC_COHTHRABS=0.7
         CC_EFAAMPTHR=0.03
         CC_AMPTHRBREAKDEN=3
-        CC_AMPTHRVALUEDEN=3
+        CC_AMPTHRVALDEN=3
         
         NA_NDVIUP=500
         NA_AMPTHRMIN=0.2
         NA_COHTHRBASE=0.1
         NA_COHTHRABS=0.7
         NA_AMPTHRBREAKDEN=3
-        NA_AMPTHRVALUEDEN=3
+        NA_AMPTHRVALDEN=3
         
         # we do not have FL and NFC
         EXECUTE_FL=""
@@ -119,7 +152,7 @@ case "$COUNTRY" in
         CC_EFAAMPTHR=0.03
         CC_CATCHMAIN="-" 
         CC_AMPTHRBREAKDEN=3
-        CC_AMPTHRVALUEDEN=3
+        CC_AMPTHRVALDEN=3
         
         FL_OPTTHRVEGCYCLE=500
         FL_COHTHRBASE=0.1
@@ -133,9 +166,9 @@ case "$COUNTRY" in
         FL_STDDEVINAMPTHR=0 
         FL_OPTTHRBUFDEN=6 
         FL_AMPTHRBREAKDEN=3
-        FL_AMPTHRVALUEDEN=3
-        FL_FLMARKSTARTDATE="2018-06-04" 
-        FL_FLMARKSTENDDATE="2018-08-31"
+        FL_AMPTHRVALDEN=3
+        FL_FLMARKSTARTDATE="${YEAR}-06-04" 
+        FL_FLMARKSTENDDATE="${YEAR}-08-31"
 
         NFC_OPTTHRVEGCYCLE=500
         NFC_COHTHRBASE=0.1
@@ -149,14 +182,14 @@ case "$COUNTRY" in
         NFC_EFACOHVALUE="-10000"
         NFC_OPTTHRBUFDEN=8
         NFC_AMPTHRBREAKDEN=3
-        NFC_AMPTHRVALUEDEN=3
+        NFC_AMPTHRVALDEN=3
 
         NA_NDVIUP=500
         NA_AMPTHRMIN=0.2
         NA_COHTHRBASE=0.1    
         NA_COHTHRABS=0.7 
         NA_AMPTHRBREAKDEN=3
-        NA_AMPTHRVALUEDEN=3
+        NA_AMPTHRVALDEN=3
         ;;
     LTU)
         CC_NDVIUP=500 
@@ -169,7 +202,7 @@ case "$COUNTRY" in
         CC_EFAAMPTHR=0.03 
         CC_OPTTHRBUFDEN=4
         CC_AMPTHRBREAKDEN=3
-        CC_AMPTHRVALUEDEN=3
+        CC_AMPTHRVALDEN=3
         
         FL_OPTTHRVEGCYCLE=400 
         FL_NDVIUP=450 
@@ -182,7 +215,7 @@ case "$COUNTRY" in
         FL_EFANDVIDW="-10000" 
         FL_OPTTHRBUFDEN=6
         FL_AMPTHRBREAKDEN=3
-        FL_AMPTHRVALUEDEN=3
+        FL_AMPTHRVALDEN=3
 
         NFC_OPTTHRVEGCYCLE=400
         NFC_NDVIUP=450  
@@ -195,14 +228,14 @@ case "$COUNTRY" in
         NFC_EFACOHCHANGE="-10000" 
         NFC_EFACOHVALUE="-10000"
         NFC_AMPTHRBREAKDEN=3
-        NFC_AMPTHRVALUEDEN=3
+        NFC_AMPTHRVALDEN=3
         
         NA_NDVIUP=500 
         NA_AMPTHRMIN=0.2
         NA_COHTHRBASE=0.1    
         NA_COHTHRABS=0.7 
         NA_AMPTHRBREAKDEN=3
-        NA_AMPTHRVALUEDEN=3
+        NA_AMPTHRVALDEN=3
         ;;
     ESP)
         EXECUTE_CC=""
@@ -221,7 +254,7 @@ case "$COUNTRY" in
         FL_STDDEVINAMPTHR=0
         FL_OPTTHRBUFDEN=6
         FL_AMPTHRBREAKDEN=3
-        FL_AMPTHRVALUEDEN=2
+        FL_AMPTHRVALDEN=2
 
         NFC_OPTTHRVEGCYCLE=325
         NFC_NDVIDW=150
@@ -237,7 +270,7 @@ case "$COUNTRY" in
         NFC_STDDEVINAMPTHR=0
         NFC_OPTTHRBUFDEN=8
         NFC_AMPTHRBREAKDEN=3
-        NFC_AMPTHRVALUEDEN=3
+        NFC_AMPTHRVALDEN=3
         
         NA_OPTTHRVEGCYCLE=325
         NA_NDVIDW=150
@@ -247,7 +280,7 @@ case "$COUNTRY" in
         NA_AMPTHRMIN=0.2
         NA_OPTTHRBUFDEN=8
         NA_AMPTHRBREAKDEN=3
-        NA_AMPTHRVALUEDEN=3
+        NA_AMPTHRVALDEN=3
         ;;
     ITA)
         EXECUTE_CC=""
@@ -267,8 +300,8 @@ case "$COUNTRY" in
         FL_STDDEVINAMPTHR=0
         FL_OPTTHRBUFDEN=6
         FL_AMPTHRBREAKDEN=3
-        FL_AMPTHRVALUEDEN=1
-        FL_FLMARKSTARTDATE="2018-03-31" 
+        FL_AMPTHRVALDEN=1
+        FL_FLMARKSTARTDATE="${YEAR}-03-31" 
 
         NFC_OPTTHRVEGCYCLE=350
         NFC_NDVIDW=300
@@ -285,7 +318,7 @@ case "$COUNTRY" in
         NFC_STDDEVINAMPTHR=1
         NFC_OPTTHRBUFDEN=6
         NFC_AMPTHRBREAKDEN=3
-        NFC_AMPTHRVALUEDEN=3
+        NFC_AMPTHRVALDEN=3
         
         NA_OPTTHRVEGCYCLE=350
         NA_NDVIDW=300
@@ -296,7 +329,7 @@ case "$COUNTRY" in
         NA_AMPTHRMIN=0.2
         NA_OPTTHRBUFDEN=6
         NA_AMPTHRBREAKDEN=3
-        NA_AMPTHRVALUEDEN=3
+        NA_AMPTHRVALDEN=3
         ;;
     ROU)
         EXECUTE_FL=""
@@ -308,13 +341,13 @@ case "$COUNTRY" in
         CC_AMPTHRMIN=0.2
         CC_CATCHMAIN="-" 
         CC_CATCHPERIOD=56
-        CC_CATCHPERIODSTART="2018-08-01"
+        CC_CATCHPERIODSTART="${YEAR}-08-01"
         CC_EFANDVIUP=350
         CC_EFAAMPTHR=0.03 
         CC_EFACOHVALUE=0.6
         CC_OPTTHRBUFDEN=6
         CC_AMPTHRBREAKDEN=4
-        CC_AMPTHRVALUEDEN=3
+        CC_AMPTHRVALDEN=3
         
         NFC_OPTTHRVEGCYCLE=400
         NFC_NDVIUP=400  
@@ -328,7 +361,7 @@ case "$COUNTRY" in
         NFC_EFACOHVALUE="-10000"
         NFC_OPTTHRBUFDEN=6
         NFC_AMPTHRBREAKDEN=3
-        NFC_AMPTHRVALUEDEN=3
+        NFC_AMPTHRVALDEN=3
         
         NA_OPTTHRVEGCYCLE=400
         NA_NDVIUP=400 
@@ -338,7 +371,7 @@ case "$COUNTRY" in
         NA_AMPTHRMIN=0.2
         NA_OPTTHRBUFDEN=6      
         NA_AMPTHRBREAKDEN=4
-        NA_AMPTHRVALUEDEN=3
+        NA_AMPTHRVALDEN=3
         ;;
     *)
         echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU}"
@@ -371,7 +404,7 @@ if [ -z "$CC_EFAAMPTHR" ];          then CC_EFAAMPTHR="$EFAAMPTHR" ; fi
 if [ -z "$CC_STDDEVINAMPTHR" ];     then CC_STDDEVINAMPTHR="$STDDEVINAMPTHR" ; fi 
 if [ -z "$CC_OPTTHRBUFDEN" ];       then CC_OPTTHRBUFDEN="$OPTTHRBUFDEN" ; fi 
 if [ -z "$CC_AMPTHRBREAKDEN" ];     then CC_AMPTHRBREAKDEN="$AMPTHRBREAKDEN" ; fi 
-if [ -z "$CC_AMPTHRVALUEDEN" ];     then CC_AMPTHRVALUEDEN="$AMPTHRVALUEDEN" ; fi 
+if [ -z "$CC_AMPTHRVALDEN" ];     then CC_AMPTHRVALDEN="$AMPTHRVALDEN" ; fi 
 
 if [ -n "$CC_OPTTHRVEGCYCLE" ];     then CC_OPTTHRVEGCYCLE="-optthrvegcycle \"$CC_OPTTHRVEGCYCLE\" " ; fi
 if [ -n "$CC_NDVIDW" ];             then CC_NDVIDW="-ndvidw \"$CC_NDVIDW\" " ; fi
@@ -397,7 +430,7 @@ if [ -n "$CC_EFAAMPTHR" ];          then CC_EFAAMPTHR="-efaampthr \"$CC_EFAAMPTH
 if [ -n "$CC_STDDEVINAMPTHR" ];     then CC_STDDEVINAMPTHR="-stddevinampthr \"$CC_STDDEVINAMPTHR\" " ; fi
 if [ -n "$CC_OPTTHRBUFDEN" ];       then CC_OPTTHRBUFDEN="-optthrbufden \"$CC_OPTTHRBUFDEN\" " ; fi
 if [ -n "$CC_AMPTHRBREAKDEN" ];     then CC_AMPTHRBREAKDEN="-ampthrbreakden \"$CC_AMPTHRBREAKDEN\" " ; fi
-if [ -n "$CC_AMPTHRVALUEDEN" ];     then CC_AMPTHRVALUEDEN="-ampthrvalden \"$CC_AMPTHRVALUEDEN\" " ; fi
+if [ -n "$CC_AMPTHRVALDEN" ];     then CC_AMPTHRVALDEN="-ampthrvalden \"$CC_AMPTHRVALDEN\" " ; fi
 
 if [ -z "$NFC_OPTTHRVEGCYCLE" ];     then NFC_OPTTHRVEGCYCLE="$OPTTHRVEGCYCLE" ; fi 
 if [ -z "$NFC_NDVIDW" ];             then NFC_NDVIDW="$NDVIDW" ; fi 
@@ -418,7 +451,7 @@ if [ -z "$NFC_EFAAMPTHR" ];          then NFC_EFAAMPTHR="$EFAAMPTHR" ; fi
 if [ -z "$NFC_STDDEVINAMPTHR" ];     then NFC_STDDEVINAMPTHR="$STDDEVINAMPTHR" ; fi 
 if [ -z "$NFC_OPTTHRBUFDEN" ];       then NFC_OPTTHRBUFDEN="$OPTTHRBUFDEN" ; fi 
 if [ -z "$NFC_AMPTHRBREAKDEN" ];     then NFC_AMPTHRBREAKDEN="$AMPTHRBREAKDEN" ; fi 
-if [ -z "$NFC_AMPTHRVALUEDEN" ];     then NFC_AMPTHRVALUEDEN="$AMPTHRVALUEDEN" ; fi 
+if [ -z "$NFC_AMPTHRVALDEN" ];     then NFC_AMPTHRVALDEN="$AMPTHRVALDEN" ; fi 
 
 
 if [ -n "$NFC_OPTTHRVEGCYCLE" ];     then NFC_OPTTHRVEGCYCLE="-optthrvegcycle \"$NFC_OPTTHRVEGCYCLE\" " ; fi
@@ -440,7 +473,7 @@ if [ -n "$NFC_EFAAMPTHR" ];          then NFC_EFAAMPTHR="-efaampthr \"$NFC_EFAAM
 if [ -n "$NFC_STDDEVINAMPTHR" ];     then NFC_STDDEVINAMPTHR="-stddevinampthr \"$NFC_STDDEVINAMPTHR\" " ; fi
 if [ -n "$NFC_OPTTHRBUFDEN" ];       then NFC_OPTTHRBUFDEN="-optthrbufden \"$NFC_OPTTHRBUFDEN\" " ; fi
 if [ -n "$NFC_AMPTHRBREAKDEN" ];     then NFC_AMPTHRBREAKDEN="-ampthrbreakden \"$NFC_AMPTHRBREAKDEN\" " ; fi
-if [ -n "$NFC_AMPTHRVALUEDEN" ];     then NFC_AMPTHRVALUEDEN="-ampthrvalden \"$NFC_AMPTHRVALUEDEN\" " ; fi
+if [ -n "$NFC_AMPTHRVALDEN" ];     then NFC_AMPTHRVALDEN="-ampthrvalden \"$NFC_AMPTHRVALDEN\" " ; fi
 
 
 if [ -z "$FL_OPTTHRVEGCYCLE" ];     then FL_OPTTHRVEGCYCLE="$OPTTHRVEGCYCLE" ; fi 
@@ -462,7 +495,7 @@ if [ -z "$FL_EFAAMPTHR" ];          then FL_EFAAMPTHR="$EFAAMPTHR" ; fi
 if [ -z "$FL_STDDEVINAMPTHR" ];     then FL_STDDEVINAMPTHR="$STDDEVINAMPTHR" ; fi 
 if [ -z "$FL_OPTTHRBUFDEN" ];       then FL_OPTTHRBUFDEN="$OPTTHRBUFDEN" ; fi 
 if [ -z "$FL_AMPTHRBREAKDEN" ];     then FL_AMPTHRBREAKDEN="$AMPTHRBREAKDEN" ; fi 
-if [ -z "$FL_AMPTHRVALUEDEN" ];     then FL_AMPTHRVALUEDEN="$AMPTHRVALUEDEN" ; fi 
+if [ -z "$FL_AMPTHRVALDEN" ];     then FL_AMPTHRVALDEN="$AMPTHRVALDEN" ; fi 
 if [ -z "$FL_FLMARKSTARTDATE" ];    then FL_FLMARKSTARTDATE="$FLMARKSTARTDATE" ; fi 
 if [ -z "$FL_FLMARKSTENDDATE" ];    then FL_FLMARKSTENDDATE="$FLMARKSTENDDATE" ; fi 
 
@@ -485,7 +518,7 @@ if [ -n "$FL_EFAAMPTHR" ];          then FL_EFAAMPTHR="-efaampthr \"$FL_EFAAMPTH
 if [ -n "$FL_STDDEVINAMPTHR" ];     then FL_STDDEVINAMPTHR="-stddevinampthr \"$FL_STDDEVINAMPTHR\" " ; fi
 if [ -n "$FL_OPTTHRBUFDEN" ];       then FL_OPTTHRBUFDEN="-optthrbufden \"$FL_OPTTHRBUFDEN\" " ; fi
 if [ -n "$FL_AMPTHRBREAKDEN" ];     then FL_AMPTHRBREAKDEN="-ampthrbreakden \"$FL_AMPTHRBREAKDEN\" " ; fi
-if [ -n "$FL_AMPTHRVALUEDEN" ];     then FL_AMPTHRVALUEDEN="-ampthrvalden \"$FL_AMPTHRVALUEDEN\" " ; fi
+if [ -n "$FL_AMPTHRVALDEN" ];     then FL_AMPTHRVALDEN="-ampthrvalden \"$FL_AMPTHRVALDEN\" " ; fi
 if [ -n "$FL_FLMARKSTARTDATE" ];    then FL_FLMARKSTARTDATE="-flmarkstartdate $FL_FLMARKSTARTDATE" ; fi 
 if [ -n "$FL_FLMARKSTENDDATE" ];    then FL_FLMARKSTENDDATE="-flmarkstenddate $FL_FLMARKSTENDDATE" ; fi 
 
@@ -508,7 +541,7 @@ if [ -z "$NA_EFAAMPTHR" ];          then NA_EFAAMPTHR="$EFAAMPTHR" ; fi
 if [ -z "$NA_STDDEVINAMPTHR" ];     then NA_STDDEVINAMPTHR="$STDDEVINAMPTHR" ; fi 
 if [ -z "$NA_OPTTHRBUFDEN" ];       then NA_OPTTHRBUFDEN="$OPTTHRBUFDEN" ; fi 
 if [ -z "$NA_AMPTHRBREAKDEN" ];     then NA_AMPTHRBREAKDEN="$AMPTHRBREAKDEN" ; fi 
-if [ -z "$NA_AMPTHRVALUEDEN" ];     then NA_AMPTHRVALUEDEN="$AMPTHRVALUEDEN" ; fi 
+if [ -z "$NA_AMPTHRVALDEN" ];     then NA_AMPTHRVALDEN="$AMPTHRVALDEN" ; fi 
 
 if [ -n "$NA_OPTTHRVEGCYCLE" ];     then NA_OPTTHRVEGCYCLE="-optthrvegcycle \"$NA_OPTTHRVEGCYCLE\" " ; fi
 if [ -n "$NA_NDVIDW" ];             then NA_NDVIDW="-ndvidw \"$NA_NDVIDW\" " ; fi
@@ -529,13 +562,13 @@ if [ -n "$NA_EFAAMPTHR" ];          then NA_EFAAMPTHR="-efaampthr \"$NA_EFAAMPTH
 if [ -n "$NA_STDDEVINAMPTHR" ];     then NA_STDDEVINAMPTHR="-stddevinampthr \"$NA_STDDEVINAMPTHR\" " ; fi
 if [ -n "$NA_OPTTHRBUFDEN" ];       then NA_OPTTHRBUFDEN="-optthrbufden \"$NA_OPTTHRBUFDEN\" " ; fi
 if [ -n "$NA_AMPTHRBREAKDEN" ];     then NA_AMPTHRBREAKDEN="-ampthrbreakden \"$NA_AMPTHRBREAKDEN\" " ; fi
-if [ -n "$NA_AMPTHRVALUEDEN" ];     then NA_AMPTHRVALUEDEN="-ampthrvalden \"$NA_AMPTHRVALUEDEN\" " ; fi
+if [ -n "$NA_AMPTHRVALDEN" ];     then NA_AMPTHRVALDEN="-ampthrvalden \"$NA_AMPTHRVALDEN\" " ; fi
 
 mkdir -p "$OUT_DIR"
 
 # Execute CC
 if [ ! -z "$EXECUTE_CC" ] ; then
-    CMD="otbcli TimeSeriesAnalysis sen2agri-processors-build -intype csv -debug $DEBUG_MODE -allowgaps $ALLOW_GAPS -gapsfill $FILL_GAPS -plotgraph $PLOT_GRAPH -rescontprd $RES_CONT_PRD -country $COUNTRY -practice \"CatchCrop\" -year $YEAR $CC_OPTTHRVEGCYCLE $CC_NDVIDW $CC_NDVIUP $CC_NDVISTEP $CC_OPTTHRMIN $CC_COHTHRBASE $CC_COHTHRHIGH $CC_COHTHRABS $CC_AMPTHRMIN $CC_CATCHMAIN $CC_CATCHCROPISMAIN $CC_CATCHPERIOD $CC_CATCHPROPORTION $CC_CATCHPERIODSTART $CC_EFANDVITHR $CC_EFANDVIUP $CC_EFANDVIDW $CC_EFACOHCHANGE $CC_EFACOHVALUE $CC_EFANDVIMIN $CC_EFAAMPTHR $CC_STDDEVINAMPTHR $CC_OPTTHRBUFDEN $CC_AMPTHRBREAKDEN $CC_AMPTHRVALUEDEN -s1pixthr ${S1PIX} -harvestshp $CC_INPUT_PRACTICES_TABLE -diramp ${IN_AMP_PATH} -dircohe ${IN_COHE_PATH} -dirndvi ${IN_NDVI_PATH} -outdir ${OUT_DIR}"
+    CMD="otbcli TimeSeriesAnalysis sen2agri-processors-build -intype csv -debug $DEBUG_MODE -allowgaps $ALLOW_GAPS -gapsfill $FILL_GAPS -plotgraph $PLOT_GRAPH -rescontprd $RES_CONT_PRD -minacqs $MIN_ACQS -country $COUNTRY -practice \"CatchCrop\" -year $YEAR $CC_OPTTHRVEGCYCLE $CC_NDVIDW $CC_NDVIUP $CC_NDVISTEP $CC_OPTTHRMIN $CC_COHTHRBASE $CC_COHTHRHIGH $CC_COHTHRABS $CC_AMPTHRMIN $CC_CATCHMAIN $CC_CATCHCROPISMAIN $CC_CATCHPERIOD $CC_CATCHPROPORTION $CC_CATCHPERIODSTART $CC_EFANDVITHR $CC_EFANDVIUP $CC_EFANDVIDW $CC_EFACOHCHANGE $CC_EFACOHVALUE $CC_EFANDVIMIN $CC_EFAAMPTHR $CC_STDDEVINAMPTHR $CC_OPTTHRBUFDEN $CC_AMPTHRBREAKDEN $CC_AMPTHRVALDEN -s1pixthr ${S1PIX} -harvestshp $CC_INPUT_PRACTICES_TABLE -diramp ${IN_AMP_PATH} -dircohe ${IN_COHE_PATH} -dirndvi ${IN_NDVI_PATH} -outdir ${OUT_DIR}"
     echo "Executing ${CMD}"
     
     #Execute the command
@@ -543,7 +576,7 @@ if [ ! -z "$EXECUTE_CC" ] ; then
 fi 
 
 if [ ! -z "$EXECUTE_FL" ] ; then
-    CMD="otbcli TimeSeriesAnalysis sen2agri-processors-build/ -intype csv -debug $DEBUG_MODE -allowgaps $ALLOW_GAPS -gapsfill $FILL_GAPS -plotgraph $PLOT_GRAPH -rescontprd $RES_CONT_PRD -country $COUNTRY -practice \"Fallow\" -year $YEAR $FL_OPTTHRVEGCYCLE $FL_NDVIDW $FL_NDVIUP $FL_NDVISTEP $FL_OPTTHRMIN $FL_COHTHRBASE $FL_COHTHRHIGH $FL_COHTHRABS $FL_AMPTHRMIN $FL_EFANDVITHR $FL_EFANDVIUP $FL_EFANDVIDW $FL_EFACOHCHANGE $FL_EFACOHVALUE $FL_EFANDVIMIN $FL_EFAAMPTHR $FL_STDDEVINAMPTHR $FL_OPTTHRBUFDEN $FL_AMPTHRBREAKDEN $FL_AMPTHRVALUEDEN $FL_FLMARKSTARTDATE $FL_FLMARKSTENDDATE -s1pixthr ${S1PIX} -harvestshp $FL_INPUT_PRACTICES_TABLE -diramp ${IN_AMP_PATH} -dircohe ${IN_COHE_PATH} -dirndvi ${IN_NDVI_PATH} -outdir ${OUT_DIR}"
+    CMD="otbcli TimeSeriesAnalysis sen2agri-processors-build/ -intype csv -debug $DEBUG_MODE -allowgaps $ALLOW_GAPS -gapsfill $FILL_GAPS -plotgraph $PLOT_GRAPH -rescontprd $RES_CONT_PRD -minacqs $MIN_ACQS -country $COUNTRY -practice \"Fallow\" -year $YEAR $FL_OPTTHRVEGCYCLE $FL_NDVIDW $FL_NDVIUP $FL_NDVISTEP $FL_OPTTHRMIN $FL_COHTHRBASE $FL_COHTHRHIGH $FL_COHTHRABS $FL_AMPTHRMIN $FL_EFANDVITHR $FL_EFANDVIUP $FL_EFANDVIDW $FL_EFACOHCHANGE $FL_EFACOHVALUE $FL_EFANDVIMIN $FL_EFAAMPTHR $FL_STDDEVINAMPTHR $FL_OPTTHRBUFDEN $FL_AMPTHRBREAKDEN $FL_AMPTHRVALDEN $FL_FLMARKSTARTDATE $FL_FLMARKSTENDDATE -s1pixthr ${S1PIX} -harvestshp $FL_INPUT_PRACTICES_TABLE -diramp ${IN_AMP_PATH} -dircohe ${IN_COHE_PATH} -dirndvi ${IN_NDVI_PATH} -outdir ${OUT_DIR}"
     
     echo "Executing ${CMD}"
     
@@ -552,7 +585,7 @@ if [ ! -z "$EXECUTE_FL" ] ; then
 fi
 
 if [ ! -z "$EXECUTE_NFC" ] ; then
-    CMD="otbcli TimeSeriesAnalysis sen2agri-processors-build/ -intype csv -debug $DEBUG_MODE -allowgaps $ALLOW_GAPS -gapsfill $FILL_GAPS -plotgraph $PLOT_GRAPH -rescontprd $RES_CONT_PRD -country $COUNTRY -practice \"NFC\" -year $YEAR $NFC_OPTTHRVEGCYCLE $NFC_NDVIDW $NFC_NDVIUP $NFC_NDVISTEP $NFC_OPTTHRMIN $NFC_COHTHRBASE $NFC_COHTHRHIGH $NFC_COHTHRABS $NFC_AMPTHRMIN $NFC_EFANDVITHR $NFC_EFANDVIUP $NFC_EFANDVIDW $NFC_EFACOHCHANGE $NFC_EFACOHVALUE $NFC_EFANDVIMIN $NFC_EFAAMPTHR $NFC_STDDEVINAMPTHR $NFC_OPTTHRBUFDEN $NFC_AMPTHRBREAKDEN $NFC_AMPTHRVALUEDEN -s1pixthr ${S1PIX} -harvestshp $NFC_INPUT_PRACTICES_TABLE -diramp ${IN_AMP_PATH} -dircohe ${IN_COHE_PATH} -dirndvi ${IN_NDVI_PATH} -outdir ${OUT_DIR}"
+    CMD="otbcli TimeSeriesAnalysis sen2agri-processors-build/ -intype csv -debug $DEBUG_MODE -allowgaps $ALLOW_GAPS -gapsfill $FILL_GAPS -plotgraph $PLOT_GRAPH -rescontprd $RES_CONT_PRD -minacqs $MIN_ACQS -country $COUNTRY -practice \"NFC\" -year $YEAR $NFC_OPTTHRVEGCYCLE $NFC_NDVIDW $NFC_NDVIUP $NFC_NDVISTEP $NFC_OPTTHRMIN $NFC_COHTHRBASE $NFC_COHTHRHIGH $NFC_COHTHRABS $NFC_AMPTHRMIN $NFC_EFANDVITHR $NFC_EFANDVIUP $NFC_EFANDVIDW $NFC_EFACOHCHANGE $NFC_EFACOHVALUE $NFC_EFANDVIMIN $NFC_EFAAMPTHR $NFC_STDDEVINAMPTHR $NFC_OPTTHRBUFDEN $NFC_AMPTHRBREAKDEN $NFC_AMPTHRVALDEN -s1pixthr ${S1PIX} -harvestshp $NFC_INPUT_PRACTICES_TABLE -diramp ${IN_AMP_PATH} -dircohe ${IN_COHE_PATH} -dirndvi ${IN_NDVI_PATH} -outdir ${OUT_DIR}"
     
     echo "Executing ${CMD}"
     
@@ -562,7 +595,7 @@ fi
 
 
 # Executing for all parcels not EFA monitored
-CMD="otbcli TimeSeriesAnalysis sen2agri-processors-build -intype csv -debug $DEBUG_MODE -allowgaps $ALLOW_GAPS -gapsfill $FILL_GAPS -plotgraph $PLOT_GRAPH -rescontprd $RES_CONT_PRD -country $COUNTRY -year $YEAR $NA_OPTTHRVEGCYCLE $NA_NDVIDW $NA_NDVIUP $NA_NDVISTEP $NA_OPTTHRMIN $NA_COHTHRBASE $NA_COHTHRHIGH $NA_COHTHRABS $NA_AMPTHRMIN $NA_EFANDVITHR $NA_EFANDVIUP $NA_EFANDVIDW $NA_EFACOHCHANGE $NA_EFACOHVALUE $NA_EFANDVIMIN $NA_EFAAMPTHR $NA_STDDEVINAMPTHR $NA_OPTTHRBUFDEN $NA_AMPTHRBREAKDEN $NA_AMPTHRVALUEDEN -s1pixthr ${S1PIX} -harvestshp $NA_INPUT_PRACTICES_TABLE -diramp ${IN_AMP_PATH} -dircohe ${IN_COHE_PATH} -dirndvi ${IN_NDVI_PATH} -outdir ${OUT_DIR}"
+CMD="otbcli TimeSeriesAnalysis sen2agri-processors-build -intype csv -debug $DEBUG_MODE -allowgaps $ALLOW_GAPS -gapsfill $FILL_GAPS -plotgraph $PLOT_GRAPH -rescontprd $RES_CONT_PRD -minacqs $MIN_ACQS -country $COUNTRY -year $YEAR $NA_OPTTHRVEGCYCLE $NA_NDVIDW $NA_NDVIUP $NA_NDVISTEP $NA_OPTTHRMIN $NA_COHTHRBASE $NA_COHTHRHIGH $NA_COHTHRABS $NA_AMPTHRMIN $NA_EFANDVITHR $NA_EFANDVIUP $NA_EFANDVIDW $NA_EFACOHCHANGE $NA_EFACOHVALUE $NA_EFANDVIMIN $NA_EFAAMPTHR $NA_STDDEVINAMPTHR $NA_OPTTHRBUFDEN $NA_AMPTHRBREAKDEN $NA_AMPTHRVALDEN -s1pixthr ${S1PIX} -harvestshp $NA_INPUT_PRACTICES_TABLE -diramp ${IN_AMP_PATH} -dircohe ${IN_COHE_PATH} -dirndvi ${IN_NDVI_PATH} -outdir ${OUT_DIR}"
 
 echo "Executing ${CMD}"
 
