@@ -15,7 +15,7 @@
 : ${PLATFORM_NAME_DIR:="Sen2AgriWebSite"}
 : ${RPM_DIR:="rpm_binaries"}
 : ${INSTALL_DIR:="install"}
-: ${SITE_VERSION:="2.0"}
+: ${SITE_VERSION:="2.0.1"}
 : ${WEB_DIR:="sen2agri-dashboard"}
 : ${SOURCES_DIR_PATH:=""}
 : ${WORKING_DIR_RPM:=${PLATFORM_NAME_DIR}/${RPM_DIR}}
