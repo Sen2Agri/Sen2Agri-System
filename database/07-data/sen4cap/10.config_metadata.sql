@@ -129,13 +129,19 @@ INSERT INTO config_metadata VALUES ('processor.l3b.sched_wait_proc_inputs', 'L3B
 
 INSERT INTO config_metadata VALUES ('processor.l4a.reference_data_dir', 'Crop Tye folder where insitu data are checked', 'string', false, 5);
 
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.training_ratio', 'Training/total samples ratio', 'float', TRUE, 5, TRUE, 'Training/total samples ratio', '{"min":"0","step":"0.5","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.num_trees', 'Number of RF trees', 'int', TRUE, 5, TRUE, 'Number of RF trees', '{"min":"0","step":"1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.sample_size', 'Sample size', 'float', TRUE, 5, TRUE, 'Sample size', '{"min":"0","step":"0.1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.count_threshold', 'Count threshold', 'int', TRUE, 5, TRUE, 'Count threshold', '{"min":"0","step":"1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.count_min', 'Minimum count', 'int', TRUE, 5, TRUE, 'Minimum count', '{"min":"0","step":"1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.smote_target', 'Target sample count for SMOTE', 'int', TRUE, 5, TRUE, 'Target sample count for SMOTE', '{"min":"0","step":"1","max":""}');
-INSERT INTO config_metadata VALUES ('processor.s4c_l4a.smote_k', 'Number of SMOTE neighbours', 'int', TRUE, 5, TRUE, 'Number of SMOTE neighbours', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.lc', 'LC classes to assess', 'string', TRUE, 5, TRUE, 'LC classes to assess', '{"min":"","step":"","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.min-s2-pix', 'Minimum number of S2 pixels', 'int', TRUE, 5, TRUE, 'Minimum number of S2 pixels', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.min-s1-pix', 'Minimum number of S1 pixels', 'int', TRUE, 5, TRUE, 'Minimum number of S1 pixels', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.best-s2-pix', 'Minimum number of S2 pixels for parcels to use in training', 'int', TRUE, 5, TRUE, 'Minimum number of S2 pixels for parcels to use in training', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.pa-min', 'Minimum parcels to assess a crop type', 'int', TRUE, 5, TRUE, 'Minimum parcels to assess a crop type', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.pa-train-h', 'Upper threshold for parcel counts by crop type', 'int', TRUE, 5, TRUE, 'Upper threshold for parcel counts by crop type', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.pa-train-l', 'Lower threshold for parcel counts by crop type', 'int', TRUE, 5, TRUE, 'Lower threshold for parcel counts by crop type', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.sample-ratio-h', 'Training ratio for common crop types', 'float', TRUE, 5, TRUE, 'Training ratio for common crop types', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.sample-ratio-l', 'Training ratio for uncommon crop types', 'float', TRUE, 5, TRUE, 'Training ratio for uncommon crop types', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.smote-target', 'Target sample count for SMOTE', 'int', TRUE, 5, TRUE, 'Target sample count for SMOTE', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.smote-k', 'Number of SMOTE neighbours', 'int', TRUE, 5, TRUE, 'Number of SMOTE neighbours', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.num-trees', 'Number of RF trees', 'int', TRUE, 5, TRUE, 'Number of RF trees', '{"min":"0","step":"1","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.min-node-size', 'Minimum node size', 'int', TRUE, 5, TRUE, 'Minimum node size', '{"min":"0","step":"1","max":""}');
 
 INSERT INTO config_metadata VALUES ('processor.s4c_l4b.input_amp', 'The list of AMP products', 'select', FALSE, 19, TRUE, 'Available AMP input files', '{"name":"inputFiles_AMP[]","product_type_id":10}');
 INSERT INTO config_metadata VALUES ('processor.s4c_l4b.input_cohe', 'The list of COHE products', 'select', FALSE, 19, TRUE, 'Available COHE input files', '{"name":"inputFiles_COHE[]","product_type_id":11}');
@@ -170,3 +176,7 @@ INSERT INTO config_metadata VALUES ('downloader.l8.forcestart', 'Forces the L8 d
 INSERT INTO config_metadata VALUES ('downloader.s1.forcestart', 'Forces the S1 download to start again from the beginning of the season', 'bool', false, 15);
 
 INSERT INTO config_metadata VALUES ('downloader.skip.existing', 'If enabled, products downloaded for another site will be duplicated, in database only, for the current site', 'bool', false, 15);
+
+INSERT INTO config_metadata VALUES ('processor.s4c_l4c.prds_per_group', 'Data extraction number of products per group', 'int', FALSE, 20);
+
+
