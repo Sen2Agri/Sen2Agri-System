@@ -614,9 +614,9 @@ private:
 //            return false;
 //        }
 
-        if (feature.GetFieldSeqId() != "170616") {
-            return false;
-        }
+//        if (feature.GetFieldSeqId() != "170616") {
+//            return false;
+//        }
 
         FieldInfoType fieldInfos(fieldId);
 
