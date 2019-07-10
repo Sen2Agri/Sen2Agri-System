@@ -12,8 +12,20 @@
 #define S1_L2A_PRD_NAME_REGEX   R"(SEN4CAP_L2A_.+_V(\d{8}T\d{6})_(\d{8}T\d{6})_.+\.tif)"
 
 #define L4C_AP_CFG_PREFIX   "processor.s4c_l4c."
+#define L4C_AP_GEN_CFG_PREFIX   "processor.s4c_l4c.cfg.gen."
 
-void AgricPracticesHandler::CreateTasks(const AgricPracticesSiteCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList,
+#define L4C_AP_GEN_CC_CFG_PREFIX   "processor.s4c_l4c.cfg.gen.cc."
+#define L4C_AP_GEN_FL_CFG_PREFIX   "processor.s4c_l4c.cfg.gen.fl."
+#define L4C_AP_GEN_NFC_CFG_PREFIX   "processor.s4c_l4c.cfg.gen.nfc."
+#define L4C_AP_GEN_NA_CFG_PREFIX   "processor.s4c_l4c.cfg.gen.na."
+
+#define L4C_AP_TSA_CFG_PREFIX   "processor.s4c_l4c.cfg.tsa."
+#define L4C_AP_TSA_CC_CFG_PREFIX   "processor.s4c_l4c.cfg.tsa.cc."
+#define L4C_AP_TSA_FL_CFG_PREFIX   "processor.s4c_l4c.cfg.tsa.fl."
+#define L4C_AP_TSA_NFC_CFG_PREFIX   "processor.s4c_l4c.cfg.tsa.nfc."
+#define L4C_AP_TSA_NA_CFG_PREFIX   "processor.s4c_l4c.cfg.tsa.na."
+
+void AgricPracticesHandler::CreateTasks(const AgricPracticesJobCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList,
                                         const QStringList &ndviPrds, const QStringList &ampPrds, const QStringList &cohePrds,
                                         AgricPractOperation operation)
 {
@@ -34,12 +46,12 @@ void AgricPracticesHandler::CreateTasks(const AgricPracticesSiteCfg &siteCfg, QL
         CreatePrdDataExtrTasks(siteCfg, outAllTasksList, "ndvi-data-extraction", ndviPrds, {outAllTasksList[idsFilterExtrIdx]},
                                operation, minNdviDataExtrIndex, maxNdviDataExtrIndex, curTaskIdx);
         CreatePrdDataExtrTasks(siteCfg, outAllTasksList, "amp-data-extraction", ampPrds, {outAllTasksList[idsFilterExtrIdx]},
-                               operation, minNdviDataExtrIndex, maxNdviDataExtrIndex, curTaskIdx);
+                               operation, minAmpDataExtrIndex, maxAmpDataExtrIndex, curTaskIdx);
         CreatePrdDataExtrTasks(siteCfg, outAllTasksList, "cohe-data-extraction", cohePrds, {outAllTasksList[idsFilterExtrIdx]},
-                               operation, minNdviDataExtrIndex, maxNdviDataExtrIndex, curTaskIdx);
+                               operation, minCoheDataExtrIndex, maxCoheDataExtrIndex, curTaskIdx);
     }
-    if (operation == all || operation == catchCrop || operation == fallow ||
-        operation == nfc || operation == harvestOnly) {
+    if (IsOperationEnabled(operation, catchCrop) || IsOperationEnabled(operation, fallow) ||
+        IsOperationEnabled(operation, nfc) || IsOperationEnabled(operation, harvestOnly)) {
         // create the merging tasks
         int ndviMergeTaskIdx = CreateMergeTasks(outAllTasksList, "ndvi-data-extraction-merge", minNdviDataExtrIndex, maxNdviDataExtrIndex, curTaskIdx);
         int ampMergeTaskIdx = CreateMergeTasks(outAllTasksList, "amp-data-extraction-merge", minAmpDataExtrIndex, maxAmpDataExtrIndex, curTaskIdx);
@@ -65,12 +77,14 @@ void AgricPracticesHandler::CreateTasks(const AgricPracticesSiteCfg &siteCfg, QL
         if (naTsaIdx != -1) {
             outAllTasksList[productFormatterIdx].parentTasks.append(outAllTasksList[naTsaIdx]);
         }
+
+        outAllTasksList.append(TaskToSubmit{ "export-product-launcher", {outAllTasksList[productFormatterIdx]} });
     }
 }
 
 void AgricPracticesHandler::CreateSteps(EventProcessingContext &ctx,
                                         const JobSubmittedEvent &event, QList<TaskToSubmit> &allTasksList,
-                                        const AgricPracticesSiteCfg &siteCfg,
+                                        const AgricPracticesJobCfg &jobCfg,
                                         const QStringList &ndviPrds, const QStringList &ampPrds, const QStringList &cohePrds,
                                         NewStepList &steps, const QDateTime &minDate, const QDateTime &maxDate,
                                         AgricPractOperation operation)
@@ -87,35 +101,43 @@ void AgricPracticesHandler::CreateSteps(EventProcessingContext &ctx,
     QStringList ampDataExtrDirs;
     QStringList coheDataExtrDirs;
     if (IsOperationEnabled(operation, dataExtraction)) {
-        idsFileName = CreateStepForLPISSelection(parameters, configParameters, operation, "", siteCfg,
+        idsFileName = CreateStepForLPISSelection(parameters, configParameters, operation, "", jobCfg,
                                                         allTasksList, steps, curTaskIdx);
 
         // create the tasks for the NDVI, AMP and COHE - they depend only on the ids extraction
-        ndviDataExtrDirs = CreateStepsForDataExtraction(parameters, configParameters, operation, siteCfg, "NDVI",
+        ndviDataExtrDirs = CreateStepsForDataExtraction(parameters, configParameters, operation, jobCfg, ProductType::L3BProductTypeId,
                                                         ndviPrds, idsFileName, allTasksList, steps, curTaskIdx);
-        ampDataExtrDirs = CreateStepsForDataExtraction(parameters, configParameters, operation, siteCfg, "AMP",
+        ampDataExtrDirs = CreateStepsForDataExtraction(parameters, configParameters, operation, jobCfg, ProductType::S4CS1L2AmpProductTypeId,
                                                        ampPrds, idsFileName, allTasksList, steps, curTaskIdx);
-        coheDataExtrDirs = CreateStepsForDataExtraction(parameters, configParameters, operation, siteCfg, "COHE",
+        coheDataExtrDirs = CreateStepsForDataExtraction(parameters, configParameters, operation, jobCfg, ProductType::S4CS1L2CoheProductTypeId,
                                                        cohePrds, idsFileName, allTasksList, steps, curTaskIdx);
+    } else {
+        // no DataExtraction is performed, we must use the directories configures in the database
+        ndviDataExtrDirs.append(GetDataExtractionDir(parameters, configParameters, ProductType::L3BProductTypeId, jobCfg.siteShortName));
+        ampDataExtrDirs.append(GetDataExtractionDir(parameters, configParameters, ProductType::S4CS1L2AmpProductTypeId, jobCfg.siteShortName));
+        coheDataExtrDirs.append(GetDataExtractionDir(parameters, configParameters, ProductType::S4CS1L2CoheProductTypeId, jobCfg.siteShortName));
     }
 
-    if (operation == all || operation == catchCrop || operation == fallow ||
-            operation == nfc || operation == harvestOnly) {
-        const QString &ndviMergedFile = CreateStepsForFilesMerge(siteCfg, "NDVI", ndviDataExtrDirs, steps, allTasksList, curTaskIdx);
-        const QString &ampMergedFile = CreateStepsForFilesMerge(siteCfg, "AMP", ampDataExtrDirs, steps, allTasksList, curTaskIdx);
-        const QString &coheMergedFile = CreateStepsForFilesMerge(siteCfg, "COHE", coheDataExtrDirs, steps, allTasksList, curTaskIdx);
+    if (IsOperationEnabled(operation, catchCrop) || IsOperationEnabled(operation, fallow) ||
+        IsOperationEnabled(operation, nfc) || IsOperationEnabled(operation, harvestOnly)) {
+        const QString &ndviMergedFile = CreateStepsForFilesMerge(jobCfg, ProductType::L3BProductTypeId, ndviDataExtrDirs, steps,
+                                                                 allTasksList, curTaskIdx);
+        const QString &ampMergedFile = CreateStepsForFilesMerge(jobCfg, ProductType::S4CS1L2AmpProductTypeId, ampDataExtrDirs, steps,
+                                                                allTasksList, curTaskIdx);
+        const QString &coheMergedFile = CreateStepsForFilesMerge(jobCfg, ProductType::S4CS1L2CoheProductTypeId, coheDataExtrDirs, steps,
+                                                                 allTasksList, curTaskIdx);
 
         QStringList productFormatterFiles;
-        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, siteCfg, "CC",
+        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, jobCfg, "CC",
                                                                ndviMergedFile, ampMergedFile, coheMergedFile, steps,
                                                                allTasksList, curTaskIdx, operation);
-        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, siteCfg, "FL",
+        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, jobCfg, "FL",
                                                                ndviMergedFile, ampMergedFile, coheMergedFile, steps,
                                                                allTasksList, curTaskIdx, operation);
-        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, siteCfg, "NFC",
+        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, jobCfg, "NFC",
                                                                ndviMergedFile, ampMergedFile, coheMergedFile, steps,
                                                                allTasksList, curTaskIdx, operation);
-        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, siteCfg, "NA",
+        productFormatterFiles += CreateTimeSeriesAnalysisSteps(parameters, configParameters, operation, jobCfg, "NA",
                                                                ndviMergedFile, ampMergedFile, coheMergedFile, steps,
                                                                allTasksList, curTaskIdx, operation);
 
@@ -123,30 +145,57 @@ void AgricPracticesHandler::CreateSteps(EventProcessingContext &ctx,
         const QStringList &productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event,
                                                                           productFormatterFiles, minDate, maxDate);
         steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
+
+        const auto & productFormatterPrdFileIdFile = productFormatterTask.GetFilePath("prd_infos.txt");
+        TaskToSubmit &exportCsvToShpProductTask = allTasksList[curTaskIdx++];
+        const QStringList &exportCsvToShpProductArgs = { "-f", productFormatterPrdFileIdFile,
+                                                          "-o", "Sen4CAP_L4C_PRACTICE_" + jobCfg.siteCfg.country + "_" + jobCfg.siteCfg.year + ".gpkg"
+                                                    };
+        steps.append(exportCsvToShpProductTask.CreateStep("export-product-launcher", exportCsvToShpProductArgs));
     }
 }
 
 void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
-                                              const JobSubmittedEvent &event)
+                                              const JobSubmittedEvent &evt)
 {
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.s4c_l4c.");
-    const QString &siteName = ctx.GetSiteShortName(event.siteId);
-    AgricPracticesSiteCfg siteCfg;
-    if (!GetSiteConfigForSiteId(ctx, event.siteId, parameters, configParameters, siteCfg)) {
+    auto parameters = QJsonDocument::fromJson(evt.parametersJson.toUtf8()).object();
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(evt.jobId, "processor.s4c_l4c.");
+    const QString &siteName = ctx.GetSiteShortName(evt.siteId);
+    const AgricPractOperation &execOper = GetExecutionOperation(parameters, configParameters);
+
+    // Moved this from the GetProcessingDefinitionImpl function as it might be time consuming and scheduler will
+    // throw exception if timeout exceeded
+    JobSubmittedEvent event;
+    int ret = UpdateJobSubmittedParamsFromSchedReq(ctx, evt, configParameters, parameters, siteName, event);
+    // no products available from the scheduling ... just mark job as done
+    if (ret == 0 && execOper == dataExtraction) {
+        ctx.MarkJobFinished(event.jobId);
+        Logger::info(QStringLiteral("Scheduled job with id %1 for site %2 marked as done as no products are availabel for now to process").
+                     arg(event.jobId).arg(event.siteId));
+        return;
+    }
+
+    AgricPracticesJobCfg jobCfg;
+    if (!GetSiteConfigForSiteId(ctx, event.siteId, parameters, configParameters, jobCfg.siteCfg)) {
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(
             QStringLiteral("Cannot find L4C configuration file for site %1\n").arg(siteName).toStdString());
     }
+    jobCfg.prdsPerGroup = GetIntConfigValue(parameters, configParameters, "prds_per_group", L4C_AP_CFG_PREFIX);
+    jobCfg.siteId = event.siteId;
+    jobCfg.siteShortName = siteName;
+    jobCfg.isScheduledJob = (ret > 0);
+    jobCfg.siteCfg.additionalFilesRootDir = QDir("/mnt/archive/insitu").filePath(siteName);
 
-    const AgricPractOperation &execOper = GetExecutionOperation(parameters, configParameters);
-
+    // TODO: Here we should check if there are files that do not have the data extraction performed within the
+    //      given interval if the requested operation is TimeSeriesAnalysis only
+    //      In this case we should force a DataExtraction for the missing files
     QDateTime minDate, maxDate;
     QStringList ndviFiles, ampFiles, coheFiles;
     ExtractProductFiles(ctx, event, ndviFiles, ampFiles, coheFiles, minDate, maxDate, execOper);
 
     QList<TaskToSubmit> allTasksList;
-    CreateTasks(siteCfg, allTasksList, ndviFiles, ampFiles, coheFiles, execOper);
+    CreateTasks(jobCfg, allTasksList, ndviFiles, ampFiles, coheFiles, execOper);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: allTasksList) {
@@ -154,7 +203,7 @@ void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
     SubmitTasks(ctx, event.jobId, allTasksListRef);
     NewStepList allSteps;
-    CreateSteps(ctx, event, allTasksList, siteCfg, ndviFiles, ampFiles, coheFiles, allSteps, minDate, maxDate,
+    CreateSteps(ctx, event, allTasksList, jobCfg, ndviFiles, ampFiles, coheFiles, allSteps, minDate, maxDate,
                 execOper);
     ctx.SubmitSteps(allSteps);
 }
@@ -163,7 +212,6 @@ void AgricPracticesHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                               const TaskFinishedEvent &event)
 {
     if (event.module == "product-formatter") {
-        ctx.MarkJobFinished(event.jobId);
 
         QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
@@ -173,15 +221,26 @@ void AgricPracticesHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             // Insert the product into the database
             QDateTime minDate, maxDate;
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
-            ctx.InsertProduct({ ProductType::S4CL4CProductTypeId, event.processorId, event.siteId,
+            int prdId = ctx.InsertProduct({ ProductType::S4CL4CProductTypeId, event.processorId, event.siteId,
                                 event.jobId, productFolder, maxDate,
                                 prodName, quicklook, footPrint, std::experimental::nullopt, TileIdList() });
 
-            // Now remove the job folder containing temporary files
-            RemoveJobFolder(ctx, event.jobId, "l3e");
+            const QString &prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) +
+                    "/" + "prd_infos.txt";
+
+            QFile file( prodFolderOutPath );
+            if ( file.open(QIODevice::ReadWrite) )
+            {
+                QTextStream stream( &file );
+                stream << prdId << ";" << productFolder << endl;
+            }
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
+    } else if (event.module == "export-product-launcher") {
+        ctx.MarkJobFinished(event.jobId);
+        // Now remove the job folder containing temporary files
+        RemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
     }
 }
 
@@ -197,18 +256,10 @@ QStringList AgricPracticesHandler::GetProductFormatterArgs(TaskToSubmit &product
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
     QString strTimePeriod = minDate.toString("yyyyMMddTHHmmss").append("_").append(maxDate.toString("yyyyMMddTHHmmss"));
-    QStringList productFormatterArgs = { "ProductFormatter",
-                                         "-destroot", targetFolder,
-                                         "-fileclass", "OPER",
-                                         "-level", "S4C_L4C",
-                                         "-vectprd", "1",
-                                         "-baseline", "01.00",
-                                         "-siteid", QString::number(event.siteId),
-                                         "-timeperiod", strTimePeriod,
-                                         "-processor", "generic",
-                                         "-outprops", outPropsPath,
-                                         "-gipp", executionInfosPath
-                                       };
+    QStringList productFormatterArgs = { "ProductFormatter", "-destroot", targetFolder, "-fileclass", "OPER",
+                                         "-level", "S4C_L4C", "-vectprd", "1", "-baseline", "01.00",
+                                         "-siteid", QString::number(event.siteId), "-timeperiod", strTimePeriod,
+                                         "-processor", "generic", "-outprops", outPropsPath, "-gipp", executionInfosPath };
     productFormatterArgs += "-processor.generic.files";
     productFormatterArgs += listFiles;
 
@@ -232,7 +283,13 @@ ProcessorJobDefinitionParams AgricPracticesHandler::GetProcessingDefinitionImpl(
     }
 
     ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.s4c_l4c."), siteId, requestOverrideCfgValues);
+    std::map<QString, QString> configParams;
+    for (const auto &p : mapCfg) {
+        configParams.emplace(p.key, p.value);
+    }
+
     // we might have an offset in days from starting the downloading products to start the S4C_L4C production
+    // TODO: Is this really needed
     int startSeasonOffset = mapCfg["processor.s4c_l4c.start_season_offset"].value.toInt();
     seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
 
@@ -240,25 +297,50 @@ ProcessorJobDefinitionParams AgricPracticesHandler::GetProcessingDefinitionImpl(
     QDateTime endDate = qScheduledDate;
     QDateTime startDate = seasonStartDate;
 
-    params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-    // Normally for PhenoNDVI we need at least 4 products available in order to be able to create a S4C_L4C product
-    // but if we do not return here, the schedule block waiting for products (that might never happen)
-    bool waitForAvailProcInputs = (mapCfg["processor.s4c_l4c.sched_wait_proc_inputs"].value.toInt() != 0);
-    if((waitForAvailProcInputs == false) || (params.productList.size() >= 4)) {
-        params.isValid = true;
-        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for S4C_L4C a number "
-                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
-                      .arg(params.productList.size())
-                      .arg(siteId)
-                      .arg(startDate.toString())
-                      .arg(endDate.toString()));
+    params.jsonParameters.append("{ \"scheduled_job\": \"1\", \"start_date\": \"" + startDate.toString("yyyyMMdd") + "\", " +
+                                 "\"end_date\": \"" + endDate.toString("yyyyMMdd") + "\", " +
+                                 "\"season_start_date\": \"" + seasonStartDate.toString("yyyyMMdd") + "\", " +
+                                 "\"season_end_date\": \"" + seasonEndDate.toString("yyyyMMdd") + "\"");
+    if(requestOverrideCfgValues.contains("product_type")) {
+        const ConfigurationParameterValue &productType = requestOverrideCfgValues["product_type"];
+        params.jsonParameters.append(", \"execution_operation\": \"" + productType.value + "\"}");
     } else {
-        Logger::debug(QStringLiteral("Scheduled job for S4C_L4C and site ID %1 with start date %2 and end date %3 "
-                                     "will not be executed (no products)!")
-                      .arg(siteId)
-                      .arg(startDate.toString())
-                      .arg(endDate.toString()));
+        params.jsonParameters.append("}");
     }
+
+    params.isValid = true;
+
+
+//    const ProductList &ndviPrdsList = ExtractMissingDataExtractionProducts(ctx, siteId, configParams, ProductType::L3BProductTypeId,
+//                                                              startDate, endDate);
+//    params.productList = FilterAndUpdateAlreadyProcessingPrds(ctx, siteId, ndviPrdsList, ProductType::L3BProductTypeId);
+
+//    const ProductList &ampPrdsList = ExtractMissingDataExtractionProducts(ctx, siteId, configParams, ProductType::S4CS1L2AmpProductTypeId,
+//                                                               startDate, endDate);
+//    params.productList += FilterAndUpdateAlreadyProcessingPrds(ctx, siteId, ampPrdsList, ProductType::S4CS1L2AmpProductTypeId);
+
+//    const ProductList &cohePrdsList = ExtractMissingDataExtractionProducts(ctx, siteId, configParams, ProductType::S4CS1L2CoheProductTypeId,
+//                                                               startDate, endDate);
+//    params.productList += FilterAndUpdateAlreadyProcessingPrds(ctx, siteId, cohePrdsList, ProductType::S4CS1L2CoheProductTypeId);
+
+//    // Normally we need at least 3 products available in order to be able to create a S4C_L4C product
+//    // but if we do not return here, the schedule block waiting for products (that might never happen)
+//    bool waitForAvailProcInputs = (mapCfg["processor.s4c_l4c.sched_wait_proc_inputs"].value.toInt() != 0);
+//    if((waitForAvailProcInputs == false) || (params.productList.size() >= 3)) {
+//        params.isValid = true;
+//        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for S4C_L4C a number "
+//                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
+//                      .arg(params.productList.size())
+//                      .arg(siteId)
+//                      .arg(startDate.toString())
+//                      .arg(endDate.toString()));
+//    } else {
+//        Logger::debug(QStringLiteral("Scheduled job for S4C_L4C and site ID %1 with start date %2 and end date %3 "
+//                                     "will not be executed (no products)!")
+//                      .arg(siteId)
+//                      .arg(startDate.toString())
+//                      .arg(endDate.toString()));
+//    }
 
     return params;
 }
@@ -273,7 +355,73 @@ bool AgricPracticesHandler::GetSiteConfigForSiteId(EventProcessingContext &ctx, 
         return false;
     }
 
-    retCfg = LoadSiteConfigFile(siteCfgFilePath, parameters, configParameters);
+    retCfg = LoadSiteConfigFile(ctx, siteId, siteCfgFilePath);
+    return true;
+}
+
+// TODO: This is the version of getting the parameters from the database instead of the file
+bool AgricPracticesHandler::GetSiteConfigForSiteId2(EventProcessingContext &ctx, int siteId, const QJsonObject &parameters,
+                                                    std::map<QString, QString> &configParameters,
+                                                    AgricPracticesSiteCfg &retCfg)
+{
+    AgricPracticesSiteCfg cfg;
+    // TODO: We could try extracting the country and the year from the site name???
+
+    cfg.country = GetStringConfigValue(parameters, configParameters, "country", L4C_AP_CFG_PREFIX);
+    cfg.year = GetStringConfigValue(parameters, configParameters, "year", L4C_AP_CFG_PREFIX);
+
+    GetLpisProductFiles(ctx, cfg.year, siteId, cfg.ndviIdsGeomShapePath, cfg.ampCoheIdsGeomShapePath, cfg.fullShapePath);
+
+    const QStringList &practices = GetStringConfigValue(parameters, configParameters, "practices", L4C_AP_CFG_PREFIX).split(",");
+    for (const QString &strPractice: practices) {
+        const QString &strTrimmedPractice = strPractice.trimmed();
+        if(!strTrimmedPractice.isEmpty()) {
+            cfg.practices.append(strTrimmedPractice);
+        }
+    }
+    // validate practices
+    TQStrQStrMap *pPracticeParams;
+    TQStrQStrMap *pTsaParams;
+
+    TQStrQStrMap practiceCfgParams;
+    TQStrQStrMap tsaCfgParams;
+
+    QString practicePrefix;
+    QString tsaPrefix;
+
+    for (const auto &practice: cfg.practices) {
+        if (practice != "CC" && practice != "FL" && practice != "NFC" && practice != "NA") {
+            throw std::runtime_error(QStringLiteral("Unsupported practice called %1.").arg(practice).toStdString());
+        }
+        if (practice == "CC") {
+            pPracticeParams = &cfg.ccPracticeParams;
+            pTsaParams = &cfg.ccTsaParams;
+            practicePrefix = L4C_AP_GEN_CC_CFG_PREFIX;
+            tsaPrefix = L4C_AP_TSA_CC_CFG_PREFIX;
+        } else if (practice == "FL") {
+            pPracticeParams = &cfg.flPracticeParams;
+            pTsaParams = &cfg.flTsaParams;
+            practicePrefix = L4C_AP_GEN_FL_CFG_PREFIX;
+            tsaPrefix = L4C_AP_TSA_FL_CFG_PREFIX;
+        } else if (practice == "NFC") {
+            pPracticeParams = &cfg.nfcPracticeParams;
+            pTsaParams = &cfg.nfcTsaParams;
+            practicePrefix = L4C_AP_GEN_NFC_CFG_PREFIX;
+            tsaPrefix = L4C_AP_TSA_NFC_CFG_PREFIX;
+        } else if (practice == "NA") {
+            pPracticeParams = &cfg.naPracticeParams;
+            pTsaParams = &cfg.naTsaParams;
+            practicePrefix = L4C_AP_GEN_NA_CFG_PREFIX;
+            tsaPrefix = L4C_AP_TSA_NA_CFG_PREFIX;
+        }
+        practiceCfgParams = FilterConfigParameters(configParameters, practicePrefix);
+        tsaCfgParams = FilterConfigParameters(configParameters, tsaPrefix);
+
+        UpdatePracticesParams(parameters, configParameters, practiceCfgParams, practicePrefix, pPracticeParams);
+        UpdatePracticesParams(parameters, configParameters, tsaCfgParams, tsaPrefix, pTsaParams);
+    }
+
+    retCfg = cfg;
     return true;
 }
 
@@ -308,21 +456,19 @@ QString AgricPracticesHandler::GetSiteConfigFilePath(const QString &siteName, co
     return strCfgPath;
 }
 
-AgricPracticesSiteCfg AgricPracticesHandler::LoadSiteConfigFile(const QString &siteCfgFilePath,
-                                                                const QJsonObject &parameters,
-                                                                std::map<QString, QString> &configParameters)
+AgricPracticesSiteCfg AgricPracticesHandler::LoadSiteConfigFile(EventProcessingContext &ctx, int siteId,
+                                                                const QString &siteCfgFilePath)
 {
     AgricPracticesSiteCfg cfg;
 
     QSettings settings(siteCfgFilePath, QSettings::IniFormat);
     QString cmnSectionKey("COMMON/");
 
-    cfg.prdsPerGroup = GetIntConfigValue(parameters, configParameters, "prds_per_group", L4C_AP_CFG_PREFIX);
     cfg.country = settings.value( cmnSectionKey + "COUNTRY").toString();
     cfg.year = settings.value( cmnSectionKey + "YEAR").toString();
-    cfg.fullShapePath = settings.value( cmnSectionKey + "FULL_SHP").toString();
-    cfg.ndviIdsGeomShapePath = settings.value( cmnSectionKey + "NDVI_IDS_SHP").toString();
-    cfg.ampCoheIdsGeomShapePath = settings.value( cmnSectionKey + "AMP_COHE_IDS_SHP").toString();
+    cfg.tsaMinAcqsNo = settings.value( cmnSectionKey + "TSA_MIN_ACQ_NO").toString();
+
+    GetLpisProductFiles(ctx, cfg.year, siteId, cfg.ndviIdsGeomShapePath, cfg.ampCoheIdsGeomShapePath, cfg.fullShapePath);
     cfg.practices = GetListValue(settings, cmnSectionKey + "PRACTICES");
     // validate practices
     for (const auto &practice: cfg.practices) {
@@ -336,12 +482,12 @@ AgricPracticesSiteCfg AgricPracticesHandler::LoadSiteConfigFile(const QString &s
     }
 
     // Load the default practices
-    const PracticesTableExtractionParams &defParams = LoadPracticesParams(settings, "");
-    const TsaPracticeParams &defTsaParams = LoadTsaParams(settings, "");
+    const TQStrQStrMap &defParams = LoadParamsFromFile(settings, "", "DEFAULT_PRACTICES_PARAMS", cfg);
+    const TQStrQStrMap &defTsaParams = LoadParamsFromFile(settings, "", "DEFAULT_TIME_SERIES_ANALYSIS_PARAMS", cfg);
     // Parameters used for practices tables extraction
     for (const QString &practice: cfg.practices) {
-        PracticesTableExtractionParams *pPracticeParams;
-        TsaPracticeParams *pTsaParams;
+        TQStrQStrMap *pPracticeParams;
+        TQStrQStrMap *pTsaParams;
         if (practice == "CC") {
             pPracticeParams = &cfg.ccPracticeParams;
             pTsaParams = &cfg.ccTsaParams;
@@ -356,10 +502,10 @@ AgricPracticesSiteCfg AgricPracticesHandler::LoadSiteConfigFile(const QString &s
             pTsaParams = &cfg.naTsaParams;
         }
 
-        (*pPracticeParams) = LoadPracticesParams(settings, practice);
-        (*pTsaParams) = LoadTsaParams(settings, practice);
+        (*pPracticeParams) = LoadParamsFromFile(settings, practice, practice + "_PRACTICES_PARAMS", cfg);
+        (*pTsaParams) = LoadParamsFromFile(settings, practice, practice + "_TIME_SERIES_ANALYSIS_PARAMS", cfg);
         UpdatePracticesParams(defParams, *pPracticeParams);
-        UpdateTsaParams(defTsaParams, *pTsaParams);
+        UpdatePracticesParams(defTsaParams, *pTsaParams);
     }
 
     return cfg;
@@ -417,116 +563,73 @@ QStringList AgricPracticesHandler::ExtractCoheFiles(EventProcessingContext &ctx,
 }
 
 
-QStringList AgricPracticesHandler::GetIdsExtractorArgs(const AgricPracticesSiteCfg &siteCfg, const QString &outFile,
+QStringList AgricPracticesHandler::GetIdsExtractorArgs(const AgricPracticesJobCfg &jobCfg, const QString &outFile,
                                                        const QString &finalTargetDir)
 {
-    QStringList retArgs = { "LPISDataSelection",
-                            "-inshp", siteCfg.fullShapePath,
-                            "-country", siteCfg.country,
-                            "-seqidsonly", "1",
-                            "-out", outFile
-                      };
+    QStringList retArgs = { "LPISDataSelection", "-inshp", jobCfg.siteCfg.fullShapePath, "-country", jobCfg.siteCfg.country,
+                            "-seqidsonly", "1", "-out", outFile };
     if (finalTargetDir.size() > 0) {
         retArgs += "-copydir";
         retArgs += finalTargetDir;
     }
-    if (siteCfg.naPracticeParams.additionalFiles.size() > 0) {
+    TQStrQStrMap::const_iterator itFiles = jobCfg.siteCfg.naPracticeParams.find("addfiles");
+    if (itFiles != jobCfg.siteCfg.naPracticeParams.end() && itFiles->second.trimmed().size() > 0) {
         retArgs += "-addfiles";
-        retArgs += siteCfg.naPracticeParams.additionalFiles;
+        retArgs += GetAdditionalFilesAsList(itFiles->second, jobCfg.siteCfg);
     }
     return retArgs;
-
 }
 
-QStringList AgricPracticesHandler::GetPracticesExtractionArgs(const AgricPracticesSiteCfg &siteCfg, const QString &outFile,
+QStringList AgricPracticesHandler::GetPracticesExtractionArgs(const AgricPracticesJobCfg &jobCfg, const QString &outFile,
                                                               const QString &practice, const QString &finalTargetDir)
 {
-    const PracticesTableExtractionParams *pPracticeParams = 0;
+    const TQStrQStrMap *pPracticeParams = 0;
     QString dataSelPractice = GetTsaExpectedPractice(practice);
     if (practice == "CC") {
-        pPracticeParams = &(siteCfg.ccPracticeParams);
+        pPracticeParams = &(jobCfg.siteCfg.ccPracticeParams);
     } else if (practice == "FL") {
-        pPracticeParams = &(siteCfg.flPracticeParams);
+        pPracticeParams = &(jobCfg.siteCfg.flPracticeParams);
     } else if (practice == "NFC") {
-        pPracticeParams = &(siteCfg.nfcPracticeParams);
+        pPracticeParams = &(jobCfg.siteCfg.nfcPracticeParams);
     } else if (practice == "NA") {
-        pPracticeParams = &(siteCfg.naPracticeParams);
+        pPracticeParams = &(jobCfg.siteCfg.naPracticeParams);
     }
 
-    QStringList retArgs = { "LPISDataSelection",
-                            "-inshp", siteCfg.fullShapePath,
-                            "-country", siteCfg.country,
-                            "-practice", dataSelPractice,
-                            "-year", siteCfg.year,
-                            "-out", outFile
-                      };
+    QStringList retArgs = { "LPISDataSelection", "-inshp", jobCfg.siteCfg.fullShapePath, "-country", jobCfg.siteCfg.country,
+                            "-practice", dataSelPractice, "-year", jobCfg.siteCfg.year, "-out", outFile };
 
     if (finalTargetDir.size() > 0) {
         retArgs += "-copydir";
         retArgs += finalTargetDir;
     }
 
-    if (pPracticeParams->vegStart.size() > 0) {
-        retArgs += "-vegstart";
-        retArgs += pPracticeParams->hstart;
-    }
-    if (pPracticeParams->hstart.size() > 0) {
-        retArgs += "-hstart";
-        retArgs += pPracticeParams->hstart;
-    }
-    if (pPracticeParams->hend.size() > 0) {
-        retArgs += "-hend";
-        retArgs += pPracticeParams->hend;
-    }
-    if (pPracticeParams->hstartw.size() > 0) {
-        retArgs += "-hwinterstart";
-        retArgs += pPracticeParams->hstartw;
-    }
-    if (pPracticeParams->pstart.size() > 0) {
-        retArgs += "-pstart";
-        retArgs += pPracticeParams->pstart;
-    }
-    if (pPracticeParams->pend.size() > 0) {
-        retArgs += "-pend";
-        retArgs += pPracticeParams->pend;
-    }
-    if (pPracticeParams->pstartw.size() > 0) {
-        retArgs += "-wpstart";
-        retArgs += pPracticeParams->pstartw;
-    }
-    if (pPracticeParams->pendw.size() > 0) {
-        retArgs += "-wpend";
-        retArgs += pPracticeParams->pendw;
+    for (TQStrQStrMap::const_iterator it=pPracticeParams->begin(); it!=pPracticeParams->end(); ++it) {
+        if (it->second.size() > 0) {
+            retArgs += ("-" + it->first);
+            if (it->first == "addfiles") {
+                retArgs += GetAdditionalFilesAsList(it->second, jobCfg.siteCfg);
+            } else {
+                retArgs += it->second;
+            }
+        }
     }
 
-    if (pPracticeParams->additionalFiles.size() > 0) {
-        retArgs += "-addfiles";
-        retArgs += pPracticeParams->additionalFiles;
-    }
     return retArgs;
 
 }
 
-QStringList AgricPracticesHandler::GetDataExtractionArgs(const AgricPracticesSiteCfg &siteCfg, const QString &filterIdsFile,
-                                                         const QString &prdType, const QString &uidField,
+QStringList AgricPracticesHandler::GetDataExtractionArgs(const AgricPracticesJobCfg &jobCfg, const QString &filterIdsFile,
+                                                         const ProductType &prdType, const QString &uidField,
                                                          const QStringList &inputFiles, const QString &outDir)
 {
-    QStringList retArgs = { "AgricPractDataExtraction",
-                            "-oldnf", "0",
-                            "-minmax", "0",
-                            "-csvcompact", "1",
-                            "-field", uidField,
-                            "-prdtype", prdType,
-                            "-outdir", outDir,
-                            "-filterids", filterIdsFile,
-                            "-il"
-                      };
+    QStringList retArgs = { "AgricPractDataExtraction", "-oldnf", "0", "-minmax", "0", "-csvcompact", "1", "-field", uidField,
+                            "-prdtype", GetShortNameForProductType(prdType), "-outdir", outDir, "-filterids", filterIdsFile, "-il" };
     retArgs += inputFiles;
     const QString *idsGeomShapePath;
-    if (prdType == "NDVI") {
-        idsGeomShapePath = &(siteCfg.ndviIdsGeomShapePath);
+    if (prdType == ProductType::L3BProductTypeId) {
+        idsGeomShapePath = &(jobCfg.siteCfg.ndviIdsGeomShapePath);
     } else {
-        idsGeomShapePath = &(siteCfg.ampCoheIdsGeomShapePath);
+        idsGeomShapePath = &(jobCfg.siteCfg.ampCoheIdsGeomShapePath);
     }
     if (idsGeomShapePath->size() > 0) {
         retArgs += "-vec";
@@ -539,173 +642,63 @@ QStringList AgricPracticesHandler::GetDataExtractionArgs(const AgricPracticesSit
 
 QStringList AgricPracticesHandler::GetFilesMergeArgs(const QStringList &listInputPaths, const QString &outFileName)
 {
-    QStringList retArgs = { "AgricPractMergeDataExtractionFiles",
-                            "-csvcompact", "0",
-                            "-outformat", "csv",
-                            "-out", outFileName,
-                            "-il"
-                      };
+    QStringList retArgs = { "AgricPractMergeDataExtractionFiles", "-csvcompact", "1", "-outformat", "csv", "-out", outFileName, "-il" };
     retArgs += listInputPaths;
     return retArgs;
 }
 
-QStringList AgricPracticesHandler::GetTimeSeriesAnalysisArgs(const AgricPracticesSiteCfg &siteCfg, const QString &practice, const QString &practicesFile,
+QStringList AgricPracticesHandler::GetTimeSeriesAnalysisArgs(const AgricPracticesJobCfg &siteJobCfg, const QString &practice, const QString &practicesFile,
                                                              const QString &inNdviFile, const QString &inAmpFile, const QString &inCoheFile,
                                                              const QString &outDir)
 {
-    const TsaPracticeParams *pTsaPracticeParams = 0;
+    const TQStrQStrMap *pTsaPracticeParams = 0;
     QString tsaExpectedPractice = GetTsaExpectedPractice(practice);
     if (practice == "CC") {
-        pTsaPracticeParams = &(siteCfg.ccTsaParams);
+        pTsaPracticeParams = &(siteJobCfg.siteCfg.ccTsaParams);
     } else if (practice == "FL") {
-        pTsaPracticeParams = &(siteCfg.flTsaParams);
+        pTsaPracticeParams = &(siteJobCfg.siteCfg.flTsaParams);
     } else if (practice == "NFC") {
-        pTsaPracticeParams = &(siteCfg.nfcTsaParams);
+        pTsaPracticeParams = &(siteJobCfg.siteCfg.nfcTsaParams);
     } else if (practice == "NA") {
-        pTsaPracticeParams = &(siteCfg.naTsaParams);
+        pTsaPracticeParams = &(siteJobCfg.siteCfg.naTsaParams);
     }
-    QStringList retArgs = { "TimeSeriesAnalysis",
-                            "-intype", "csv",
-                            "-debug", "0",
-                            "-allowgaps", "1",
-                            "-gapsfill", "0",
-                            "-plotgraph", "1",
-                            "-rescontprd", "0",
-                            "-country", siteCfg.country,
-                            "-practice", tsaExpectedPractice,
-                            "-year", siteCfg.year,
-                            "-harvestshp", practicesFile,
-                            "-diramp", inAmpFile,
-                            "-dircohe", inCoheFile,
-                            "-dirndvi", inNdviFile,
-                            "-outdir", outDir
-                      };
-    if (pTsaPracticeParams->optthrvegcycle.size() > 0) {
-        retArgs += "-optthrvegcycle";
-        retArgs += pTsaPracticeParams->optthrvegcycle;
+    QStringList retArgs = { "TimeSeriesAnalysis", "-intype", "csv", "-debug", "0", "-allowgaps", "1", "-gapsfill", "0", "-plotgraph", "1",
+                            "-rescontprd", "0", "-country", siteJobCfg.siteCfg.country, "-practice", tsaExpectedPractice, "-year", siteJobCfg.siteCfg.year,
+                            "-harvestshp", practicesFile, "-diramp", inAmpFile, "-dircohe", inCoheFile, "-dirndvi", inNdviFile,
+                            "-outdir", outDir };
+    if (siteJobCfg.siteCfg.tsaMinAcqsNo.size() > 0) {
+        retArgs += "-minacqs";
+        retArgs += siteJobCfg.siteCfg.tsaMinAcqsNo;
     }
-    if (pTsaPracticeParams->ndvidw.size() > 0) {
-        retArgs += "-ndvidw";
-        retArgs += pTsaPracticeParams->ndvidw;
+    for (TQStrQStrMap::const_iterator it=pTsaPracticeParams->begin(); it!=pTsaPracticeParams->end(); ++it) {
+        if (it->second.size() > 0) {
+            retArgs += ("-" + it->first);
+            retArgs += it->second;
+        }
     }
-    if (pTsaPracticeParams->ndviup.size() > 0) {
-        retArgs += "-ndviup";
-        retArgs += pTsaPracticeParams->ndviup;
-    }
-    if (pTsaPracticeParams->ndvistep.size() > 0) {
-        retArgs += "-ndvistep";
-        retArgs += pTsaPracticeParams->ndvistep;
-    }
-    if (pTsaPracticeParams->optthrmin.size() > 0) {
-        retArgs += "-optthrmin";
-        retArgs += pTsaPracticeParams->optthrmin;
-    }
-    if (pTsaPracticeParams->cohthrbase.size() > 0) {
-        retArgs += "-cohthrbase";
-        retArgs += pTsaPracticeParams->cohthrbase;
-    }
-    if (pTsaPracticeParams->cohthrhigh.size() > 0) {
-        retArgs += "-cohthrhigh";
-        retArgs += pTsaPracticeParams->cohthrhigh;
-    }
-    if (pTsaPracticeParams->cohthrabs.size() > 0) {
-        retArgs += "-cohthrabs";
-        retArgs += pTsaPracticeParams->cohthrabs;
-    }
-    if (pTsaPracticeParams->ampthrmin.size() > 0) {
-        retArgs += "-ampthrmin";
-        retArgs += pTsaPracticeParams->ampthrmin;
-    }
-    if (pTsaPracticeParams->efandvithr.size() > 0) {
-        retArgs += "-efandvithr";
-        retArgs += pTsaPracticeParams->efandvithr;
-    }
-    if (pTsaPracticeParams->efandviup.size() > 0) {
-        retArgs += "-efandviup";
-        retArgs += pTsaPracticeParams->efandviup;
-    }
-    if (pTsaPracticeParams->efandvidw.size() > 0) {
-        retArgs += "-efandvidw";
-        retArgs += pTsaPracticeParams->efandvidw;
-    }
-    if (pTsaPracticeParams->efacohchange.size() > 0) {
-        retArgs += "-efacohchange";
-        retArgs += pTsaPracticeParams->efacohchange;
-    }
-    if (pTsaPracticeParams->efacohvalue.size() > 0) {
-        retArgs += "-efacohvalue";
-        retArgs += pTsaPracticeParams->efacohvalue;
-    }
-    if (pTsaPracticeParams->efandvimin.size() > 0) {
-        retArgs += "-efandvimin";
-        retArgs += pTsaPracticeParams->efandvimin;
-    }
-    if (pTsaPracticeParams->efaampthr.size() > 0) {
-        retArgs += "-efaampthr";
-        retArgs += pTsaPracticeParams->efaampthr;
-    }
-    if (pTsaPracticeParams->stddevinampthr.size() > 0) {
-        retArgs += "-stddevinampthr";
-        retArgs += pTsaPracticeParams->stddevinampthr;
-    }
-    if (pTsaPracticeParams->optthrbufden.size() > 0) {
-        retArgs += "-optthrbufden";
-        retArgs += pTsaPracticeParams->optthrbufden;
-    }
-
-    // CC and FL specific
-    if (pTsaPracticeParams->catchmain.size() > 0) {
-        retArgs += "-catchmain";
-        retArgs += pTsaPracticeParams->catchmain;
-    }
-    if (pTsaPracticeParams->catchperiod.size() > 0) {
-        retArgs += "-catchperiod";
-        retArgs += pTsaPracticeParams->catchperiod;
-    }
-    if (pTsaPracticeParams->catchperiodstart.size() > 0) {
-        retArgs += "-catchperiodstart";
-        retArgs += pTsaPracticeParams->catchperiodstart;
-    }
-    if (pTsaPracticeParams->catchcropismain.size() > 0) {
-        retArgs += "-catchcropismain";
-        retArgs += pTsaPracticeParams->catchcropismain;
-    }
-    if (pTsaPracticeParams->catchproportion.size() > 0) {
-        retArgs += "-catchproportion";
-        retArgs += pTsaPracticeParams->catchproportion;
-    }
-
-    if (pTsaPracticeParams->flmarkstartdate.size() > 0) {
-        retArgs += "-flmarkstartdate";
-        retArgs += pTsaPracticeParams->flmarkstartdate;
-    }
-    if (pTsaPracticeParams->flmarkstenddate.size() > 0) {
-        retArgs += "-flmarkstenddate";
-        retArgs += pTsaPracticeParams->flmarkstenddate;
-    }
-
     return retArgs;
 }
 
-QString AgricPracticesHandler::BuildMergeResultFileName(const AgricPracticesSiteCfg &siteCfg, const QString &prdsType)
+QString AgricPracticesHandler::BuildMergeResultFileName(const AgricPracticesJobCfg &jobCfg, const ProductType &prdsType)
 {
-    return QString(siteCfg.country).append("_").append(siteCfg.year).append("_").append(prdsType).append("_Extracted_Data.csv");
+    return QString(jobCfg.siteCfg.country).append("_").append(jobCfg.siteCfg.year).append("_").
+            append(GetShortNameForProductType(prdsType)).append("_Extracted_Data.csv");
 }
 
-QString AgricPracticesHandler::BuildPracticesTableResultFileName(const AgricPracticesSiteCfg &siteCfg, const QString &suffix)
+QString AgricPracticesHandler::BuildPracticesTableResultFileName(const AgricPracticesJobCfg &jobCfg, const QString &suffix)
 {
-    return QString("Sen4CAP_L4C_").append(suffix).append("_").append(siteCfg.country).
-            append("_").append(siteCfg.year).append(".csv");
+    return QString("Sen4CAP_L4C_").append(suffix).append("_").append(jobCfg.siteCfg.country).
+            append("_").append(jobCfg.siteCfg.year).append(".csv");
 }
 
-void AgricPracticesHandler::CreatePrdDataExtrTasks(const AgricPracticesSiteCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList,
+void AgricPracticesHandler::CreatePrdDataExtrTasks(const AgricPracticesJobCfg &jobCfg, QList<TaskToSubmit> &outAllTasksList,
                                         const QString &taskName,
                                         const QStringList &prdsList, const QList<std::reference_wrapper<const TaskToSubmit>> &dataExtParents,
                                         AgricPractOperation operation, int &minPrdDataExtrIndex, int &maxPrdDataExtrIndex, int &curTaskIdx) {
     // if the products per group is 0 or negative, then create a group with all products
-    int prdsPerGroup = siteCfg.prdsPerGroup > 0 ? siteCfg.prdsPerGroup : prdsList.size();
+    int prdsPerGroup = jobCfg.prdsPerGroup > 0 ? jobCfg.prdsPerGroup : prdsList.size();
     // if operation is exactly data extraction, then we the groups will have exactly 1 item
-    if (operation == dataExtraction) {
+    if (operation == dataExtraction || jobCfg.isScheduledJob) {
         prdsPerGroup = 1;
     }
 
@@ -735,12 +728,12 @@ int AgricPracticesHandler::CreateMergeTasks(QList<TaskToSubmit> &outAllTasksList
     return mergeTaskIdx;
 }
 
-int AgricPracticesHandler::CreateTSATasks(const AgricPracticesSiteCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList,
+int AgricPracticesHandler::CreateTSATasks(const AgricPracticesJobCfg &siteCfg, QList<TaskToSubmit> &outAllTasksList,
                                         const QString &practiceName, AgricPractOperation operation,
                                         int ndviMergeTaskIdx, int ampMergeTaskIdx, int coheMergeTaskIdx, int &curTaskIdx) {
     int ccTsaIdx = -1;
     AgricPractOperation expectedOper = GetExecutionOperation(practiceName);
-    if (siteCfg.practices.contains(practiceName) && IsOperationEnabled(operation, expectedOper)) {
+    if (siteCfg.siteCfg.practices.contains(practiceName) && IsOperationEnabled(operation, expectedOper)) {
         // this task is independent and can be executed before any others
         const QString &lowerPracticeName = practiceName.toLower();
         outAllTasksList.append(TaskToSubmit{ lowerPracticeName + "-practices-extraction", {} });
@@ -755,31 +748,32 @@ int AgricPracticesHandler::CreateTSATasks(const AgricPracticesSiteCfg &siteCfg, 
 
 QString AgricPracticesHandler::CreateStepForLPISSelection(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
                                                                 AgricPractOperation operation, const QString &practice,
-                                                                const AgricPracticesSiteCfg &siteCfg,
+                                                                const AgricPracticesJobCfg &jobCfg,
                                                                 QList<TaskToSubmit> &allTasksList,
                                                                 NewStepList &steps, int &curTaskIdx) {
     QString tsInputTablesDir ;
     TaskToSubmit &lpisSelectionTask = allTasksList[curTaskIdx++];
     QString fileName;
     if (practice.size() == 0) {
-        fileName = BuildPracticesTableResultFileName(siteCfg, "FilterIds");
+        fileName = BuildPracticesTableResultFileName(jobCfg, "FilterIds");
     } else {
-        fileName = BuildPracticesTableResultFileName(siteCfg, practice);
+        fileName = BuildPracticesTableResultFileName(jobCfg, practice);
     }
 
     const QString &tmpLpisSelFilePath = lpisSelectionTask.GetFilePath(fileName);
     QString lpisSelFilePath = tmpLpisSelFilePath;
-    if (operation == dataExtraction) {
+    if (operation == dataExtraction || jobCfg.isScheduledJob) {
         // get the directory where the ids file should be finally moved
-        tsInputTablesDir = GetStringConfigValue(parameters, configParameters, "ts_input_tables_dir", L4C_AP_CFG_PREFIX);
+        tsInputTablesDir = GetProcessorDirValue(parameters, configParameters, "ts_input_tables_dir", jobCfg.siteShortName,
+                             "/mnt/archive/agric_practices_files/{site}/input_files");
         lpisSelFilePath = QDir(tsInputTablesDir).filePath(fileName);
         QDir().mkpath(tsInputTablesDir);
     }
     QStringList lpisSelectionArgs;
     if (practice.size() == 0) {
-        lpisSelectionArgs = GetIdsExtractorArgs(siteCfg, tmpLpisSelFilePath, tsInputTablesDir);
+        lpisSelectionArgs = GetIdsExtractorArgs(jobCfg, tmpLpisSelFilePath, tsInputTablesDir);
     } else {
-        lpisSelectionArgs = GetPracticesExtractionArgs(siteCfg, tmpLpisSelFilePath, practice, tsInputTablesDir);
+        lpisSelectionArgs = GetPracticesExtractionArgs(jobCfg, tmpLpisSelFilePath, practice, tsInputTablesDir);
     }
 
     steps.append(lpisSelectionTask.CreateStep("LPISDataSelection", lpisSelectionArgs));
@@ -789,14 +783,14 @@ QString AgricPracticesHandler::CreateStepForLPISSelection(const QJsonObject &par
 
 QStringList AgricPracticesHandler::CreateStepsForDataExtraction(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
                                                                 AgricPractOperation operation,
-                                                                const AgricPracticesSiteCfg &siteCfg, const QString &prdType,
+                                                                const AgricPracticesJobCfg &jobCfg, const ProductType &prdType,
                                                                 const QStringList &prds, const QString &idsFileName,
                                                                 QList<TaskToSubmit> &allTasksList,
                                                                 NewStepList &steps, int &curTaskIdx)
 {
     // if the products per group is 0 or negative, then create a group with all products
-    int prdsPerGroup = siteCfg.prdsPerGroup > 0 ? siteCfg.prdsPerGroup : prds.size();
-    if (operation == dataExtraction) {
+    int prdsPerGroup = jobCfg.prdsPerGroup > 0 ? jobCfg.prdsPerGroup : prds.size();
+    if (operation == dataExtraction || jobCfg.isScheduledJob) {
         prdsPerGroup = 1;
     }
     int groups = (prds.size()/prdsPerGroup) + ((prds.size()%prdsPerGroup) == 0 ? 0 : 1);
@@ -806,13 +800,13 @@ QStringList AgricPracticesHandler::CreateStepsForDataExtraction(const QJsonObjec
     for(int i  = 0; i<groups; i++) {
         TaskToSubmit &dataExtractionTask = allTasksList[curTaskIdx++];
         QString dataExtrDirName;
-        if (operation == all) {
+        if (operation == all && !jobCfg.isScheduledJob) {
             dataExtrDirName = dataExtractionTask.GetFilePath("");
-            dataExtrDirs.append(dataExtrDirName);
         } else {
-            QString key(prdType.toLower().append("_data_extr_dir"));
-            dataExtrDirName = GetStringConfigValue(parameters, configParameters, key, L4C_AP_CFG_PREFIX);
+            dataExtrDirName = GetDataExtractionDir(parameters, configParameters, prdType, jobCfg.siteShortName);
             QDir().mkpath(dataExtrDirName);
+        }
+        if (!dataExtrDirs.contains(dataExtrDirName)) {
             dataExtrDirs.append(dataExtrDirName);
         }
 
@@ -824,13 +818,13 @@ QStringList AgricPracticesHandler::CreateStepsForDataExtraction(const QJsonObjec
             sublist.append(prds.at(j));
         }
 
-        const QStringList &dataExtractionArgs = GetDataExtractionArgs(siteCfg, idsFileName, prdType, "NewID", prds, dataExtrDirName);
+        const QStringList &dataExtractionArgs = GetDataExtractionArgs(jobCfg, idsFileName, prdType, "NewID", sublist, dataExtrDirName);
         steps.append(dataExtractionTask.CreateStep("AgricPractDataExtraction", dataExtractionArgs));
     }
     return dataExtrDirs;
 }
 
-QString AgricPracticesHandler::CreateStepsForFilesMerge(const AgricPracticesSiteCfg &siteCfg, const QString &prdType,
+QString AgricPracticesHandler::CreateStepsForFilesMerge(const AgricPracticesJobCfg &siteCfg, const ProductType &prdType,
                               const QStringList &dataExtrDirs, NewStepList &steps,
                               QList<TaskToSubmit> &allTasksList, int &curTaskIdx) {
     TaskToSubmit &mergeTask = allTasksList[curTaskIdx++];
@@ -842,7 +836,7 @@ QString AgricPracticesHandler::CreateStepsForFilesMerge(const AgricPracticesSite
 }
 
 QStringList AgricPracticesHandler::CreateTimeSeriesAnalysisSteps(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
-                                                                 AgricPractOperation operation, const AgricPracticesSiteCfg &siteCfg,
+                                                                 AgricPractOperation operation, const AgricPracticesJobCfg &siteCfg,
                                                                  const QString &practice, const QString &ndviMergedFile,
                                                                  const QString &ampMergedFile, const QString &coheMergedFile,
                                                                  NewStepList &steps,
@@ -851,7 +845,7 @@ QStringList AgricPracticesHandler::CreateTimeSeriesAnalysisSteps(const QJsonObje
 {
     QStringList retList;
     AgricPractOperation oper = GetExecutionOperation(practice);
-    if (siteCfg.practices.contains(practice) && ((oper & activeOper) != none)) {
+    if (siteCfg.siteCfg.practices.contains(practice) && ((oper & activeOper) != none)) {
         const QString &practicesFile = CreateStepForLPISSelection(parameters, configParameters, operation, practice, siteCfg,
                                                                 allTasksList, steps, curTaskIdx);
 
@@ -864,7 +858,7 @@ QStringList AgricPracticesHandler::CreateTimeSeriesAnalysisSteps(const QJsonObje
 
         // Add the expected files to the productFormatterFiles
         const QString &tsaExpPractice = GetTsaExpectedPractice(practice);
-        const QString &filesPrefix = "Sen4CAP_L4C_" + tsaExpPractice + "_" + siteCfg.country + "_" + siteCfg.year;
+        const QString &filesPrefix = "Sen4CAP_L4C_" + tsaExpPractice + "_" + siteCfg.siteCfg.country + "_" + siteCfg.siteCfg.year;
         const QString &mainFileName = filesPrefix + "_CSV.csv";
         const QString &plotFileName = filesPrefix + "_PLOT.xml";
         const QString &plotIdxFileName = plotFileName + ".idx";
@@ -881,23 +875,19 @@ QStringList AgricPracticesHandler::CreateTimeSeriesAnalysisSteps(const QJsonObje
 QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event, const ProductType &prdType, QDateTime &minDate, QDateTime &maxDate) {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-
-    std::string prodsInputKey;
-    switch(prdType) {
-        case ProductType::L3BProductTypeId:
-            prodsInputKey = "input_NDVI";
-            break;
-        case ProductType::S4CS1L2AmpProductTypeId:
-            prodsInputKey = "input_AMP";
-            break;
-        case ProductType::S4CS1L2CoheProductTypeId:
-            prodsInputKey = "input_COHE";
-            break;
-        default:
-            Logger::error(QStringLiteral("Unsupported product type %1.").arg((int)prdType));
-            return QStringList();
+    const QString &prdTypeShortName = GetShortNameForProductType(prdType);
+    const std::string &prodsInputKey = "input_" + prdTypeShortName.toStdString();
+    if (prodsInputKey == "input_") {
+        Logger::error(QStringLiteral("Unsupported product type %1.").arg(prdTypeShortName));
+        return QStringList();
     }
-    const auto &inputProducts = parameters[prodsInputKey.c_str()].toArray();
+    auto inputProducts = parameters[prodsInputKey.c_str()].toArray();
+    if (inputProducts.size() == 0) {
+        // check for the "input_products" key that is provided from the
+        inputProducts = parameters["input_products"].toArray();
+        // Filter the products by the prdType
+        inputProducts = FilterProducts(inputProducts, prdType);
+    }
     const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, L4C_AP_CFG_PREFIX);
     const QString &s2L8TilesStr = GetStringConfigValue(parameters, configParameters, "s2_l8_tiles", L4C_AP_CFG_PREFIX);
     const QStringList &s2L8Tiles = s2L8TilesStr.split(',',  QString::SkipEmptyParts);
@@ -960,8 +950,37 @@ QStringList AgricPracticesHandler::GetInputProducts(EventProcessingContext &ctx,
     return listProducts;
 }
 
-QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContext &ctx, int siteId,
-                                                           const QString &path, const QStringList &s2L8TilesFilter)
+QJsonArray AgricPracticesHandler::FilterProducts(const QJsonArray &allPrds, const ProductType &prdType)
+{
+    QJsonArray retList;
+    for (const auto &prd: allPrds) {
+        QFileInfo fi(prd.toString());
+        const QString &fileName = fi.fileName();
+        switch(prdType) {
+            case ProductType::L3BProductTypeId:
+                if (fileName.contains("S2AGRI_L3B_PRD_")) {
+                    retList.append(prd);
+                }
+                break;
+            case ProductType::S4CS1L2AmpProductTypeId:
+                if (fileName.contains("_AMP.tif")) {
+                    retList.append(prd);
+                }
+                break;
+            case ProductType::S4CS1L2CoheProductTypeId:
+                if (fileName.contains("_COHE.tif")) {
+                    retList.append(prd);
+                }
+                break;
+            default:
+                Logger::error(QStringLiteral("Unsupported product type %1.").arg((int)prdType));
+                return retList;
+        }
+    }
+    return retList;
+}
+
+QStringList AgricPracticesHandler::FindNdviProductTiffFile(const QString &path, const QStringList &s2L8TilesFilter)
 {
     QFileInfo fileInfo(path);
     if (!fileInfo.isDir()) {
@@ -971,10 +990,6 @@ QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContex
         }
     }
     QString absPath = path;
-    if(!fileInfo.isAbsolute()) {
-        // if we have the product name, we need to get the product path from the database
-        absPath = ctx.GetProductAbsolutePath(siteId, path);
-    }
     const QMap<QString, QString> &prdTiles = ProcessorHandlerHelper::GetHighLevelProductTilesDirs(absPath);
     QStringList retList;
     for(const auto &tileId : prdTiles.keys()) {
@@ -994,115 +1009,94 @@ QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContex
     return retList;
 }
 
-PracticesTableExtractionParams AgricPracticesHandler::LoadPracticesParams(const QSettings &settings, const QString &practicePrefix) {
-    PracticesTableExtractionParams ret;
-    const QString &sectionName = (practicePrefix.length() > 0 ? practicePrefix : QString("DEFAULT")) + "_PRACTICES_PARAMS/";
+QStringList AgricPracticesHandler::FindNdviProductTiffFile(EventProcessingContext &ctx, int siteId,
+                                                           const QString &path, const QStringList &s2L8TilesFilter)
+{
+    QFileInfo fileInfo(path);
+    QString absPath = path;
+    if(!fileInfo.isAbsolute()) {
+        // if we have the product name, we need to get the product path from the database
+        absPath = ctx.GetProductAbsolutePath(siteId, path);
+    }
+    return FindNdviProductTiffFile(absPath, s2L8TilesFilter);
+
+//    if (!fileInfo.isDir()) {
+//        const QString &fileName = fileInfo.fileName();
+//        if (fileName.contains("S2AGRI_L3B_SNDVI_A") && fileName.endsWith(".TIF")) {
+//            return QStringList(path);
+//        }
+//    }
+//    QString absPath = path;
+//    if(!fileInfo.isAbsolute()) {
+//        // if we have the product name, we need to get the product path from the database
+//        absPath = ctx.GetProductAbsolutePath(siteId, path);
+//    }
+//    const QMap<QString, QString> &prdTiles = ProcessorHandlerHelper::GetHighLevelProductTilesDirs(absPath);
+//    QStringList retList;
+//    for(const auto &tileId : prdTiles.keys()) {
+//        if (s2L8TilesFilter.size() > 0 && !s2L8TilesFilter.contains(tileId)) {
+//            continue;
+//        }
+//        const QString &tileDir = prdTiles[tileId];
+//        const QString &laiFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(tileDir, "SNDVI");
+//        if (laiFileName.size() > 0) {
+//            retList.append(laiFileName);
+//        }
+//    }
+
+//    if (retList.size() == 0) {
+//        Logger::error(QStringLiteral("Unable to find any TIFF file for the given input product %1.").arg(absPath));
+//    }
+//    return retList;
+}
+
+TQStrQStrMap AgricPracticesHandler::LoadParamsFromFile(QSettings &settings, const QString &practicePrefix, const QString &sectionName,
+                                                       const AgricPracticesSiteCfg &cfg) {
+    TQStrQStrMap params;
+    //const QString &sectionName = (practicePrefix.length() > 0 ? practicePrefix : QString("DEFAULT")) + "_PRACTICES_PARAMS/";
     QString keyPrefix;
     if(practicePrefix.length() > 0) {
         keyPrefix = practicePrefix + "_";
     }
-
-    ret.vegStart = settings.value( sectionName + keyPrefix + "VEG_START").toString();
-    ret.hstart = settings.value( sectionName + keyPrefix + "HSTART").toString();
-    ret.hend = settings.value( sectionName + keyPrefix + "HEND").toString();
-    ret.hstartw = settings.value( sectionName + keyPrefix + "HSTARTW").toString();
-    ret.pstart = settings.value( sectionName + keyPrefix + "PSTART").toString();
-    ret.pend = settings.value( sectionName + keyPrefix + "PEND").toString();
-    ret.pstartw = settings.value( sectionName + keyPrefix + "PSTARTW").toString();
-    ret.pendw = settings.value( sectionName + keyPrefix + "PENDW").toString();
-    ret.additionalFiles = GetListValue(settings, sectionName + keyPrefix + "ADD_FILES");
-
-    return ret;
-}
-
-void AgricPracticesHandler::UpdatePracticesParams(const PracticesTableExtractionParams &defVals,
-                                                PracticesTableExtractionParams &sectionVals) {
-    sectionVals.vegStart = (sectionVals.vegStart.length() == 0 ? defVals.vegStart : sectionVals.vegStart);
-    sectionVals.hstart = (sectionVals.hstart.length() == 0 ? defVals.hstart : sectionVals.hstart);
-    sectionVals.hend = (sectionVals.hend.length() == 0 ? defVals.hend : sectionVals.hend);
-    sectionVals.hstartw = (sectionVals.hstartw.length() == 0 ? defVals.hstartw : sectionVals.hstartw);
-    sectionVals.pstart = (sectionVals.pstart.length() == 0 ? defVals.pstart : sectionVals.pstart);
-    sectionVals.pend = (sectionVals.pend.length() == 0 ? defVals.pend : sectionVals.pend);
-    sectionVals.pstartw = (sectionVals.pstartw.length() == 0 ? defVals.pstartw : sectionVals.pstartw);
-    sectionVals.pendw = (sectionVals.pendw.length() == 0 ? defVals.pendw : sectionVals.pendw);
-    sectionVals.additionalFiles = (sectionVals.additionalFiles.length() == 0 ? defVals.additionalFiles : sectionVals.additionalFiles);
-}
-
-TsaPracticeParams AgricPracticesHandler::LoadTsaParams(const QSettings &settings, const QString &practicePrefix) {
-    TsaPracticeParams ret;
-    const QString &sectionName = (practicePrefix.length() > 0 ? practicePrefix : QString("DEFAULT")) + "_TIME_SERIES_ANALYSIS_PARAMS/";
-    QString keyPrefix;
-    if(practicePrefix.length() > 0) {
-        keyPrefix = practicePrefix + "_";
+    settings.beginGroup(sectionName);
+    const QStringList &keys = settings.allKeys();
+    foreach (const QString &key, keys) {
+        QString keyNoPrefix = key;
+        keyNoPrefix.remove(0, keyPrefix.size());
+        QString value = settings.value(key).toString();
+        value.replace("${YEAR}", cfg.year);
+        params.insert(TQStrQStrPair(keyNoPrefix.toLower(), value));
     }
+    settings.endGroup();
 
-    ret.optthrvegcycle = settings.value( sectionName + keyPrefix + "OPTTHRVEGCYCLE").toString();
-    ret.ndvidw = settings.value( sectionName + keyPrefix + "NDVIDW").toString();
-    ret.ndviup = settings.value( sectionName + keyPrefix + "NDVIUP").toString();
-    ret.ndvistep = settings.value( sectionName + keyPrefix + "NDVISTEP").toString();
-    ret.optthrmin = settings.value( sectionName + keyPrefix + "OPTTHRMIN").toString();
-    ret.cohthrbase = settings.value( sectionName + keyPrefix + "COHTHRBASE").toString();
-    ret.cohthrhigh = settings.value( sectionName + keyPrefix + "COHTHRHIGH").toString();
-    ret.cohthrabs = settings.value( sectionName + keyPrefix + "COHTHRABS").toString();
-    ret.ampthrmin = settings.value( sectionName + keyPrefix + "AMPTHRMIN").toString();
-    ret.efandvithr = settings.value( sectionName + keyPrefix + "EFANDVITHR").toString();
-    ret.efandviup = settings.value( sectionName + keyPrefix + "EFANDVIUP").toString();
-    ret.efandvidw = settings.value( sectionName + keyPrefix + "EFANDVIDW").toString();
-    ret.efacohchange = settings.value( sectionName + keyPrefix + "EFACOHCHANGE").toString();
-    ret.efacohvalue = settings.value( sectionName + keyPrefix + "EFACOHVALUE").toString();
-    ret.efandvimin = settings.value( sectionName + keyPrefix + "EFANDVIMIN").toString();
-    ret.efaampthr = settings.value( sectionName + keyPrefix + "EFAAMPTHR").toString();
-    ret.stddevinampthr = settings.value( sectionName + keyPrefix + "STDDEVINAMPTHR").toString();
-    ret.optthrbufden = settings.value( sectionName + keyPrefix + "OPTTHRBUFDEN").toString();
-    ret.ampthrbreakden = settings.value( sectionName + keyPrefix + "AMPTHRBREAKDEN").toString();
-    ret.ampthrvalueden = settings.value( sectionName + keyPrefix + "AMPTHRVALUEDEN").toString();
-
-
-    ret.catchmain = settings.value( sectionName + keyPrefix + "CATCHMAIN").toString();
-    ret.catchperiod = settings.value( sectionName + keyPrefix + "CATCHPERIOD").toString();
-    ret.catchperiodstart = settings.value( sectionName + keyPrefix + "CATCHPERIODSTART").toString();
-    ret.catchcropismain = settings.value( sectionName + keyPrefix + "CATCHCROPISMAIN").toString();
-    ret.catchproportion = settings.value( sectionName + keyPrefix + "CATCHPROPORTION").toString();
-
-    ret.flmarkstartdate = settings.value( sectionName + keyPrefix + "FLMARKSTARTDATE").toString();
-    ret.flmarkstenddate = settings.value( sectionName + keyPrefix + "FLMARKSTENDDATE").toString();
-
-    return ret;
+    return params;
 }
 
-void AgricPracticesHandler::UpdateTsaParams(const TsaPracticeParams &defVals,
-                                           TsaPracticeParams &sectionVals) {
-    sectionVals.optthrvegcycle = (sectionVals.optthrvegcycle.length() == 0 ? defVals.optthrvegcycle : sectionVals.optthrvegcycle);
-    sectionVals.ndvidw = (sectionVals.ndvidw.length() == 0 ? defVals.ndvidw : sectionVals.ndvidw);
-    sectionVals.ndviup = (sectionVals.ndviup.length() == 0 ? defVals.ndviup : sectionVals.ndviup);
-    sectionVals.ndvistep = (sectionVals.ndvistep.length() == 0 ? defVals.ndvistep : sectionVals.ndvistep);
-    sectionVals.optthrmin = (sectionVals.optthrmin.length() == 0 ? defVals.optthrmin : sectionVals.optthrmin);
-    sectionVals.cohthrbase = (sectionVals.cohthrbase.length() == 0 ? defVals.cohthrbase : sectionVals.cohthrbase);
-    sectionVals.cohthrhigh = (sectionVals.cohthrhigh.length() == 0 ? defVals.cohthrhigh : sectionVals.cohthrhigh);
-    sectionVals.cohthrabs = (sectionVals.cohthrabs.length() == 0 ? defVals.cohthrabs : sectionVals.cohthrabs);
-    sectionVals.ampthrmin = (sectionVals.ampthrmin.length() == 0 ? defVals.ampthrmin : sectionVals.ampthrmin);
-    sectionVals.efandvithr = (sectionVals.efandvithr.length() == 0 ? defVals.efandvithr : sectionVals.efandvithr);
-    sectionVals.efandviup = (sectionVals.efandviup.length() == 0 ? defVals.efandviup : sectionVals.efandviup);
-    sectionVals.efandvidw = (sectionVals.efandvidw.length() == 0 ? defVals.efandvidw : sectionVals.efandvidw);
-    sectionVals.efacohchange = (sectionVals.efacohchange.length() == 0 ? defVals.efacohchange : sectionVals.efacohchange);
-    sectionVals.efacohvalue = (sectionVals.efacohvalue.length() == 0 ? defVals.efacohvalue : sectionVals.efacohvalue);
-    sectionVals.efandvimin = (sectionVals.efandvimin.length() == 0 ? defVals.efandvimin : sectionVals.efandvimin);
-    sectionVals.efaampthr = (sectionVals.efaampthr.length() == 0 ? defVals.efaampthr : sectionVals.efaampthr);
-    sectionVals.stddevinampthr = (sectionVals.stddevinampthr.length() == 0 ? defVals.stddevinampthr : sectionVals.stddevinampthr);
-    sectionVals.optthrbufden = (sectionVals.optthrbufden.length() == 0 ? defVals.optthrbufden : sectionVals.optthrbufden);
-    sectionVals.ampthrbreakden = (sectionVals.ampthrbreakden.length() == 0 ? defVals.ampthrbreakden : sectionVals.ampthrbreakden);
-    sectionVals.ampthrvalueden = (sectionVals.ampthrvalueden.length() == 0 ? defVals.ampthrvalueden : sectionVals.ampthrvalueden);
-
-    sectionVals.catchmain = (sectionVals.catchmain.length() == 0 ? defVals.catchmain : sectionVals.catchmain);
-    sectionVals.catchperiod = (sectionVals.catchperiod.length() == 0 ? defVals.catchperiod : sectionVals.catchperiod);
-    sectionVals.catchperiodstart = (sectionVals.catchperiodstart.length() == 0 ? defVals.catchperiodstart : sectionVals.catchperiodstart);;
-    sectionVals.catchcropismain = (sectionVals.catchcropismain.length() == 0 ? defVals.catchcropismain : sectionVals.catchcropismain);
-    sectionVals.catchproportion = (sectionVals.catchproportion.length() == 0 ? defVals.catchproportion : sectionVals.catchproportion);
-
-    sectionVals.flmarkstartdate = (sectionVals.flmarkstartdate.length() == 0 ? defVals.flmarkstartdate : sectionVals.flmarkstartdate);
-    sectionVals.flmarkstenddate = (sectionVals.flmarkstenddate.length() == 0 ? defVals.flmarkstenddate : sectionVals.flmarkstenddate);
+void AgricPracticesHandler::UpdatePracticesParams(const QJsonObject &parameters, std::map<QString, QString> &configParameters,
+                                                  const TQStrQStrMap &cfgVals, const QString &prefix,
+                                                  TQStrQStrMap *params) {
+    for (TQStrQStrMap::const_iterator it=cfgVals.begin(); it!=cfgVals.end(); ++it) {
+        QString key = it->first;
+        // get the last part of the key, without prefix
+        key.remove(0, prefix.size());
+        // check if the value for this key is somehow provided in the parameters
+        // otherwise, take it from the config parameters
+        const QString &value = GetStringConfigValue(parameters, configParameters, key, prefix).trimmed();
+        if(value.size() > 0) {
+            params->insert(TQStrQStrPair(key, value));
+        }
+    }
 }
 
+void AgricPracticesHandler::UpdatePracticesParams(const TQStrQStrMap &defVals,
+                                                TQStrQStrMap &sectionVals) {
+    for (TQStrQStrMap::const_iterator it=defVals.begin(); it!=defVals.end(); ++it) {
+        if (sectionVals.find(it->first) == sectionVals.end()) {
+            // insert the default value
+            sectionVals.insert(TQStrQStrPair(it->first, it->second));
+        }
+    }
+}
 QStringList AgricPracticesHandler::GetListValue(const QSettings &settings, const QString &key)
 {
     const QVariant &value = settings.value(key);
@@ -1140,6 +1134,8 @@ AgricPractOperation AgricPracticesHandler::GetExecutionOperation(const QString &
 {
     if (QString::compare(str, "DataExtraction", Qt::CaseInsensitive) == 0) {
         return dataExtraction;
+    } else if (QString::compare(str, "AllTimeSeriesAnalysis", Qt::CaseInsensitive) == 0) {
+        return timeSeriesAnalysis;
     } else if (QString::compare(str, "CatchCrop", Qt::CaseInsensitive) == 0 ||
                QString::compare(str, "CC", Qt::CaseInsensitive) == 0) {
         return catchCrop;
@@ -1202,3 +1198,270 @@ void AgricPracticesHandler::HandleProductAvailableImpl(EventProcessingContext &c
     }
 }
 
+bool AgricPracticesHandler::GetLpisProductFiles(EventProcessingContext &ctx, const QString &yearStr, int siteId,
+                                                QString &ndviShpFile, QString &ampCoheShpFile, QString &allFieldsFile) {
+    ndviShpFile = "";
+    ampCoheShpFile = "";
+    allFieldsFile = "";
+    // TODO: We should take it the last one for this site.
+    QDate  startDate, endDate;
+    startDate.setDate(1970, 1, 1);
+    QDateTime startDateTime(startDate);
+    endDate.setDate(2050, 12, 31);
+    QDateTime endDateTime(endDate);
+    const ProductList &lpisPrds = ctx.GetProducts(siteId, (int)ProductType::S4CLPISProductTypeId, startDateTime, endDateTime);
+    if (lpisPrds.size() == 0) {
+        throw std::runtime_error("No LPIS product found in database for the agricultural practices execution");
+    }
+    const QString &siteName = ctx.GetSiteShortName(siteId);
+
+    // If the year is >= 2019, then use LAEA for AMP and COHE and no matter which other for NDVI
+    const QString &prdLpisPath = lpisPrds[lpisPrds.size()-1].fullPath;
+    QDir directory(prdLpisPath);
+    QString allFieldsName = "decl_" + siteName + "_" + yearStr + ".csv";
+
+    const QStringList &dirFiles = directory.entryList(QStringList() << "*.shp" << "*.csv",QDir::Files);
+    foreach(const QString &fileName, dirFiles) {
+        // we don't want for NDVI the LAEA projection
+        if (fileName.endsWith("_buf_5m.shp") && (!fileName.endsWith("_3035_buf_5m.shp")) && (ndviShpFile.size() == 0)) {
+            ndviShpFile = directory.filePath(fileName);
+        }
+        // LAEA projection have priority for 10m buffer
+        if (fileName.endsWith("_3035_buf_10m.shp") ||
+                (fileName.endsWith("_buf_10m.shp") && ampCoheShpFile.size() == 0)) {
+            ampCoheShpFile = directory.filePath(fileName);
+        }
+        // we know its name but we want to be sure it is there
+        if (fileName == allFieldsName) {
+            allFieldsFile = directory.filePath(fileName);
+        }
+    }
+
+    return (ndviShpFile.size() != 0 && ampCoheShpFile.size() != 0 && allFieldsFile.size() != 0);
+}
+
+QStringList AgricPracticesHandler::GetAdditionalFilesAsList(const QString &files, const AgricPracticesSiteCfg &cfg) {
+    QRegExp separators(",| |;");
+    const QStringList &listFileNames = files.split(separators,  QString::SkipEmptyParts);
+    QStringList retList;
+    for(const QString &fileName: listFileNames) {
+        if (fileName.trimmed().size() > 0) {
+            if (QFileInfo::exists(fileName) && QFileInfo(fileName).isFile()) {
+                retList.append(fileName);
+            } else {
+                // Build the file path
+                retList.append(QDir(cfg.additionalFilesRootDir).filePath(fileName));
+            }
+        }
+    }
+    return retList;
+}
+
+QString AgricPracticesHandler::GetShortNameForProductType(const ProductType &prdType) {
+    switch(prdType) {
+        case ProductType::L3BProductTypeId:
+            return "NDVI";
+        case ProductType::S4CS1L2AmpProductTypeId:
+            return "AMP";
+        case ProductType::S4CS1L2CoheProductTypeId:
+            return "COHE";
+        default:
+        return "";
+    }
+}
+
+int AgricPracticesHandler::UpdateJobSubmittedParamsFromSchedReq(EventProcessingContext &ctx,
+                                           const JobSubmittedEvent &event, const std::map<QString, QString> &configParameters,
+                                           QJsonObject &parameters, const QString &siteName, JobSubmittedEvent &newEvent) {
+    // initialize the new event
+    newEvent = event;
+
+    QString strStartDate, strEndDate;
+    if(IsScheduledJobRequest(parameters) &&
+            GetParameterValueAsString(parameters, "start_date", strStartDate) &&
+            GetParameterValueAsString(parameters, "end_date", strEndDate) &&
+            parameters.contains("input_products")) {
+        if (!parameters.contains("input_products") || parameters["input_products"].toArray().size() == 0) {
+            const auto &startDate = QDateTime::fromString(strStartDate, "yyyyMMdd");
+            const auto &endDate = QDateTime::fromString(strEndDate, "yyyyMMdd");
+            Logger::info(QStringLiteral("Agricultural Practices Scheduled job received for siteId = %1, startDate=%2, endDate=%3").
+                         arg(event.siteId).arg(startDate.toString("yyyyMMdd")).arg(endDate.toString("yyyyMMdd")));
+
+            QStringList ndviProcessedFiles, ampProcessedFiles, coheProcessedFiles;
+            const QStringList &ndviMissingPrdsList = ExtractMissingDataExtractionProducts(ctx, event.siteId, siteName,
+                                                                          configParameters, ProductType::L3BProductTypeId,
+                                                                          startDate, endDate, ndviProcessedFiles);
+            const QStringList &ndviFilteredPrdsList = FilterAndUpdateAlreadyProcessingPrds(ctx, event.siteId, ndviMissingPrdsList,
+                                                                                           ndviProcessedFiles, ProductType::L3BProductTypeId);
+
+            const QStringList &ampMissingPrdsList = ExtractMissingDataExtractionProducts(ctx, event.siteId, siteName,
+                                                                           configParameters, ProductType::S4CS1L2AmpProductTypeId,
+                                                                           startDate, endDate, ampProcessedFiles);
+            const QStringList &ampFilteredPrdsList = FilterAndUpdateAlreadyProcessingPrds(ctx, event.siteId, ampMissingPrdsList,
+                                                                                          coheProcessedFiles, ProductType::S4CS1L2AmpProductTypeId);
+
+            const QStringList &coheMissingPrdsList = ExtractMissingDataExtractionProducts(ctx, event.siteId, siteName,
+                                                                           configParameters, ProductType::S4CS1L2CoheProductTypeId,
+                                                                           startDate, endDate, coheProcessedFiles);
+            const QStringList &coheFilteredPrdsList = FilterAndUpdateAlreadyProcessingPrds(ctx, event.siteId, coheMissingPrdsList,
+                                                                                           coheProcessedFiles, ProductType::S4CS1L2CoheProductTypeId);
+
+            const QJsonArray &ndviInputProductsArr = ProductListToJSonArray(ndviFilteredPrdsList);
+            const QJsonArray &ampInputProductsArr = ProductListToJSonArray(ampFilteredPrdsList);
+            const QJsonArray &coheInputProductsArr = ProductListToJSonArray(coheFilteredPrdsList);
+            Logger::info(QStringLiteral("Agricultural Practices Scheduled job : Updating input products for jobId = %1, siteId = %2 with a "
+                                        "number of %3 NDVI products, %4 AMP products and %5 COHE products").
+                         arg(event.jobId).arg(event.siteId).arg(ndviInputProductsArr.size()).
+                         arg(ampInputProductsArr.size()).arg(coheInputProductsArr.size()));
+
+            if (ndviInputProductsArr.size() > 0) {
+                parameters[QStringLiteral("input_NDVI")] = ndviInputProductsArr;
+            }
+            if (ampInputProductsArr.size() > 0) {
+                parameters[QStringLiteral("input_AMP")] = ampInputProductsArr;
+            }
+            if (coheInputProductsArr.size() > 0) {
+                parameters[QStringLiteral("input_COHE")] = coheInputProductsArr;
+            }
+
+            newEvent.parametersJson = jsonToString(parameters);
+            return ndviInputProductsArr.size() + ampInputProductsArr.size() + coheInputProductsArr.size();
+        }
+    }
+    return -1;
+}
+
+QStringList AgricPracticesHandler::ExtractMissingDataExtractionProducts(EventProcessingContext &ctx, int siteId, const QString &siteName,
+                                                                        const std::map<QString, QString> &configParameters,
+                                                                        const ProductType &prdType, const QDateTime &startDate,
+                                                                        const QDateTime &endDate, QStringList &alreadyProcessedFiles) {
+    QJsonObject parameters;
+    const QString &dataExtrDirName = GetDataExtractionDir(parameters, configParameters, prdType, siteName);;
+
+    const ProductList &prds = ctx.GetProducts(siteId, (int)prdType, startDate, endDate);
+    QStringList retList;
+    for(const Product &prd: prds) {
+        QStringList prdFileNames {prd.fullPath};
+        if (prdType == ProductType::L3BProductTypeId) {
+            prdFileNames = FindNdviProductTiffFile(prd.fullPath, {});
+        }
+        for(const QString &prdFileName: prdFileNames) {
+            if (!IsDataExtractionPerformed(dataExtrDirName, prdFileName)) {
+                retList.append(prdFileName);
+            } else {
+                alreadyProcessedFiles.append(prdFileName);
+            }
+        }
+    }
+    return retList;
+}
+
+bool AgricPracticesHandler::IsDataExtractionPerformed(const QString &dataExtrDirPath, const QString &prdPath) {
+    QFileInfo fileInfo(prdPath);
+    QDir directory(dataExtrDirPath);
+    // empty parameters
+    const QString & fileNameNoExt = fileInfo.completeBaseName();
+    const QStringList &txtFiles = directory.entryList(QStringList() << fileNameNoExt + ".txt",QDir::Files);
+    if (txtFiles.size() > 0) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * @brief AgricPracticesHandler::FilterAndUpdateAlreadyProcessingPrds
+ *  Returns the products that were not already launched for processing in case of overlapping schedulings
+ */
+QStringList AgricPracticesHandler::FilterAndUpdateAlreadyProcessingPrds(EventProcessingContext &ctx, int siteId, const QStringList &missingPrdsFiles,
+                                                                        const QStringList &processedPrdsFiles, const ProductType &prdType) {
+    QStringList filteredPrds;
+    const std::map<QString, QString> &mapCfg = ctx.GetConfigurationParameters(PRODUCTS_LOCATION_CFG_KEY);
+    std::map<QString, QString>::const_iterator it = mapCfg.find(PRODUCTS_LOCATION_CFG_KEY);
+    QString fileParentPath;
+    if (it != mapCfg.end()) {
+        fileParentPath = it->second;
+    } else {
+        fileParentPath = "/mnt/archive/{site}/{processor}/";
+    }
+    fileParentPath = fileParentPath.replace("{site}", ctx.GetSiteShortName(siteId));
+    fileParentPath = fileParentPath.replace("{processor}", processorDescr.shortName);
+    const QString &filePath = QDir::cleanPath(fileParentPath + QDir::separator() + GetShortNameForProductType(prdType) +
+                                              "_current_data_extraction_products.txt");
+
+    QDir().mkpath(QFileInfo(filePath).absolutePath());
+    QFile file( filePath );
+    // First read all the entries in the file to see what are the products that are currently processing
+
+    QStringList curProcPrds;
+    if (file.open(QIODevice::ReadOnly))
+    {
+       QTextStream in(&file);
+       while (!in.atEnd())
+       {
+          curProcPrds.append(in.readLine());
+       }
+       file.close();
+    }
+    if (curProcPrds.size() > 0) {
+        // remove already processed L2A products from this file
+        for(const QString &prdPath: processedPrdsFiles) {
+            curProcPrds.removeAll(prdPath);
+        }
+    }
+    // add the products that will be processed next
+    for (int i = 0; i<missingPrdsFiles.size(); i++) {
+        const QString &prdFile =  missingPrdsFiles[i];
+        if (!curProcPrds.contains(prdFile)) {
+            curProcPrds.append(prdFile);
+            filteredPrds.append(prdFile);
+        }
+        // else, if the product was already in this list, then it means it was already scheduled for processing
+        // by another schedule operation
+    }
+
+    if ( file.open(QIODevice::ReadWrite | QFile::Truncate) )
+    {
+        QTextStream stream( &file );
+        for (const QString &prdPath: curProcPrds) {
+            stream << prdPath << endl;
+        }
+    }
+
+    return filteredPrds;
+}
+
+QJsonArray AgricPracticesHandler::ProductListToJSonArray(const QStringList &prdList) {
+    QJsonArray retArr;
+    // we consider only products in the current season
+    for (const QString &prd: prdList) {
+        retArr.append(prd);
+    }
+    return retArr;
+}
+
+bool AgricPracticesHandler::IsScheduledJobRequest(const QJsonObject &parameters) {
+    int jobVal;
+    return GetParameterValueAsInt(parameters, "scheduled_job", jobVal) && (jobVal == 1);
+}
+
+QString AgricPracticesHandler::GetProcessorDirValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                    const QString &key, const QString &siteShortName, const QString &defVal ) {
+    QString dataExtrDirName = GetStringConfigValue(parameters, configParameters, key, L4C_AP_CFG_PREFIX);
+
+    if (dataExtrDirName.size() == 0) {
+        dataExtrDirName = defVal;
+    }
+    dataExtrDirName = dataExtrDirName.replace("{site}", siteShortName);
+
+    return dataExtrDirName;
+
+}
+
+QString AgricPracticesHandler::GetDataExtractionDir(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                    const ProductType &prdType, const QString &siteShortName ) {
+    const QString &prdTypeShortName = GetShortNameForProductType(prdType).toLower();
+    return GetProcessorDirValue(parameters, configParameters, QString(prdTypeShortName).append("_data_extr_dir"),
+                                siteShortName,
+                                "/mnt/archive/agric_practices_intermediate_files/{site}/data_extraction/" + prdTypeShortName);
+}

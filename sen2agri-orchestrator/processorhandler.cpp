@@ -292,6 +292,63 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     return false;
 }
 
+bool ProcessorHandler::GetBestSeasonToMatchDate(SchedulingContext &ctx, int siteId,
+                                              QDateTime &startTime, QDateTime &endTime,
+                                              const QDateTime &executionDate,
+                                              const ConfigurationParameterValueMap &requestOverrideCfgValues) {
+    const SeasonList &seasons = ctx.GetSiteSeasons(siteId);
+    const QDate &currentDate = executionDate.date();
+    if(requestOverrideCfgValues.contains("site_season_id")) {
+        const QString &seasonIdStr = requestOverrideCfgValues["site_season_id"].value;
+        bool convOk = false;
+        int siteSeasonId = seasonIdStr.toInt(&convOk);
+        if (convOk && siteSeasonId >= 0) {
+            for (const Season &season: seasons) {
+                if (season.seasonId == siteSeasonId) {
+                    if (season.enabled) {
+                        startTime = QDateTime(season.startDate);
+                        endTime = QDateTime(season.endDate);
+                        return true;
+                    } else {
+                        Logger::error(QStringLiteral("GetSeasonStartEndDates: Season with site_season_id = %1 is disabled!").arg(seasonIdStr));
+                        return false;
+                    }
+                }
+            }
+        } else {
+            Logger::error(QStringLiteral("GetSeasonStartEndDates: Invalid site_season_id = %1").arg(seasonIdStr));
+        }
+    }
+
+    // We are searching either the first season that contains this date or the last season whose end
+    // date is before the provided execution date
+    // TODO: Maybe we should look also for overlapping seasons, in which case, we should take the
+    //       minimum start date and the maximum end date
+    Season bestSeason;
+    bool bestSeasonSet = false;
+    for (const Season &season: seasons) {
+        if (season.enabled) {
+            if (IsInSeason(season.startDate, season.endDate, currentDate, startTime, endTime)) {
+                return true;
+            } else {
+                if (currentDate >= season.endDate) {
+                    if (!bestSeasonSet || bestSeason.endDate < season.endDate) {
+                        bestSeason = season;
+                        bestSeasonSet = true;
+                    }
+                }
+            }
+        }
+    }
+    if (bestSeasonSet) {
+        startTime = QDateTime(bestSeason.startDate);
+        endTime = QDateTime(bestSeason.endDate);
+        return true;
+    }
+
+    return false;
+}
+
 QStringList ProcessorHandler::GetL2AInputProducts(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event) {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -364,23 +421,6 @@ QString ProcessorHandler::GetL2AProductForTileMetaFile(const QMap<QString, QStri
         }
     }
     return "";
-}
-
-bool ProcessorHandler::GetParameterValueAsInt(const QJsonObject &parameters, const QString &key,
-                                              int &outVal) {
-    bool bRet = false;
-    if(parameters.contains(key)) {
-        // first try to get it as string
-        const auto &value = parameters[key];
-        if(value.isDouble()) {
-            outVal = value.toInt();
-            bRet = true;
-        }
-        if(value.isString()) {
-            outVal = value.toString().toInt(&bRet);
-        }
-    }
-    return bRet;
 }
 
 QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
@@ -524,6 +564,51 @@ QString ProcessorHandler::GetStringConfigValue(const QJsonObject &parameters, co
         retVal = GetMapValue(configParameters, fullKey);
     }
     return retVal;
+}
+
+bool ProcessorHandler::GetParameterValueAsInt(const QJsonObject &parameters, const QString &key,
+                                              int &outVal) {
+    bool bRet = false;
+    if(parameters.contains(key)) {
+        // first try to get it as string
+        const auto &value = parameters[key];
+        if(value.isDouble()) {
+            outVal = value.toInt();
+            bRet = true;
+        }
+        if(value.isString()) {
+            outVal = value.toString().toInt(&bRet);
+        }
+    }
+    return bRet;
+}
+
+bool ProcessorHandler::GetParameterValueAsString(const QJsonObject &parameters, const QString &key,
+                                              QString &outVal) {
+    bool bRet = false;
+    if(parameters.contains(key)) {
+        // first try to get it as string
+        const auto &value = parameters[key];
+        if(value.isString()) {
+            outVal = value.toString();
+            bRet = true;
+        }
+    }
+    return bRet;
+}
+
+TQStrQStrMap ProcessorHandler::FilterConfigParameters(const TQStrQStrMap &configParameters,
+                                                const QString &cfgPrefix) {
+    TQStrQStrMap retMap;
+    TQStrQStrMap::const_iterator i = configParameters.lower_bound(cfgPrefix);
+    while(i != configParameters.end()) {
+        const QString& key = i->first;
+        if (key.toStdString().compare(0, cfgPrefix.size(), cfgPrefix.toStdString()) == 0) { // Really a prefix?
+            retMap.insert(TQStrQStrPair(i->first, i->second));
+        }
+        ++i;
+    }
+    return retMap;
 }
 
 

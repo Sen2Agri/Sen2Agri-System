@@ -64,6 +64,12 @@ install(FILES ../scripts/insert_l2a_product_to_db.py
               ../scripts/crop-diversification.py
               ../scripts/data-preparation.py
               ../scripts/merge-sar.py
+              ../scripts/agric_practices_data_extraction.py
+              ../scripts/agric_practices_data_extraction.sh
+              ../scripts/agric_practices_merge_files.py
+              ../scripts/agric_practices_merge_files.sh
+              ../scripts/agric_practices_tsa.sh
+              ../scripts/extract_practices_infos.sh              
         DESTINATION usr/bin/
 	    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                     GROUP_READ GROUP_EXECUTE

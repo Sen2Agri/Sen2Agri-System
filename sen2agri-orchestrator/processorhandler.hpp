@@ -10,6 +10,8 @@
 #define CLOUD_OPTIMIZED_GEOTIFF_ENABLED "processor."
 
 typedef ProcessorHandlerHelper::TileTemporalFilesInfo TileTemporalFilesInfo;
+typedef std::map<QString, QString> TQStrQStrMap;
+typedef std::pair<QString, QString> TQStrQStrPair;
 
 class ProcessorHandler
 {
@@ -46,12 +48,14 @@ protected:
                                    QDateTime &startTime, QDateTime &endTime,
                                    const QDateTime &executionDate,
                                    const ConfigurationParameterValueMap &requestOverrideCfgValues);
+    bool GetBestSeasonToMatchDate(SchedulingContext &ctx, int siteId,
+                                  QDateTime &startTime, QDateTime &endTime,
+                                  const QDateTime &executionDate, const ConfigurationParameterValueMap &requestOverrideCfgValues);
     QStringList GetL2AInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     QMap<QString, QStringList> &mapProductToTilesMetaFiles);
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     QString GetL2AProductForTileMetaFile(const QMap<QString, QStringList> &mapProductToTilesMetaFiles, const QString &tileMetaFile);
-    bool GetParameterValueAsInt(const QJsonObject &parameters, const QString &key, int &outVal);
 
     QMap<QString, TileTemporalFilesInfo> GroupTiles(EventProcessingContext &ctx, int siteId, int jobId, const QStringList &listAllProductsTiles, ProductType productType);
     QString GetProductFormatterTile(const QString &tile);
@@ -68,6 +72,12 @@ protected:
                           const QString &key, const QString &cfgPrefix);
     QString GetStringConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
                             const QString &key, const QString &cfgPrefix);
+
+    bool GetParameterValueAsInt(const QJsonObject &parameters, const QString &key, int &outVal);
+    bool GetParameterValueAsString(const QJsonObject &parameters, const QString &key, QString &outVal);
+
+    TQStrQStrMap FilterConfigParameters(const TQStrQStrMap &configParameters, const QString &cfgPrefix);
+
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

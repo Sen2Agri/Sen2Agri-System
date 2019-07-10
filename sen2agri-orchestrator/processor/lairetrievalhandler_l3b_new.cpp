@@ -1,6 +1,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
+
 #include <fstream>
 
 #include "lairetrievalhandler_l3b_new.hpp"
@@ -415,17 +416,29 @@ void LaiRetrievalHandlerL3BNew::SubmitEndOfLaiTask(EventProcessingContext &ctx,
 }
 
 void LaiRetrievalHandlerL3BNew::HandleJobSubmittedImpl(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event)
+                                             const JobSubmittedEvent &evt)
 {
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+    auto parameters = QJsonDocument::fromJson(evt.parametersJson.toUtf8()).object();
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(evt.jobId, "processor.l3b.");
     const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
 
     bool bMonoDateLai = IsParamOrConfigKeySet(parameters, configParameters, "monolai", "processor.l3b.mono_date_lai");
     if(!bMonoDateLai) {
-        ctx.MarkJobFailed(event.jobId);
+        ctx.MarkJobFailed(evt.jobId);
         throw std::runtime_error(
             QStringLiteral("LAI mono-date processing needs to be defined").toStdString());
+    }
+
+    // Moved this from the GetProcessingDefinitionImpl function as it might be time consuming and scheduler will
+    // throw exception if timeout exceeded
+    JobSubmittedEvent event;
+    int ret = UpdateJobSubmittedParamsFromSchedReq(ctx, evt, parameters, event);
+    // no products available from the scheduling ... just mark job as done
+    if (ret == 0) {
+        ctx.MarkJobFinished(event.jobId);
+        Logger::info(QStringLiteral("Scheduled job with id %1 for site %2 marked as done as no products are availabel for now to process").
+                     arg(event.jobId).arg(event.siteId));
+        return;
     }
 
     bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "genndvi", "processor.l3b.lai.produce_ndvi");
@@ -819,19 +832,13 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3BNew::GetProcessingDefinitionI
     bool success = GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
     // if cannot get the season dates
     if(!success) {
-        Logger::debug(QStringLiteral("Scheduler L3B: Error getting season start dates for site %1 for scheduled date %2!")
-                      .arg(siteId)
-                      .arg(qScheduledDate.toString()));
-        return params;
-    }
-
-    QDateTime limitDate = seasonEndDate.addMonths(2);
-    if(qScheduledDate > limitDate) {
-        Logger::debug(QStringLiteral("Scheduler L3B: Error scheduled date %1 greater than the limit date %2 for site %3!")
-                      .arg(qScheduledDate.toString())
-                      .arg(limitDate.toString())
-                      .arg(siteId));
-        return params;
+        success = GetBestSeasonToMatchDate(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
+        if(!success) {
+            Logger::debug(QStringLiteral("Scheduler L3B: Error getting season start dates for site %1 for scheduled date %2!")
+                          .arg(siteId)
+                          .arg(qScheduledDate.toString()));
+            return params;
+        }
     }
     if(!seasonStartDate.isValid()) {
         Logger::error(QStringLiteral("Scheduler L3B: Season start date for site ID %1 is invalid in the database!")
@@ -842,6 +849,7 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3BNew::GetProcessingDefinitionI
     ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3b."), siteId, requestOverrideCfgValues);
 
     // we might have an offset in days from starting the downloading products to start the L3B production
+    // TODO: Is this really needed
     int startSeasonOffset = mapCfg["processor.l3b.start_season_offset"].value.toInt();
     seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
 
@@ -850,7 +858,7 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3BNew::GetProcessingDefinitionI
         const ConfigurationParameterValue &productType = requestOverrideCfgValues["product_type"];
         if(productType.value == "L3B") {
             generateLai = true;
-            params.jsonParameters = "{ \"monolai\": \"1\"}";
+            params.jsonParameters = "{ \"scheduled_job\": \"1\", \"monolai\": \"1\"";
         }
     }
     // we need to have at least one flag set
@@ -862,53 +870,47 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3BNew::GetProcessingDefinitionI
     QDateTime startDate = seasonStartDate;
     QDateTime endDate = qScheduledDate;
 
-    int productionInterval = mapCfg["processor.l3b.production_interval"].value.toInt();
-    startDate = endDate.addDays(-productionInterval);
+//    int productionInterval = mapCfg["processor.l3b.production_interval"].value.toInt();
+//    startDate = endDate.addDays(-productionInterval);
     // Use only the products after the configured start season date
     if(startDate < seasonStartDate) {
         startDate = seasonStartDate;
     }
 
-    bool bOnceExecution = false;
-    if(requestOverrideCfgValues.contains("task_repeat_type")) {
-        const ConfigurationParameterValue &repeatType = requestOverrideCfgValues["task_repeat_type"];
-        if (repeatType.value == "0") {
-            bOnceExecution = true;
-        }
-    }
-    const QDateTime &curDateTime = QDateTime::currentDateTime();
-    if ((curDateTime > seasonEndDate) || bOnceExecution) {
-        // processing of a past season, that was already finished
-        params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-    } else {
-        // processing of a season in progress, we get the products inserted in the last interval since the last scheduling
-        const ProductList &list  = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-        for (const Product &prd: list) {
-            if (prd.created >= seasonStartDate && prd.created < seasonEndDate.addDays(1)) {
-                params.productList.append(prd);
-            }
-        }
-    }
+    params.jsonParameters.append(", \"start_date\": \"" + startDate.toString("yyyyMMdd") + "\", " +
+                                 "\"end_date\": \"" + endDate.toString("yyyyMMdd") + "\", " +
+                                 "\"season_start_date\": \"" + seasonStartDate.toString("yyyyMMdd") + "\", " +
+                                 "\"season_end_date\": \"" + seasonEndDate.toString("yyyyMMdd") + "\"}");
+    params.isValid = true;
+
+//    const ProductList &list  = GetL2AProductsNotProcessed(ctx, siteId, startDate, endDate);
+//    // we consider only products in the current season
+//    for (const Product &prd: list) {
+//        if (prd.created >= seasonStartDate && prd.created < seasonEndDate.addDays(1)) {
+//            params.productList.append(prd);
+//        }
+//    }
+
     // TODO: Maybe we should perform also a filtering by the creation date, to be inside the season to avoid creation for the
     // products that are outside the season
     // Normally, we need at least 1 product available in order to be able to create a L3B product
     // but if we do not return here, the schedule block waiting for products (that might never happen)
-    bool waitForAvailProcInputs = (mapCfg["processor.l3b.sched_wait_proc_inputs"].value.toInt() != 0);
-    if((waitForAvailProcInputs == false) || (params.productList.size() > 0)) {
-        params.isValid = true;
-        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L3B a number "
-                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
-                      .arg(params.productList.size())
-                      .arg(siteId)
-                      .arg(startDate.toString())
-                      .arg(endDate.toString()));
-    } else {
-        Logger::debug(QStringLiteral("Scheduled job for L3B and site ID %1 with start date %2 and end date %3 "
-                                     "will not be executed (no products)!")
-                      .arg(siteId)
-                      .arg(startDate.toString())
-                      .arg(endDate.toString()));
-    }
+//    bool waitForAvailProcInputs = (mapCfg["processor.l3b.sched_wait_proc_inputs"].value.toInt() != 0);
+//    if((waitForAvailProcInputs == false) || (params.productList.size() > 0)) {
+//        params.isValid = true;
+//        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L3B a number "
+//                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
+//                      .arg(params.productList.size())
+//                      .arg(siteId)
+//                      .arg(startDate.toString())
+//                      .arg(endDate.toString()));
+//    } else {
+//        Logger::debug(QStringLiteral("Scheduled job for L3B and site ID %1 with start date %2 and end date %3 "
+//                                     "will not be executed (no products)!")
+//                      .arg(siteId)
+//                      .arg(startDate.toString())
+//                      .arg(endDate.toString()));
+//    }
 
     return params;
 }
@@ -942,3 +944,237 @@ void LaiRetrievalHandlerL3BNew::SubmitL3CJobForL3BProduct(EventProcessingContext
     }
 }
 
+int LaiRetrievalHandlerL3BNew::UpdateJobSubmittedParamsFromSchedReq(EventProcessingContext &ctx,
+                                                                     const JobSubmittedEvent &event, QJsonObject &parameters,
+                                                                    JobSubmittedEvent &newEvent) {
+    // initialize the new event
+    newEvent = event;
+
+    int jobVal;
+    QString strStartDate, strEndDate;
+    if(GetParameterValueAsInt(parameters, "scheduled_job", jobVal) && (jobVal == 1) &&
+            GetParameterValueAsString(parameters, "start_date", strStartDate) &&
+            GetParameterValueAsString(parameters, "end_date", strEndDate) &&
+            parameters.contains("input_products")) {
+        if (!parameters.contains("input_products") || parameters["input_products"].toArray().size() == 0) {
+            const auto &startDate = QDateTime::fromString(strStartDate, "yyyyMMdd");
+            const auto &endDate = QDateTime::fromString(strEndDate, "yyyyMMdd");
+            QString strSeasonStartDate, strSeasonEndDate;
+            QDateTime seasonStartDate, seasonEndDate;
+            if (GetParameterValueAsString(parameters, "season_start_date", strSeasonStartDate) &&
+                    GetParameterValueAsString(parameters, "season_end_date", strSeasonEndDate)) {
+                seasonStartDate = QDateTime::fromString(strSeasonStartDate, "yyyyMMdd");
+                seasonEndDate = QDateTime::fromString(strSeasonEndDate, "yyyyMMdd");
+            }
+            Logger::info(QStringLiteral("L3B Scheduled job received for siteId = %1, startDate=%2, endDate=%3").
+                         arg(event.siteId).arg(startDate.toString("yyyyMMdd")).arg(endDate.toString("yyyyMMdd")));
+            QJsonArray inputProductsArr;
+            const ProductList &list  = GetL2AProductsNotProcessed(ctx, event.siteId, startDate, endDate);
+            // we consider only products in the current season
+            for (const Product &prd: list) {
+                if (!seasonStartDate.isValid() || !seasonEndDate.isValid() ||
+                     (prd.created >= seasonStartDate && prd.created < seasonEndDate.addDays(1))) {
+                    inputProductsArr.append(prd.fullPath);
+                }
+            }
+            Logger::info(QStringLiteral("L3B Scheduled job : Updating input products for jobId = %1, siteId = %2 with a number of %3 products").
+                         arg(event.jobId).arg(event.siteId).arg(inputProductsArr.size()));
+
+            if (inputProductsArr.size() > 0) {
+                parameters[QStringLiteral("input_products")] = inputProductsArr;
+                newEvent.parametersJson = jsonToString(parameters);
+            }
+            return inputProductsArr.size();
+        }
+    }
+    return -1;
+}
+
+ProductList LaiRetrievalHandlerL3BNew::GetL2AProductsNotProcessed(EventProcessingContext &ctx, int siteId,
+                                                                  const QDateTime &startDate, const QDateTime &endDate) {
+    QStringList newRelL2APathsToProcess;
+    ProductList newL2APrdsToProcess;
+
+    ProductList l2aProducts;
+    QStringList fullL2APaths;
+    QStringList fullL2APathsFromL3Bs;
+    Logger::info("Extracting L2A from DB...");
+    const QStringList &l2aRelPathsFromDb = GetL2ARelPathsFromDB(ctx, siteId, startDate, endDate, fullL2APaths, l2aProducts);
+    qDebug() << "Extracting L2A from DB...DONE! ";
+    Logger::info(QStringLiteral("Extracted a number of %1 L2A products from DB. Extracting the L2A from L3B products ...").arg(l2aRelPathsFromDb.size()));
+    // Get the relative paths of the products from the L3B products
+    const QStringList &l2aRelPathsFromL3B = GetL2ARelPathsFromProcessedL3Bs(ctx, siteId, startDate, endDate, fullL2APathsFromL3Bs);
+    Logger::info(QStringLiteral("Extracted a number of %1 L2A products from the L3B products").arg(l2aRelPathsFromL3B.size()));
+    QStringList missingPrdsPaths;
+    ProductList missingPrds;
+    for(int i = 0; i < l2aRelPathsFromDb.size(); i++) {
+        if (!l2aRelPathsFromL3B.contains(l2aRelPathsFromDb[i])) {
+            missingPrdsPaths.append(l2aRelPathsFromDb[i]);
+            missingPrds.append(l2aProducts[i]);
+        }
+    }
+    Logger::info(QStringLiteral("Found a number of %1 L2A products not processed in L3B").arg(missingPrds.size()));
+
+    const std::map<QString, QString> &mapCfg = ctx.GetConfigurationParameters(PRODUCTS_LOCATION_CFG_KEY);
+    std::map<QString, QString>::const_iterator it = mapCfg.find(PRODUCTS_LOCATION_CFG_KEY);
+    QString fileParentPath;
+    if (it != mapCfg.end()) {
+        fileParentPath = it->second;
+    } else {
+        fileParentPath = "/mnt/archive/{site}/{processor}/";
+    }
+    fileParentPath = fileParentPath.replace("{site}", ctx.GetSiteShortName(siteId));
+    fileParentPath = fileParentPath.replace("{processor}", processorDescr.shortName);
+    const QString &filePath = QDir::cleanPath(fileParentPath + QDir::separator() + "current_processing_l3b.txt");
+
+    if (filePath.size() > 0) {
+        QDir().mkpath(QFileInfo(filePath).absolutePath());
+        QFile file( filePath );
+        // First read all the entries in the file to see what are the products that are currently processing
+
+        QStringList curProcPrds;
+        if (file.open(QIODevice::ReadOnly))
+        {
+           QTextStream in(&file);
+           while (!in.atEnd())
+           {
+              curProcPrds.append(in.readLine());
+           }
+           file.close();
+        }
+        if (curProcPrds.size() > 0) {
+            // remove already processed L2A products from this file
+            for(const QString &l2aRelPath: l2aRelPathsFromL3B) {
+                curProcPrds.removeAll(l2aRelPath);
+            }
+        }
+        // add the products that will be processed next
+        for (int i = 0; i<missingPrdsPaths.size(); i++) {
+            const QString &l2aRelPath =  missingPrdsPaths[i];
+            if (!curProcPrds.contains(l2aRelPath)) {
+                curProcPrds.append(l2aRelPath);
+                newRelL2APathsToProcess.append(l2aRelPath);
+                newL2APrdsToProcess.append(missingPrds[i]);
+            }
+            // else, if the product was already in this list, then it means it was already scheduled for processing
+            // by another schedule operation
+        }
+
+        if ( file.open(QIODevice::ReadWrite | QFile::Truncate) )
+        {
+            QTextStream stream( &file );
+            for (const QString &prdPath: curProcPrds) {
+                stream << prdPath << endl;
+            }
+        }
+    }
+    Logger::info(QStringLiteral("A number of %1 L2A products needs to be processed in L3B after checking already launched products").
+                 arg(newL2APrdsToProcess.size()));
+    return newL2APrdsToProcess;
+}
+
+QStringList LaiRetrievalHandlerL3BNew::GetL2ARelPathsFromDB(EventProcessingContext &ctx, int siteId,
+                                                            const QDateTime &startDate, const QDateTime &endDate,
+                                                            QStringList &retFullPaths, ProductList &prdList) {
+    QStringList listValidTilesMetaFiles;
+    const ProductList &l2aPrds = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+    for(const Product &prd: l2aPrds) {
+        const QStringList &metaFiles = EventProcessingContext::findProductFiles(prd.fullPath);
+        for(const QString &tileMetaFile: metaFiles) {
+            if(ProcessorHandlerHelper::IsValidL2AMetadataFileName(tileMetaFile)) {
+                // remove the full path from DB
+                QString metaRelPath = tileMetaFile;
+                metaRelPath.remove(0, prd.fullPath.size());
+                // build the relative path
+                const QString &relPath = QDir::cleanPath(QDir(prd.fullPath).dirName() + QDir::separator() + metaRelPath);
+                if (!listValidTilesMetaFiles.contains(relPath)) {
+                    listValidTilesMetaFiles.append(relPath);
+                    retFullPaths.append(tileMetaFile);
+                    prdList.append(prd);
+                }
+            }
+        }
+    }
+
+    return listValidTilesMetaFiles;
+}
+
+QStringList LaiRetrievalHandlerL3BNew::GetL2ARelPathsFromProcessedL3Bs(EventProcessingContext &ctx, int siteId,
+                                                                       const QDateTime &startDate, const QDateTime &endDate,
+                                                                       QStringList &retFullPaths) {
+    // Get the products from the L3B products
+    qDebug() << "Extracting L3B from DB... ";
+    const ProductList &l3bPrds = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
+    qDebug() << "Extracting L3B from DB...DONE!";
+    // Now search in the IPP XML files from each L3B product the L2A products that genetated it
+    QStringList l2aRelPathsFromL3B;
+    qDebug() << "Extracting L2A from L3B...!";
+    for(const Product &prd: l3bPrds) {
+        const QStringList &l2aSrcPrds = GetL3BSourceL2APrdsPaths(prd.fullPath);
+        // we can have the situation when the L2A products were moved so they are now in another location
+        for(const QString &l2aSrcPrd: l2aSrcPrds) {
+            const QStringList &pathComponents = l2aSrcPrd.split("/", QString::SkipEmptyParts);
+            // get the product name and the metadata file (and intermediate subfolders, if needed)
+            QString relPath;
+            int numComps = 2;
+            if (pathComponents.size() >= 3 && pathComponents[pathComponents.size() - 1].endsWith("_MTD_ALL.xml")) {
+                numComps = 3;
+            }
+            int prdNameCompIdx = pathComponents.size() - numComps;
+            for(int i = prdNameCompIdx; i<pathComponents.size(); i++) {
+                relPath.append(pathComponents[i]);
+                if (i < pathComponents.size()-1) {
+                    relPath.append(QDir::separator());
+                }
+            }
+            if (relPath.size() > 0 && !l2aRelPathsFromL3B.contains(relPath)) {
+                l2aRelPathsFromL3B.append(relPath);
+                retFullPaths.append(l2aSrcPrd);
+            }
+        }
+    }
+    qDebug() << "Extracting L2A from L3B...DONE!";
+    return  l2aRelPathsFromL3B;
+}
+
+QStringList LaiRetrievalHandlerL3BNew::GetL3BSourceL2APrdsPaths(const QString &prdPath) {
+    QStringList retPrdsList;
+
+    QDir directory(QDir::cleanPath(prdPath + QDir::separator() + "AUX_DATA"));
+    const QStringList &ippFiles = directory.entryList(QStringList() << "S2AGRI_L3B_IPP_A*.xml",QDir::Files);
+    if (ippFiles.size() == 0) {
+        return retPrdsList;
+    }
+    const QString &ippFilePath = directory.filePath(ippFiles[0]);
+    QFile file(ippFilePath);
+    if(!file.open(QFile::ReadOnly | QFile::Text)){
+        qDebug() << "Cannot read file" << file.errorString();
+        return retPrdsList;
+    }
+
+    QXmlStreamReader reader(&file);
+    if (reader.readNextStartElement()) {
+//        qDebug() << reader.name();
+        if (reader.name() == "metadata") {
+            while (reader.readNextStartElement()) {
+//                qDebug() << reader.name();
+                if (reader.name() == "XML_files") {
+                    while(reader.readNextStartElement()){
+//                        qDebug() << reader.name();
+                        if (reader.name().startsWith("XML_")) {
+                            const QString &s = reader.readElementText();
+                            retPrdsList.append(s);
+//                            qDebug() << "Product path: " << s;
+                        }
+                    }
+                    // no need to continue
+                    break;
+                } else {
+                    reader.skipCurrentElement();
+                }
+            }
+        }
+    }
+
+    return retPrdsList;
+}

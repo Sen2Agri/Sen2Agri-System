@@ -9,12 +9,19 @@
 
 #define L4A_CT_CFG_PREFIX   "processor.s4c_l4a."
 
+S4CCropTypeHandler::S4CCropTypeHandler() {
+    m_cfgKeys = QStringList() << "lc" << "min-s2-pix" << "min-s1-pix" << "best-s2-pix" << "pa-min" << "pa-train-h" <<
+                                 "pa-train-l" << "sample-ratio-h" << "sample-ratio-l" << "smote-target" << "smote-k" <<
+                                 "num-trees" << "min-node-size";
+}
+
 QList<std::reference_wrapper<TaskToSubmit>> S4CCropTypeHandler::CreateTasks(QList<TaskToSubmit> &outAllTasksList) {
     outAllTasksList.append(TaskToSubmit{ "s4c-crop-type", {}} );
     outAllTasksList.append(TaskToSubmit{ "product-formatter", {} });
 
     // product formatter to wait for the crop type script
      outAllTasksList[1].parentTasks.append(outAllTasksList[0]);
+     outAllTasksList.append(TaskToSubmit{ "export-product-launcher", {outAllTasksList[1]} });
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: outAllTasksList) {
@@ -39,6 +46,14 @@ NewStepList S4CCropTypeHandler::CreateSteps(EventProcessingContext &ctx, const J
                                                                       prdFinalFilesDir, cfg.startDate, cfg.endDate);
     allSteps.append(prdFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
 
+    const auto & productFormatterPrdFileIdFile = prdFormatterTask.GetFilePath("prd_infos.txt");
+    TaskToSubmit &exportCsvToShpProductTask = allTasksList[curTaskIdx++];
+    const QStringList &exportCsvToShpProductArgs = { "-f", productFormatterPrdFileIdFile,
+                                                      "-o", "CropType.gpkg"
+                                                };
+    allSteps.append(exportCsvToShpProductTask.CreateStep("export-product-launcher", exportCsvToShpProductArgs));
+
+
     return allSteps;
 }
 
@@ -49,17 +64,21 @@ QStringList S4CCropTypeHandler::GetCropTypeTaskArgs(const CropTypeJobConfig &cfg
                                  "--season-end", cfg.endDate.toString("yyyy-MM-dd"),
                                  "--working-path", workingPath,
                                  "--out-path", prdTargetDir,
-                                 "--training-ratio", cfg.training_ratio,
-                                 "--num-trees",      cfg.num_trees,
-                                 "--sample-size",    cfg.sample_size,
-                                 "--count-threshold",cfg.count_threshold,
-                                 "--count-min",      cfg.count_min,
-                                 "--smote-target",   cfg.smote_target,
-                                 "--smote-k",        cfg.smote_k,
                                  "--tiles"
                                };
 
     cropTypeArgs += cfg.tileIds;
+
+    for(const QString &cfgKey : m_cfgKeys) {
+        auto it = cfg.mapCfgValues.find(cfgKey);
+        if(it != cfg.mapCfgValues.end()){
+            const QString &value = it.value();
+            if (value.size() > 0) {
+                cropTypeArgs += QString("--").append(cfgKey);
+                cropTypeArgs += value;
+            }
+        }
+    }
 
     return cropTypeArgs;
 }
@@ -110,7 +129,7 @@ bool S4CCropTypeHandler::GetL2AProductsInterval(const QMap<QString, QStringList>
         const QStringList &listFiles = mapTilesMeta.value(prd);
         if(listFiles.size() > 0) {
             const QString &tileMeta = listFiles.at(0);
-            QDateTime dtPrdDate = ProcessorHandlerHelper::GetL2AProductDateFromPath(tileMeta);
+            const QDateTime &dtPrdDate = ProcessorHandlerHelper::GetL2AProductDateFromPath(tileMeta);
             if(!bDatesInitialized) {
                 startDate = dtPrdDate;
                 endDate = dtPrdDate;
@@ -140,14 +159,10 @@ void S4CCropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     CropTypeJobConfig cfg;
     cfg.jobId = event.jobId;
     cfg.siteId = event.siteId;
-    cfg.training_ratio = GetStringConfigValue(parameters, configParameters, "training_ratio", L4A_CT_CFG_PREFIX);
-    cfg.num_trees = GetStringConfigValue(parameters, configParameters, "num_trees", L4A_CT_CFG_PREFIX);
-    cfg.sample_size = GetStringConfigValue(parameters, configParameters, "sample_size", L4A_CT_CFG_PREFIX);
-    cfg.count_threshold = GetStringConfigValue(parameters, configParameters, "count_threshold", L4A_CT_CFG_PREFIX);
-    cfg.count_min = GetStringConfigValue(parameters, configParameters, "count_min", L4A_CT_CFG_PREFIX);
-    cfg.smote_target = GetStringConfigValue(parameters, configParameters, "smote_target", L4A_CT_CFG_PREFIX);
-    cfg.smote_k = GetStringConfigValue(parameters, configParameters, "smote_k", L4A_CT_CFG_PREFIX);
 
+    for (QString cfgKey: m_cfgKeys) {
+        cfg.mapCfgValues.insert(cfgKey, GetStringConfigValue(parameters, configParameters, cfgKey, L4A_CT_CFG_PREFIX));
+    }
 
     QStringList listProducts;
     bool ret = GetStartEndDatesFromProducts(ctx, event, cfg.startDate, cfg.endDate, listProducts);
@@ -175,22 +190,31 @@ void S4CCropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
         if(prodName != "") {
-            ctx.MarkJobFinished(event.jobId);
             QString quicklook = GetProductFormatterQuicklook(ctx, event);
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
             QDateTime minDate, maxDate;
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
-            ctx.InsertProduct({ ProductType::S4CL4AProductTypeId, event.processorId, event.siteId,
+            int prdId = ctx.InsertProduct({ ProductType::S4CL4AProductTypeId, event.processorId, event.siteId,
                                 event.jobId, productFolder, maxDate, prodName, quicklook,
                                 footPrint, std::experimental::nullopt, TileIdList() });
+            const QString &prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) +
+                    "/" + "prd_infos.txt";
 
+            QFile file( prodFolderOutPath );
+            if ( file.open(QIODevice::ReadWrite) )
+            {
+                QTextStream stream( &file );
+                stream << prdId << ";" << productFolder << endl;
+            }
         } else {
             ctx.MarkJobFailed(event.jobId);
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
+    } else if (event.module == "export-product-launcher") {
+        ctx.MarkJobFinished(event.jobId);
         // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId, "s4c_l4a");
+        RemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
     }
 }
 

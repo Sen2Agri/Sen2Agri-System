@@ -45,18 +45,29 @@ void SchedulerApp::RunOnce()
 
     try
     {
+        Logger::info("Loading tasks from database ...");
+        qDebug() << ("Loading tasks from database ...");
         taskList = m_loader->LoadFromDatabase();
-        if(taskList.size() == 0)
+        if(taskList.size() == 0) {
+            Logger::info("No tasks defined in the database yet!");
+            qDebug() << ("No tasks defined in the database yet!");
             return;
+        }
 
+        Logger::info("Computing next run time and updating status in database... ");
+        qDebug() << ("Computing next run time and updating status in database... ");
         planner.computeNextRunTime(taskList);
         // save the updated nextScheduleTime to database
         m_loader->UpdateStatusinDatabase(taskList);
 
+        Logger::info("Extracting ready list... ");
+        qDebug() << ("Extracting ready list... ");
         std::vector<ScheduledTask> readyList;
         readyList = planner.extractReadyList(taskList);
         planner.orderByPriority(readyList);
 
+        Logger::info("Ready list extracted!");
+        qDebug() << ("Ready list extracted!");
         // we'll use a defensive strategy : only one task will be launched in a cycle
         for (auto& task : readyList)
         {
@@ -64,10 +75,16 @@ void SchedulerApp::RunOnce()
             prequest.siteId = task.siteId;
             prequest.ttNextScheduledRunTime = (int)task.taskStatus.nextScheduledRunTime.toTime_t();
             prequest.parametersJson = GetTaskParametersJson(task);
+            qDebug() << "Getting job definition for processor " << task.processorId << " and site " << task.siteId;
+            Logger::info(QStringLiteral("Getting job definition for processor %1 and site %2")
+                          .arg(task.processorId).arg(task.siteId));
             jd = m_orchestrator->GetJobDefinition(prequest);
+            qDebug() << "Job definition got " << jd.isValid;
+            Logger::info(QStringLiteral("Job definition got %1").arg(task.processorId));
             if ( jd.isValid )
             {
                 // Optional aproach : only one processor run at a time : KO => done in SLURM
+                qDebug() << "Submitting job ...";
                 m_orchestrator->SubmitJob(jd);
                 task.taskStatus.lastSuccesfullTimestamp = QDateTime::currentDateTime();
                 task.taskStatus.lastSuccesfullScheduledRun = task.taskStatus.nextScheduledRunTime;
@@ -91,7 +108,11 @@ void SchedulerApp::RunOnce()
         }
 
         // save this changes to database for the tried and launched tasks
+        qDebug() << "Updating ready list to database ...";
+        Logger::info("Updating ready list to database ...");
         m_loader->UpdateStatusinDatabase(readyList);
+        qDebug() << "Updating ready list to database ... Done!";
+        Logger::info("Updating ready list to database ... Done!");
     }
     catch (std::exception e)
     {

@@ -5,6 +5,7 @@
 
 class S4CCropTypeHandler : public ProcessorHandler
 {
+
     typedef struct {
         int jobId;
         int siteId;
@@ -12,15 +13,12 @@ class S4CCropTypeHandler : public ProcessorHandler
         QDateTime endDate;
         QStringList tileIds;
 
-        QString training_ratio;
-        QString num_trees;
-        QString sample_size;
-        QString count_threshold;
-        QString count_min;
-        QString smote_target;
-        QString smote_k;
+        QMap<QString, QString> mapCfgValues;
 
     } CropTypeJobConfig;
+
+public:
+    S4CCropTypeHandler();
 
 private:
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -44,4 +42,5 @@ private:
                                       QDateTime &startDate, QDateTime &endDate, QStringList &listTilesMetaFiles);
     QStringList GetTileIdsFromProducts(EventProcessingContext &ctx,
                                         const JobSubmittedEvent &event, const QStringList &listProducts);
+    QStringList m_cfgKeys;
 };

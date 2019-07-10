@@ -45,7 +45,7 @@ public:
 private:
 
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
-                                const JobSubmittedEvent &event) override;
+                                const JobSubmittedEvent &evt) override;
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 const TaskFinishedEvent &event) override;
 
@@ -115,6 +115,15 @@ private:
     bool ParseModelFileName(const QString &qtModelFileName, double &solarZenith, double &sensorZenith, double &relAzimuth);
     QString GetExistingModelForTile(const QStringList &modelsList, const QString &tileFile);
 private:
+    int UpdateJobSubmittedParamsFromSchedReq(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                              QJsonObject &parameters, JobSubmittedEvent &newEvent);
+    ProductList GetL2AProductsNotProcessed(EventProcessingContext &ctx,
+                                           int siteId, const QDateTime &startDate, const QDateTime &endDate);
+    QStringList GetL3BSourceL2APrdsPaths(const QString &prdPath);
+    QStringList GetL2ARelPathsFromDB(EventProcessingContext &ctx, int siteId,
+                                     const QDateTime &startDate, const QDateTime &endDate, QStringList &retFullPaths, ProductList &prdList);
+    QStringList GetL2ARelPathsFromProcessedL3Bs(EventProcessingContext &ctx, int siteId,
+                                                const QDateTime &startDate, const QDateTime &endDate, QStringList &retFullPaths);
 
 };
 

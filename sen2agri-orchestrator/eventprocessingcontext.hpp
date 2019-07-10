@@ -80,6 +80,7 @@ public:
     }
 
     QString GetProductAbsolutePath(int siteId, const QString &path);
+    static QStringList findProductFiles(const QString &absPath);
     QStringList findProductFiles(int siteId, const QString &path);
 
 private:

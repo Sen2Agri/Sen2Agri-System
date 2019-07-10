@@ -88,7 +88,7 @@ public:
     static bool HighLevelPrdHasL2aSource(const QString &highLevelPrd, const QString &l2aPrd);
     static QMap<QString, QStringList> GroupHighLevelProductTiles(const QStringList &listAllProductFolders);
 
-    static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
+    //static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
     static const L2MetaTileNameInfos &GetL2AProductTileNameInfos(const QString &metaFileName);
     static SatelliteIdType GetL2ASatelliteFromTile(const QString &tileMetadataPath);
     static L2ProductType GetL2AProductTypeFromTile(const QString &tileMetadataPath);

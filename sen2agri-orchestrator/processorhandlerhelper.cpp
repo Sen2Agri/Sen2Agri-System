@@ -16,13 +16,13 @@
 //       not the name of the satellite as it appears inside the file metadata of product (that can be SENTINEL-2A, LANDSAT_8 etc.)
 /* static */
 QMap<QString, ProcessorHandlerHelper::L2MetaTileNameInfos> ProcessorHandlerHelper::m_mapSensorL2ATileMetaFileInfos =
-    {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 8, "hdr", ""}}, //"S2A|S2B_*_*_L2VALD_<TILEID>_*_*_*_<DATE>.HDR"
-     {"SENTINEL2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 1, "xml", R"(SENTINEL2[A-D]_(\d{8})-(\d{6})-(\d{3})_L2A_T(\d{2})([A-Za-z]{3})_.*_MTD_ALL\.xml)"}},
-     {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, 5, "hdr", ""}}, //L8_*_L8C_L2VALD_<TILEID>_<DATE>.HDR
-     {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, 3, "xml", ""}}, //SPOT4_*_*_<DATE>_*_*.xml
-     {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, 3, "xml", ""}}, //SPOT5_*_*_<DATE>_*_*.xml
+    {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 2, "hdr", R"(S2[A-D]_OPER_SSC_L2VALD_(\d{2}[A-Z]{3})_.*_(\d{8}).HDR)", 1}},
+     {"SENTINEL2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 1, "xml", R"(SENTINEL2[A-D]_(\d{8})-(\d{6})-(\d{3})_L2A_T(\d{2})([A-Za-z]{3})_.*_MTD_ALL\.xml)", -1}},
+     {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, 2, "hdr", R"(L8_.*_L8C_L2VALD_(\d{6})_(\d{8}).HDR)", 1}},
+     {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, 3, "xml", "", -1}}, //SPOT4_*_*_<DATE>_*_*.xml
+     {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, 3, "xml", "", -1}}, //SPOT5_*_*_<DATE>_*_*.xml
      // this prefix is impossible to occur in the file name
-     {INVALID_FILE_SEQUENCE, {ProcessorHandlerHelper::L2_PRODUCT_TYPE_UNKNOWN, ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN, -1, INVALID_FILE_SEQUENCE, ""}}
+     {INVALID_FILE_SEQUENCE, {ProcessorHandlerHelper::L2_PRODUCT_TYPE_UNKNOWN, ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN, -1, INVALID_FILE_SEQUENCE, "", -1}}
 };
 
 QMap<QString, ProductType> ProcessorHandlerHelper::m_mapHighLevelProductTypeInfos = {
@@ -420,6 +420,8 @@ QString ProcessorHandlerHelper::GetHighLevelProductIppFile(const QString &produc
     return "";
 }
 
+// TODO: This function should be extended to return a list of all the L2A products if the tile filter is empty or if it is a time series
+//      (see the implementation in xxx_l3b_new.cpp
 QString ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(const QString &productDir, const QString &tileFilter) {
     const QString ippXmlFile = GetHighLevelProductIppFile(productDir);
     if(ippXmlFile.length() == 0) {
@@ -582,6 +584,7 @@ QString ProcessorHandlerHelper::GetFileNameFromPath(const QString &filePath) {
     return fileInfo.fileName();
 }
 
+/*
 QString ProcessorHandlerHelper::GetL2ATileMainImageFilePath(const QString &tileMetadataPath) {
     QFileInfo info(tileMetadataPath);
     QString parentFolder = info.absoluteDir().absolutePath();
@@ -606,7 +609,7 @@ QString ProcessorHandlerHelper::GetL2ATileMainImageFilePath(const QString &tileM
     }
     return "";
 }
-
+*/
 
 const ProcessorHandlerHelper::L2MetaTileNameInfos &ProcessorHandlerHelper::GetL2AProductTileNameInfos(const QString &metaFileName) {
     QMap<QString, L2MetaTileNameInfos>::iterator i;
@@ -645,7 +648,7 @@ QDateTime ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path)
     int dateIdxInName = infos.dateIdxInName;
     QString dateStr;
     if (infos.tileNameRegex.size() > 0 && dateIdxInName >= 0) {
-        static QRegularExpression rex(infos.tileNameRegex);
+        QRegularExpression rex(infos.tileNameRegex);
         QRegularExpression re(rex);
         const QRegularExpressionMatch &match = re.match(name);
         if (match.hasMatch()) {

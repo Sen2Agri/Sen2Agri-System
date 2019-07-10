@@ -234,17 +234,11 @@ QString EventProcessingContext::GetProductAbsolutePath(int siteId, const QString
     return absPath;
 }
 
-QStringList EventProcessingContext::findProductFiles(int siteId, const QString &path)
-{
+QStringList EventProcessingContext::findProductFiles(const QString &absPath) {
     QStringList result;
-    QFileInfo fileInfo(path);
-    QString absPath = path;
-    if(!fileInfo.isAbsolute()) {
-        // if we have the product name, we need to get the product path from the database
-        Product product = persistenceManager.GetProduct(siteId, path);
-        absPath = product.fullPath;
-    }
-    for (const auto &file : QDir(absPath).entryList({ "*.HDR", "*.xml" }, QDir::Files)) {
+    for (const auto &file : QDir(absPath).entryList({ "S2*_OPER_SSC_L2VALD_*.HDR",
+                                                    "L8_*_L8C_L2VALD_*.HDR", "*.xml" },
+                                                    QDir::Files)) {
         result.append(absPath + file);
     }
     // Check for MAJA product
@@ -273,6 +267,19 @@ QStringList EventProcessingContext::findProductFiles(int siteId, const QString &
                 .toStdString());
     }
     return result;
+
+}
+
+QStringList EventProcessingContext::findProductFiles(int siteId, const QString &path)
+{
+    QFileInfo fileInfo(path);
+    QString absPath = path;
+    if(!fileInfo.isAbsolute()) {
+        // if we have the product name, we need to get the product path from the database
+        Product product = persistenceManager.GetProduct(siteId, path);
+        absPath = product.fullPath;
+    }
+    return findProductFiles(absPath);
 }
 
 QString EventProcessingContext::GetProcessorShortName(int processorId)
