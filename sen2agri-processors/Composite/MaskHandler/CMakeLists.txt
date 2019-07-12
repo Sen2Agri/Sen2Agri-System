@@ -1,6 +1,6 @@
 otb_create_application(
   NAME           MaskHandler
-  SOURCES        MaskHandlerFunctor.h MaskHandler.cpp MaskExtractorFilter.hxx
+  SOURCES        MaskHandler.cpp
   LINK_LIBRARIES Sen2AgriProductReaders ${OTB_LIBRARIES})
 
 if(BUILD_TESTING)

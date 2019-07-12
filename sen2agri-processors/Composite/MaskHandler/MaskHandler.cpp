@@ -56,10 +56,7 @@
 
 #include "itkBinaryFunctorImageFilter.h"
 
-#include "MaskExtractorFilter.hxx"
-
 #include <vector>
-#include "MaskHandlerFunctor.h"
 #include "MetadataHelperFactory.h"
 #include "otbImageToVectorImageCastFilter.h"
 #include "GlobalDefs.h"
@@ -133,17 +130,8 @@ public:
     typedef otb::ImageFileReader<Int16VectorImageType>                          ReaderType;
     typedef otb::ImageList<Int16ImageType>                                      ImageListType;
     typedef ImageListToVectorImageFilter<ImageListType, Int16VectorImageType >  ListConcatenerFilterType;
-//    typedef MaskHandlerFunctor <Int16VectorImageType::PixelType,
-//                                    Int16VectorImageType::PixelType, Int16VectorImageType::PixelType> MaskHandlerFunctorType;
 
-//    typedef itk::BinaryFunctorImageFilter< Int16VectorImageType, Int16VectorImageType,
-//                                            Int16VectorImageType, MaskHandlerFunctorType > FunctorFilterType;
-
-//    typedef otb::MaskExtractorFilter<Int16VectorImageType, Int16VectorImageType> MaskExtractorFilterType;
-
-//    typedef otb::ImageToVectorImageCastFilter<Int16ImageType, Int16VectorImageType> VectorCastFilterType;
-
-      typedef Functor::MaskHandlerFunctor <Int16ImageType::PixelType,
+    typedef Functor::MaskHandlerFunctor <Int16ImageType::PixelType,
                                   Int16VectorImageType::PixelType>              MaskHandlerFunctorType;
 
     typedef itk::UnaryFunctorImageFilter<Int16ImageType,Int16VectorImageType, MaskHandlerFunctorType > MaskHandlerFilterType;
@@ -201,20 +189,6 @@ private:
         }
 
         m_MaskExtractor = MaskHandlerFilterType::New();
-//        m_ReaderCloud = ReaderType::New();
-//        m_ReaderWaterSnow = ReaderType::New();
-//        if(missionName.find(SPOT4_MISSION_STR) != std::string::npos ||
-//                (missionName.find(SPOT5_MISSION_STR) != std::string::npos)) {
-//            m_MaskExtractor->SetBitsMask(0, 1, 2);
-//        } else if ((missionName.find(LANDSAT_MISSION_STR) != std::string::npos) ||
-//                   (missionName.find(SENTINEL_MISSION_STR) != std::string::npos)) {
-//            m_MaskExtractor->SetBitsMask(0, 0, 5);
-//        } else {
-//            itkExceptionMacro("Unknown mission: " + missionName);
-//        }
-//        m_ReaderCloud->SetFileName(m_pHelper->GetCloudImageFileName());
-//        m_ReaderWaterSnow->SetFileName(m_pHelper->GetWaterImageFileName());
-
         m_MaskExtractor->SetFunctor(m_Functor);
         Int16ImageType::Pointer img = m_pHelper->GetMasksImage((MasksFlagType)(MSK_CLOUD|MSK_WATER|MSK_SNOW), false, resolution);
         img->UpdateOutputInformation();
@@ -234,7 +208,6 @@ private:
 
     ReaderType::Pointer                 m_ReaderCloud;
     ReaderType::Pointer                 m_ReaderWaterSnow ;
-    //FunctorFilterType::Pointer      m_SpotMaskHandlerFunctor;
     MaskHandlerFunctorType                      m_Functor;
     MaskHandlerFilterType::Pointer              m_MaskExtractor;
     std::unique_ptr<MetadataHelper<short>> m_pHelper;
