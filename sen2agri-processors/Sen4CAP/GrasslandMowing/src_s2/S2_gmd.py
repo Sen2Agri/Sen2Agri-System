@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import pandas as pd
+import lxml.etree as et
 
 import datetime
 
@@ -151,6 +152,9 @@ def load_stats(vrt_data, vrt_df, segments, unique_segments, seg_attributes, seg_
         print(datetime.datetime.now())
         band = vrt_data.GetRasterBand(d_d['Index']+1).ReadAsArray()
 
+        if band is None:
+            continue
+
         print("ext_mask")
         print(datetime.datetime.now())
         ext_mask = np.logical_and(np.logical_and(np.isfinite(band), band!=invalid_data), band!=0)
@@ -230,7 +234,6 @@ def remove_corrupted_files(data_list):
     return ret_list
 
 
-
 def make_vrt(data_list, wkt_dst_srs, outputDir, output_vrt_file, outputBounds=None, resolution='average', resampling=gdal.GRA_Bilinear, srcNodata=0, error_threshold=0.125):
 
     if len(data_list) == 0:
@@ -272,6 +275,14 @@ def make_vrt(data_list, wkt_dst_srs, outputDir, output_vrt_file, outputBounds=No
 
 
     bands = vrt_data.RasterCount
+    if bands > 0:
+        del vrt_data
+        vrt_data = gdal.Open(output_vrt_file)
+        xml = et.ElementTree(file=output_vrt_file)
+        for band_num in range(1, bands+1):
+            filename = xml.xpath('//VRTRasterBand[@band=%d]//SourceFilename/text()' % band_num)[0]
+            band = vrt_data.GetRasterBand(band_num)
+            band.SetDescription(filename)
 
     # to force gdal to write file
     del vrt_data
@@ -416,14 +427,17 @@ def layer2mask(layerFile, rasterFile, outputFile, layer_type='ROI', class_attrib
     driver = gdal.GetDriverByName('GTiff')
     if layer_type=='ROI':
         outMask = driver.Create(outputFile, gdal_data.RasterXSize, gdal_data.RasterYSize, 1, gdal.GDT_Byte)
+        fill_val = 0
     elif layer_type=='segments':
-        outMask = driver.Create(outputFile, gdal_data.RasterXSize, gdal_data.RasterYSize, 1, gdal.GDT_UInt32)
+        outMask = driver.Create(outputFile, gdal_data.RasterXSize, gdal_data.RasterYSize, 1, gdal.GDT_Int32)
+        fill_val = -1
     elif layer_type=='classes':
         outMask = driver.Create(outputFile, gdal_data.RasterXSize, gdal_data.RasterYSize, 1, gdal.GDT_UInt32)
+        fill_val = 0
     outMask.SetGeoTransform(data_geo_transform)
     outMask.SetProjection(data_projection)
     outband = outMask.GetRasterBand(1)
-    outband.Fill(0)
+    outband.Fill(fill_val)
     outMask.FlushCache()
 
     # rasterize ROI layer over SAR data

@@ -62,9 +62,16 @@ def fuse_dets(date1, date2, conf, mission, pr_date1, pr_date2, pr_conf, pr_mis):
             for j in range(pr_lend):
                 valid_inter, interv = intersection_date(date1[i], date2[i], pr_date1[j], pr_date2[j])
                 if valid_inter: #conferma di detection precedente
-### Inizio -------- aggiunta da LAURA
-                    interv = np.array((date1[i], date2[i]))
-### Fine   -------- aggiunta da LAURA
+###
+                    if conf[i] > pr_conf[j]:
+                        interv = np.array((date1[i], date2[i]))
+                    else:
+                        interv = np.array((pr_date1[j], pr_date2[j]))
+###
+
+#### Inizio -------- aggiunta da LAURA
+#                    interv = np.array((date1[i], date2[i]))
+#### Fine   -------- aggiunta da LAURA
                     mis_str = pr_mis[j]
                     if mission[i] not in pr_mis[j]:
                         mis_str = pr_mis[j] + '/' + mission[i]
@@ -220,9 +227,9 @@ def writeDetections_S2(dest, segment_ids, confidence, dateList, valid_date_list_
                 feature['m%d_dend' % count_dates] = "{:%Y-%m-%d %H:%M:%S}".format(d2)
                 feature['m%d_conf' % count_dates] = round(c, 3)
                 feature['m%d_mis' % count_dates] = mis_str
-            feature['proc'] = 1
             feature['mow_n'] = count_dates
-            layer.SetFeature(feature)
+        feature['proc'] = 1
+        layer.SetFeature(feature)
         if count:
             print("Cannot find %d segments" % count)
 
@@ -318,9 +325,9 @@ def writeDetections_S1(dest, segment_ids, confidence, dateList1, dateList2, miss
                 feature['m%d_conf' % count_dates] = round(c, 3)
                 feature['m%d_mis' % count_dates] = mis_str
 
-            feature['proc'] = 1
             feature['mow_n'] = count_dates
-            layer.SetFeature(feature)
+        feature['proc'] = 1
+        layer.SetFeature(feature)
         if count:
             print("Cannot find %d segments" % count)
 
