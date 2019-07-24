@@ -134,47 +134,62 @@ def validate_L1C_product_dir(l1cDir):
 
     return True
 
+def delete_file_if_match(fullFilePath, fileName, regex, fileType) :
+    isMatch = re.match(regex, fileName)
+    if isMatch is not None:
+        print("Deleting {} file {}".format(fileType, fullFilePath))
+        os.remove(fullFilePath)
+
 def post_process_maccs_product(demmaccs_config, output_path) : 
     print ("Postprocessing product {} ...".format(output_path))
     for root, dirnames, filenames in os.walk(output_path):
-        for filename in fnmatch.filter(filenames, "*.TIF"):
-            tifFilePath = os.path.join(root, filename)
-            print("Processing {}".format(filename))
-            if (demmaccs_config.removeSreFiles == True) :
-                isSre = re.match(".*SRE.*\.DBL\.TIF", filename)
-                if isSre is not None:
-                    print("Deleting SRE file {}".format(tifFilePath))
-                    os.remove(tifFilePath)
-            elif (demmaccs_config.removeFreFiles == True) :
-                isFre = re.match(".*FRE.*\.DBL\.TIF", filename)
-                if isFre is not None:
-                    print("Deleting FRE file {}".format(tifFilePath))
-                    os.remove(tifFilePath)
-            if ((demmaccs_config.compressTiffs == True) or (demmaccs_config.cogTiffs == True)) :
-                optgtiffArgs = ""
-                if (demmaccs_config.compressTiffs == True) :
-                    optgtiffArgs += " --compress"
-                    optgtiffArgs += " DEFLATE"
-                else:
-                    optgtiffArgs += " --no-compress"
-                    
-                if (demmaccs_config.cogTiffs == True) :
-                    isMask = re.match(".*[_MSK|_QLT]?\.DBL\.TIF", filename)
-                    if isMask is not None :
-                        optgtiffArgs += " --resampler"
-                        optgtiffArgs += " nearest"
-                    else :
-                        optgtiffArgs += " --resampler"
-                        optgtiffArgs += " average"
-                    optgtiffArgs += " --overviews"
-                    optgtiffArgs += " --tiled"
-                else:
-                    optgtiffArgs += " --no-overviews"
-                    optgtiffArgs += " --strippped"
-                optgtiffArgs += " "
-                optgtiffArgs += tifFilePath
-                print("Running optimize_gtiff.py with params {}".format(optgtiffArgs))                 
-                os.system("optimize_gtiff.py" + optgtiffArgs)
+        # in fnmatch.filter(filenames, "*.TIF"):
+        for filename in filenames :
+            if filename.endswith(('.TIF', '.tif')):
+                tifFilePath = os.path.join(root, filename)
+                print("Processing {}".format(filename))
+                if (demmaccs_config.removeSreFiles == True) :
+                    delete_file_if_match(tifFilePath, filename, ".*SRE.*\.DBL\.TIF", "SRE")
+                    delete_file_if_match(tifFilePath, filename, ".*_SRE_B.*\.tif", "SRE")
+    #                isSre = re.match(".*SRE.*\.DBL\.TIF", filename)
+    #                if isSre is not None:
+    #                    print("Deleting SRE file {}".format(tifFilePath))
+    #                    os.remove(tifFilePath)
+                elif (demmaccs_config.removeFreFiles == True) :
+                    delete_file_if_match(tifFilePath, filename, ".*FRE.*\.DBL\.TIF", "FRE")
+                    delete_file_if_match(tifFilePath, filename, ".*_FRE_B.*\.tif", "FRE")
+    #                isFre = re.match(".*FRE.*\.DBL\.TIF", filename)
+    #                if isFre is not None:
+    #                    print("Deleting FRE file {}".format(tifFilePath))
+    #                    os.remove(tifFilePath)
+                if ((demmaccs_config.compressTiffs == True) or (demmaccs_config.cogTiffs == True)) :
+                    optgtiffArgs = ""
+                    if (demmaccs_config.compressTiffs == True) :
+                        optgtiffArgs += " --compress"
+                        optgtiffArgs += " DEFLATE"
+                    else:
+                        optgtiffArgs += " --no-compress"
+                        
+                    if (demmaccs_config.cogTiffs == True) :
+                        isMask = re.match(".*_((MSK)|(QLT))_*.\.DBL\.TIF", filename)
+                        if isMask is None :
+                            # check for MAJA mask rasters
+                            isMask = re.match(".*_((CLM)|(MG2)|(EDG)|(DFP))_.*\.tif", filename)
+                        if isMask is not None :
+                            optgtiffArgs += " --resampler"
+                            optgtiffArgs += " nearest"
+                        else :
+                            optgtiffArgs += " --resampler"
+                            optgtiffArgs += " average"
+                        optgtiffArgs += " --overviews"
+                        optgtiffArgs += " --tiled"
+                    else:
+                        optgtiffArgs += " --no-overviews"
+                        optgtiffArgs += " --strippped"
+                    optgtiffArgs += " "
+                    optgtiffArgs += tifFilePath
+                    print("Running optimize_gtiff.py with params {}".format(optgtiffArgs))                 
+                    os.system("optimize_gtiff.py" + optgtiffArgs)
     
 # def get_product_footprint(tiles_dir_list, satellite_id):
 #     wgs84_extent_list = []
