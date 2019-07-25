@@ -138,13 +138,6 @@ private:
                                               const QString &ndviMergedFile, const QString &ampMergedFile, const QString &coheMergedFile,
                                               NewStepList &steps, QList<TaskToSubmit> &allTasksList, int &curTaskIdx, AgricPractOperation activeOper);
 
-    QStringList GetInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, const ProductType &prdType,
-                                 QDateTime &minDate, QDateTime &maxDate);
-
-    QJsonArray FilterProducts(const QJsonArray &allPrd, const ProductType &prdType);
-    QStringList FindNdviProductTiffFile(const QString &path, const QStringList &s2L8TilesFilter);
-    QStringList FindNdviProductTiffFile(EventProcessingContext &ctx, int siteId, const QString &path, const QStringList &s2L8TilesFilter);
-
     TQStrQStrMap LoadParamsFromFile(QSettings &settings, const QString &practicePrefix, const QString &sectionName, const AgricPracticesSiteCfg &cfg);
     void UpdatePracticesParams(const TQStrQStrMap &defVals, TQStrQStrMap &sectionVals);
 

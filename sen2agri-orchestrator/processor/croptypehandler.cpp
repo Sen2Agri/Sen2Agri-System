@@ -16,7 +16,7 @@ void CropTypeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmitte
     cfg.jobId = event.jobId;
     cfg.siteId = event.siteId;
     cfg.resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", cfg.resolution) ||
+    if(!ProcessorHandlerHelper::GetParameterValueAsInt(parameters, "resolution", cfg.resolution) ||
             cfg.resolution == 0) {
         cfg.resolution = 10;
     }

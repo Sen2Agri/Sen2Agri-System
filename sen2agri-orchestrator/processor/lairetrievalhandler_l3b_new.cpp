@@ -172,7 +172,7 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
 
     // Get the resolution value
     int resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+    if(!ProcessorHandlerHelper::GetParameterValueAsInt(parameters, "resolution", resolution) ||
             resolution == 0) {
         resolution = 10;    // TODO: We should configure the default resolution in DB
     }
@@ -659,7 +659,7 @@ QStringList LaiRetrievalHandlerL3BNew::GetLaiMonoProductFormatterArgs(TaskToSubm
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    const auto &lutFile = GetMapValue(configParameters, "processor.l3b.lai.lut_path");
+    const auto &lutFile = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.lut_path");
 
     WriteExecutionInfosFile(executionInfosPath, tileResultFilesList);
 
@@ -952,17 +952,17 @@ int LaiRetrievalHandlerL3BNew::UpdateJobSubmittedParamsFromSchedReq(EventProcess
 
     int jobVal;
     QString strStartDate, strEndDate;
-    if(GetParameterValueAsInt(parameters, "scheduled_job", jobVal) && (jobVal == 1) &&
-            GetParameterValueAsString(parameters, "start_date", strStartDate) &&
-            GetParameterValueAsString(parameters, "end_date", strEndDate) &&
+    if(ProcessorHandlerHelper::GetParameterValueAsInt(parameters, "scheduled_job", jobVal) && (jobVal == 1) &&
+            ProcessorHandlerHelper::GetParameterValueAsString(parameters, "start_date", strStartDate) &&
+            ProcessorHandlerHelper::GetParameterValueAsString(parameters, "end_date", strEndDate) &&
             parameters.contains("input_products")) {
         if (!parameters.contains("input_products") || parameters["input_products"].toArray().size() == 0) {
             const auto &startDate = QDateTime::fromString(strStartDate, "yyyyMMdd");
             const auto &endDate = QDateTime::fromString(strEndDate, "yyyyMMdd");
             QString strSeasonStartDate, strSeasonEndDate;
             QDateTime seasonStartDate, seasonEndDate;
-            if (GetParameterValueAsString(parameters, "season_start_date", strSeasonStartDate) &&
-                    GetParameterValueAsString(parameters, "season_end_date", strSeasonEndDate)) {
+            if (ProcessorHandlerHelper::GetParameterValueAsString(parameters, "season_start_date", strSeasonStartDate) &&
+                    ProcessorHandlerHelper::GetParameterValueAsString(parameters, "season_end_date", strSeasonEndDate)) {
                 seasonStartDate = QDateTime::fromString(strSeasonStartDate, "yyyyMMdd");
                 seasonEndDate = QDateTime::fromString(strSeasonEndDate, "yyyyMMdd");
             }

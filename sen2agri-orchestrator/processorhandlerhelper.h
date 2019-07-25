@@ -3,6 +3,9 @@
 
 #include "model.hpp"
 
+typedef std::map<QString, QString> TQStrQStrMap;
+typedef std::pair<QString, QString> TQStrQStrPair;
+
 // 23*3600+59*60+59
 #define SECONDS_IN_DAY 86400
 class ProcessorHandlerHelper
@@ -113,9 +116,21 @@ public:
     static void TrimLeftSecondarySatellite(QStringList &productsList, QMap<QString, TileTemporalFilesInfo> mapTiles);
     static SatelliteIdType ConvertSatelliteType(Satellite satId);
 
-    static QDateTime GetNdviProductTime(const QString &prdPath);
-    static QDateTime GetS1L2AProductTime(const QString &prdPath);
     static void UpdateMinMaxTimes(const QDateTime &newTime, QDateTime &minTime, QDateTime &maxTime);
+
+    static QString GetMapValue(const std::map<QString, QString> &configParameters, const QString &key, const QString &defVal = "");
+    static bool GetBoolConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                            const QString &key, const QString &cfgPrefix);
+    static int GetIntConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                          const QString &key, const QString &cfgPrefix);
+    static QString GetStringConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                            const QString &key, const QString &cfgPrefix);
+
+    static bool GetParameterValueAsInt(const QJsonObject &parameters, const QString &key, int &outVal);
+    static bool GetParameterValueAsString(const QJsonObject &parameters, const QString &key, QString &outVal);
+
+    static TQStrQStrMap FilterConfigParameters(const TQStrQStrMap &configParameters, const QString &cfgPrefix);
+
 
 
 private:

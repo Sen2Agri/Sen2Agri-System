@@ -521,96 +521,11 @@ ProcessorHandlerHelper::SatelliteIdType ProcessorHandler::GetSatIdForTile(const 
 bool ProcessorHandler::IsCloudOptimizedGeotiff(const std::map<QString, QString> &configParameters) {
     const QStringList &tokens = processorDescr.shortName.split('_');
     const QString &strKey = "processor." + tokens[0] + ".cloud_optimized_geotiff_output";
-    auto isCog = GetMapValue(configParameters, strKey);
+    auto isCog = ProcessorHandlerHelper::GetMapValue(configParameters, strKey);
     bool bIsCog = false;
     if(isCog == "1") bIsCog = true;
     return bIsCog;
 }
-
-QString ProcessorHandler::GetMapValue(const std::map<QString, QString> &configParameters, const QString &key, const QString &defVal) {
-    std::map<QString, QString>::const_iterator it = configParameters.find(key);
-    if(it != configParameters.end()) {
-        return it->second;
-    }
-    return defVal;
-}
-
-bool ProcessorHandler::GetBoolConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
-                                                const QString &key, const QString &cfgPrefix) {
-    const QString &strVal = GetStringConfigValue(parameters, configParameters, key, cfgPrefix);
-    if (QString::compare(strVal, "true", Qt::CaseInsensitive) == 0) {
-        return true;
-    }
-    if (QString::compare(strVal, "false", Qt::CaseInsensitive) == 0) {
-        return false;
-    }
-    return (GetIntConfigValue(parameters, configParameters, key, cfgPrefix) != 0);
-}
-
-int ProcessorHandler::GetIntConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
-                                                const QString &key, const QString &cfgPrefix) {
-    return GetStringConfigValue(parameters, configParameters, key, cfgPrefix).toInt();
-}
-
-QString ProcessorHandler::GetStringConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
-                                                const QString &key, const QString &cfgPrefix) {
-    QString fullKey(cfgPrefix);
-    fullKey += key;
-
-    QString retVal;
-    if(parameters.contains(key)) {
-        retVal = parameters[key].toString();
-    } else {
-        retVal = GetMapValue(configParameters, fullKey);
-    }
-    return retVal;
-}
-
-bool ProcessorHandler::GetParameterValueAsInt(const QJsonObject &parameters, const QString &key,
-                                              int &outVal) {
-    bool bRet = false;
-    if(parameters.contains(key)) {
-        // first try to get it as string
-        const auto &value = parameters[key];
-        if(value.isDouble()) {
-            outVal = value.toInt();
-            bRet = true;
-        }
-        if(value.isString()) {
-            outVal = value.toString().toInt(&bRet);
-        }
-    }
-    return bRet;
-}
-
-bool ProcessorHandler::GetParameterValueAsString(const QJsonObject &parameters, const QString &key,
-                                              QString &outVal) {
-    bool bRet = false;
-    if(parameters.contains(key)) {
-        // first try to get it as string
-        const auto &value = parameters[key];
-        if(value.isString()) {
-            outVal = value.toString();
-            bRet = true;
-        }
-    }
-    return bRet;
-}
-
-TQStrQStrMap ProcessorHandler::FilterConfigParameters(const TQStrQStrMap &configParameters,
-                                                const QString &cfgPrefix) {
-    TQStrQStrMap retMap;
-    TQStrQStrMap::const_iterator i = configParameters.lower_bound(cfgPrefix);
-    while(i != configParameters.end()) {
-        const QString& key = i->first;
-        if (key.toStdString().compare(0, cfgPrefix.size(), cfgPrefix.toStdString()) == 0) { // Really a prefix?
-            retMap.insert(TQStrQStrPair(i->first, i->second));
-        }
-        ++i;
-    }
-    return retMap;
-}
-
 
 /*
 ProductList GetInsertedOrCreatedProducts(int siteId, const ProductType &productType, const QDateTime &startDate, const QDateTime &endDate,

@@ -43,7 +43,8 @@ SOURCES += main.cpp \
     processor/lairetrievalhandler_l3b_new.cpp \
     processor/s4c_croptypehandler.cpp \
     processor/agricpracticeshandler.cpp \
-    processor/grasslandmowinghandler.cpp
+    processor/grasslandmowinghandler.cpp \
+    processor/s4c_utils.cpp
 
 HEADERS += \
     pch.hpp \
@@ -66,7 +67,8 @@ HEADERS += \
     processor/lairetrievalhandler_l3b_new.hpp \
     processor/s4c_croptypehandler.hpp \
     processor/agricpracticeshandler.hpp \
-    processor/grasslandmowinghandler.hpp
+    processor/grasslandmowinghandler.hpp \
+    processor/s4c_utils.hpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \

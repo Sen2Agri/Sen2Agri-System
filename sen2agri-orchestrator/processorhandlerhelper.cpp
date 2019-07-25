@@ -3,9 +3,11 @@
 #include <QRegularExpression>
 
 #include "qdatetime.h"
+#include "qjsonobject.h"
+#include "logger.hpp"
 
-#define NDVI_PRD_NAME_REGEX R"(S2AGRI_L3B_SNDVI_A(\d{8}T\d{6})_.+\.TIF)"
-#define S1_L2A_PRD_NAME_REGEX   R"(SEN4CAP_L2A_.+_V(\d{8}T\d{6})_(\d{8}T\d{6})_.+\.tif)"
+//#define NDVI_PRD_NAME_REGEX R"(S2AGRI_L3B_SNDVI_A(\d{8}T\d{6})_.+\.TIF)"
+//#define S1_L2A_PRD_NAME_REGEX   R"(SEN4CAP_L2A_.+_V(\d{8}T\d{6})_(\d{8}T\d{6})_.+\.tif)"
 
 #define EMPTY_TILE_ID           "00000"
 #define INVALID_FILE_SEQUENCE   "!&"
@@ -33,6 +35,11 @@ QMap<QString, ProductType> ProcessorHandlerHelper::m_mapHighLevelProductTypeInfo
     {"L3E", ProductType::L3EProductTypeId},
     {"L4A", ProductType::L4AProductTypeId},
     {"L4B", ProductType::L4BProductTypeId},
+    {"_AMP_", ProductType::S4CS1L2AmpProductTypeId},
+    {"_COHE_", ProductType::S4CS1L2CoheProductTypeId},
+    {"_S4C_L4A_", ProductType::S4CL4AProductTypeId},
+    {"_S4C_L4B_", ProductType::S4CL4BProductTypeId},
+    {"_S4C_L4C_", ProductType::S4CL4CProductTypeId},
 };
 
 bool compareTileInfoFilesDates(const ProcessorHandlerHelper::InfoTileFile& info1,const ProcessorHandlerHelper::InfoTileFile& info2)
@@ -54,8 +61,8 @@ ProductType ProcessorHandlerHelper::GetProductTypeFromFileName(const QString &pa
     }
     QStringList nameWords = name.split("_");
     if(nameWords.size() > 2) {
-        // we have an higher level product
-        if(nameWords[0].indexOf("S2AGRI") != -1) {
+        // we have an higher level product or SEN4CAP L2A product
+        if(nameWords[0].indexOf("S2AGRI") != -1 || nameWords[0].indexOf("SEN4CAP") != -1) {
             QMap<QString, ProductType>::iterator i;
             i = m_mapHighLevelProductTypeInfos.find(nameWords[1]);
             if(i != m_mapHighLevelProductTypeInfos.end()) {
@@ -336,14 +343,19 @@ bool ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(const QString &p
                 timeFormat = "yyyyMMddTHHmmss";
             }
             minDate = QDateTime::fromString(trimmedPiece, timeFormat);
-            if(bIsInterval && (i+1) < pieces.size())
-                maxDate = QDateTime::fromString(pieces[i+1], timeFormat);
-            else
-                maxDate = minDate;
+            maxDate = minDate;
+            if(bIsInterval && (i+1) < pieces.size()) {
+                const QDateTime tmpDate = QDateTime::fromString(pieces[i+1], timeFormat);
+                // Do not make assumption min is first - choose the min between them
+                if (tmpDate < minDate) {
+                    minDate = tmpDate;
+                }
+            }
             return true;
         }
     }
 
+    Logger::error(QStringLiteral("Cannot extract acquisition dates from product %1").arg(productName));
     return false;
 }
 
@@ -953,35 +965,6 @@ ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::ConvertSatellite
     }
 }
 
-QDateTime ProcessorHandlerHelper::GetNdviProductTime(const QString &prdPath)
-{
-    static QRegularExpression rex(QStringLiteral(NDVI_PRD_NAME_REGEX));
-    QRegularExpression re(rex);
-    const QString &fileName = QFileInfo(prdPath).fileName();
-    const QRegularExpressionMatch &match = re.match(fileName);
-    if (match.hasMatch()) {
-        const QString &timestamp = match.captured(1);
-        return QDateTime::fromString(timestamp, "yyyyMMddTHHmmss");
-    }
-    return QDateTime();
-}
-
-QDateTime ProcessorHandlerHelper::GetS1L2AProductTime(const QString &prdPath)
-{
-    const QString &fileName = QFileInfo(prdPath).fileName();
-    static QRegularExpression rex(QStringLiteral(S1_L2A_PRD_NAME_REGEX));
-    QRegularExpression re(rex);
-    const QRegularExpressionMatch &match = re.match(fileName);
-    if (match.hasMatch()) {
-        const QString &timestamp1 = match.captured(1);
-        const QString &timestamp2 = match.captured(2);
-        const QDateTime &qDateTime1 = QDateTime::fromString(timestamp1, "yyyyMMddTHHmmss");
-        const QDateTime &qDateTime2 = QDateTime::fromString(timestamp2, "yyyyMMddTHHmmss");
-        return qDateTime1 < qDateTime2 ? qDateTime1 : qDateTime2;
-    }
-    return QDateTime();
-}
-
 void ProcessorHandlerHelper::UpdateMinMaxTimes(const QDateTime &newTime, QDateTime &minTime, QDateTime &maxTime)
 {
     if (newTime.isValid()) {
@@ -994,4 +977,88 @@ void ProcessorHandlerHelper::UpdateMinMaxTimes(const QDateTime &newTime, QDateTi
             maxTime = newTime;
         }
     }
+}
+
+QString ProcessorHandlerHelper::GetMapValue(const std::map<QString, QString> &configParameters, const QString &key, const QString &defVal) {
+    std::map<QString, QString>::const_iterator it = configParameters.find(key);
+    if(it != configParameters.end()) {
+        return it->second;
+    }
+    return defVal;
+}
+
+bool ProcessorHandlerHelper::GetBoolConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                const QString &key, const QString &cfgPrefix) {
+    const QString &strVal = GetStringConfigValue(parameters, configParameters, key, cfgPrefix);
+    if (QString::compare(strVal, "true", Qt::CaseInsensitive) == 0) {
+        return true;
+    }
+    if (QString::compare(strVal, "false", Qt::CaseInsensitive) == 0) {
+        return false;
+    }
+    return (GetIntConfigValue(parameters, configParameters, key, cfgPrefix) != 0);
+}
+
+int ProcessorHandlerHelper::GetIntConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                const QString &key, const QString &cfgPrefix) {
+    return GetStringConfigValue(parameters, configParameters, key, cfgPrefix).toInt();
+}
+
+QString ProcessorHandlerHelper::GetStringConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                const QString &key, const QString &cfgPrefix) {
+    QString fullKey(cfgPrefix);
+    fullKey += key;
+
+    QString retVal;
+    if(parameters.contains(key)) {
+        retVal = parameters[key].toString();
+    } else {
+        retVal = GetMapValue(configParameters, fullKey);
+    }
+    return retVal;
+}
+
+bool ProcessorHandlerHelper::GetParameterValueAsInt(const QJsonObject &parameters, const QString &key,
+                                              int &outVal) {
+    bool bRet = false;
+    if(parameters.contains(key)) {
+        // first try to get it as string
+        const auto &value = parameters[key];
+        if(value.isDouble()) {
+            outVal = value.toInt();
+            bRet = true;
+        }
+        if(value.isString()) {
+            outVal = value.toString().toInt(&bRet);
+        }
+    }
+    return bRet;
+}
+
+bool ProcessorHandlerHelper::GetParameterValueAsString(const QJsonObject &parameters, const QString &key,
+                                              QString &outVal) {
+    bool bRet = false;
+    if(parameters.contains(key)) {
+        // first try to get it as string
+        const auto &value = parameters[key];
+        if(value.isString()) {
+            outVal = value.toString();
+            bRet = true;
+        }
+    }
+    return bRet;
+}
+
+TQStrQStrMap ProcessorHandlerHelper::FilterConfigParameters(const TQStrQStrMap &configParameters,
+                                                const QString &cfgPrefix) {
+    TQStrQStrMap retMap;
+    TQStrQStrMap::const_iterator i = configParameters.lower_bound(cfgPrefix);
+    while(i != configParameters.end()) {
+        const QString& key = i->first;
+        if (key.toStdString().compare(0, cfgPrefix.size(), cfgPrefix.toStdString()) == 0) { // Really a prefix?
+            retMap.insert(TQStrQStrPair(i->first, i->second));
+        }
+        ++i;
+    }
+    return retMap;
 }

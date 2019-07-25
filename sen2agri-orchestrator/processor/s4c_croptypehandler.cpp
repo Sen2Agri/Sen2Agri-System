@@ -161,7 +161,8 @@ void S4CCropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     cfg.siteId = event.siteId;
 
     for (QString cfgKey: m_cfgKeys) {
-        cfg.mapCfgValues.insert(cfgKey, GetStringConfigValue(parameters, configParameters, cfgKey, L4A_CT_CFG_PREFIX));
+        cfg.mapCfgValues.insert(cfgKey, ProcessorHandlerHelper::GetStringConfigValue(
+                                    parameters, configParameters, cfgKey, L4A_CT_CFG_PREFIX));
     }
 
     QStringList listProducts;

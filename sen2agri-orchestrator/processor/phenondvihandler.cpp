@@ -28,7 +28,7 @@ void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     // Get the resolution value
     int resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+    if(!ProcessorHandlerHelper::GetParameterValueAsInt(parameters, "resolution", resolution) ||
             resolution == 0) {
         resolution = 10;    // TODO: We should configure the default resolution in DB
     }

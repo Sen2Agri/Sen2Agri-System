@@ -404,8 +404,8 @@ void LaiRetrievalHandlerL3C::WriteExecutionInfosFile(const QString &executionInf
 
         if(bIsReproc) {
             // Get the parameters from the configuration
-            const auto &bwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
-            const auto &fwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
+            const auto &bwr = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
+            const auto &fwr = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
             executionInfosFile << "  <ProfileReprocessing_parameters>" << std::endl;
             executionInfosFile << "    <bwr_for_algo_local_online_retrieval>" << bwr.toStdString() << "</bwr_for_algo_local_online_retrieval>" << std::endl;
             executionInfosFile << "    <fwr_for_algo_local_online_retrieval>"<< fwr.toStdString() <<"</fwr_for_algo_local_online_retrieval>" << std::endl;
@@ -1011,8 +1011,8 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(const std::map<QS
                                        const QString &allLaiTimeSeriesFileName,
                                        const QString &allErrTimeSeriesFileName, const QString &allMsksTimeSeriesFileName,
                                        const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
-    const auto &localWindowBwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
-    const auto &localWindowFwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
+    const auto &localWindowBwr = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
+    const auto &localWindowFwr = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
                             "-lai", allLaiTimeSeriesFileName,
                             "-msks", allMsksTimeSeriesFileName,
@@ -1033,8 +1033,8 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(const std::map<QS
 QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs_New(const std::map<QString, QString> &configParameters,
                                        QStringList &monoDateLaiFileNames, QStringList &errFileNames, QStringList &flgsFileNames,
                                        const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
-    const auto &localWindowBwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
-    const auto &localWindowFwr = GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
+    const auto &localWindowBwr = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.localwnd.bwr");
+    const auto &localWindowFwr = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.localwnd.fwr");
 
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
           "-main", mainImg,
@@ -1109,7 +1109,7 @@ QStringList LaiRetrievalHandlerL3C::GetReprocProductFormatterArgs(TaskToSubmit &
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    const auto &lutFile = GetMapValue(configParameters, "processor.l3b.lai.lut_path");
+    const auto &lutFile = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.lut_path");
 
     WriteExecutionInfosFile(executionInfosPath, configParameters, l3bMapTiles, listProducts, !isFitted);
     const QString &l3ProductType = isFitted ? "L3D" : "L3C";

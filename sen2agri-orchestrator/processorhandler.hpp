@@ -65,18 +65,6 @@ protected:
     ProcessorHandlerHelper::SatelliteIdType GetSatIdForTile(const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &mapSatTiles,
                                                                            const QString &tileId);
     bool IsCloudOptimizedGeotiff(const std::map<QString, QString> &configParameters);
-    QString GetMapValue(const std::map<QString, QString> &configParameters, const QString &key, const QString &defVal = "");
-    bool GetBoolConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
-                            const QString &key, const QString &cfgPrefix);
-    int GetIntConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
-                          const QString &key, const QString &cfgPrefix);
-    QString GetStringConfigValue(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
-                            const QString &key, const QString &cfgPrefix);
-
-    bool GetParameterValueAsInt(const QJsonObject &parameters, const QString &key, int &outVal);
-    bool GetParameterValueAsString(const QJsonObject &parameters, const QString &key, QString &outVal);
-
-    TQStrQStrMap FilterConfigParameters(const TQStrQStrMap &configParameters, const QString &cfgPrefix);
 
 
 private:

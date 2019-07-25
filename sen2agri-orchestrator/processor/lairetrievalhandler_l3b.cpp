@@ -169,11 +169,11 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(const std::map<QString, Q
                                              int tasksStartIdx, bool bForceGenModels)
 {
     NewStepList steps;
-    const auto &modelsFolder = GetMapValue(configParameters, "processor.l3b.lai.modelsfolder");
-    const auto &rsrCfgFile = GetMapValue(configParameters, "processor.l3b.lai.rsrcfgfile");
-    const auto &globalSampleFile = GetMapValue(configParameters, "processor.l3b.lai.global_bv_samples_file");
+    const auto &modelsFolder = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.modelsfolder");
+    const auto &rsrCfgFile = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.rsrcfgfile");
+    const auto &globalSampleFile = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.global_bv_samples_file");
     //bool useLaiBandsCfg = ((configParameters["processor.l3b.lai.use_lai_bands_cfg"]).toInt() != 0);
-    const auto &laiCfgFile = GetMapValue(configParameters, "processor.l3b.lai.laibandscfgfile");
+    const auto &laiCfgFile = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.laibandscfgfile");
 
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
     int curIdx = tasksStartIdx;
@@ -241,7 +241,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
 
     // Get the resolution value
     int resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+    if(!ProcessorHandlerHelper::GetParameterValueAsInt(parameters, "resolution", resolution) ||
             resolution == 0) {
         resolution = 10;    // TODO: We should configure the default resolution in DB
     }
@@ -597,7 +597,7 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    const auto &lutFile = GetMapValue(configParameters, "processor.l3b.lai.lut_path");
+    const auto &lutFile = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.lut_path");
 
     WriteExecutionInfosFile(executionInfosPath, prdTilesInfosList);
 
@@ -653,17 +653,17 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
 }
 
 QStringList LaiRetrievalHandlerL3B::GetBVInputVariableGenerationArgs(const std::map<QString, QString> &configParameters, const QString &strGenSampleFile) {
-    const QString &samplesNo = GetMapValue(configParameters, "processor.l3b.lai.models.samples", DEFAULT_GENERATED_SAMPLES_NO);
+    const QString &samplesNo = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.samples", DEFAULT_GENERATED_SAMPLES_NO);
 
-    const QString &minlai = GetMapValue(configParameters, "processor.l3b.lai.models.minlai", DEFAULT_MIN_LAI);
-    const QString &maxlai = GetMapValue(configParameters, "processor.l3b.lai.models.maxlai", DEFAULT_MAX_LAI);
-    const QString &modlai = GetMapValue(configParameters, "processor.l3b.lai.models.modlai", DEFAULT_MOD_LAI);
-    const QString &stdlai = GetMapValue(configParameters, "processor.l3b.lai.models.stdlai", DEFAULT_STD_LAI);
+    const QString &minlai = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.minlai", DEFAULT_MIN_LAI);
+    const QString &maxlai = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.maxlai", DEFAULT_MAX_LAI);
+    const QString &modlai = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.modlai", DEFAULT_MOD_LAI);
+    const QString &stdlai = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.stdlai", DEFAULT_STD_LAI);
 
-    const QString &minala = GetMapValue(configParameters, "processor.l3b.lai.models.minala", DEFAULT_MIN_ALA);
-    const QString &maxala = GetMapValue(configParameters, "processor.l3b.lai.models.maxala", DEFAULT_MAX_ALA);
-    const QString &modala = GetMapValue(configParameters, "processor.l3b.lai.models.modala", DEFAULT_MOD_ALA);
-    const QString &stdala = GetMapValue(configParameters, "processor.l3b.lai.models.stdala", DEFAULT_STD_ALA);
+    const QString &minala = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.minala", DEFAULT_MIN_ALA);
+    const QString &maxala = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.maxala", DEFAULT_MAX_ALA);
+    const QString &modala = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.modala", DEFAULT_MOD_ALA);
+    const QString &stdala = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.stdala", DEFAULT_STD_ALA);
 
     return { "BVInputVariableGeneration",
                 "-samples", samplesNo,
@@ -734,8 +734,8 @@ QStringList LaiRetrievalHandlerL3B::GetTrainingDataGeneratorArgs(const QString &
 QStringList LaiRetrievalHandlerL3B::GetInverseModelLearningArgs(const QString &trainingFile, const QString &product, const QString &modelFile,
                                                              const QString &errEstFile, const QString &modelsFolder,
                                                              const std::map<QString, QString> &configParameters) {
-    const QString &bestOf = GetMapValue(configParameters, "processor.l3b.lai.models.bestof", DEFAULT_BEST_OF);
-    const QString &regressor = GetMapValue(configParameters, "processor.l3b.lai.models.regressor", DEFAULT_REGRESSOR);
+    const QString &bestOf = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.bestof", DEFAULT_BEST_OF);
+    const QString &regressor = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.models.regressor", DEFAULT_REGRESSOR);
 
     return { "InverseModelLearning",
                 "-training", trainingFile,
@@ -753,7 +753,7 @@ bool LaiRetrievalHandlerL3B::IsForceGenModels(const QJsonObject &parameters, con
     if(parameters.contains("genmodel")) {
         bForceGenModels = (parameters["genmodel"].toInt() != 0);
     } else {
-        bForceGenModels = ((GetMapValue(configParameters, "processor.l3b.generate_models")).toInt() != 0);
+        bForceGenModels = ((ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.generate_models")).toInt() != 0);
     }
     return bForceGenModels;
 }

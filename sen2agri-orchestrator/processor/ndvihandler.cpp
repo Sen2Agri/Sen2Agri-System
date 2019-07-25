@@ -85,7 +85,7 @@ NewStepList NdviHandler::GetSteps(EventProcessingContext &ctx, const JobSubmitte
 
     // Get the resolution value
     int resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+    if(!ProcessorHandlerHelper::GetParameterValueAsInt(parameters, "resolution", resolution) ||
             resolution == 0) {
         resolution = 10;    // TODO: We should configure the default resolution in DB
     }
@@ -344,7 +344,7 @@ QStringList NdviHandler::GetNdviProductFormatterArgs(TaskToSubmit &productFormat
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    const auto &lutFile = GetMapValue(configParameters, "processor.l3b.lai.lut_path");
+    const auto &lutFile = ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.lai.lut_path");
 
     WriteExecutionInfosFile(executionInfosPath, prdTilesInfosList);
 
