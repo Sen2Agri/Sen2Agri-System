@@ -118,7 +118,7 @@ NA_IGNORED_IDS_FILE=""
 case "$COUNTRY" in
     NLD)
         COUNTRY="NL"
-        IN_SHP_NAME="NLD_${YEAR}_DeclSTD_quality_indic.shp"
+        IN_SHP_NAME="decl_nld_${YEAR}_${YEAR}.csv"
         VEG_START="${YEAR}-05-01"
 
         CC_HSTART="${YEAR}-05-15"
@@ -384,4 +384,3 @@ fi
 echo "Executing: otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NA_ADD_FILES -practice NA -country $COUNTRY -year $YEAR $NA_VEG_START $NA_HSTART $NA_HEND $NA_HSTARTW $NA_PSTART $NA_PEND $NA_PSTARTW $NA_PENDW $NA_IGNORED_IDS_FILE -out $NA_OUT_FILE"
 
 otbcli LPISDataSelection sen2agri-processors-build -inshp $SHP_PATH $NA_ADD_FILES -practice "NA" -country $COUNTRY -year $YEAR $NA_VEG_START $NA_HSTART $NA_HEND $NA_HSTARTW $NA_PSTART $NA_PEND $NA_PSTARTW $NA_PENDW $NA_IGNORED_IDS_FILE -out $NA_OUT_FILE
-
