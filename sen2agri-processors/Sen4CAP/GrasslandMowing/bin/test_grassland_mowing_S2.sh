@@ -1,0 +1,3 @@
+#!/bin/bash
+
+./grassland_mowing.sh --user egeos --script-path /mnt/archive/grassland_mowing_system_test/exec_cmds/src_s2/S2_main.py --site-id 2 --config-file /usr/share/sen2agri/S4C_L4B_GrasslandMowing/config.ini --input-shape-file /mnt/archive/grassland_mowing_system_test/insitu/LTU_GSAA_2019_input_32630.shp --output-data-dir /mnt/archive/grassland_mowing_system_test/Output/out_S2_20190401_20190715/ --new-acq-date 20190715 --older-acq-date 20190401 --seg-parcel-id-attribute parcel_id --output-shapefile /mnt/archive/grassland_mowing_system_test/Output/out_S2_20190401_20190715/res_S2_20190401_20190715_v1.shp --do-cmpl True --test True --season-start 2019-01-01 --season-end 2019-12-31

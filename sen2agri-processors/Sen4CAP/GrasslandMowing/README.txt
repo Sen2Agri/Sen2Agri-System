@@ -25,3 +25,10 @@ The package contains:
             - validation.py:  functions to perform validation
 
 
+TODO:
+    - Install into conda the module psycopg2
+    
+    
+    
+python ./S2_main.py /home/egeos/wrk_dir/config.ini /home/egeos/wrk_dir/LTU_parcel_validazione_3857/LTU_parcel_validazione_3857.shp /home/egeos/wrk_dir/out_val1 20181031 20180401 /home/egeos/wrk_dir/S2_granule.ini Thnewid /home/egeos/wrk_dir/out_val1/res_lit_val1.shp True False > /home/egeos/wrk_dir/out_val1/res_lit_val1.log 2> /home/egeos/wrk_dir/out_val1/res_lit_val1.err.log    
+

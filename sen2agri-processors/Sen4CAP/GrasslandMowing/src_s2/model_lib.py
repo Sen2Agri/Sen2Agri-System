@@ -20,20 +20,29 @@ gdal.UseExceptions()
 ogr.UseExceptions()
 
 
+
+def hist_data_file_name_gen(tile_list, input_shape_segments, prod_type_list):
+
+    last_VI_data_file_name = "last_VI"+'_'+os.path.basename(input_shape_segments[:-4])+"_"+'_'.join(tile_list)+"_"+"_".join(prod_type_list) + ".tif"
+    return last_VI_data_file_name
+
+
 def save_model(data_dict, file_name):
     # save the dictionary by using pickle
     with open(file_name, 'wb') as output:
         pickle.dump(data_dict, output)
 
+
 def load_model(file_name):
-    # load the dictionary 
+    # load the dictionary
     with open(file_name, 'rb') as fp:
         data_dict = pickle.load(fp)
 
     return data_dict
 
+
 def model_file_name_gen(tile_list, model_temporal_range_str, prod_type_list):
-    
+
     model_data_file_name = "model_"+'_'.join(tile_list)+"_"+ model_temporal_range_str[0][:8] + \
                            "_" + model_temporal_range_str[1][:8] + "_" + '_'.join(prod_type_list) + \
                            ".npy"
@@ -44,38 +53,38 @@ def calculate_model_doy(NDVI_seg, doy, model_temporal_range_str, start_params, b
     model_year = (dateutil.parser.parse(model_temporal_range_str[0], yearfirst=True, dayfirst=False)).year
     first_date_of_model_year = datetime.datetime(year=model_year, month=1, day=1, hour=0, minute=0, second=0)
 
-    # definition of the models                                                                                                                                                                                    
+    # definition of the models
     NDVI_nomow_model = np.nanpercentile(NDVI_seg, NDVI_nomow_model_perc, axis=0).T
     NDVI_mean = np.nanmean(NDVI_seg, axis=0).T
     NDVI_std = np.nanstd(NDVI_seg, axis=0).T
-    parcel_n = np.sum(NDVI_seg>0, axis=0).T # number of parcels                                                                                                                                                   
+    parcel_n = np.sum(NDVI_seg>0, axis=0).T # number of parcels
     val_ind = np.where(np.logical_and(NDVI_nomow_model > min_val_VI, (parcel_n > p_n_th)))[0]
 
     if len(val_ind) < 8:
         print("No enough valid dates to calculate model")
         return None, None, None, None, None, None, None, None, 1
 
-    # valid indexes  
+    # valid indexes
     print("Number of parcels for date:", parcel_n)
     print("Valid indexes for model calculation:", val_ind)
 
-    # raw model                                                                                                                                                                                                  
+    # raw model
     x = doy[val_ind]
     y = NDVI_nomow_model[val_ind]
     n = parcel_n[val_ind]
 
-    #exclude first points if they not coincide to relative minima                                                                                                                                                 
+    #exclude first points if they not coincide to relative minima
     relat_min = argrelextrema(y, np.less)[0]
     first_min = relat_min[0]
-    #last_min =  relat_min[-1]   # funziona peggio su CZ tile 2 !!                                                                                                                                                
+    #last_min =  relat_min[-1]   # funziona peggio su CZ tile 2 !!
     last_min = np.size(y)-1
     x = x[first_min: min(last_min+1, np.size(x)-1)]
     y = y[first_min: min(last_min+1, np.size(y)-1)]
 
-    # double_logistic fit: parameters                                                                                                                                                                             
-    # The starting point to initialize the constrained minimization and the constrains are set                                                                                                                    
-    # start_params = [double_logistic pedestal (min), amplitude, rise speed, rise inflection time, fall speed, fall inflection time]                                                                              
-    # bound = ([lower bound list],[upper bound list])                                                                                                                                                            
+    # double_logistic fit: parameters
+    # The starting point to initialize the constrained minimization and the constrains are set
+    # start_params = [double_logistic pedestal (min), amplitude, rise speed, rise inflection time, fall speed, fall inflection time]
+    # bound = ([lower bound list],[upper bound list])
 
     start_params = [y.min(), y.max()-y.min()] + list(start_params)
     bounds = ([0., 0.] + list(bounds[0]), [np.inf, np.inf] + list(bounds[1]))
@@ -83,7 +92,7 @@ def calculate_model_doy(NDVI_seg, doy, model_temporal_range_str, start_params, b
     print('start_params', start_params)
     print('bounds', bounds)
 
-    # model fitting                                                                                                                                                                                               
+    # model fitting
     res = pheno_func.constrained_fit_phenology_model(
                 x, y, pheno_model = "dbl_logistic", params=start_params, bounds=bounds)
 
@@ -118,13 +127,16 @@ def make_model_pandas(model_temporal_range_str, S2DataGlob, segmentsFile,
     get_par_from_file = re.compile('(S2AGRI_L3B_([A-Z]{5,11})_A([0-9]{8})T([0-9]{6})_(T[0-9]{2}[A-Z]{3})\.)')
 
     # file list generation from data dir
-    file_list = glob.glob(S2DataGlob)
-    print("Searched files:", S2DataGlob)
+    print("Search paths -->", S2DataGlob)
+    file_list = []
+    for pth in S2DataGlob:
+        print("path:", pth)
+        file_list += glob.glob(pth)
 
     # remove NOTV directories
     file_list = [f for f in file_list if not '_NOTV/' in f]
 
-    # extract data file names and dates from file list and for specific orbits 
+    # extract data file names and dates from file list and for specific orbits
     par_list = S2_gmd.read_file_list(file_list, get_par_from_file, keys, tile_list, orbit_field_label='tile_code')
 
     # verify if there are data for specific tile
@@ -158,7 +170,7 @@ def make_model_pandas(model_temporal_range_str, S2DataGlob, segmentsFile,
     # remove corrupted files
     data_list = S2_gmd.remove_corrupted_files(list(data_list))
 
-    # make output and tmp directories                                                                                                                                                                            
+    # make output and tmp directories
     try:
         os.makedirs(outputDir)
     except(OSError):
@@ -252,8 +264,9 @@ def make_model_pandas(model_temporal_range_str, S2DataGlob, segmentsFile,
     burned_pixels, seg_attributes = S2_gmd.layer2mask(segmentsFile, output_vrt, segmentsOutRaster,
                                                          layer_type='segments', options=options_layer_burning)
     print('segments burned_pixels',burned_pixels)
-
-
+    if burned_pixels == 0:
+        print('No parcels burned in the segmentation')
+        return None, None, None, None, 1
 
     # Segment analysis
     # -----------------
@@ -282,13 +295,17 @@ def make_model_pandas(model_temporal_range_str, S2DataGlob, segmentsFile,
             eroded_segs = eroded_segs*erosion_mask
 
     # Fill segments
-
     unique_segments = np.unique(eroded_segs)
-    if unique_segments[0] == 0: # 0 label corresponds to not valid segments and it will be removed
-        unique_segments = unique_segments[1:]
+    if unique_segments[0] == -1: # the value -1 is used for the background
+        unique_segments = unique_segments[1:] # remove the first label which is associated to the background
+    if np.size(unique_segments) == 0:
+        print('No parcels remains after segmentation and erosion')
+        return None, None, None, None, 1
 
-    # extract data file names and dates from file list and for specific orbits 
-    par_list = S2_gmd.read_file_list(vrt_data.GetFileList(), get_par_from_file, keys, tile_list, orbit_field_label='tile_code')
+    # extract data file names and dates from file list and for specific orbits
+    file_list = [vrt_data.GetRasterBand(i).GetDescription() for i in range(1, vrt_data.RasterCount+1)]
+    par_list = S2_gmd.read_file_list(file_list, get_par_from_file, keys, tile_list, orbit_field_label='tile_code')
+
 
     # put filename and data parameters in a pandas df
     print("fill pandas structure")
@@ -298,10 +315,10 @@ def make_model_pandas(model_temporal_range_str, S2DataGlob, segmentsFile,
     vrt_df['acq_date_time'] = pd.to_datetime(vrt_df.apply(lambda x: x['acq_date']+'T'+x['acq_time'], axis=1), yearfirst=True, dayfirst=False)
 
     print('Extraction of stats')
-    #selection of the average method                                                                                                                                                                             
+    #selection of the average method
     stat_p = scipy.ndimage.mean
 
-    # Write list of df                                                                                                                                                                                           
+    # Write list of df
     data_df = S2_gmd.load_stats(vrt_data, vrt_df, eroded_segs, unique_segments, seg_attributes, seg_parcel_id_attribute, stat_p, invalid_val)
 
     # Sort wrt count
@@ -315,14 +332,14 @@ def make_model_pandas(model_temporal_range_str, S2DataGlob, segmentsFile,
     #    data_df = data_df.loc[data_df.groupby(['acq_date', 'data_type', seg_parcel_id_attribute])['count'].aggregate('idxmax')]
     data_df = data_df.groupby(['acq_date', 'data_type', seg_parcel_id_attribute]).aggregate('first')
 
-    # Rearrange structure to put dates and data_types as columns                                                                                                                                                 
+    # Rearrange structure to put dates and data_types as columns
     print("Pivoting")
     print(datetime.datetime.now())
-    parcel_fid = (data_df.reset_index()[['parcel_id', 'fid']]
-                         .set_index('parcel_id')
+    parcel_fid = (data_df.reset_index()[[seg_parcel_id_attribute, 'fid']]
+                         .set_index(seg_parcel_id_attribute)
                          .reset_index()
                          .drop_duplicates()
-                         .set_index('parcel_id')
+                         .set_index(seg_parcel_id_attribute)
                  )
     data_df = pd.pivot_table(data_df, values=['mean','count'], index=[seg_parcel_id_attribute],
                              columns=['data_type', 'acq_date'], dropna=False)
@@ -343,7 +360,7 @@ def make_model_pandas(model_temporal_range_str, S2DataGlob, segmentsFile,
 
     parcel = data_df.index.values
 
-    # generate array with temporal series                                                                                                                                                                        
+    # generate array with temporal series
     VI_seg = []
     for pt, sf, ct in zip(prod_type_list, sc_fact, corrupted_th):
         VI_data = data_df.xs(key=('mean', pt), level=(0, 'data_type'), axis=1).values

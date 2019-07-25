@@ -22,6 +22,18 @@ from osgeo import ogr
 gdal.UseExceptions()
 ogr.UseExceptions()
 
+
+import argparse
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser
+    
+import psycopg2
+from psycopg2.sql import SQL, Literal
+import psycopg2.extras
+
+  
 def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
              new_acq_date, older_acq_date=None,
              truthsFile=None, outputDir=None, outputShapeFile=None,
@@ -33,13 +45,14 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
              stat_smpl_n=5,
              min_cohe_var=0.024,
              erode_pixels=0,
-             no_mowing_after_det=30,
+             non_overlap_interval_days=30,
              locAcqTimeASC='18:00:00',
              locAcqTimeDESC='06:00:00',
              dataType=['COHE'],
              polType=['VH'],
              S1_time_interval=6,
              do_cmpl=False,
+             test=False,
              compliancy_conf_file=None):
 
 
@@ -56,7 +69,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
         print("path:", pth)
         file_list += glob.glob(pth)
 
-    # extract data file names and dates from file list and for specific orbits, polarization and data type 
+    # extract data file names and dates from file list and for specific orbits, polarization and data type
     par_list = S1_gmd.read_file_list(file_list, get_par_from_file, keys, orbit_list, polType, dataType)
     print("par_list", par_list)
     print("orbit_list", get_par_from_file, keys, orbit_list)
@@ -64,7 +77,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
     # verify if there are data for specific orbits
     if len(par_list) == 0:
         print("There are NO data for the specific orbit", orbit_list)
-        return 2
+        return 2, None
 
     # put filename and data parameters in a pandas df
     print("Fill pandas structure with file names")
@@ -142,7 +155,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
         vrt_data = gdal.Open(output_vrt_tmp)
     else:
         print('Empty VRT. Does orbit intersect segment layer?')
-        return 1
+        return 1, None
 
     # Get virtual raster extent
     geoTr = vrt_data.GetGeoTransform()
@@ -158,7 +171,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
     # Get shape file extent
     (min_x, max_x, min_y, max_y) = Layer.GetExtent()
     print("shape file extent", (min_x, min_y, max_x, max_y))
-    
+
     # Calculate extent intersection between virtual raster and shape file
     outputBounds = (np.maximum(min_x, r_min_x),
                     np.maximum(min_y, r_min_y),
@@ -169,7 +182,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
 
     if (outputBounds[0] >= outputBounds[2]) or (outputBounds[1] >= outputBounds[3]):
         print('Empty VRT. Does orbit intersect segment layer?')
-        return 1
+        return 1, None
 
     # make vrt over the intersection extent
     print('Make virtual raster of input data (considering intersection between extensions of i- the shape file, ii- the virtual raster)')
@@ -180,7 +193,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
         vrt_data = gdal.Open(output_vrt)
     else:
         print('Empty VRT. Does orbit intersect segment layer?')
-        return 1
+        return 1, None
 
     # Generate segmentation map from input shapefiles
     # -----------------------------------------------
@@ -217,6 +230,9 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
     print("layer2mask for segments: ", segmentsFile, output_vrt, segmentsOutRaster)
     burned_pixels, seg_attributes = S1_gmd.layer2mask(segmentsFile, output_vrt, segmentsOutRaster, layer_type='segments', options=options_layer_burning)
     print('segments burned_pixels',burned_pixels)
+
+    # Invert dictionary of se_attribute
+    inv_seg_dct = {v[seg_parcel_id_attribute]:k for k,v in seg_attributes.items()}
 
     if truthsFile:
         # Generate truths raster map from input shapefile
@@ -285,9 +301,13 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
 
     # segments
     unique_segments = np.unique(eroded_segs)
-    if unique_segments[0] == 0: # 0 label corresponds to not valid segments and it will be removed
-        unique_segments = unique_segments[1:]
-    print(unique_segments.shape)
+    if unique_segments[0] == -1: # the value -1 is used for the background
+        unique_segments = unique_segments[1:] # remove the first label which is associated to the background
+    print("unique_segments.shape =", unique_segments.shape)
+    if np.size(unique_segments) == 0:
+        print('No parcels remains after segmentation and erosion')
+        return 1, None
+
     seg_pixels_num = np.array(ndimage.sum(eroded_segs>0, eroded_segs, index=unique_segments))
 
     if truthsFile:
@@ -297,10 +317,11 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
             unique_truths = unique_truths[1:]
         print(unique_truths.shape)
 
-    
+
     # extract data parameters and dates from file_list in the vrt data
     print('Extract data parameters and dates from file_list in the vrt data')
-    par_list = S1_gmd.read_file_list(vrt_data.GetFileList()[1:], get_par_from_file, keys, orbit_list, polType, dataType)
+    file_list = [vrt_data.GetRasterBand(i).GetDescription() for i in range(1, vrt_data.RasterCount+1)]
+    par_list = S1_gmd.read_file_list(file_list, get_par_from_file, keys, orbit_list, polType, dataType)
 
     print('Put data parameters in a pandas structure')
 
@@ -335,6 +356,10 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
     # Write list of df and concatenate into a data frame
     data_df = S1_gmd.load_stats(vrt_data, vrt_df, eroded_segs, unique_segments, seg_attributes, seg_parcel_id_attribute, stat_p, invalid_data)
 
+    if len(data_df) == 0:
+        print('No valid data collected')
+        return 1, None
+
     # Sort wrt count
     print("Sort wrt count")
     print(datetime.datetime.now())
@@ -346,14 +371,15 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
     #    data_df = data_df.loc[data_df.groupby(['acq_date', 'data_type', seg_parcel_id_attribute])['count'].aggregate('idxmax')]
     data_df = data_df.groupby(['acq_date', 'data_type', seg_parcel_id_attribute]).aggregate('first')
 
-    # Rearrange structure to put dates and data_types as columns                                                                                                                                                 
+    # Rearrange structure to put dates and data_types as columns
     print("Pivoting")
     print(datetime.datetime.now())
-    parcel_fid = (data_df.reset_index()[['parcel_id', 'fid']]
-                         .set_index('parcel_id')
-                         .reset_index()
-                         .drop_duplicates()
-                         .set_index('parcel_id')
+    parcel_fid = (data_df.reset_index()
+                         [[seg_parcel_id_attribute, 'fid']]
+                         .groupby(seg_parcel_id_attribute)
+                         .max() #assume features are burnt in FID asceding order,
+                                #thus features with same parcel_id and same geometry
+                                #will be rasterised with the greatest FID
                  )
     data_df = pd.pivot_table(data_df, values=['mean','count'], index=[seg_parcel_id_attribute],
                              columns=['orbit', 'pol', 'data_type', 'acq_date'], dropna=False)
@@ -362,9 +388,6 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
     # Move fid to columns and sort by it to match unique_segments
     data_df = data_df.reset_index().set_index(seg_parcel_id_attribute)
     data_df.sort_values('fid', inplace=True)
-
-    print("STAMPA DATA_DF")
-    print(data_df)
 
     # Sort with respect the dates (from early to late)
     print("Sort by Date")
@@ -406,7 +429,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
             coheVVDateList2 = [datetime.datetime.combine(pd.Timestamp(d).to_pydatetime(), datetime.time(hour=int(typical_acq_time[orbit_type_dict[o]][:2]), minute=int(typical_acq_time[orbit_type_dict[o]][3:5]))) for d in dates_str]
             coheVVDateList1 = [d - datetime.timedelta(days=S1_time_interval) for d in coheVVDateList2]
 
-        if ('VH' in polType) and ('COHE' in dataType):    
+        if ('VH' in polType) and ('COHE' in dataType):
             coheVH_seg[o] = data_df.xs(key=('mean', 'VH', 'COHE', o), level=(0, 'pol', 'data_type', 'orbit'), axis=1).values
             dates_str = data_df.xs(key=('mean', 'VH', 'COHE', o), level=(0, 'pol', 'data_type', 'orbit'), axis=1).columns.values
             coheVHDateList2 = [datetime.datetime.combine(pd.Timestamp(d).to_pydatetime(), datetime.time(hour=int(typical_acq_time[orbit_type_dict[o]][:2]), minute=int(typical_acq_time[orbit_type_dict[o]][3:5]))) for d in dates_str]
@@ -421,13 +444,10 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
     if ('VH' in polType) and ('COHE' in dataType):
         coheVH_seg = coheVH_seg[o]
 
-    # make dictionary segment --> seg_parcel_id_attribute
-    seg_attributes = {i: {seg_parcel_id_attribute: p} for i, p in enumerate(parcel)}
-
-    # inverti dizionari
-    inv_seg_dct = {v[seg_parcel_id_attribute]:k for k,v in seg_attributes.items()}
-    if truthsFile:
-        inv_tr_dct = {v[tr_parcel_id_attribute]:k for k,v in tr_attributes.items()}
+    # make new dictionary seg_attribute including only the parcel analysed {FID: parcel_id}
+    seg_attributes = {inv_seg_dct[p]:p for p in parcel}
+    # inverti il nuovo dizionario
+    inv_seg_dct = {v:k for k,v in seg_attributes.items()}
 
     # Detection
     # ---------
@@ -439,7 +459,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
     alpha = 1.0
     print("PFA =", pfa, "k_fact =", k_fact, "alpha =", alpha)
 
-    if ('VV' in polType):    
+    if ('VV' in polType):
         # Detection on cohe VV
         print('Detection on cohe VV')
 
@@ -464,7 +484,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
         # Detection on cohe VH
         print('Detection on cohe VH')
 
-        # prepare data: fit    
+        # prepare data: fit
         print('fit')
         data_seg_pred, data_seg_std = S1_gmd.temporal_linear_fit(coheVH_seg, coheVHDateList1, stat_smpl_n, linear_fit=True)
 
@@ -506,26 +526,31 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
 
     print('Write file')
     fusion.writeDetections_S1(outputShapeFile, unique_segments, det_cube, coheVHDateList1, coheVHDateList2,
-                              mission_id='S1', max_dates=4, minimum_interval_days=no_mowing_after_det)
+                              mission_id='S1', max_dates=4, minimum_interval_days=non_overlap_interval_days)
 
     if do_cmpl:
         print("Run compliancy calculation")
         compliancy.do_compliancy(outputShapeFile, compliance_config_filename=compliancy_conf_file)
 
+    if test:
+        ret_test = {"data_df":data_df, "coheVHDateList1":coheVHDateList1, "coheVHDateList2":coheVHDateList2, "coheVH_seg":coheVH_seg, "det_cube":det_cube, "unique_segments":unique_segments, "inv_seg_dct":inv_seg_dct}
+    else:
+        ret_test = None
 
-    return 0
+    return 0, ret_test
 
 
-def main_run(configFile, segmentsFile, outputDir, new_acq_date, older_acq_date=None,
+def main_run(configFile, segmentsFile, data_x_detection, outputDir, new_acq_date, older_acq_date=None,
              truthsFile=None, orbit_list=[], orbit_type_list=[],
-             seg_parcel_id_attribute=None, tr_parcel_id_attribute=None, outputShapeFile=None, do_cmpl=False):
+             seg_parcel_id_attribute=None, tr_parcel_id_attribute=None, outputShapeFile=None,
+             do_cmpl=False, test=False):
 
     config = configparser.ConfigParser()
     config.read(configFile)
 
     # [S1_input_data]
     re_compile = config['S1_input_data']['re_compile']
-    data_x_detection = list(map(str.strip, config['S1_input_data']['data_x_detection'].split(',')))
+    # data_x_detection = list(map(str.strip, config['S1_input_data']['data_x_detection'].split(',')))
     print("re_compile", re_compile)
     print("data_x_detection", data_x_detection)
 
@@ -536,17 +561,37 @@ def main_run(configFile, segmentsFile, outputDir, new_acq_date, older_acq_date=N
     min_cohe_var = np.float(config['S1_constants']['min_cohe_var'])
     locAcqTimeASC = config['S1_constants']['locAcqTimeASC']
     locAcqTimeDESC = config['S1_constants']['locAcqTimeASC']
+    print("S1_time_interval", S1_time_interval)
+    print("SAR_spacing", SAR_spacing)
+    print("cohe_ENL", cohe_ENL)
+    print("min_cohe_var", min_cohe_var)
+    print("locAcqTimeASC", locAcqTimeASC)
+    print("locAcqTimeDESC", locAcqTimeDESC)
 
     # [S1_processing]
     invalid_data = np.float(config['S1_processing']['invalid_data'])
-    saturate_sigma = np.bool(config['S1_processing']['saturate_sigma'])
+    saturate_sigma_str = config['S1_processing']['saturate_sigma']
+    if saturate_sigma_str == "True":
+        saturate_sigma = True
+    elif saturate_sigma_str == "False":
+        saturate_sigma = False
+    else:
+        print("saturate_sigma invalid")
+        return 0, test_d
     pfa = np.float(config['S1_processing']['pfa'])
     stat_smpl_n = np.int(config['S1_processing']['stat_smpl_n'])
-    no_mowing_after_det = np.int(config['S1_processing']['no_mowing_after_det'])
+    non_overlap_interval_days = np.int(config['S1_processing']['non_overlap_interval_days'])
     options_layer_burning = list(map(str.strip, config['S1_processing']['options_layer_burning'].split(',')))
     erode_pixels = np.int(config['S1_processing']['erode_pixels'])
     dataType = list(map(str.strip, config['S1_processing']['data_types'].split(',')))
     polType = list(map(str.strip, config['S1_processing']['pol_types'].split(',')))
+    print("invalid_data", invalid_data)
+    print("saturate_sigma", saturate_sigma)
+    print("pfa", pfa)
+    print("stat_smpl_n", stat_smpl_n)
+    print("non_overlap_interval_days", non_overlap_interval_days)
+    print("options_layer_burning", options_layer_burning)
+    print("erode_pixels", erode_pixels)
     print('dataType', dataType)
     print('polType', polType)
 
@@ -566,75 +611,273 @@ def main_run(configFile, segmentsFile, outputDir, new_acq_date, older_acq_date=N
     print(orbit_list, orbit_type_list)
     done_orbits=[]
     state_orbits=[]
+    test_d = []
     for orbit_number, orbit_type in zip(orbit_list, orbit_type_list):
         print("Run: orbit %s, type %s"%(orbit_number,orbit_type))
-        ret = run_proc([orbit_number], [orbit_type], data_x_detection, re_compile, segmentsFile,
-                       new_acq_date, older_acq_date=older_acq_date,
-                       truthsFile=truthsFile, outputDir=outputDir, outputShapeFile=outputShapeFile,
-                       seg_parcel_id_attribute = seg_parcel_id_attribute,
-                       tr_parcel_id_attribute = tr_parcel_id_attribute,
-                       options_layer_burning = options_layer_burning,
-                       invalid_data = invalid_data,
-                       saturate_sigma = saturate_sigma,
-                       pfa = pfa,
-                       stat_smpl_n = stat_smpl_n,
-                       min_cohe_var = min_cohe_var,
-                       erode_pixels = erode_pixels,
-                       no_mowing_after_det = no_mowing_after_det,
-                       locAcqTimeASC = locAcqTimeASC,
-                       locAcqTimeDESC = locAcqTimeDESC,
-                       dataType = dataType,
-                       polType = polType,
-                       S1_time_interval = S1_time_interval,
-                       do_cmpl = do_cmpl,
-                       compliancy_conf_file=configFile)
+        ret, test_data = run_proc([orbit_number], [orbit_type], data_x_detection, re_compile, segmentsFile,
+                                  new_acq_date, older_acq_date=older_acq_date,
+                                  truthsFile=truthsFile, outputDir=outputDir, outputShapeFile=outputShapeFile,
+                                  seg_parcel_id_attribute = seg_parcel_id_attribute,
+                                  tr_parcel_id_attribute = tr_parcel_id_attribute,
+                                  options_layer_burning = options_layer_burning,
+                                  invalid_data = invalid_data,
+                                  saturate_sigma = saturate_sigma,
+                                  pfa = pfa,
+                                  stat_smpl_n = stat_smpl_n,
+                                  min_cohe_var = min_cohe_var,
+                                  erode_pixels = erode_pixels,
+                                  non_overlap_interval_days = non_overlap_interval_days,
+                                  locAcqTimeASC = locAcqTimeASC,
+                                  locAcqTimeDESC = locAcqTimeDESC,
+                                  dataType = dataType,
+                                  polType = polType,
+                                  S1_time_interval = S1_time_interval,
+                                  do_cmpl = do_cmpl,
+                                  test = test,
+                                  compliancy_conf_file=configFile)
 
         print("Orbit done: ", orbit_number)
         print("Processing state (0: update shp file; 1: no parcels intersecting orbit; 2: no data available for that orbit) -->", ret)
         done_orbits.append(orbit_number)
         state_orbits.append(ret)
+        test_d.append(test_data)
 
     print("orbit list:  ", orbit_list)
     print("orbit done:  ", done_orbits)
     print("orbit state: ", state_orbits)
 
-    return 0
+    return 0, test_d
+
+
+
+
+############################ NEW IMPLEMENTATION ####################################
+def parse_date(str):
+    return datetime.datetime.strptime(str, "%Y-%m-%d").date()
+
+class RadarProduct(object):
+    def __init__(self, dt, name, orbit_type_id, polarization, radar_product_type, path, orbit_id):
+        self.name = name
+        self.orbit_type_id = orbit_type_id
+        self.polarization = polarization
+        self.radar_product_type = radar_product_type
+        self.path = path
+        self.orbit_id = f'{orbit_id:03}'
+
+        (year, week, _) = dt.isocalendar()
+        self.year = year
+        self.week = week
+
+class S4CConfig(object):
+    def __init__(self, args):
+        parser = ConfigParser()
+        parser.read([args.s4c_config_file])
+
+        self.host = parser.get("Database", "HostName")
+        self.dbname = parser.get("Database", "DatabaseName")
+        self.user = parser.get("Database", "UserName")
+        self.password = parser.get("Database", "Password")
+
+        self.site_id = args.site_id
+        self.config_file = args.config_file
+        self.input_shape_file = args.input_shape_file
+        self.output_data_dir = args.output_data_dir
+        self.new_acq_date = args.new_acq_date
+        self.older_acq_date = args.older_acq_date
+        # self.orbit_list_file = args.orbit_list_file
+        self.seg_parcel_id_attribute = args.seg_parcel_id_attribute
+        self.output_shapefile = args.output_shapefile
+        self.do_cmpl = args.do_cmpl
+        self.test = args.test
+        
+
+        if args.season_start:
+            self.season_start = parse_date(args.season_start)
+        
+        if args.season_end:        
+            self.season_end = parse_date(args.season_end)
+
+def get_s1_products(config, conn, site_id, prds_list):
+    with conn.cursor() as cursor:
+        if prds_list is None or len(prds_list) == 0 :
+            query = SQL(
+                """
+                with products as (
+                    select product.site_id,
+                        product.name,
+                        case
+                            when substr(product.name, 17, 8) > substr(product.name, 33, 8) then substr(product.name, 17, 8)
+                            else substr(product.name, 33, 8)
+                        end :: date as date,
+                        coalesce(product.orbit_type_id, 1) as orbit_type_id,
+                        substr(product.name, 49, 2) as polarization,
+                        product.processor_id,
+                        product.product_type_id,
+                        substr(product.name, length(product.name) - strpos(reverse(product.name), '_') + 2) as radar_product_type,
+                        product.orbit_id,
+                        product.full_path
+                    from product where product.satellite_id = 3 and product.site_id = {}
+                )
+                select products.date,
+                        products.name,
+                        products.orbit_type_id,
+                        products.polarization,
+                        products.radar_product_type,
+                        products.full_path, 
+                        products.orbit_id
+                from products
+                where date between {} and {}
+                order by date;
+                """
+            )
+
+            site_id_filter = Literal(site_id)
+            start_date_filter = Literal(config.season_start)
+            end_date_filter = Literal(config.season_end)
+            query = query.format(site_id_filter, start_date_filter, end_date_filter)
+            # print(query.as_string(conn))
+        else :
+            query= """with products as (
+                    select product.site_id,
+                        product.name,
+                        case
+                            when substr(product.name, 17, 8) > substr(product.name, 33, 8) then substr(product.name, 17, 8)
+                            else substr(product.name, 33, 8)
+                        end :: date as date,
+                        coalesce(product.orbit_type_id, 1) as orbit_type_id,
+                        substr(product.name, 49, 2) as polarization,
+                        product.processor_id,
+                        product.product_type_id,
+                        substr(product.name, length(product.name) - strpos(reverse(product.name), '_') + 2) as radar_product_type,
+                        product.orbit_id,
+                        product.full_path
+                    from product where product.satellite_id = 3 and product.site_id = {} and product.full_path in {}
+                )
+                select products.date,
+                        products.name,
+                        products.orbit_type_id,
+                        products.polarization,
+                        products.radar_product_type,
+                        products.full_path, 
+                        products.orbit_id
+                from products
+                order by date;""".format(site_id, tuple(prds_list))
+            #print(query)
+        
+        # execute the query
+        cursor.execute(query)            
+            
+        results = cursor.fetchall()
+        conn.commit()
+
+        products = []
+        for (dt, name, orbit_type_id, polarization, radar_product_type, full_path, orbit_id) in results:
+            products.append(RadarProduct(dt, name, orbit_type_id, polarization, radar_product_type, full_path, orbit_id))
+
+        return products
+
+def main() :
+    parser = argparse.ArgumentParser(description="Executes grassland mowing S1 detection")
+    parser.add_argument('-c', '--s4c-config-file', default='/etc/sen2agri/sen2agri.conf', help="Sen4CAP system configuration file location")
+    parser.add_argument('-s', '--site-id', help="The site id")
+    parser.add_argument('-f', '--config-file', default = "/usr/share/sen2agri/S4C_L4B_GrasslandMowing/config.ini", help="Grassland mowing parameters configuration file location")
+    parser.add_argument('-i', '--input-shape-file', help="The input shapefile GSAA")
+    parser.add_argument('-o', '--output-data-dir', help="Output data directory")
+    parser.add_argument('-e', '--new-acq-date', help="The new acquisition date")
+    parser.add_argument('-b', '--older-acq-date', help="The older acquisition date")
+    # parser.add_argument('-l', '--orbit-list-file', help="The orbit list file")    # NOT USED ANYMORE - ORBITS DETECTED FROM THE DATABASE
+    parser.add_argument('-l', '--input-products-list', nargs='+', help="The list of S1 L2 products")   
+    parser.add_argument('-a', '--seg-parcel-id-attribute', help="The SEQ unique ID attribute name", default="NewID")
+    parser.add_argument('-x', '--output-shapefile', help="Output shapefile")
+    parser.add_argument('-m', '--do-cmpl', help="Run compliancy")
+    parser.add_argument('--season-start', help="Season start")
+    parser.add_argument('--season-end', help="Season end")
+    parser.add_argument('-t', '--test', help="Run test")
+    
+    args = parser.parse_args()
+    
+    s4cConfig = S4CConfig(args)
+    
+    print("Season_start = ", s4cConfig.season_start)
+    print("Season_end = ", s4cConfig.season_end)
+    
+    with psycopg2.connect(host=s4cConfig.host, dbname=s4cConfig.dbname, user=s4cConfig.user, password=s4cConfig.password) as conn:
+        products = get_s1_products(s4cConfig, conn, s4cConfig.site_id, args.input_products_list)
+        
+        orbit_list = []
+        orbit_type_list = []
+        data_x_detection = []
+        for product in products:
+            data_x_detection.append(product.path) 
+            if product.orbit_id not in orbit_list:
+                orbit_list.append(product.orbit_id)
+                if product.orbit_type_id == 1 : 
+                    orbit_type_list.append("ASC")
+                else :
+                    orbit_type_list.append("DESC")
+
+        print("orbit_list 1:", orbit_list)
+        print("orbit_type_list 1", orbit_type_list)
+        
+        ret, _ = main_run(s4cConfig.config_file, s4cConfig.input_shape_file, data_x_detection, s4cConfig.output_data_dir, s4cConfig.new_acq_date, 
+                       older_acq_date = s4cConfig.older_acq_date, orbit_list = orbit_list, orbit_type_list=orbit_type_list,
+                       seg_parcel_id_attribute = s4cConfig.seg_parcel_id_attribute, outputShapeFile=s4cConfig.output_shapefile,
+                       do_cmpl=s4cConfig.do_cmpl, test=s4cConfig.test)
 
 if __name__== "__main__":
-    if len(sys.argv)==10:
-        config_file = sys.argv[1]
-        input_shape_file = sys.argv[2]
-        output_data_dir =  sys.argv[3]
-        new_acq_date =   sys.argv[4]
-        older_acq_date =  sys.argv[5]
-        orbit_list_file = sys.argv[6]
-        seg_parcel_id_attribute = sys.argv[7]
-        outputShapeFile = sys.argv[8]
-        do_cmpl = np.bool(sys.argv[9])
-    else:
-        print("Expected input:")
-        print("1) config_file")
-        print("2) input_shape_file")
-        print("3) output_data_dir")
-        print("4) new_acq_date")
-        print("5) older_acq_date")
-        print("6) orbit_list_file")
-        print("7) seg_parcel_id_attribute")
-        print("8) outputShapeFile")
-        print("9) do_cmpl")
-        raise Exception("Just 11 arguments are expected.", len(sys.argv)-1, "arguments are passed.")
+    main()
 
-    config = configparser.ConfigParser()
-    config.read(orbit_list_file)
+#if __name__== "__main__":
+#    if len(sys.argv)==11:
+#        config_file = sys.argv[1]
+#        input_shape_file = sys.argv[2]
+#        output_data_dir =  sys.argv[3]
+#        new_acq_date =   sys.argv[4]
+#        older_acq_date =  sys.argv[5]
+#        orbit_list_file = sys.argv[6]
+#        seg_parcel_id_attribute = sys.argv[7]
+#        outputShapeFile = sys.argv[8]
+#        do_cmpl_str = sys.argv[9]
+#        if do_cmpl_str == "True":
+#            do_cmpl = True
+#        elif do_cmpl_str == "False":
+#            do_cmpl = False
+#        else:
+#            print("do_cmpl par invalid")
+#        test = np.bool(sys.argv[10])
+#        if test == "True":
+#            test = True
+#        elif test == "False":
+#            test = False
+#        else:
+#            print("test par invalid")
+#        print("do_cmpl", do_cmpl)
+#        print("test", test)
+#    else:
+#        print("Expected input:")
+#        print("1) config_file")
+#        print("2) input_shape_file")
+#        print("3) output_data_dir")
+#        print("4) new_acq_date")
+#        print("5) older_acq_date")
+#        print("6) orbit_list_file")
+#        print("7) seg_parcel_id_attribute")
+#        print("8) outputShapeFile")
+#        print("9) do_cmpl")
+#        print("10) test")
+#        raise Exception("Just 10 arguments are expected.", len(sys.argv)-1, "arguments are passed.")
+#
+#    config = configparser.ConfigParser()
+#    config.read(orbit_list_file)
+#
+#    orbit_list = list(map(str.strip, config['orbits']['orbit_list'].split(',')))
+#    orbit_type_list = list(map(str.strip, config['orbits']['orbit_type_list'].split(',')))
+#    print("orbit_list:", orbit_list)
+#    print("orbit_type_list", orbit_type_list)
+#
+#    ret, _ = main_run(config_file, input_shape_file, output_data_dir, new_acq_date,
+#                      older_acq_date = older_acq_date, orbit_list=orbit_list, orbit_type_list=orbit_type_list,
+#                      seg_parcel_id_attribute = seg_parcel_id_attribute, outputShapeFile=outputShapeFile,
+#                      do_cmpl=do_cmpl, test=test)
     
-    orbit_list = list(map(str.strip, config['orbits']['orbit_list'].split(',')))
-    orbit_type_list = list(map(str.strip, config['orbits']['orbit_type_list'].split(',')))
-    print("orbit_list:", orbit_list)
-    print("orbit_type_list", orbit_type_list)
-
-    ret = main_run(config_file, input_shape_file, output_data_dir, new_acq_date, 
-                   older_acq_date = older_acq_date, orbit_list=orbit_list, orbit_type_list=orbit_type_list,
-                   seg_parcel_id_attribute = seg_parcel_id_attribute, outputShapeFile=outputShapeFile,
-                   do_cmpl=do_cmpl)
-
 
