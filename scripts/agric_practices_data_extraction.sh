@@ -96,7 +96,10 @@ else
 fi
 
 SHP_EXT=".shp"
-PROJ_SUFFIX=""
+PROJ_TYPE=""
+DEFAULT_PROJ=""
+LAEA_PROJ="3035"
+PROJ_TO_USE=""
 INSITU_REL_PATH=""
 OUT_REL_PATH=""
 INPUT_FILE_NAME=""
@@ -118,7 +121,7 @@ case "${PRODUCT_TYPE}" in
         OUT_REL_PATH="AMP_SHP"
         INPUT_FILE_NAME="${YEAR}_prds_s1_amp"
         if [ "$YEAR" == "2019" ] ; then
-            PROJ_SUFFIX="_LAEA"
+            PROJ_TYPE="LAEA"
         fi
         ;;
     COHE)
@@ -126,46 +129,80 @@ case "${PRODUCT_TYPE}" in
         OUT_REL_PATH="COHE_SHP"
         INPUT_FILE_NAME="${YEAR}_prds_s1_cohe"
         if [ "$YEAR" == "2019" ] ; then
-            PROJ_SUFFIX="_LAEA"
+            PROJ_TYPE="LAEA"
         fi
         ;;
     *)
         echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU} (NDVI|AMP|COHE)"
         exit 1
-esac        
+esac  
 
 case "${COUNTRY}" in
     NLD)
-        INSITU_FILE_NAME="nld_2018_32631_buf_${INSITU_BUFFER_SIZE}"
+        DEFAULT_PROJ="32631"
         ;;
     CZE)
-        INSITU_FILE_NAME="cze_${YEAR}_32633_buf_${INSITU_BUFFER_SIZE}"
+        DEFAULT_PROJ="32633"
         ;;
     LTU)
-        INSITU_FILE_NAME="ltu_${YEAR}_32635_buf_${INSITU_BUFFER_SIZE}"
+        DEFAULT_PROJ="32635"
         ;;
     ESP)
-        INSITU_FILE_NAME="gsaa${YEAR}_32629_full_buf_${INSITU_BUFFER_SIZE}"
+        DEFAULT_PROJ="32629"
         ;;
     ITA)
         if [ "$COUNTRY_REGION" == "FML" ] ; then
-            INSITU_FILE_NAME="ITA_FRIULI_MARCHE_LAZIO_${YEAR}_32632_buf_${INSITU_BUFFER_SIZE}"
+            DEFAULT_PROJ="32632"
         elif [ "$COUNTRY_REGION" == "CP1" ] || [ "$COUNTRY_REGION" == "CP2" ] ; then
-            INSITU_FILE_NAME="ITA_CAMPANIA_PUGLIA_${YEAR}_32633_buf_${INSITU_BUFFER_SIZE}"
+            DEFAULT_PROJ="32633"
+        fi    
+        ;;
+    ROU)
+        DEFAULT_PROJ="32634"
+        ;;
+    *)
+        echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU}"
+esac
+      
+if [ "$PROJ_TYPE" == "LAEA" ] ; then
+    PROJ_TO_USE="$LAEA_PROJ"
+else 
+    PROJ_TO_USE=${DEFAULT_PROJ}
+fi
+
+case "${COUNTRY}" in
+    NLD)
+        INSITU_FILE_NAME_PATTERN="decl_nld_${YEAR}_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        ;;
+    CZE)
+        INSITU_FILE_NAME_PATTERN="cze_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        ;;
+    LTU)
+        INSITU_FILE_NAME_PATTERN="ltu_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        ;;
+    ESP)
+        INSITU_FILE_NAME_PATTERN="gsaa${YEAR}_<PROJ>_full_buf_${INSITU_BUFFER_SIZE}"
+        ;;
+    ITA)
+        if [ "$COUNTRY_REGION" == "FML" ] ; then
+            INSITU_FILE_NAME_PATTERN="ITA_FRIULI_MARCHE_LAZIO_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        elif [ "$COUNTRY_REGION" == "CP1" ] || [ "$COUNTRY_REGION" == "CP2" ] ; then
+            INSITU_FILE_NAME_PATTERN="ITA_CAMPANIA_PUGLIA_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
         else 
             echo "Error executing data extraction for ITA. Unknown region ${COUNTRY_REGION}"
             exit 1
         fi    
         ;;
     ROU)
-        INSITU_FILE_NAME="ROM_2018_32634_buf_${INSITU_BUFFER_SIZE}"
+        INSITU_FILE_NAME_PATTERN="ROM_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
         ;;
     *)
         echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU}"
         exit 1
 esac
 
-S2_RASTERS_PATH="/d38/UCL/InSituData/07_2018_final/$1/Rasters"
+DEF_PROJ_INSITU_FILE_NAME=${INSITU_FILE_NAME_PATTERN//<PROJ>/$DEFAULT_PROJ}
+INSITU_FILE_NAME=${INSITU_FILE_NAME_PATTERN//<PROJ>/$PROJ_TO_USE}
 
 POLARISATION_OPT=""
 if [ ! -z ${POLARISATION} ] ; then
@@ -173,16 +210,18 @@ if [ ! -z ${POLARISATION} ] ; then
     INPUT_FILE_NAME="$INPUT_FILE_NAME""_${POLARISATION}"
 fi
 
-INSITU_REL_PATH=${INSITU_FILE_NAME}${SHP_EXT}
-INSITU_FULL_REL_PATH=${INSITU_FILE_NAME}${PROJ_SUFFIX}${SHP_EXT}
+DEF_PROJ_INSITU_FULL_REL_PATH=${DEF_PROJ_INSITU_FILE_NAME}${SHP_EXT}
+INSITU_FULL_REL_PATH=${INSITU_FILE_NAME}${SHP_EXT}
 
+DEF_PROJ_INSITU_FULL_PATH="${INSITU_ROOT}${DEF_PROJ_INSITU_FULL_REL_PATH}"
 INSITU_FULL_PATH="${INSITU_ROOT}${INSITU_FULL_REL_PATH}"
-INSITU_FULL_PATH_NO_PROJ="${INSITU_ROOT}${INSITU_REL_PATH}"
 
-if [ "${INSITU_REL_PATH}" != "${INSITU_FULL_REL_PATH}" ]; then
+if [ "${PROJ_TYPE}" == "LAEA" ]; then
     if [ ! -f ${INSITU_FULL_PATH} ] ; then 
-        echo "Reprojecting to LAEA ..."
-        ogr2ogr -f "ESRI Shapefile" -t_srs "EPSG:3035" "${INSITU_FULL_PATH}" "${INSITU_FULL_PATH_NO_PROJ}"
+        if [ -f ${DEF_PROJ_INSITU_FULL_PATH} ] ; then
+            echo "Reprojecting to LAEA ..."
+            ogr2ogr -f "ESRI Shapefile" -t_srs "EPSG:3035" "${INSITU_FULL_PATH}" "${DEF_PROJ_INSITU_FULL_PATH}"
+        fi
     fi
 fi
 
@@ -199,6 +238,6 @@ echo "Executing ${CMD}"
 #Execute the command
 eval $CMD    
 
+S2_RASTERS_PATH="/d38/UCL/InSituData/07_2018_final/$1/Rasters"
 #python agric_practices_data_extraction.py -s $SITE_ID --season-start "2018-01-01" --season-end "2019-01-01" --lpis-name nld_2018_decl --lpis-path $S2_RASTERS_PATH --lpis-shp $INSITU_FULL_PATH --file-type $FILE_TYPE -p $OUT_FULL_PATH --prds-per-group $PRDS_PER_GROUP --use-shapefile-only 1 --uid-field NewID --pool-size $POOL_SIZE --filter-ids $FILTER_IDS_FILE $POLARISATION_OPT
-
 
