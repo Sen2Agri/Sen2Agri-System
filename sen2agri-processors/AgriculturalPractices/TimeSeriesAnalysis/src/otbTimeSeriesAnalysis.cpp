@@ -130,6 +130,9 @@ private:
         m_NitrogenFixingCropVal = NITROGEN_FIXING_CROP_VAL;
 
         m_bVerbose = false;
+
+        time(&m_ttLimitAcqDate);
+        m_ttLimitAcqDate -= (SEC_IN_WEEK * 2);
     }
 
     void DoInit() override
@@ -366,6 +369,10 @@ private:
         SetDefaultParameterInt("minacqs", MIN_REQUIRED_COHE_VALUES);
         MandatoryOff("minacqs");
 
+        AddParameter(ParameterType_String, "acqsdatelimit", "Limit acquisition date");
+        SetParameterDescription("acqsdatelimit", "Limit acquisition date");
+        MandatoryOff("acqsdatelimit");
+
         // Doc example parameter settings
         //SetDocExampleParameterValue("in", "support_image.tif");
     }
@@ -494,6 +501,15 @@ private:
             m_prevPrdReader.Initialize(GetParameterString("prevprd"));
         }
 
+        if (HasValue("acqsdatelimit")) {
+            const std::string &limitDateStr = GetParameterString("acqsdatelimit");
+            m_ttLimitAcqDate = GetTimeFromString(limitDateStr);
+            time_t yearLimitDate = GetTimeFromString(m_year + "-12-31");
+            if (m_ttLimitAcqDate > yearLimitDate) {
+                m_ttLimitAcqDate = yearLimitDate;
+            }
+        }
+
         if (m_practiceName == m_CatchCropVal) {
             if (m_CatchMain.size() == 0) {
                 itkExceptionMacro("catch main parameter was not specified for the Catch Crop practice!");
@@ -614,7 +630,7 @@ private:
 //            return false;
 //        }
 
-//        if (feature.GetFieldSeqId() != "170616") {
+//        if (feature.GetFieldSeqId() != "224326") {
 //            return false;
 //        }
 
@@ -636,6 +652,11 @@ private:
         fieldInfos.mainCrop = feature.GetMainCrop();
         fieldInfos.practiceType = feature.GetPracticeType();
         fieldInfos.s1PixValue = feature.GetS1Pix();
+        int s1PixVal = std::atoi(fieldInfos.s1PixValue.c_str());
+        if (s1PixVal == 0) {
+            // set also the fieldInfos.s1PixValue to "0"
+            fieldInfos.s1PixValue = std::to_string(s1PixVal);
+        }
 
         int year;
         if (!GetWeekFromDate(vegetationStart, year, fieldInfos.vegStartWeekNo, INPUT_SHP_DATE_PATTERN))
@@ -675,7 +696,6 @@ private:
 
         bool bOK = true;
         int harvestStatusInitVal = NOT_AVAILABLE;
-        int s1PixVal = std::atoi(fieldInfos.s1PixValue.c_str());
         if (s1PixVal < m_nMinS1PixCnt) {
             bOK = false;
             harvestStatusInitVal = NOT_AVAILABLE_1;
@@ -1019,6 +1039,20 @@ private:
         return true;
     }
 
+    // Compute L_DATE
+    time_t GetMaxCohDate(const FieldInfoType &fieldInfos, const std::vector<MergedAllValInfosType> &allMergedValues) {
+        time_t ttMaxCohDate = 0;
+        time_t ttLastMergedValuesDate = allMergedValues[allMergedValues.size()-1].ttDate;
+        time_t ttCurFloorDate;
+        for (const InputFileLineInfoType &linfo : fieldInfos.coheVVLines) {
+            ttCurFloorDate = linfo.GetFloorTime();
+            if (ttCurFloorDate == ttLastMergedValuesDate && ttCurFloorDate > ttMaxCohDate) {
+                ttMaxCohDate = ttCurFloorDate;
+            }
+        }
+        return ttMaxCohDate;
+    }
+
     bool ProcessFieldInformation(FieldInfoType &fieldInfos) {
 
         std::vector<MergedAllValInfosType> allMergedValues;
@@ -1065,8 +1099,9 @@ private:
             } else {
                 otbAppLogWARNING("Practice name " << fieldInfos.practiceName << " not supported!");
             }
-            if (FloorDateToWeekStart(efaHarvestInfos.evaluation.ttPracticeEndTime) > harvestInfos.evaluation.ttLWeekStartTime) {
-                efaHarvestInfos.evaluation.efaIndex = NA_STR;
+            time_t ttMaxCohDate = GetMaxCohDate(fieldInfos, allMergedValues);
+            if (efaHarvestInfos.evaluation.ttPracticeEndTime > ttMaxCohDate) {
+                efaHarvestInfos.evaluation.efaIndex = NR_STR;
             }
         }
 
@@ -1464,15 +1499,21 @@ private:
         // MARKER 1  Presence of vegetation cycle (NDVI): M1 == $ndvi.presence
         // Define weeks in vegetation season
         for(size_t i = 0; i<retAllMergedValues.size(); i++) {
-            if (fieldInfos.practiceName == "CatchCrop" && fieldInfos.ttPracticeStartTime != 0) {
-                if (retAllMergedValues[i].ttDate >= fieldInfos.ttVegStartWeekFloorTime &&
-                    retAllMergedValues[i].ttDate <= fieldInfos.ttPracticeStartWeekFloorTime + SEC_IN_WEEK) {
-                    retAllMergedValues[i].vegWeeks = true;
-                }
-            } else {
-                if (retAllMergedValues[i].ttDate >= fieldInfos.ttVegStartWeekFloorTime &&
-                    retAllMergedValues[i].ttDate <= fieldInfos.ttHarvestEndWeekFloorTime) {
-                    retAllMergedValues[i].vegWeeks = true;
+            if (retAllMergedValues[i].ttDate >= fieldInfos.ttVegStartWeekFloorTime &&
+                retAllMergedValues[i].ttDate <= fieldInfos.ttHarvestEndWeekFloorTime) {
+                retAllMergedValues[i].vegWeeks = true;
+            }
+        }
+        if (fieldInfos.practiceName == "CatchCrop" && fieldInfos.ttPracticeStartTime != 0) {
+            // # if catch crop is second crop -> shorten the veg.weeks period
+            if (fieldInfos.practiceType != m_CatchMain && fieldInfos.practiceType != m_CatchCropIsMain &&
+                    fieldInfos.ttVegStartWeekFloorTime < fieldInfos.ttPracticeStartWeekFloorTime) {
+                time_t ttPractStartNextWeek = fieldInfos.ttPracticeStartWeekFloorTime + SEC_IN_WEEK;
+                for(size_t i = 0; i<retAllMergedValues.size(); i++) {
+                    if (retAllMergedValues[i].ttDate >= fieldInfos.ttVegStartWeekFloorTime &&
+                        retAllMergedValues[i].ttDate <= ttPractStartNextWeek) {
+                        retAllMergedValues[i].vegWeeks = true;
+                    }
                 }
             }
         }
@@ -2918,22 +2959,28 @@ private:
         time_t ttFirstWeekStart = GetTimeFromString(std::to_string(fieldInfos.year).append("-01-01"));
         time_t ttPrevDate = ttFirstWeekStart;
         time_t ttCurDate;
-        for(size_t i = 0; i<values.size(); i++) {
-            if (i > 0) {
-                ttPrevDate = values[i-1].ttDate;
-            }
-            ttCurDate = values[i].ttDate;
-            diffInDays = (ttCurDate - ttPrevDate) / SEC_IN_DAY;
-            if (diffInDays > 7) {
-                sum += (diffInDays / 7) - 1;
-            }
+        if (values.size() > 0) {
+            for(size_t i = 0; i < (values.size() + 1); i++) {
+                if (i > 0) {
+                    ttPrevDate = values[i-1].ttDate;
+                }
+                if (i<values.size()) {
+                    ttCurDate = values[i].ttDate;
+                } else {
+                    ttCurDate = m_ttLimitAcqDate;
+                }
+                diffInDays = (ttCurDate - ttPrevDate) / SEC_IN_DAY;
+                if (diffInDays > 7) {
+                    sum += (diffInDays / 7) - 1;
+                }
 
-            // Check for gaps between harvest start and harvest end interval
-            UpdateGapsInformation(fieldInfos.ttHarvestStartWeekFloorTime, fieldInfos.ttHarvestEndWeekFloorTime,
-                                  ttPrevDate, ttCurDate, sumHGaps);
-            // Check for gaps between practice start and harvest end interval
-            UpdateGapsInformation(fieldInfos.ttPracticeStartWeekFloorTime, fieldInfos.ttPracticeEndWeekFloorTime,
-                                  ttPrevDate, ttCurDate, sumPGaps);
+                // Check for gaps between harvest start and harvest end interval
+                UpdateGapsInformation(fieldInfos.ttHarvestStartWeekFloorTime, fieldInfos.ttHarvestEndWeekFloorTime,
+                                      ttPrevDate, ttCurDate, sumHGaps);
+                // Check for gaps between practice start and harvest end interval
+                UpdateGapsInformation(fieldInfos.ttPracticeStartWeekFloorTime, fieldInfos.ttPracticeEndWeekFloorTime,
+                                      ttPrevDate, ttCurDate, sumPGaps);
+            }
         }
         fieldInfos.gapsInfos = sum;
         fieldInfos.hS1GapsInfos = sumHGaps;
@@ -3042,6 +3089,8 @@ private:
     bool m_bVerbose;
 
     int m_nMinS1PixCnt;
+
+    time_t m_ttLimitAcqDate;
 
 };
 

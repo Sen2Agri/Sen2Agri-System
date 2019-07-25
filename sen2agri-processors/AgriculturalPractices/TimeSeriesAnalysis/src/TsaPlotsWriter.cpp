@@ -59,8 +59,8 @@ void TsaPlotsWriter::WritePlotEntry(const FieldInfoType &fieldInfos, const Harve
     std::stringstream ss;
 
     ss << " <fid id=\"" << fieldInfos.fieldSeqId.c_str() << "\" orig_id=\"" << fieldInfos.fieldId.c_str() << "\">\n";
-    ss << " <practice start=\"" << TimeToString(harvestInfo.evaluation.ttHarvestStartTime).c_str() <<
-                           "\" end=\"" << TimeToString(harvestInfo.evaluation.ttHarvestEndTime).c_str() <<
+    ss << " <practice start=\"" << TimeToString(harvestInfo.evaluation.ttPracticeStartTime).c_str() <<
+                           "\" end=\"" << TimeToString(harvestInfo.evaluation.ttPracticeEndTime).c_str() <<
                            "\"/>\n";
     ss << " <harvest start=\"" << TimeToString(harvestInfo.evaluation.ttHarvestConfirmWeekStart).c_str() <<
                           "\" end=\"" << TimeToString((IsNA(harvestInfo.evaluation.ttHarvestConfirmWeekStart) || harvestInfo.evaluation.ttHarvestConfirmWeekStart == 0) ?
@@ -86,7 +86,7 @@ void TsaPlotsWriter::WritePlotEntry(const FieldInfoType &fieldInfos, const Harve
                                 "\" val=\"" << ValueToString(fieldInfos.coheVVLines[i].meanVal).c_str() << "\"/>\n";
     }
     ss << "  </cohs>\n</fid>\n";
-
+    ss.flush();
     const std::string &ssStr = ss.str();
     size_t byteToWrite = ssStr.size();
     if (m_OutPlotsIdxFileStream.is_open()) {

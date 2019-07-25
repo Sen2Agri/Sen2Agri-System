@@ -59,6 +59,7 @@ public:
                                                //in VectorData mapped to a string
 
     typedef struct FidInfos {
+        time_t ttFileCreationTime;
         std::string date;
         std::string date2;
         double meanVal;
@@ -335,6 +336,12 @@ private:
             otbAppLogFATAL("Error opening input file, exiting...");
             return false;
         }
+        boost::filesystem::path p( filePath ) ;
+        std::time_t ttFileLastWriteTime = boost::filesystem::last_write_time( p ) ;
+        char buffer[15];
+        strftime(buffer, 15, "%Y-%m-%d", localtime(&ttFileLastWriteTime));
+        otbAppLogINFO("The last write date of the file " << filePath << " is " << buffer);
+
         std::string line;
         int i = 0;
         int j;
@@ -389,6 +396,7 @@ private:
                 }
                 // now extract the date(s) and the values
                 int curIdx = offset;
+                fidInfo.ttFileCreationTime = ttFileLastWriteTime;
                 fidInfo.date = results[curIdx++];
                 if (isCohe) {
                     fidInfo.date2 = results[curIdx++];
@@ -489,7 +497,13 @@ private:
                 return ((lhs.date == rhs.date) && (lhs.date2 == rhs.date2)/*&&
                         (lhs.meanVal == rhs.meanVal)*/);};
 
-            auto pred = []( const FidInfosType& lhs, const FidInfosType& rhs ) {return ((lhs.date.compare(rhs.date)) < 0);};
+            auto pred = []( const FidInfosType& lhs, const FidInfosType& rhs ) {
+                int cmpRes = lhs.date.compare(rhs.date);
+                if (cmpRes == 0) {
+                    return (lhs.ttFileCreationTime < rhs.ttFileCreationTime);
+                }
+                return (cmpRes < 0);
+            };
             std::sort(fidType.infos.begin(), fidType.infos.end(),pred);
             auto last = std::unique(fidType.infos.begin(), fidType.infos.end(),comp);
             fidType.infos.erase(last, fidType.infos.end());

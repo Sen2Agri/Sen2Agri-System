@@ -357,8 +357,8 @@ private:
             m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetCTnum(ogrFeat)).c_str() << ";";
             m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetCT(ogrFeat)).c_str() << ";";
             m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetLC(ogrFeat)).c_str() << ";";
-            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetS1Pix(ogrFeat)).c_str() << ";";
-            m_outPracticesFileStream << GetValueOrNA(m_pCountryInfos->GetS2Pix(ogrFeat)).c_str() << "\n";
+            m_outPracticesFileStream << GetIntRepresentation(m_pCountryInfos->GetS1Pix(ogrFeat)).c_str() << ";";
+            m_outPracticesFileStream << GetIntRepresentation(m_pCountryInfos->GetS2Pix(ogrFeat)).c_str() << "\n";
         }
     }
 
@@ -367,6 +367,11 @@ private:
             return str;
         }
         return "NA";
+    }
+
+    std::string GetIntRepresentation(const std::string &str) {
+        int intVal = std::atoi(str.c_str());
+        return std::to_string(intVal);
     }
 
     bool FilterFeature(const AttributeEntry &ogrFeat) {
