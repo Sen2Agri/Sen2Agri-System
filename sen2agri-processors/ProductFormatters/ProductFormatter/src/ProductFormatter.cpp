@@ -648,8 +648,8 @@ private:
               UnpackRastersList(filesList, CROP_TYPE_FLAGS, true);
           }
       } else {
-          const std::vector<std::string> &rastersList = this->GetParameterStringList("processor.generic.files");
-          TransferGenericVectorFiles(rastersList);
+          const std::vector<std::string> &vectorFilesList = this->GetParameterStringList("processor.generic.files");
+          TransferGenericVectorFiles(vectorFilesList);
       }
       if(bDirStructBuiltOk)
       {
@@ -699,7 +699,7 @@ private:
   void CreateAndFillTile(tileInfo &tileInfoEl, const std::string &strMainFolderFullPath)
   {
       bool bResult;
-      std::string strTileName = BuildTileName(tileInfoEl.strTileID);
+      std::string strTileName = BuildTileName(tileInfoEl);
       tileInfoEl.strTilePath = strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  strTileName;
 
       bResult = createsAllTileSubfolders(tileInfoEl.strTilePath);
@@ -1088,6 +1088,14 @@ private:
       return bRet;
   }
 
+  std::string BuildTileMetadataCategFileName(const tileInfo &tileInfoEl) {
+      rasterInfo retRasterFileEl;
+      if (GetFirstRasterFile(tileInfoEl, retRasterFileEl)) {
+            return BuildFileName(METADATA_CATEG, tileInfoEl.strTileID, "", retRasterFileEl.rasterTimePeriod);
+      }
+      return BuildFileName(METADATA_CATEG, tileInfoEl.strTileID, "");
+  }
+
   void generateTileMetadataFile(tileInfo &tileInfoEl)
   {
       TileSize tileSizeEl;
@@ -1099,7 +1107,7 @@ private:
 
       auto writer = itk::TileMetadataWriter::New();
 
-      std::string strTile = BuildFileName(METADATA_CATEG, tileInfoEl.strTileID, "");
+      const std::string &strTile = BuildTileMetadataCategFileName(tileInfoEl);
       tileInfoEl.tileMetadata.TileID = strTile;
       tileInfoEl.tileMetadata.ProductLevel = "Level-"  + m_strProductLevel;
 
@@ -1541,6 +1549,17 @@ private:
              return true;
           default:
              return false;
+      }
+      return false;
+  }
+
+  bool GetFirstRasterFile(const tileInfo &tileInfoEl, rasterInfo &retRasterFileEl)
+  {
+      for (rasterInfo &rasterFileEl : m_rasterInfoList) {
+          if(rasterFileEl.strTileID == tileInfoEl.strTileID) {
+              retRasterFileEl = rasterFileEl;
+              return true;
+          }
       }
       return false;
   }
@@ -2084,12 +2103,17 @@ private:
       return BuildFileName(MAIN_FOLDER_CATEG, "", "", m_strTimePeriod, m_strSiteId, strCreationDate);
   }
 
-  std::string BuildTileName(const std::string &tileId) {
-      return BuildFileName("", tileId);
+  std::string BuildTileName(const tileInfo &tileInfoEl) {
+      rasterInfo retRasterFileEl;
+      if (GetFirstRasterFile(tileInfoEl, retRasterFileEl)) {
+          return BuildFileName("", tileInfoEl.strTileID, "", retRasterFileEl.rasterTimePeriod);
+      }
+      return BuildFileName("", tileInfoEl.strTileID);
   }
 
-  std::string BuildFileName(const std::string &fileCateg, const std::string &tileId, const std::string &extension="", const std::string &strTimePeriod = "",
-                            const std::string &site = "", const std::string &creationDate = "", const std::string &region = "") {
+  std::string BuildFileName(const std::string &fileCateg, const std::string &tileId, const std::string &extension="",
+                            const std::string &strTimePeriod = "", const std::string &site = "",
+                            const std::string &creationDate = "", const std::string &region = "") {
       std::string strFileName = "{project_id}_{product_level}_{file_category}_S{originator_site}_{creation_date}_V{time_period}_T{tile_id}_R{region}";
       strFileName = ReplaceString(strFileName, "{project_id}", PROJECT_ID);
       strFileName = ReplaceString(strFileName, "{product_level}", m_strProductLevel);
@@ -2187,6 +2211,7 @@ private:
 
         return retPath;
   }
+
 
 
 private:
