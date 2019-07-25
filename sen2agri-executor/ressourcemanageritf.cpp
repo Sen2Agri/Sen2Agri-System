@@ -309,7 +309,7 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
 
         CommandInvoker cmdInvoker;
         if (!cmdInvoker.InvokeCommand(SBATCH_CMD, sbatchParams, false)) {
-            Logger::error(QString("Unable to execute SLURM sbatch command for the processor %1. The error was: \"%s\"")
+            Logger::error(QString("Unable to execute SLURM sbatch command for the processor %1. The error was: \"%2\"")
                               .arg(executionStep.GetProcessorPath(), cmdInvoker.GetExecutionLog()));
             return false;
         }
