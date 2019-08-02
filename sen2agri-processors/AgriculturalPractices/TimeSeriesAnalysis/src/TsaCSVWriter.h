@@ -7,6 +7,7 @@ class TsaCSVWriter
 {
 public:
     TsaCSVWriter();
+    static std::string BuildResultsCsvFileName(const std::string &practiceName, const std::string &countryCode, int year);
     bool WriteCSVHeader(const std::string &outDir, const std::string &practiceName, const std::string &countryCode, int year);
     void WriteHarvestInfoToCsv(const FieldInfoType &fieldInfo, const HarvestInfoType &harvestInfo, const HarvestInfoType &efaHarvestInfo);
 

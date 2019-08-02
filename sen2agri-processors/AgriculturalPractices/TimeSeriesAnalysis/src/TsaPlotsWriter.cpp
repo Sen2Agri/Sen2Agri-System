@@ -51,16 +51,21 @@ void TsaPlotsWriter::ClosePlotsFile() {
     m_OutPlotsIdxFileStream.close();
 }
 
-void TsaPlotsWriter::WritePlotEntry(const FieldInfoType &fieldInfos, const HarvestInfoType &harvestInfo) {
+void TsaPlotsWriter::WritePlotEntry(const FieldInfoType &fieldInfos, const HarvestInfoType &harvestInfo,
+                                    const HarvestInfoType &efaHarvestInfo, bool hasEfaInfos) {
     if (!m_bPlotOutputGraph) {
         return;
     }
 
     std::stringstream ss;
+    time_t ttPractStart = (hasEfaInfos ? efaHarvestInfo.evaluation.ttPracticeStartTime :
+                                        harvestInfo.evaluation.ttPracticeStartTime);
+    time_t ttPractEnd = (hasEfaInfos ? efaHarvestInfo.evaluation.ttPracticeEndTime :
+                                      harvestInfo.evaluation.ttPracticeEndTime);
 
     ss << " <fid id=\"" << fieldInfos.fieldSeqId.c_str() << "\" orig_id=\"" << fieldInfos.fieldId.c_str() << "\">\n";
-    ss << " <practice start=\"" << TimeToString(harvestInfo.evaluation.ttPracticeStartTime).c_str() <<
-                           "\" end=\"" << TimeToString(harvestInfo.evaluation.ttPracticeEndTime).c_str() <<
+    ss << " <practice start=\"" << TimeToString(ttPractStart).c_str() <<
+                           "\" end=\"" << TimeToString(ttPractEnd).c_str() <<
                            "\"/>\n";
     ss << " <harvest start=\"" << TimeToString(harvestInfo.evaluation.ttHarvestConfirmWeekStart).c_str() <<
                           "\" end=\"" << TimeToString((IsNA(harvestInfo.evaluation.ttHarvestConfirmWeekStart) || harvestInfo.evaluation.ttHarvestConfirmWeekStart == 0) ?

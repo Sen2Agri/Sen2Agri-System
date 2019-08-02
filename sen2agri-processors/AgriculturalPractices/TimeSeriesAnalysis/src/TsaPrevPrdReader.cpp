@@ -15,7 +15,7 @@
 #include "TsaPrevPrdReader.h"
 #include "TimeSeriesAnalysisUtils.h"
 
-TsaPrevPrdReader::TsaPrevPrdReader() : m_fieldIdPos(-1), m_hEndPos(-1) {
+TsaPrevPrdReader::TsaPrevPrdReader() : m_fieldIdPos(-1), m_hWeekPos(-1), m_hWeekStartPos(-1) {
 
 }
 bool TsaPrevPrdReader::Initialize(const std::string &prevPrd) {
@@ -28,12 +28,12 @@ bool TsaPrevPrdReader::Initialize(const std::string &prevPrd) {
     if (std::getline(fStream, line)) {
 
         ExtractHeaderInfos(line);
-        if (m_fieldIdPos != -1 && m_hEndPos != -1) {
+        if (m_fieldIdPos != -1 && m_hWeekPos != -1 && m_hWeekStartPos) {
             while (std::getline(fStream, line)) {
                 const std::vector<std::string> &vect = LineToVector(line);
-                if ((int)vect.size() > m_fieldIdPos && (int)vect.size() > m_hEndPos) {
+                if ((int)vect.size() > m_fieldIdPos && (int)vect.size() > m_hWeekPos && (int)vect.size() > m_hWeekStartPos) {
                     // extract the ID and the date into the map
-                    m_MapIdHendWeek[std::atoi(vect[m_fieldIdPos].c_str())] = vect[m_hEndPos];
+                    m_MapIdHendWeek[std::atoi(vect[m_fieldIdPos].c_str())] = {vect[m_hWeekPos], vect[m_hWeekStartPos]};
                 }
             }
         }
@@ -43,9 +43,19 @@ bool TsaPrevPrdReader::Initialize(const std::string &prevPrd) {
 
 std::string TsaPrevPrdReader::GetHWeekForFieldId(int fieldId) {
     if (m_MapIdHendWeek.size() > 0) {
-        std::map<int,std::string>::iterator it = m_MapIdHendWeek.find(fieldId);
+        std::map<int,FieldInfos>::iterator it = m_MapIdHendWeek.find(fieldId);
         if (it != m_MapIdHendWeek.end()) {
-            return it->second;
+            return it->second.hWeek;
+        }
+    }
+    return "";
+}
+
+std::string TsaPrevPrdReader::GetHWeekStartForFieldId(int fieldId) {
+    if (m_MapIdHendWeek.size() > 0) {
+        std::map<int,FieldInfos>::iterator it = m_MapIdHendWeek.find(fieldId);
+        if (it != m_MapIdHendWeek.end()) {
+            return it->second.hWeekStart;
         }
     }
     return "";
@@ -55,6 +65,7 @@ void TsaPrevPrdReader::ExtractHeaderInfos(const std::string &line)
 {
     m_InputFileHeader = LineToVector(line);
     m_fieldIdPos = GetPosInVector(m_InputFileHeader, "FIELD_ID");
-    m_hEndPos = GetPosInVector(m_InputFileHeader, "H_END");
+    m_hWeekPos = GetPosInVector(m_InputFileHeader, "H_WEEK");
+    m_hWeekStartPos = GetPosInVector(m_InputFileHeader, "H_W_START");
 }
 

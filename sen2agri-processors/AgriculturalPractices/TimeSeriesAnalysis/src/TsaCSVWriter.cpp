@@ -20,6 +20,13 @@
 TsaCSVWriter::TsaCSVWriter() {
 }
 
+std::string TsaCSVWriter::BuildResultsCsvFileName(const std::string &practiceName, const std::string &countryCode,
+                                  int year) {
+    const std::string &fileName = "Sen4CAP_L4C_" + practiceName + "_" +
+            countryCode + "_" + std::to_string(year) + "_CSV.csv";
+    return fileName;
+}
+
 bool TsaCSVWriter::WriteCSVHeader(const std::string &outDir, const std::string &practiceName, const std::string &countryCode,
                     int year) {
     if (m_OutFileStream.is_open()) {
@@ -40,7 +47,8 @@ bool TsaCSVWriter::WriteCSVHeader(const std::string &outDir, const std::string &
     return true;
 }
 
-void TsaCSVWriter::WriteHarvestInfoToCsv(const FieldInfoType &fieldInfo, const HarvestInfoType &harvestInfo, const HarvestInfoType &efaHarvestInfo) {
+void TsaCSVWriter::WriteHarvestInfoToCsv(const FieldInfoType &fieldInfo, const HarvestInfoType &harvestInfo,
+                                         const HarvestInfoType &efaHarvestInfo) {
     //"FIELD_ID;COUNTRY;YEAR;MAIN_CROP
     m_OutFileStream << fieldInfo.fieldSeqId << ";" << fieldInfo.fieldId << ";" << fieldInfo.countryCode << ";" << ValueToString(fieldInfo.year) << ";" << fieldInfo.mainCrop << ";" <<
                // VEG_START;H_START;H_END;"
@@ -80,8 +88,7 @@ void TsaCSVWriter::WriteHarvestInfoToCsv(const FieldInfoType &fieldInfo, const H
 
 std::string TsaCSVWriter::GetResultsCsvFilePath(const std::string &outDir, const std::string &practiceName, const std::string &countryCode,
                                   int year) {
-    const std::string &fileName = "Sen4CAP_L4C_" + practiceName + "_" +
-            countryCode + "_" + std::to_string(year) + "_CSV.csv";
+    const std::string &fileName = BuildResultsCsvFileName(practiceName, countryCode, year);
     boost::filesystem::path rootFolder(outDir);
     return (rootFolder / fileName).string();
 }

@@ -10,7 +10,7 @@ public:
     void SetEnabled(bool enable) { m_bPlotOutputGraph = enable; }
     void CreatePlotsFile(const std::string &outDir, const std::string &practiceName, const std::string &countryCode, int year);
     void ClosePlotsFile();
-    void WritePlotEntry(const FieldInfoType &fieldInfos, const HarvestInfoType &harvestInfo);
+    void WritePlotEntry(const FieldInfoType &fieldInfos, const HarvestInfoType &harvestInfo, const HarvestInfoType &efaHarvestInfo, bool hasEfaInfos);
 
 private:
     std::string GetPlotsFilePath(const std::string &outDir, const std::string &practiceName, const std::string &countryCode, int year);

@@ -498,7 +498,12 @@ private:
         }
 
         if (HasValue("prevprd")) {
-            m_prevPrdReader.Initialize(GetParameterString("prevprd"));
+            const std::string &prevFileName = TsaCSVWriter::BuildResultsCsvFileName(m_practiceName,
+                                                                               m_countryName,
+                                                                               std::atoi(m_year.c_str()));
+            const std::string &prevPrdDir = GetParameterString("prevprd");
+            boost::filesystem::path rootFolder(prevPrdDir);
+            m_prevPrdReader.Initialize((rootFolder / prevFileName).string());
         }
 
         if (HasValue("acqsdatelimit")) {
@@ -630,7 +635,7 @@ private:
 //            return false;
 //        }
 
-//        if (feature.GetFieldSeqId() != "224326") {
+//        if (feature.GetFieldSeqId() != "112460") {
 //            return false;
 //        }
 
@@ -1087,7 +1092,7 @@ private:
 //      DEBUG
 
         HarvestInfoType efaHarvestInfos;
-
+        bool hasEfaInfos = false;
         // ### TIME SERIES ANALYSIS FOR EFA PRACTICES ###
         if (fieldInfos.practiceName != NA_STR && fieldInfos.ttPracticeStartTime != 0) {
             if (fieldInfos.practiceName.find(m_CatchCropVal) != std::string::npos) {
@@ -1103,10 +1108,11 @@ private:
             if (efaHarvestInfos.evaluation.ttPracticeEndTime > ttMaxCohDate) {
                 efaHarvestInfos.evaluation.efaIndex = NR_STR;
             }
+            hasEfaInfos = true;
         }
 
-        // write infos to be generated as plots (png graphs)
-        m_plotsWriter.WritePlotEntry(fieldInfos, harvestInfos);
+        // write infos to be generated as plots
+        m_plotsWriter.WritePlotEntry(fieldInfos, harvestInfos, efaHarvestInfos, hasEfaInfos);
 
         // Write the continuous field infos into the file
         m_contFileWriter.WriteContinousToCsv(fieldInfos, allMergedValues);
@@ -1806,11 +1812,13 @@ private:
         }
 
         // update the harvestConfirmed with the value from the previous file, if present and different
-        const std::string &prevHWeek = m_prevPrdReader.GetHWeekForFieldId(std::atoi(fieldInfos.fieldSeqId.c_str()));
-        if (prevHWeek.size() > 0) {
-            time_t ttTime = GetTimeFromString(prevHWeek);
-            if (ttTime != 0 && harvestInfos.harvestConfirmed > ttTime) {
-                harvestInfos.harvestConfirmed = ttTime;
+        unsigned int nSeqIdNo = std::atoi(fieldInfos.fieldSeqId.c_str());
+        const std::string &prevHWeekStart = m_prevPrdReader.GetHWeekStartForFieldId(nSeqIdNo);
+        time_t harvestConfirmWeekStart = harvestInfos.harvestConfirmed;
+        if (prevHWeekStart.size() > 0) {
+            time_t ttTime = GetTimeFromString(prevHWeekStart);
+            if ((ttTime != 0) && (IsNA(harvestInfos.harvestConfirmed) || harvestInfos.harvestConfirmed > ttTime)) {
+                harvestConfirmWeekStart = ttTime;
             }
         }
 
@@ -1822,14 +1830,36 @@ private:
         harvestInfos.evaluation.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;   // M5
 
         // "HARVESTED CONDITIONS NOT DETECTED"
-        if (IsNA(harvestInfos.harvestConfirmed)) {
+        if (IsNA(harvestConfirmWeekStart)) {
             // report results from last available week
             harvestInfos.evaluation.harvestConfirmWeek = NR;
             harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
         } else {
-            harvestInfos.evaluation.harvestConfirmWeek = GetWeekFromDate(retAllMergedValues[idxFirstHarvest].ttDate);
-            harvestInfos.evaluation.ttHarvestConfirmWeekStart = retAllMergedValues[idxFirstHarvest].ttDate;
+            harvestInfos.evaluation.harvestConfirmWeek = GetWeekFromDate(harvestConfirmWeekStart);
+            harvestInfos.evaluation.ttHarvestConfirmWeekStart = harvestConfirmWeekStart;
         }
+
+        // OLD IMPLEMENTATION
+//        // "HARVESTED CONDITIONS NOT DETECTED"
+//        if (IsNA(harvestConfirmWeekStart) || idxFirstHarvest == -1) {
+//            // report results from last available week
+//            int lastAvailableIdx = retAllMergedValues.size() - 1;
+//            harvestInfos.evaluation.ndviPresence = retAllMergedValues[lastAvailableIdx].ndviPresence;               // M1
+//            harvestInfos.evaluation.candidateOptical = retAllMergedValues[lastAvailableIdx].candidateOptical;       // M2
+//            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[lastAvailableIdx].candidateAmplitude;   // M3
+//            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[lastAvailableIdx].amplitudePresence;     // M4
+//            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;   // M5
+//            harvestInfos.evaluation.harvestConfirmWeek = NR;
+//            harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
+//        } else {
+//            harvestInfos.evaluation.ndviPresence = retAllMergedValues[idxFirstHarvest].ndviPresence;                // M1
+//            harvestInfos.evaluation.candidateOptical = retAllMergedValues[idxFirstHarvest].candidateOptical;        // M2
+//            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[idxFirstHarvest].candidateAmplitude;    // M3
+//            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[idxFirstHarvest].amplitudePresence;      // M4
+//            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[idxFirstHarvest].candidateCoherence;    // M5
+//            harvestInfos.evaluation.harvestConfirmWeek = GetWeekFromDate(harvestConfirmWeekStart);
+//            harvestInfos.evaluation.ttHarvestConfirmWeekStart = harvestConfirmWeekStart;
+//        }
 
         if (idxFirstS1Harvest != -1) {
             harvestInfos.evaluation.ttS1HarvestWeekStart = retAllMergedValues[idxFirstS1Harvest].ttDate;
@@ -2019,8 +2049,8 @@ private:
         weekA = FloorDateToWeekStart(ttDateA);
         weekB = FloorDateToWeekStart(ttDateB);
 
-        //bool efaPeriodStarted = retAllMergedValues[retAllMergedValues.size() - 1].ttDate > weekA;
-        bool efaPeriodEnded = retAllMergedValues[retAllMergedValues.size() - 1].ttDate >= weekB;
+        bool efaPeriodStarted = retAllMergedValues[retAllMergedValues.size() - 1].ttDate > weekA;
+        //bool efaPeriodEnded = retAllMergedValues[retAllMergedValues.size() - 1].ttDate >= weekB;
 
 //      DEBUG
 //        std::cout << TimeToString(weekA) << std::endl;
@@ -2029,7 +2059,7 @@ private:
 //      DEBUG
 
         // ### BEFORE end of EFA practice period ###
-        if (!efaPeriodEnded) {
+        if (!efaPeriodStarted) {
             // EFA practice is not evaluated before the end of the EFA practice period - return "NR" evaluation
             ccHarvestInfos.evaluation.efaIndex = "NR";
             ccHarvestInfos.evaluation.ndviPresence = NR;                        // M6
@@ -2284,10 +2314,11 @@ private:
         time_t weekB = fieldInfos.ttPracticeEndWeekFloorTime;
 
         time_t lastDate = retAllMergedValues[retAllMergedValues.size()-1].ttDate;
-        bool efaPeriodEnded = (lastDate >= weekB);
+        bool efaPeriodStarted = (lastDate > weekA);
+        //bool efaPeriodEnded = (lastDate >= weekB);
 
         // ### BEFORE end of EFA practice period ###
-        if (!efaPeriodEnded) {
+        if (!efaPeriodStarted) {
             // # EFA practice is not evaluated before the end of the EFA practice period - return "NR" evaluation
             flHarvestInfos.evaluation.efaIndex = "NR";
             return true;
@@ -2477,17 +2508,17 @@ private:
         ncHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
         ncHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
 
-
         time_t ttDateA = fieldInfos.ttPracticeStartTime;     // last possible start of catch-crop period
         time_t ttDateB = fieldInfos.ttPracticeEndTime;     // last possible end of catch-crop period
         time_t weekA = fieldInfos.ttPracticeStartWeekFloorTime;
         time_t weekB = fieldInfos.ttPracticeEndWeekFloorTime;
 
         time_t lastDate = retAllMergedValues[retAllMergedValues.size()-1].ttDate;
-        bool efaPeriodEnded = (lastDate >= weekB);
+        bool efaPeriodStarted = (lastDate > weekA);
+        //bool efaPeriodEnded = (lastDate >= weekB);
 
         // ### BEFORE end of EFA practice period ###
-        if (!efaPeriodEnded) {
+        if (!efaPeriodStarted) {
             // # EFA practice is not evaluated before the end of the EFA practice period - return "NR" evaluation
             ncHarvestInfos.evaluation.efaIndex = "NR";
             return true;
@@ -2935,6 +2966,9 @@ private:
     void UpdateGapsInformation(time_t startTime, time_t endTime,
                                time_t ttPrevDate, time_t ttCurDate, int &sumVal) {
         // Check for gaps between harvest start and harvest end interval
+        if (ttCurDate <= startTime || ttPrevDate >= endTime) {
+            return;
+        }
         if (startTime != 0 && endTime != 0) {
             if (ttPrevDate < startTime) {
                 ttPrevDate = startTime;
