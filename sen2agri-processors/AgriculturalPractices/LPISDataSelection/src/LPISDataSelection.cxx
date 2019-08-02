@@ -127,6 +127,10 @@ private:
         SetParameterDescription("hend", "he harvest end date");
         MandatoryOff("hend");
 
+        AddParameter(ParameterType_String, "hwinterend", "Harvest winter end");
+        SetParameterDescription("hwinterend", "The harvest winter end date (when applicable)");
+        MandatoryOff("hwinterend");
+
         AddParameter(ParameterType_String, "pstart", "Practice start");
         SetParameterDescription("pstart", "The practice start date");
         MandatoryOff("pstart");
@@ -237,6 +241,10 @@ private:
             if (HasValue("hwinterstart")) {
                 m_pCountryInfos->SetHWinterStart(trim(GetParameterAsString("hwinterstart")));
             }
+            if (HasValue("hwinterend")) {
+                m_pCountryInfos->SetHWinterEnd(trim(GetParameterAsString("hwinterend")));
+            }
+
         }
         const std::string &outFileName = GetParameterAsString("out");
         m_outPracticesFileStream.open(outFileName, std::ios_base::trunc | std::ios_base::out );
@@ -302,6 +310,7 @@ private:
             m_pCountryInfos->InitializeIndexes(ogrFeat);
             m_bFirstFeature = false;
         }
+
         if (!FilterFeature(ogrFeat)) {
             return;
         }

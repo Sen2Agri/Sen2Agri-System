@@ -29,11 +29,34 @@ bool GSAACsvAttributesTablesReader::ExtractAttributes(std::function<void (const 
 std::vector<std::string> GSAACsvAttributesTablesReader::CsvFeatureDescription::LineToVector(const std::string &line)
 {
     std::vector<std::string> results;
-    boost::algorithm::split(results, line, [](char c){return (c == ',' || c == ';');});
-    for(size_t i = 0; i < results.size(); i++) {
-        results[i] = trim(results[i]);
+    std::istringstream ss(line);
+    std::string field, push_field("");
+    bool no_quotes = true;
+
+    while (std::getline(ss, field, ','))
+    {
+        if (static_cast<size_t>(std::count(field.begin(), field.end(), '"')) % 2 != 0)
+        {
+            no_quotes = !no_quotes;
+        }
+
+        push_field += field + (no_quotes ? "" : ",");
+
+        if (no_quotes)
+        {
+            results.push_back(trim(push_field));
+            push_field.clear();
+        }
     }
+
     return results;
+
+//    std::vector<std::string> results;
+//    boost::algorithm::split(results, line, [](char c){return (c == ',' || c == ';');});
+//    for(size_t i = 0; i < results.size(); i++) {
+//        results[i] = trim(results[i]);
+//    }
+//    return results;
 }
 
 

@@ -5,6 +5,7 @@
 
 class NlCountryInfo  : public CountryInfoBase {
 public:
+    NlCountryInfo();
     virtual void InitializeIndexes(const AttributeEntry &firstOgrFeat);
     virtual std::string GetName();
     virtual std::string GetUniqueId(const AttributeEntry &ogrFeat);
@@ -19,11 +20,15 @@ public:
     virtual std::string GetPStart(const AttributeEntry &ogrFeat);
     virtual std::string GetPEnd(const AttributeEntry &ogrFeat);
 
+    int HandleFileLine(const MapHdrIdx& header, const std::vector<std::string>& line, int);
+
 private:
     int m_FUNCTIONEE_FieldIdx;
     int m_GRONDBEDEK_FieldIdx;
     int m_IND_EA_FieldIdx;
     int m_GRONDBED_2_FieldIdx;
+
+    std::map<std::string, std::string> m_mainCropToHStartMap;
 };
 
 #endif

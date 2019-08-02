@@ -50,6 +50,7 @@ public:
     virtual void SetHStart(const std::string &val);
     virtual void SetHWinterStart(const std::string &val);
     virtual void SetHEnd(const std::string &val);
+    virtual void SetHWinterEnd(const std::string &val);
     virtual void SetPractice(const std::string &val);
     virtual void SetPStart(const std::string &val);
     virtual void SetPEnd(const std::string &val);
@@ -98,6 +99,7 @@ protected:
     std::string m_hstart;
     std::string m_hend;
     std::string m_hWinterStart;
+    std::string m_hWinterEnd;
     std::string m_practice;
     std::string m_pstart;
     std::string m_pend;

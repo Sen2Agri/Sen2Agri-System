@@ -65,6 +65,7 @@ void CountryInfoBase::SetYear(const std::string &val) { m_year = val;}
 void CountryInfoBase::SetVegStart(const std::string &val) { m_vegstart = val;}
 void CountryInfoBase::SetHStart(const std::string &val) { m_hstart = val;}
 void CountryInfoBase::SetHWinterStart(const std::string &val) { m_hWinterStart = val;}
+void CountryInfoBase::SetHWinterEnd(const std::string &val) { m_hWinterEnd = val;}
 void CountryInfoBase::SetHEnd(const std::string &val) { m_hend = val;}
 void CountryInfoBase::SetPractice(const std::string &val) { m_practice = val;}
 void CountryInfoBase::SetPStart(const std::string &val) { m_pstart = val;}

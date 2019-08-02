@@ -2,6 +2,10 @@
 
 std::string NlCountryInfo::GetName() { return "NL"; }
 
+NlCountryInfo::NlCountryInfo() {
+    using namespace std::placeholders;
+    m_LineHandlerFnc = std::bind(&NlCountryInfo::HandleFileLine, this, _1, _2, _3);
+}
 void NlCountryInfo::InitializeIndexes(const AttributeEntry &firstOgrFeat)
 {
     CountryInfoBase::InitializeIndexes(firstOgrFeat);
@@ -37,8 +41,20 @@ bool NlCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat, const std::str
 
 std::string NlCountryInfo::GetHStart(const AttributeEntry &ogrFeat) {
     const std::string &mainCrop = GetMainCrop(ogrFeat);
-    if (mainCrop == "233") {
-        return m_hWinterStart;
+    // just to preserve compatibility
+    if (GetYear() == "2018") {
+        if (mainCrop == "233") {
+            return m_hWinterStart;
+        }
+    } else {
+        std::map<std::string, std::string>::const_iterator itMap = m_mainCropToHStartMap.find(mainCrop);
+        if (itMap != m_mainCropToHStartMap.end()) {
+            return itMap->second;
+        }
+        const std::string &practice = GetPractice(ogrFeat);
+        if (practice != "CatchCropIsMain" && practice != "NA") {
+            return m_hWinterStart;
+        }
     }
     return m_hstart;
 }
@@ -97,4 +113,12 @@ std::string NlCountryInfo::GetPEnd(const AttributeEntry &ogrFeat) {
     }
     return "NA";
 
+}
+
+int NlCountryInfo::HandleFileLine(const MapHdrIdx&, const std::vector<std::string>& line, int ) {
+    if (line.size() == 2) {
+        m_mainCropToHStartMap[line[0]] = line[1];
+        return true;
+    }
+    return false;
 }
