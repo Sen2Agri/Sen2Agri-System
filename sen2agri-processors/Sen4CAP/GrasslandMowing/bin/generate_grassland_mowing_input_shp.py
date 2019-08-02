@@ -4,6 +4,7 @@ from __future__ import print_function
 import argparse
 from datetime import date
 import multiprocessing.dummy
+import os
 import os.path
 from osgeo import osr
 from osgeo import ogr
@@ -67,6 +68,9 @@ def get_site_name(conn, site_id):
         return rows[0][0]
 
 def main():
+    # Preserve encoding to UTF-8 
+    os.environ['SHAPE_ENCODING'] = "utf-8"
+
     newFields = [NewFieldDef("mow_n", ogr.OFTInteger, "0"), 
                 NewFieldDef("m1_dstart", ogr.OFTString, "0"), 
                 NewFieldDef("m1_dend", ogr.OFTString, "0"), 
@@ -107,6 +111,7 @@ def main():
         site_name = get_site_name(conn, config.site_id)
         year = args.year or date.today().year
         lpis_table = "decl_{}_{}".format(site_name, year)
+        lut_table = "lut_{}_{}".format(site_name, year)
 
         commands = []
 
@@ -117,10 +122,11 @@ def main():
         
         ctnums = map(int, args.filter_ctnum.split(','))
         if len(ctnums) > 0 : 
-            sql = "select \"NewID\" as new_id, ori_hold, ori_id as parcel_id, ori_crop as crop_code, \"CTnum\", wkb_geometry from {} where \"CTnum\" in ({})".format(lpis_table, ', '.join(str(x) for x in ctnums))
+            sql = "select \"NewID\", ori_hold, ori_id as parcel_id, ori_crop as crop_code, wkb_geometry from {} natural join {} where ctnum in ({})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums))
         else :
-            sql = SQL('select "NewID" as new_id, ori_hold, ori_id as parcel_id, ori_crop as crop_code, "CTnum", wkb_geometry from {}')
+            sql = SQL('select "NewID", ori_hold, ori_id as parcel_id, ori_crop as crop_code, wkb_geometry from {} natural join {}')
             sql = sql.format(Identifier(lpis_table))
+            sql = sql.format(Identifier(lut_table))
             sql = sql.as_string(conn)
 
         command = []
