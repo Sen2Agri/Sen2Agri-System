@@ -118,22 +118,40 @@ NA_IGNORED_IDS_FILE=""
 case "$COUNTRY" in
     NLD)
         COUNTRY="NL"
-        IN_SHP_NAME="decl_nld_${YEAR}_${YEAR}.csv"
-        VEG_START="${YEAR}-05-01"
-
-        CC_HSTART="${YEAR}-05-15"
-        CC_HSTARTW="${YEAR}-07-15"
-        CC_HEND="${YEAR}-10-15"
-        CC_PSTART="${YEAR}-05-15"
-        CC_PEND="${YEAR}-07-15"
-        CC_PSTARTW="${YEAR}-10-15"
         
-        NA_HSTART="${YEAR}-06-01"
-        NA_HSTARTW="${YEAR}-07-15"
-        NA_HEND="${YEAR}-12-15"
-        NA_PSTART="${YEAR}-05-15"
-        NA_PEND="${YEAR}-07-15"
-        NA_PSTARTW="${YEAR}-10-15"        
+        if [ "${YEAR}" == "2018" ] ; then
+            IN_SHP_NAME="NLD_${YEAR}_DeclSTD_quality_indic.shp"
+            VEG_START="${YEAR}-05-01"
+
+            CC_HSTART="${YEAR}-05-15"
+            CC_HSTARTW="${YEAR}-07-15"
+            CC_HEND="${YEAR}-10-15"
+            CC_PSTART="${YEAR}-05-15"
+            CC_PEND="${YEAR}-07-15"
+            CC_PSTARTW="${YEAR}-10-15"
+            
+            NA_HSTART="${YEAR}-06-01"
+            NA_HSTARTW="${YEAR}-07-15"
+            NA_HEND="${YEAR}-12-15"
+            NA_PSTART="${YEAR}-05-15"
+            NA_PEND="${YEAR}-07-15"
+            NA_PSTARTW="${YEAR}-10-15"       
+        else         
+            IN_SHP_NAME="decl_nld_${YEAR}_${YEAR}.csv"
+            VEG_START="${YEAR}-05-20"
+
+            CC_HSTART="${YEAR}-05-20"
+            CC_HSTARTW="${YEAR}-06-03"
+            CC_HEND="${YEAR}-10-15"
+            CC_PSTART="${YEAR}-05-15"
+            CC_PEND="${YEAR}-07-15"
+            CC_PSTARTW="${YEAR}-10-15"
+            CC_ADD_FILES="${INSITU_ROOT}/Sen4CAP_L4C_H_START_specification_NLD_${YEAR}.csv"
+            
+            NA_HSTART="${YEAR}-06-03"
+            NA_HEND="${YEAR}-12-15"
+            NA_ADD_FILES="${INSITU_ROOT}/Sen4CAP_L4C_H_START_specification_NLD_${YEAR}.csv"
+        fi
         ;;
     CZE)
         IN_SHP_NAME="CZE_${YEAR}_DeclSTD_quality_indic.shp"
@@ -167,7 +185,11 @@ case "$COUNTRY" in
 
         ;;
     LTU)
-        IN_SHP_NAME="LTU_${YEAR}_DeclSTD_quality_indic.shp"
+        if [ "${YEAR}" == "2018" ] ; then
+            IN_SHP_NAME="LTU_${YEAR}_DeclSTD_quality_indic.shp"
+        else
+            IN_SHP_NAME="decl_ltu_${YEAR}_${YEAR}.csv"
+        fi
         
         VEG_START="${YEAR}-04-01"
 
@@ -217,22 +239,44 @@ case "$COUNTRY" in
         
         ;;
     ESP)
-        IN_SHP_NAME="ESP_${YEAR}_DeclSTD_quality_indic.shp"
-        
-        VEG_START="${YEAR}-04-02"
+        if [ "${YEAR}" == "2018" ] ; then
+            IN_SHP_NAME="ESP_${YEAR}_DeclSTD_quality_indic.shp"
+            
+            VEG_START="${YEAR}-04-02"
 
-        NFC_HSTART="${YEAR}-04-02"
-        NFC_HEND="${YEAR}-08-15"
-        NFC_PSTART="${YEAR}-03-01"
-        NFC_PEND="${YEAR}-08-31"
+            NFC_HSTART="${YEAR}-04-02"
+            NFC_HEND="${YEAR}-08-15"
+            NFC_PSTART="${YEAR}-03-01"
+            NFC_PEND="${YEAR}-08-31"
 
-        FL_HSTART="${YEAR}-04-02"
-        FL_HEND="${YEAR}-08-15"
-        FL_PSTART="${YEAR}-02-01"
-        FL_PEND="${YEAR}-06-30"
+            FL_HSTART="${YEAR}-04-02"
+            FL_HEND="${YEAR}-08-15"
+            FL_PSTART="${YEAR}-02-01"
+            FL_PEND="${YEAR}-06-30"
 
-        NA_HSTART="${YEAR}-04-02"
-        NA_HEND="${YEAR}-08-15"
+            NA_HSTART="${YEAR}-04-02"
+            NA_HEND="${YEAR}-08-15"
+        else
+            IN_SHP_NAME="decl_cyl_${YEAR}_${YEAR}.csv"
+            
+            VEG_START="${YEAR}-04-01"
+
+            NFC_HSTART="${YEAR}-04-15"
+            NFC_HEND="${YEAR}-08-31"
+            NFC_PSTART="${YEAR}-03-01"
+            NFC_PEND="${YEAR}-08-31"
+            NFC_ADD_FILES="${INSITU_ROOT}/ESP_2019_2019_07_15_Products.csv"
+
+            FL_HSTART="${YEAR}-04-01"
+            FL_HEND="${YEAR}-06-30"
+            FL_PSTART="${YEAR}-02-01"
+            FL_PEND="${YEAR}-06-30"
+            FL_ADD_FILES="${INSITU_ROOT}/ESP_2019_2019_07_15_Products.csv"
+
+            NA_HSTART="${YEAR}-04-15"
+            NA_HEND="${YEAR}-12-15"
+            NA_ADD_FILES="${INSITU_ROOT}/ESP_2019_2019_07_15_Products.csv"
+        fi
         ;;
     ITA)
         if [ "$COUNTRY_REGION" == "FML" ] ; then

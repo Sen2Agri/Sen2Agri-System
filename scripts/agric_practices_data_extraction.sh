@@ -175,13 +175,13 @@ case "${COUNTRY}" in
         INSITU_FILE_NAME_PATTERN="decl_nld_${YEAR}_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
         ;;
     CZE)
-        INSITU_FILE_NAME_PATTERN="cze_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        INSITU_FILE_NAME_PATTERN="decl_cze_${YEAR}_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
         ;;
     LTU)
-        INSITU_FILE_NAME_PATTERN="ltu_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        INSITU_FILE_NAME_PATTERN="decl_ltu_${YEAR}_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
         ;;
     ESP)
-        INSITU_FILE_NAME_PATTERN="gsaa${YEAR}_<PROJ>_full_buf_${INSITU_BUFFER_SIZE}"
+        INSITU_FILE_NAME_PATTERN="decl_cyl_${YEAR}_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
         ;;
     ITA)
         if [ "$COUNTRY_REGION" == "FML" ] ; then
