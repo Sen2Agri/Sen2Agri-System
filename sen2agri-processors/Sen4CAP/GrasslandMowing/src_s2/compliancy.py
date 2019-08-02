@@ -73,25 +73,25 @@ def do_compliancy(shp_file_name, compliance_config_filename=None, cnt_crop_code=
     for i, f in enumerate(fids):
 
         feature = features[f]
-#        print(i, f, feature.GetFID(), feature['crop_code'])
+#        print(i, f, feature.GetFID(), feature['Ori_crop'])
         
-        if str(feature['crop_code']) not in cnt_crop_code:
+        if str(feature['Ori_crop']) not in cnt_crop_code:
             compliancy = -1  # crop code is not recognized
         else:
             mow_n = int(feature['mow_n'])
             if mow_n: # if there are mowing events
-                t_start = rule_dict[str(feature['crop_code'])][0]
-                t_end = rule_dict[str(feature['crop_code'])][1]
+                t_start = rule_dict[str(feature['Ori_crop'])][0]
+                t_end = rule_dict[str(feature['Ori_crop'])][1]
 
                 pr_date_start, pr_date_end = \
                 zip(*[(dateutil.parser.parse(feature['m%d_dstart' % j], yearfirst=True, dayfirst=False),
                        dateutil.parser.parse(feature['m%d_dend' % j], yearfirst=True, dayfirst=False))
                       for j in range(1, 1+mow_n)])
-#                print(feature['crop_code'], t_start, t_end)
+#                print(feature['Ori_crop'], t_start, t_end)
 #                print("pr_date_start=", pr_date_start)
 #                print("pr_date_end=", pr_date_end)
 
-                if flag_dict[str(feature['crop_code'])] == 0: # standard rule
+                if flag_dict[str(feature['Ori_crop'])] == 0: # standard rule
                     mowing_in_interval = False
                     for h in range(mow_n):
                         mowing_in_TR, _ = intersection_date(pr_date_start[h], pr_date_end[h], t_start, t_end)

@@ -240,37 +240,26 @@ def make_vrt(data_list, wkt_dst_srs, outputDir, output_vrt_file, outputBounds=No
         return 0
 
     output_tmp_file_list=[os.path.join(outputDir, os.path.basename(file)+".VRT") for file in data_list]
-
+    output_tmp_file_list2=[]
     for file, dst_file in zip(data_list, output_tmp_file_list):
         # Open source dataset and read source SRS
         gdal_data = gdal.Open(file)
         data_proj = gdal_data.GetProjection()
         if data_proj == '':
-            d=dict(gdal.Info(file,format='json'))
-            in_epsg=int(d['metadata']['GEOLOCATION']['SRS'].rsplit('"EPSG","')[-1].split('"')[0])
-            src_srs =  osr.SpatialReference()
-            src_srs.ImportFromEPSG(in_epsg)
-            src_srs = src_srs.ExportToWkt()
+            print("Data without geoprojection info. DISCARDED!")
         else:
-            src_srs = None
-
-        ## Call AutoCreateWarpedVRT()
-        #tmp_ds = gdal.AutoCreateWarpedVRT(gdal_data, src_srs, wkt_dst_srs, resampling, error_threshold)
-
-        ## Create the final warped raster
-        #dst_ds = gdal.GetDriverByName('VRT').CreateCopy(dst_file, tmp_ds)
-
-        # Warp to dst_srs
-        dst_ds = gdal.Warp(dst_file, gdal_data, resampleAlg=resampling, srcNodata=srcNodata,
-                           dstNodata=srcNodata, srcSRS=src_srs, dstSRS=wkt_dst_srs, errorThreshold=error_threshold)
-        del dst_ds
+            # Warp to dst_srs
+            dst_ds = gdal.Warp(dst_file, gdal_data, resampleAlg=resampling, srcNodata=srcNodata,
+                               dstNodata=srcNodata, dstSRS=wkt_dst_srs, errorThreshold=error_threshold)
+            del dst_ds
+            output_tmp_file_list2.append(dst_file)
 
     print(os.path.join(outputDir, output_vrt_file))
     if outputBounds:
-        vrt_data=gdal.BuildVRT(output_vrt_file, output_tmp_file_list, separate=True, outputBounds=outputBounds,
+        vrt_data=gdal.BuildVRT(output_vrt_file, output_tmp_file_list2, separate=True, outputBounds=outputBounds,
                                resolution=resolution, srcNodata=srcNodata)
     else:
-        vrt_data=gdal.BuildVRT(output_vrt_file, output_tmp_file_list, separate=True,
+        vrt_data=gdal.BuildVRT(output_vrt_file, output_tmp_file_list2, separate=True,
                                resolution=resolution, srcNodata=srcNodata)
 
 

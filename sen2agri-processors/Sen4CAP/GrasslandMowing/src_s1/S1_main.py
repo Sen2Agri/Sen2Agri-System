@@ -36,7 +36,7 @@ import psycopg2.extras
   
 def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
              new_acq_date, older_acq_date=None,
-             truthsFile=None, outputDir=None, outputShapeFile=None,
+             outputDir=None, outputShapeFile=None,
              seg_parcel_id_attribute=None, tr_parcel_id_attribute=None,
              options_layer_burning=['ALL_TOUCHED=False'],
              invalid_data = 0,
@@ -202,29 +202,14 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
 
     segmentsOutputDir=os.path.join(outputDir, "segments")
     print("segmentsOutputDir", segmentsOutputDir)
-    if truthsFile:
-        truthsOutputDir=os.path.join(outputDir, "truths")
-        print("truthsOutputDir", truthsOutputDir)
-    else:
-        truthsOutputDir = None
 
     try:
         os.makedirs(segmentsOutputDir)
     except(OSError):
         print('directory ',segmentsOutputDir,' exists...moving on')
 
-    if truthsFile:
-        try:
-            os.makedirs(truthsOutputDir)
-        except(OSError):
-            print('directory ',truthsOutputDir,' exists...moving on')
-
     segmentsOutRaster = os.path.join(segmentsOutputDir, os.path.basename(segmentsFile)[:-4]+'_raster.tif')
     print("segmentsOutRaster", segmentsOutRaster)
-
-    if truthsFile:
-        truthsOutRaster = os.path.join(truthsOutputDir, os.path.basename(truthsFile)[:-4]+'_raster.tif')
-        print("truthsOutRaster", truthsOutRaster)
 
     # Generate segmentation raster map from input shapefile
     print("layer2mask for segments: ", segmentsFile, output_vrt, segmentsOutRaster)
@@ -234,26 +219,14 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
     # Invert dictionary of se_attribute
     inv_seg_dct = {v[seg_parcel_id_attribute]:k for k,v in seg_attributes.items()}
 
-    if truthsFile:
-        # Generate truths raster map from input shapefile
-        print("layer2mask for truths: ", truthsFile, output_vrt, truthsOutRaster)
-        burned_pixels, tr_attributes = S1_gmd.layer2mask(truthsFile, output_vrt, truthsOutRaster, layer_type='segments', options=options_layer_burning)
-        print('truths burned_pixels',burned_pixels)
-
     # Segment Analysis
     # ----------------
 
-    # load segments and truths
+    # load segments
     gdal_data =  gdal.Open(segmentsOutRaster)
     segments = gdal_data.ReadAsArray()
     segments_geo_transform = gdal_data.GetGeoTransform()
     segments_projection = gdal_data.GetProjection()
-
-    if truthsFile:
-        gdal_data =  gdal.Open(truthsOutRaster)
-        truths = gdal_data.ReadAsArray()
-        truths_geo_transform = gdal_data.GetGeoTransform()
-        truths_projection = gdal_data.GetProjection()
 
     # Apply erosion
     # -------------
@@ -276,24 +249,6 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
             erosion_mask = scipy.ndimage.morphology.binary_erosion(eroded_segs>0, structure=cross,iterations=(erode_pixels-1))
             eroded_segs = eroded_segs*erosion_mask
 
-    ## truths
-    if truthsFile:
-        # erode segments
-
-        eroded_truths = np.copy(truths)
-        if erode_pixels > 0:
-            # first step: separate segments
-            cross = np.array([[0,1,0],[1,1,1],[0,1,0]])
-            min_truths = scipy.ndimage.minimum_filter(truths,footprint=cross)
-            max_truths = scipy.ndimage.maximum_filter(truths,footprint=cross)
-            truths_borders = (max_truths-min_truths)>0
-            eroded_truths[truths_borders] = 0
-
-            # second setp: erode
-            if erode_pixels > 1:
-                erosion_mask = scipy.ndimage.morphology.binary_erosion(eroded_truths>0, structure=cross, iterations=(erode_pixels-1))
-                eroded_truths = eroded_truths*erosion_mask
-
     # Fill segments
     # -------------
 
@@ -309,14 +264,6 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
         return 1, None
 
     seg_pixels_num = np.array(ndimage.sum(eroded_segs>0, eroded_segs, index=unique_segments))
-
-    if truthsFile:
-        #truths
-        unique_truths = np.unique(eroded_truths)
-        if unique_truths[0] == 0: # 0 label corresponds to not valid segments and it will be removed
-            unique_truths = unique_truths[1:]
-        print(unique_truths.shape)
-
 
     # extract data parameters and dates from file_list in the vrt data
     print('Extract data parameters and dates from file_list in the vrt data')
@@ -541,7 +488,7 @@ def run_proc(orbit_list, orbit_type, sarDataGlob, re_compile, segmentsFile,
 
 
 def main_run(configFile, segmentsFile, data_x_detection, outputDir, new_acq_date, older_acq_date=None,
-             truthsFile=None, orbit_list=[], orbit_type_list=[],
+             orbit_list=[], orbit_type_list=[],
              seg_parcel_id_attribute=None, tr_parcel_id_attribute=None, outputShapeFile=None,
              do_cmpl=False, test=False):
 
@@ -616,7 +563,7 @@ def main_run(configFile, segmentsFile, data_x_detection, outputDir, new_acq_date
         print("Run: orbit %s, type %s"%(orbit_number,orbit_type))
         ret, test_data = run_proc([orbit_number], [orbit_type], data_x_detection, re_compile, segmentsFile,
                                   new_acq_date, older_acq_date=older_acq_date,
-                                  truthsFile=truthsFile, outputDir=outputDir, outputShapeFile=outputShapeFile,
+                                  outputDir=outputDir, outputShapeFile=outputShapeFile,
                                   seg_parcel_id_attribute = seg_parcel_id_attribute,
                                   tr_parcel_id_attribute = tr_parcel_id_attribute,
                                   options_layer_burning = options_layer_burning,
@@ -737,6 +684,11 @@ def get_s1_products(config, conn, site_id, prds_list):
             query = query.format(site_id_filter, start_date_filter, end_date_filter)
             # print(query.as_string(conn))
         else :
+            if len (prds_list) > 1:
+                prdsSubstr = tuple(prds_list)
+            else :
+                prdsSubstr = "('{}')".format(prds_list[0])
+        
             query= """with products as (
                     select product.site_id,
                         product.name,
@@ -761,7 +713,7 @@ def get_s1_products(config, conn, site_id, prds_list):
                         products.full_path, 
                         products.orbit_id
                 from products
-                order by date;""".format(site_id, tuple(prds_list))
+                order by date;""".format(site_id, prdsSubstr)
             #print(query)
         
         # execute the query

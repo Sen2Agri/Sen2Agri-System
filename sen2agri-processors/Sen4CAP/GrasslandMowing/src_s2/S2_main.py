@@ -48,7 +48,8 @@ def run_proc(tile_number, S2DataGlob, re_compile, segmentsFile,
              invalid_data = None,
              decreasing_abs_th = None,
              decreasing_rate_th = None,
-             increasing_rate_th = None,
+             high_abs_th = None,
+             low_abs_th = None,
              apply_model = True,
              model_dict = None,
              no_mowing_after_det=30,
@@ -239,8 +240,7 @@ def run_proc(tile_number, S2DataGlob, re_compile, segmentsFile,
     # ------------------
 
     # model empty with parcel_id from shape file, that is filled with NAN
-#    last_vi_df = pd.DataFrame(columns=['SNDVI', 'SLAI', 'SFAPAR', 'SNDVI_doy', 'SLAI_doy', 'SFAPAR_doy'], index=[v[seg_parcel_id_attribute] for k, v in seg_attributes.items()], dtype='float32')
-    last_vi_df = pd.DataFrame(columns=['SNDVI0', 'SNDVI1', 'SLAI0', 'SLAI1', 'SFAPAR0', 'SFAPAR1', 'SNDVI0_doy', 'SNDVI1_doy', 'SLAI0_doy', 'SLAI1_doy', 'SFAPAR0_doy', 'SFAPAR1_doy'], index=[v[seg_parcel_id_attribute] for k, v in seg_attributes.items()], dtype='float32')
+    last_vi_df = pd.DataFrame(columns=['SNDVI', 'SLAI', 'SFAPAR', 'SNDVI_doy', 'SLAI_doy', 'SFAPAR_doy'], index=[v[seg_parcel_id_attribute] for k, v in seg_attributes.items()], dtype='float32')
 
     # Load model in the last_vi_df structure
     # The loaded model could have parcel not included in area we are processing or even it could not have some parcels.
@@ -400,9 +400,7 @@ def run_proc(tile_number, S2DataGlob, re_compile, segmentsFile,
 
 #        VI_seg.append({'data_type': pt, 'date_list': VIDateList, 'VI': VI_data, 'sc_fact': sf, 'corrupted_th': ct})
 #####################################################################################################################################################
-        VI_seg.append({'data_type': pt, 'date_list': VIDateList, 'VI': VI_data, 'sc_fact': sf, 'corrupted_th': ct,
-                       'last_VI': np.hstack((last_vi_df[pt+'0'].values[:,None], last_vi_df[pt+'1'].values[:,None])),
-                       'last_VI_doy': np.hstack((last_vi_df[pt+'0'+'_doy'].values[:,None], last_vi_df[pt+'1'+'_doy'].values[:,None]))})
+        VI_seg.append({'data_type': pt, 'date_list': VIDateList, 'VI': VI_data, 'sc_fact': sf, 'corrupted_th': ct, 'last_VI': last_vi_df[pt].values, 'last_VI_doy': last_vi_df[pt+'_doy']})
 #####################################################################################################################################################
 
     # apply scale factors and remove corrupted VI
@@ -451,16 +449,10 @@ def run_proc(tile_number, S2DataGlob, re_compile, segmentsFile,
     # - for all parcels
     NDVI_nomow_model = np.repeat((NDVI_nomow_model_[None,:]/np.min(NDVI_nomow_model_)*0.001),NDVI_seg.shape[0], axis=0)
 
-    # - just for parcel with NDVI_before_last != NAN
-    no_nan_idx = list(np.where(np.isfinite(NDVI_last[:,0]))[0])
-    if len(no_nan_idx) > 0:
-        NDVI_nomow_model[no_nan_idx] = NDVI_nomow_model_[None,:] / model_dbl_l[NDVI_last_doy[no_nan_idx,0]][:,None] * NDVI_last[no_nan_idx,0][:,None]
-
     # - just for parcel with NDVI_last != NAN
-    print("NDVI_last shape::::::::::", NDVI_last.shape)
-    no_nan_idx = list(np.where(np.isfinite(NDVI_last[:,1]))[0])
+    no_nan_idx = list(np.where(np.isfinite(NDVI_last))[0])
     if len(no_nan_idx) > 0:
-        NDVI_nomow_model[no_nan_idx] = NDVI_nomow_model_[None,:] / model_dbl_l[NDVI_last_doy[no_nan_idx,1]][:,None] * NDVI_last[no_nan_idx,1][:,None]
+        NDVI_nomow_model[no_nan_idx] = NDVI_nomow_model_[None,:] / model_dbl_l[NDVI_last_doy[no_nan_idx]][:,None] * NDVI_last[no_nan_idx][:,None]
 
 ################################################################################################################
 
@@ -498,39 +490,36 @@ def run_proc(tile_number, S2DataGlob, re_compile, segmentsFile,
                 NDVI_last_hist[:,t] = NDVI_last_hist[:,t-1]
             valid_vi_indexes = list(np.where(np.isfinite(NDVI_seg[:,t]))[0])
             if len(valid_vi_indexes) > 0:
-                NDVI_last[valid_vi_indexes,0] = NDVI_last[valid_vi_indexes,1]
-                NDVI_last_doy[valid_vi_indexes,0] = NDVI_last_doy[valid_vi_indexes,1]
-                NDVI_last[valid_vi_indexes,1] = NDVI_seg[valid_vi_indexes,t]
-                NDVI_last_doy[valid_vi_indexes,1] = DOYList[t]
-                NDVI_last_hist[valid_vi_indexes, t] = NDVI_last[valid_vi_indexes,1]
+                NDVI_last[valid_vi_indexes] = NDVI_seg[valid_vi_indexes,t]
+                NDVI_last_doy[valid_vi_indexes] = DOYList[t]
+                NDVI_last_hist[valid_vi_indexes, t] = NDVI_seg[valid_vi_indexes,t]
     else:
         for t in range(NDVI_det_cube.shape[1]):
 
-            # Detection at the time t of mowing occurred between NDVI_before_last = NDVI_last[0,:] and NDVI_last = NDVI_last[1,:]
+            # Detection at t
             # Detection of a mowing if the decreasing angle (alpha = atan(delta_VI/delta_doy)) is enough small, that is lower than decreasing_rate_th. (VI decreasing enough fast.)
-            NDVI_det_cube[:,t] = np.maximum((NDVI_last[:,0] - NDVI_last[:,1] - decreasing_abs_th)/NDVI_last[:,1], 0)             # last VI decreasing is at least decreasing_abs_th
-            NDVI_det_cube[:,t] *= ((NDVI_last[:,1] - NDVI_last[:,0]) / (NDVI_last_doy[:,1] - NDVI_last_doy[:,0]) < decreasing_rate_th)   # detection only if the decreasing is enough fast
-            NDVI_det_cube[:,t] *= ((NDVI_seg[:,t] - NDVI_last[:,1]) / (DOYList[t] - NDVI_last_doy[:,1]) < increasing_rate_th)   # detection only if the successive VI increasing is not too fast
-            NDVI_det_cube[:,t] *= (NDVI_last[:,1] < 0.75)
-            NDVI_det_cube[:,t] *= (NDVI_last[:,0] > 0.5)
+
+            NDVI_det_cube[:,t] = np.maximum((NDVI_last - NDVI_seg[:,t] - decreasing_abs_th)/NDVI_last, 0)             # VI decreasing is at least decreasing_abs_th
+            NDVI_det_cube[:,t] *= ((NDVI_seg[:,t] - NDVI_last) / (DOYList[t] - NDVI_last_doy) < decreasing_rate_th)   # detection only if the decreasing is enough fast
+            NDVI_det_cube[:,t] *= (NDVI_seg[:,t] < high_abs_th)
+            NDVI_det_cube[:,t] *= (NDVI_last > low_abs_th)
 
             # update always NDVI_last and NDVI_doy and NDVI_last_hist
-            if t > 0:
+
+            if t == 0:
+                NDVI_last_hist[:,t] = NDVI_last
+            elif t > 0:
                 NDVI_last_hist[:,t] = NDVI_last_hist[:,t-1]
             valid_vi_indexes = list(np.where(np.isfinite(NDVI_seg[:,t]))[0])
             if len(valid_vi_indexes) > 0:
-                NDVI_last[valid_vi_indexes,0] = NDVI_last[valid_vi_indexes,1]
-                NDVI_last_doy[valid_vi_indexes,0] = NDVI_last_doy[valid_vi_indexes,1]
-                NDVI_last[valid_vi_indexes,1] = NDVI_seg[valid_vi_indexes,t]
-                NDVI_last_doy[valid_vi_indexes,1] = DOYList[t]
-                NDVI_last_hist[valid_vi_indexes, t] = NDVI_last[valid_vi_indexes,1]
+                NDVI_last[valid_vi_indexes] = NDVI_seg[valid_vi_indexes,t]
+                NDVI_last_doy[valid_vi_indexes] = DOYList[t]
+                NDVI_last_hist[valid_vi_indexes, t] = NDVI_seg[valid_vi_indexes,t]
 
     # save last_VI and last_VI_doy
     # NDVI_last and NDVI_last_doy contains the last VI and doy values to be saved
-    last_vi_df[prod_type_list[VI_index]+'0'] = NDVI_last[:,0]
-    last_vi_df[prod_type_list[VI_index]+'1'] = NDVI_last[:,1]
-    last_vi_df[prod_type_list[VI_index]+'0'+'_doy'] = NDVI_last_doy[:,0]
-    last_vi_df[prod_type_list[VI_index]+'1'+'_doy'] = NDVI_last_doy[:,1]
+    last_vi_df[prod_type_list[VI_index]] = NDVI_last
+    last_vi_df[prod_type_list[VI_index]+'_doy'] = NDVI_last_doy
 
     # updated "last_vi_df" have higher priority than "loaded_last_vi_df"
     loaded_last_vi_df['prty'] = 1
@@ -540,13 +529,8 @@ def run_proc(tile_number, S2DataGlob, re_compile, segmentsFile,
     ret_last_vi_df = pd.concat([loaded_last_vi_df, last_vi_df], axis='rows').reset_index().sort_values('prty', ascending=False).groupby(['index']).aggregate('first').drop('prty', axis=1)
     ret_last_vi_df.to_pickle(last_vi_file_abs)
 
-    # detection have 1-(cloud-free)-acquisition delay. Remove this delay
-    det_cube = np.zeros_like(NDVI_det_cube)
-    for i in range(NDVI_seg.shape[0]):
-        val_ind=np.where(np.isfinite(NDVI_seg[i,:]))[0]
-        if len(val_ind)>0:
-            det_cube[i,val_ind[:-1]] = NDVI_det_cube[i,val_ind[1:]]
-    del NDVI_det_cube
+    det_cube = NDVI_det_cube
+    det_cube[np.isnan(det_cube)] = 0
 
     # calculate detection reliability index as normalized index
     print("Confidence normalization")
@@ -627,7 +611,8 @@ def main_run(configFile, segmentsFile, data_x_detection, data_x_model, outputDir
     corrupted_th = [np.float(s) for s in config['S2_processing']['corrupted_th'].split(',')] # [1000] [0.1]
     decreasing_abs_th = [np.float(s) for s in config['S2_processing']['decreasing_abs_th'].split(',')]
     decreasing_rate_th = [np.float(s) for s in config['S2_processing']['decreasing_rate_th'].split(',')]
-    increasing_rate_th = [np.float(s) for s in config['S2_processing']['increasing_rate_th'].split(',')]
+    low_abs_th = [np.float(s) for s in config['S2_processing']['low_abs_th'].split(',')]
+    high_abs_th = [np.float(s) for s in config['S2_processing']['high_abs_th'].split(',')]
     invalid_data = [np.float(s) for s in config['S2_processing']['invalid_data'].split(',')]
     no_mowing_after_det = np.int(config['S2_processing']['no_mowing_after_det'])
     non_overlap_interval_days = np.int(config['S2_processing']['non_overlap_interval_days'])
@@ -639,7 +624,8 @@ def main_run(configFile, segmentsFile, data_x_detection, data_x_model, outputDir
     print("corrupted_th",corrupted_th)
     print("decreasing_abs_th",decreasing_abs_th)
     print("decreasing_rate_th",decreasing_rate_th)
-    print("increasing_rate_th",increasing_rate_th)
+    print("low_abs_th",low_abs_th)
+    print("high_abs_th",high_abs_th)
     print("options_layer_burning",options_layer_burning)
     print("invalid_data",invalid_data)
     print("no_mowing_after_det",no_mowing_after_det)
@@ -718,7 +704,8 @@ def main_run(configFile, segmentsFile, data_x_detection, data_x_model, outputDir
                                       invalid_data = invalid_data[0],
                                       decreasing_abs_th = decreasing_abs_th,
                                       decreasing_rate_th = decreasing_rate_th,
-                                      increasing_rate_th = increasing_rate_th,
+                                      high_abs_th = high_abs_th,
+                                      low_abs_th = low_abs_th,
                                       apply_model = apply_model,
                                       model_dict = model_dict,
                                       no_mowing_after_det = no_mowing_after_det,
@@ -820,6 +807,11 @@ def get_s2_products(config, conn, site_id, prds_list):
             query = query.format(site_id_filter, start_date_filter, end_date_filter)
             # print(query.as_string(conn))
         else :
+            if len (prds_list) > 1:
+                prdsSubstr = tuple(prds_list)
+            else :
+                prdsSubstr = "('{}')".format(prds_list[0])
+        
             query= """
                    with products as (
                     select product.site_id,
@@ -836,7 +828,7 @@ def get_s2_products(config, conn, site_id, prds_list):
                         products.tiles,
                         products.full_path
                 from products
-                order by date;""".format(site_id, tuple(prds_list))
+                order by date;""".format(site_id, prdsSubstr)
             #print(query)
         
         # execute the query
@@ -867,7 +859,7 @@ def get_s2_products(config, conn, site_id, prds_list):
                         continue
                     prdFiles = fnmatch.filter(tilesDirs, "S2AGRI_L3B_S*_A*_T{}.TIF".format(tile))
                     for prdFile in prdFiles:
-                        products.append(NdviProduct(dt, tile, prdFile))
+                        products.append(NdviProduct(dt, tile, os.path.join(tileImgDataPath, prdFile)))
                 
                 
         return products

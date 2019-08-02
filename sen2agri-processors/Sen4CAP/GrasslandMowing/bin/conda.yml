@@ -1,0 +1,54 @@
+name: sen4cap
+channels:
+    - conda-forge
+    - defaults
+
+dependencies:
+  - python=3.6
+  - numpy
+  - scipy
+  - scikit-learn
+  - scikit-image
+  - matplotlib
+  - pandas
+  - gdal
+  - lxml
+  - tensorflow
+  - h5py
+  - pydotplus
+  - snappy
+  #- graphviz
+  - pip:
+    - --process-dependency-links
+    - jupyter
+    - jupyter_nbextensions_configurator
+    - jupyter_contrib_nbextensions
+    - jupyter-tensorboard
+    - ipython
+    - screen
+    - psycopg2
+    - matplotlib
+    - keras
+    - scikit-neuralnetwork
+    - rasterstats
+    - https://software.ecmwf.int/wiki/download/attachments/56664858/ecmwf-api-client-python.tgz
+    - xarray
+    #- svn+https://share.realvista.it/svn/emage/emage.core.common/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.core.server/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.core.client/trunk
+    #- svn+https://share.realvista.it/svn/emage/obfuscator_recipe/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.lm/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.utils/trunk
+    #- svn+https://share.realvista.it/svn/emage/polynomial2d/tags/0.2.0
+    #- svn+https://share.realvista.it/svn/emage/emage.io/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.io.db/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.oilmagic/trunk
+    ##- git+https://github.com/corrado9999/collective.recipe.modwsgi.git
+    #- svn+https://share.realvista.it/svn/emage/bopen.shipdetection/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.gww/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.imagequality/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.ingestion/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.landmask/trunk
+    #- svn+https://share.realvista.it/svn/emage/emage.shipdetection/trunk 
+    #- svn+https://share.realvista.it/svn/emage/emage.reports/trunk
+    #- git+https://github.com/corrado9999/supervisor-stdout.git
