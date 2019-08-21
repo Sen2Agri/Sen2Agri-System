@@ -106,6 +106,15 @@ def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_o
     return (l2a_tiles, l2a_tiles_paths)
 
 def validate_L1C_product_dir(l1cDir):
+    # First check if the product path actually exists
+    try:
+        os.stat(l1cDir)
+    except OSError, e:
+            print ("###################################")
+            print ("Cannot check if product root dir path {} exists or it is a valid symlink. Error was: {}".format(l1cDir, e.errno))
+            print ("###################################")
+            return False
+    
     print('--\nChecking ROOT for valid symlink = ' + l1cDir)
     for root, subdirs, files in os.walk(l1cDir):
 #        print('--\nChecking ROOT for valid symlink = ' + root)
