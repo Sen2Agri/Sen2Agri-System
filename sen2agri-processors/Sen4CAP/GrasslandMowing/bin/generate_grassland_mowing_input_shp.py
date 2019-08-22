@@ -120,7 +120,9 @@ def main():
 
         ctnumFilter = ""
         
-        ctnums = map(int, args.filter_ctnum.split(','))
+        ctnums = []
+        if args.filter_ctnum : 
+            ctnums = map(int, args.filter_ctnum.split(','))
         if len(ctnums) > 0 : 
             sql = "select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", wkb_geometry from {} natural join {} where ctnum in ({})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums))
         else :
