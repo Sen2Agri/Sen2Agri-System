@@ -30,7 +30,7 @@ from os.path import isdir, join
 import sys
 from signal import signal, SIGINT, SIG_IGN
 from multiprocessing import Pool, TimeoutError
-from sen2agri_common_db import GetExtent, ReprojectCoords, create_recursive_dirs, run_command
+from sen2agri_common_db import GetExtent, ReprojectCoords, create_recursive_dirs, log, run_command
 
 
 def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y):
