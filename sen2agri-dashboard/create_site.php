@@ -50,7 +50,7 @@ function getUploadFileDescriptorArray() {
         $descr->expectedUploadFileExt = ".zip";
         $descr->fileExt = "shp";
         $descr->addParams = '[
-                        {"id":"param1", 
+                        {"id":"importMode", 
                          "label":"Method:", 
                          "type":"select",
                          "required":1,
@@ -58,22 +58,22 @@ function getUploadFileDescriptorArray() {
                                       {"id":"opt2", "label":"Remove existing LPIS", "value" : "2"}                                      
                                      ]
                         }, 
-                        {"id":"param2", 
+                        {"id":"year", 
                          "label":"Year:", 
                          "type":"text",
                          "required":0
                         },
-                        {"id":"param3", 
+                        {"id":"parcelIdCols", 
                          "label":"Parcel ID cols:", 
                          "type":"text",
                          "required":1
                         },
-                        {"id":"param4", 
+                        {"id":"holdingIdCols", 
                          "label":"Holding ID cols:", 
                          "type":"text",
                          "required":1
                         },
-                        {"id":"param5", 
+                        {"id":"cropCodeCols", 
                          "label":"Crop code cols:", 
                          "type":"text",
                          "required":1,
