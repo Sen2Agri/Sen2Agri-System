@@ -108,40 +108,6 @@ function getUploadFileDescriptorArray() {
         $descr->expectedUploadFileExt = ".txt";
         $descr->fileExt = "txt";
 
-        // TODO: remove this 
-        $descr->addParams = '[
-                        {"id":"importMode", 
-                         "label":"Method:", 
-                         "type":"select",
-                         "required":1,
-                         "options" : [{"id":"opt1", "label":"Update existing LPIS", "value" : "1"},
-                                      {"id":"opt2", "label":"Remove existing LPIS", "value" : "2"}                                      
-                                     ]
-                        }, 
-                        {"id":"year", 
-                         "label":"Year:", 
-                         "type":"text",
-                         "required":0
-                        },
-                        {"id":"parcelIdCols", 
-                         "label":"Parcel ID cols:", 
-                         "type":"text",
-                         "required":1
-                        },
-                        {"id":"holdingIdCols", 
-                         "label":"Holding ID cols:", 
-                         "type":"text",
-                         "required":1
-                        },
-                        {"id":"cropCodeCols", 
-                         "label":"Crop code cols:", 
-                         "type":"text",
-                         "required":1,
-                         "tooltip":"Something"
-                        }                           
-                    ]';
-        // TODO: END remove this 
-        
         $uploadFileDescriptorArray[] = $descr;
     }
     return $uploadFileDescriptorArray;
@@ -156,18 +122,17 @@ function getPostUploadCmds() {
         $cmd->triggerUpDescrIds = array();
         $cmd->triggerUpDescrIds[] = "Lpis";
         $cmd->triggerUpDescrIds[] = "lut";
-        $cmd->triggerUpDescrIds[] = "L4cCfg";  // TODO: remove this -> it is just for testing
         $cmd->cmd = "data-preparation.py -s {site_shortname} {param2} {param3} {param4} {param5} {param6} {param7}";
         $cmd->params = '[
                             {"id":"param1", 
                              "key": "-y {value}",
-                             "refUp":"L4cCfg",
+                             "refUp":"Lpis",
                              "refUpParam":"year",
                              "required":0
                             },
                             {"id":"param2", 
                              "key": "--lpis {value}",
-                             "refUp":"L4cCfg",
+                             "refUp":"Lpis",
                              "refUpParam":"",
                              "required":0
                             },
@@ -179,25 +144,25 @@ function getPostUploadCmds() {
                             },
                             {"id":"param4", 
                              "key": "--parcel-id-cols {value}",
-                             "refUp":"L4cCfg",
+                             "refUp":"Lpis",
                              "refUpParam":"parcelIdCols",
                              "required":1
                             },
                             {"id":"param5", 
                              "key": "--holding-id-cols {value}",
-                             "refUp":"L4cCfg",
+                             "refUp":"Lpis",
                              "refUpParam":"holdingIdCols",
                              "required":1
                             },
                             {"id":"param6", 
                              "key": "--crop-code-cols {value}",
-                             "refUp":"L4cCfg",
+                             "refUp":"Lpis",
                              "refUpParam":"cropCodeCols",
                              "required":1                   
                             },
                             {"id":"param7", 
                              "key": "--import-mode {value}",
-                             "refUp":"L4cCfg",
+                             "refUp":"Lpis",
                              "refUpParam":"importMode",
                              "required":1
                             }                                                   
@@ -845,13 +810,13 @@ if (isset($_REQUEST["upload_file"]) && isset($_REQUEST["site_shortname"])) {
             $targetFolder = getTargetFolder($siteShortName, $uploadDescr);
             $resultMoveFiles = moveUploadedFilesToFinalDir($uploadTargetDir, $targetFolder);
             if (!$resultMoveFiles) {
-                // error_log('{"upload_response" : {"error" : {"code": 103, "message": "Cannot move ' . strtolower($uploadDescr->id) . 
-                        '  files from ' . $uploadTargetDir . ' to ' . $targetFolder . '"}, "id" : "id"}}', 0);
+                //error_log('{"upload_response" : {"error" : {"code": 103, "message": "Cannot move ' . strtolower($uploadDescr->id) . 
+                //        '  files from ' . $uploadTargetDir . ' to ' . $targetFolder . '"}, "id" : "id"}}', 0);
                 die('{"upload_response" : {"error" : {"code": 103, "message": "Cannot move ' . strtolower($uploadDescr->id) . 
                         '  files from ' . $uploadTargetDir . ' to ' . $targetFolder . '"}, "id" : "id"}}');
             } else {
-                // error_log('{"upload_response" : {"result" : "message" : "' . $uploadDescr->id . ' file successfuly uploaded to ' . $targetFolder . '!", "id" : "' . $uploadDescr->id . '", 
-                        "upload_target_dir_name" : "' . $uploadTargetDirName . '"}}');
+                //error_log('{"upload_response" : {"result" : "message" : "' . $uploadDescr->id . ' file successfuly uploaded to ' . $targetFolder . '!", "id" : "' . $uploadDescr->id . '", 
+                //        "upload_target_dir_name" : "' . $uploadTargetDirName . '"}}');
                 die('{"upload_response" : {"result" : "message" : "' . $uploadDescr->id . ' file successfuly uploaded!", "id" : "' . $uploadDescr->id . '", 
                         "upload_target_dir_name" : "' . $uploadTargetDirName . '"}}');    
             }
