@@ -3,6 +3,256 @@
 
 include 'master.php';
 
+class UploadFileDescriptor {
+    public $id;
+    public $descr;
+    public $dbUploadDirKey; // the upload root dir
+    public $uploadRelPath;  // relative path starting from $dbUploadDirKey where to upload the file. 
+                            // It can be left empty and in this case the file is uploaded in the root dir
+    public $expectedUploadFileExt;
+    public $fileExt;
+    public $addParams;
+}
+
+class PostUploadCmd {
+    public $triggerUpDescrIds;
+    public $cmd;
+    public $params;
+}
+
+function getUploadFileDescriptorArray() {
+    $uploadFileDescriptorArray = array();    
+    if (ConfigParams::isSen2Agri()) {
+        $descr = new UploadFileDescriptor();
+        $descr->id = "Insitu";
+        $descr->descr = "Insitu data";
+        $descr->dbUploadDirKey = "processor.l4a.reference_data_dir";
+        $descr->uploadRelPath = "";                 // not really necessary to be explicitely set
+        $descr->expectedUploadFileExt = ".zip";
+        $descr->fileExt = "shp";
+        $uploadFileDescriptorArray[] = $descr;
+
+        $descr = new UploadFileDescriptor();
+        $descr->id = "Strata";
+        $descr->descr = "Strata data";
+        $descr->dbUploadDirKey = "processor.l4a.reference_data_dir";
+        $descr->uploadRelPath = "strata";
+        $descr->expectedUploadFileExt = ".zip";
+        $descr->fileExt = "shp";
+        $uploadFileDescriptorArray[] = $descr;
+        
+    } else {
+        $descr = new UploadFileDescriptor();
+        $descr->id = "Lpis";
+        $descr->descr = "Declarations";
+        $descr->dbUploadDirKey = "processor.lpis.path";
+        $descr->uploadRelPath = "";                 // not really necessary to be explicitely set
+        $descr->expectedUploadFileExt = ".zip";
+        $descr->fileExt = "shp";
+        $descr->addParams = '[
+                        {"id":"param1", 
+                         "label":"Method:", 
+                         "type":"select",
+                         "required":1,
+                         "options" : [{"id":"opt1", "label":"Update existing LPIS", "value" : "1"},
+                                      {"id":"opt2", "label":"Remove existing LPIS", "value" : "2"}                                      
+                                     ]
+                        }, 
+                        {"id":"param2", 
+                         "label":"Year:", 
+                         "type":"text",
+                         "required":0
+                        },
+                        {"id":"param3", 
+                         "label":"Parcel ID cols:", 
+                         "type":"text",
+                         "required":1
+                        },
+                        {"id":"param4", 
+                         "label":"Holding ID cols:", 
+                         "type":"text",
+                         "required":1
+                        },
+                        {"id":"param5", 
+                         "label":"Crop code cols:", 
+                         "type":"text",
+                         "required":1,
+                         "tooltip":"Something"
+                        }                           
+                    ]';
+        $uploadFileDescriptorArray[] = $descr;
+
+        $descr = new UploadFileDescriptor();
+        $descr->id = "lut";
+        $descr->descr = "LUT data";
+        $descr->dbUploadDirKey = "processor.lpis.path";
+        $descr->uploadRelPath = "LUT";                 // not really necessary to be explicitely set
+        $descr->expectedUploadFileExt = ".csv";
+        $descr->fileExt = "csv";
+        $uploadFileDescriptorArray[] = $descr;
+
+        $descr = new UploadFileDescriptor();
+        $descr->id = "L4bCfg";
+        $descr->descr = "L4B configuration";
+        $descr->dbUploadDirKey = "processor.s4c_l4b.cfg_dir";        
+        $descr->uploadRelPath = "";                 // not really necessary to be explicitely set
+        $descr->expectedUploadFileExt = ".txt";
+        $descr->fileExt = "txt";
+        $uploadFileDescriptorArray[] = $descr;
+
+        $descr = new UploadFileDescriptor();
+        $descr->id = "L4cCfg";
+        $descr->descr = "L4C configuration";
+        $descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";        
+        $descr->uploadRelPath = "";                 // not really necessary to be explicitely set
+        $descr->expectedUploadFileExt = ".txt";
+        $descr->fileExt = "txt";
+
+        // TODO: remove this 
+        $descr->addParams = '[
+                        {"id":"importMode", 
+                         "label":"Method:", 
+                         "type":"select",
+                         "required":1,
+                         "options" : [{"id":"opt1", "label":"Update existing LPIS", "value" : "1"},
+                                      {"id":"opt2", "label":"Remove existing LPIS", "value" : "2"}                                      
+                                     ]
+                        }, 
+                        {"id":"year", 
+                         "label":"Year:", 
+                         "type":"text",
+                         "required":0
+                        },
+                        {"id":"parcelIdCols", 
+                         "label":"Parcel ID cols:", 
+                         "type":"text",
+                         "required":1
+                        },
+                        {"id":"holdingIdCols", 
+                         "label":"Holding ID cols:", 
+                         "type":"text",
+                         "required":1
+                        },
+                        {"id":"cropCodeCols", 
+                         "label":"Crop code cols:", 
+                         "type":"text",
+                         "required":1,
+                         "tooltip":"Something"
+                        }                           
+                    ]';
+        // TODO: END remove this 
+        
+        $uploadFileDescriptorArray[] = $descr;
+    }
+    return $uploadFileDescriptorArray;
+}
+
+function getPostUploadCmds() {
+    $cmds = array();      
+    if (ConfigParams::isSen2Agri()) {
+        
+    } else {  
+        $cmd = new PostUploadCmd();
+        $cmd->triggerUpDescrIds = array();
+        $cmd->triggerUpDescrIds[] = "Lpis";
+        $cmd->triggerUpDescrIds[] = "lut";
+        $cmd->triggerUpDescrIds[] = "L4cCfg";  // TODO: remove this -> it is just for testing
+        $cmd->cmd = "data-preparation.py -s {site_shortname} {param2} {param3} {param4} {param5} {param6} {param7}";
+        $cmd->params = '[
+                            {"id":"param1", 
+                             "key": "-y {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"year",
+                             "required":0
+                            },
+                            {"id":"param2", 
+                             "key": "--lpis {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"",
+                             "required":0
+                            },
+                            {"id":"param3", 
+                             "key": "--lut {value}",
+                             "refUp":"lut",
+                             "refUpParam":"",
+                             "required":0
+                            },
+                            {"id":"param4", 
+                             "key": "--parcel-id-cols {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"parcelIdCols",
+                             "required":1
+                            },
+                            {"id":"param5", 
+                             "key": "--holding-id-cols {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"holdingIdCols",
+                             "required":1
+                            },
+                            {"id":"param6", 
+                             "key": "--crop-code-cols {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"cropCodeCols",
+                             "required":1                   
+                            },
+                            {"id":"param7", 
+                             "key": "--import-mode {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"importMode",
+                             "required":1
+                            }                                                   
+                        ]';
+        $cmds[] = $cmd;
+    }  
+    return $cmds;    
+}
+
+function getUploadDescriptionById($id) {
+    $uploadDescrs = getUploadFileDescriptorArray();
+    foreach ($uploadDescrs as $uploadDescr) { 
+        if($uploadDescr->id == $id) {
+            return $uploadDescr;
+        }
+    }
+    return null;
+}
+
+function getUploadedFile($siteId, $upId, $succUpFiles) {
+    // we are actually not searching here for a param but for a file name that was uploaded
+    $descr = getUploadDescriptionById($upId);
+    $fileName = getValueForJsonKey($succUpFiles, $upId);
+    if ($fileName != null) {
+        $targetDataDir = getTargetFolder($siteId, $descr);
+        return $targetDataDir . DIRECTORY_SEPARATOR . $fileName;
+    }        
+    return null;
+}
+
+function getUploadDescrParam($upId, $paramId) {
+    $descr = getUploadDescriptionById($upId);
+    if ($paramId != "") {
+        $paramsJsonObj = json_decode($descr->addParams);
+        foreach($paramsJsonObj as $param) { 
+            if($param->id == $paramId) {
+                return $param;
+            }
+        }
+    } 
+    return null;
+}
+
+
+function getUploadDescriptionFromKey($key, $keyPrefix, $keySuffix) {
+    $uploadDescrs = getUploadFileDescriptorArray();
+    foreach ($uploadDescrs as $uploadDescr) { 
+        $genKey = $keyPrefix . $uploadDescr->id . $keySuffix;
+        if($genKey == $key) {
+            return $uploadDescr;
+        }
+    }
+    return null;
+}
+
 function getTiles($siteId,$satelliteId){
     $dbconn = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
     $rows = pg_query_params($dbconn, "select * from sp_get_site_tiles($1,$2)",array($siteId,$satelliteId)) or die(pg_last_error());
@@ -60,47 +310,48 @@ function endsWith($str, $sub) {
     return (substr ( $str, strlen ( $str ) - strlen ( $sub ) ) === $sub);
 }
 
-function getInsituFolder($siteId, $isStrata) {
+function getTargetFolder($siteId, $uploadeDescr) {
     $dbconn = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
     if (is_numeric($siteId)) {
         $rows = pg_query($dbconn, "SELECT short_name FROM sp_get_sites() WHERE id = ".$siteId) or die(pg_last_error());
         $siteId = pg_fetch_array($rows, 0)[0];
     }
-    $rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('processor.l4a.reference_data_dir') WHERE site_id IS NULL") or die(pg_last_error());
+    $queryStr = "SELECT key, value FROM sp_get_parameters('" . $uploadeDescr->dbUploadDirKey ."') WHERE site_id IS NULL";
+    $rows = pg_query($dbconn, $queryStr) or die(pg_last_error());
     $result = pg_fetch_array($rows, 0)[1];
 
-    $insituDataDir = str_replace("{site}", $siteId, $result);
-    if ($isStrata) {
-        $insituDataDir = $insituDataDir . DIRECTORY_SEPARATOR . "strata";
+    $targetDataDir = str_replace("{site}", $siteId, $result);
+    if (!empty($uploadeDescr->uploadRelPath)) {
+        $targetDataDir = $targetDataDir . DIRECTORY_SEPARATOR . $uploadeDescr->uploadRelPath;
     }
-    return $insituDataDir;
+    return $targetDataDir;
 }
     
-function getInsituFileName($siteId, $isStrata) {
-    $insituDataDir = getInsituFolder($siteId, $isStrata);
-    // echo "Insitu Directory is " . $insituDataDir . "\r\n";
+function getExistingUploadedFileName($siteId, $uploadDescr) {
+    $targetDataDir = getTargetFolder($siteId, $uploadDescr);
+    // echo " Target Directory is " . $targetDataDir . "\r\n";
     $newest_file = "";
-    if (is_dir($insituDataDir)) {
-        //echo "IsDir " . "\r\n";
-        $files = scandir($insituDataDir, SCANDIR_SORT_DESCENDING);
-        $existingFiles = array_diff($files, array('..', '.', 'strata'));
+    if (is_dir($targetDataDir)) {
+        // echo " IsDir " . "\r\n";
+        $files = scandir($targetDataDir, SCANDIR_SORT_DESCENDING);
+        $existingFiles = array_diff($files, array('..', '.'));
         foreach($existingFiles as $existingFile) {
-            $fullFilePath = $insituDataDir . DIRECTORY_SEPARATOR . $existingFile;
+            $fullFilePath = $targetDataDir . DIRECTORY_SEPARATOR . $existingFile;
             if (!is_dir($fullFilePath)) {
                 $fileExt = pathinfo($fullFilePath, PATHINFO_EXTENSION);
-                if (strtolower($fileExt) == 'shp') {
+                if (strtolower($fileExt) == $uploadDescr->fileExt) {
                     $newest_file = $existingFile;
                     break;
                 }
             }
         }
-        //echo "Newest file " . $newest_file . "\r\n";
+        //echo " Newest file " . $newest_file . "\r\n";
     }
     
     return $newest_file;
 }
 
-function moveInsituFiles($srcDir, $destDir) {
+function moveUploadedFilesToFinalDir($srcDir, $destDir) {
     
     if (!file_exists($destDir)) {
         if (!mkdir($destDir, 0777, true)) {
@@ -108,9 +359,10 @@ function moveInsituFiles($srcDir, $destDir) {
         }
     }
         
-    // ignore ., .., and strata folder
+    // ignore ., ..
     // create a backup folder for the existing files as we don't want to delete them directly
-    $Ignore = array(".","..","strata");
+    // TODO: the ignored folders (strata and LUT) should be taken in another manner
+    $Ignore = array(".","..","strata", "LUT");
     $existingFiles = array_diff(scandir($destDir), $Ignore);
     if (count($existingFiles) > 0) {
         $date = date_create();
@@ -134,11 +386,131 @@ function moveInsituFiles($srcDir, $destDir) {
         $Ignore = array(".","..");
         foreach($existingFiles as $existingFile) {
             if(!in_array($existingFile,$Ignore)) {
-                rename($srcDir . DIRECTORY_SEPARATOR . $existingFile, $destDir . DIRECTORY_SEPARATOR . $existingFile); // rename the file 
+                if (!rename($srcDir . DIRECTORY_SEPARATOR . $existingFile, $destDir . DIRECTORY_SEPARATOR . $existingFile)) { // rename the file 
+                    return false;
+                }
             }
         }
     }
     return true;
+}
+
+function getValueForJsonKey($jsonKeyValsArr, $key) {
+    if ($jsonKeyValsArr != null) {
+        foreach ($jsonKeyValsArr as $keyVal) {
+            $keyValObj = json_decode($keyVal);
+            if ($keyValObj->key == $key) {
+                return $keyValObj->value;
+            }
+        }
+    }
+    return null;
+}
+
+function checkSuccesfullUploadsForCmd($params, $errUpFiles) {
+    // check that the upload file params do not appear in the list of error files
+    foreach ($params as $param) {
+        if ($param->refUpParam === "") {
+            if(getValueForJsonKey($errUpFiles, $param->refUp) != null) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function isCommandTriggered($cmdObj, $succUpFiles) {
+    foreach ($cmdObj->triggerUpDescrIds as $triggerId) {
+        if(getValueForJsonKey($succUpFiles, $triggerId) != null) {
+            return true;
+        }        
+    }
+    return false;
+}
+
+function buildCommand($cmdObj, $cmdParams, $succUpFiles, $errUpFiles) {
+    $cmdStr = $cmdObj->cmd;
+    $siteShortName = $_REQUEST ["shortname"];
+    
+    // First replace the site name in the command
+    $cmdStr = str_replace('{site_shortname}', $siteShortName, $cmdStr); 
+    
+    foreach ($cmdParams as $param) {
+        // check if the file was successfuly uploaded for the current parameter
+        $uploadedFile = getUploadedFile($siteShortName, $param->refUp, $succUpFiles);
+        if ($uploadedFile != null) {
+            // Get param from the upload descr
+            // error_log("Uploader: " . $param->refUp . ", Parameter:  " . $param->refUpParam . ", Uploaded file: " . $uploadedFile);    
+            if ($param->refUpParam == "") {
+                // we have the file name 
+                $paramVal = $uploadedFile;
+            } else {
+                $upDescrParam = getUploadDescrParam($param->refUp, $param->refUpParam);
+                $postParamId = $param->refUp . $upDescrParam->id;
+                $reqParamId = "postUploadCmdParam" . $postParamId;
+                // get the needed parameters from _REQUEST
+                if (isset ( $_REQUEST [$reqParamId] ) ) {
+                    $paramVal = $_REQUEST [$reqParamId];
+                    // error_log("ParamVal : " . $paramVal);
+                    if ($upDescrParam->type === "select") {
+                        foreach ($upDescrParam->options as $opt) {
+                            if ($opt->id === $paramVal) {
+                                $paramVal = $opt->value;
+                                break;
+                            }
+                        }                
+                    }
+                }   
+            }
+            if ($paramVal) {
+                $cmdParamKey = $param->key;
+                $cmdParamKey = str_replace('{value}', $paramVal, $cmdParamKey); 
+                $cmdStr = str_replace('{' . $param->id . '}', $cmdParamKey, $cmdStr); 
+            } else {
+                if ($upDescrParam->isRequired == 1) {
+                    // TODO: give an error here
+                    return null;
+                }
+            }
+        } else {
+            // error_log("The command param " . $param->id . " will be ignored as the file for " . $param->refUp . " was not uploaded!");
+            $cmdParamKey = $param->key;
+            $cmdParamKey = str_replace('{value}', $paramVal, $cmdParamKey); 
+            $cmdStr = str_replace('{' . $param->id . '}', '', $cmdStr); 
+        }
+    }
+    // error_log("Cmd to execute : " . $cmdStr);
+    return $cmdStr;
+}
+
+function postProcessUploadedFiles() {
+    $postUploadCmds = getPostUploadCmds();
+    if ($postUploadCmds) {
+        if (isset ( $_REQUEST ["succ_up_files"] ) ) {
+            $succUpFilesStr = $_REQUEST ["succ_up_files"];
+            $succUpFiles = json_decode($succUpFilesStr);
+        }
+        if (isset ( $_REQUEST ["err_up_files"] ) ) {
+            $errUpFilesStr = $_REQUEST ["err_up_files"];
+            $errUpFiles = json_decode($errUpFilesStr);
+        }
+        foreach ($postUploadCmds as $cmdObj) {
+            if (!isCommandTriggered($cmdObj, $succUpFiles)) {
+                // error_log("cmd not triggered: " . $succUpFilesStr);
+                continue;
+            }
+            $cmdParams = json_decode($cmdObj->params); 
+            // check that all file parameters were uploaded successfuly in the command
+            if (!checkSuccesfullUploadsForCmd($cmdParams, $errUpFiles)) {
+                // error_log("no success uploads: " . $succUpFilesStr);
+                continue;
+            }
+            // error_log("building cmd: " . $succUpFilesStr);
+            if (!buildCommand($cmdObj, $cmdParams, $succUpFiles, $errUpFiles)) {
+                continue;
+            }
+        }
+    }
 }
 
 function get_product_types_from_db() {
@@ -162,8 +534,8 @@ function get_product_types_from_db() {
     }
 }
 
-function createCustomUploadFolder($siteId, $timestamp, $subDir) {
-    // create custom upload path like: /mnt/upload/siteName/userName_timeStamp/
+function getCustomUploadFolderRoot($siteId) {
+    // get the custom upload root path like: /mnt/upload/siteName/userName_timeStamp/
     $dbconn = pg_connect( ConfigParams::getConnection() ) or die ( "Could not connect" );
     $rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL") or die(pg_last_error());
     $result = pg_fetch_array($rows, 0)[1];
@@ -180,7 +552,16 @@ function createCustomUploadFolder($siteId, $timestamp, $subDir) {
         $rows = pg_query($dbconn, "SELECT name FROM sp_get_sites() WHERE id = ".$siteId) or die(pg_last_error());
         $result = pg_fetch_array($rows, 0)[0];
     }
-    $upload_target_dir = $upload_target_dir . $result . "/" . ConfigParams::$USER_NAME . "_".$timestamp . "/";
+    $root_target_dir = $upload_target_dir . $result;
+    
+    return $root_target_dir;    
+}
+
+function createCustomUploadFolder($siteId, $timestamp, $subDir) {
+    // create custom upload path like: /mnt/upload/siteName/userName_timeStamp/
+    $root_target_dir = getCustomUploadFolderRoot($siteId);
+
+    $upload_target_dir = $root_target_dir . DIRECTORY_SEPARATOR . ConfigParams::$USER_NAME . "_".$timestamp . "/";
     $upload_target_dir = str_replace("(", "", $upload_target_dir);
     $upload_target_dir = str_replace(")", "", $upload_target_dir);
     $upload_target_dir = str_replace(" ", "_", $upload_target_dir);
@@ -193,85 +574,103 @@ function createCustomUploadFolder($siteId, $timestamp, $subDir) {
     return $upload_target_dir;
 }
 
-function uploadReferencePolygons($zipFile, $siteId, $timestamp, $subDir, $chkExtractedShape = true) {
+function preprocessUploadedFile($filename, $uploadTargetDir, $expectedFileExt, $expectedArchFileExt, $chkExtractedShape = true, $source = null) {
     $zip_msg = "";
+    $shp_msg = '';
     $shp_file = false;
-    if ($_FILES[$zipFile]["name"]) {
-        $filename = $_FILES[$zipFile]["name"];
-        $source = $_FILES[$zipFile]["tmp_name"];
-
-        $upload_target_dir = createCustomUploadFolder($siteId, $timestamp, $subDir);
-
-        $target_path = $upload_target_dir . $filename;
-        if(move_uploaded_file($source, $target_path)) {
-            $zip = new ZipArchive();
-            $x = $zip->open($target_path);
-            if ($x === true) {
-                for ($i = 0; $i < $zip->numFiles; $i++) {
-                    $filename = $zip->getNameIndex($i);
-                    if (endsWith($filename, '.shp')) {
-                        $shp_file = $upload_target_dir . $filename;
-                        break;
+    if (!endsWith(strtolower($filename), $expectedFileExt)) {
+         $zip_msg = "Your file does not have the expected " . $expectedFileExt . "extension!";    
+    } else {
+        $target_path = $uploadTargetDir . DIRECTORY_SEPARATOR . $filename;
+        // if the source is null, then handle directly the target path
+        // otherwise, a move is performed (based on the short-circuit capabilities of || )
+        if($source == null || move_uploaded_file($source, $target_path)) {
+            if (endsWith(strtolower($filename), ".zip")) {
+                $zip = new ZipArchive();
+                $x = $zip->open($target_path);
+                if ($x === true) {
+                    for ($i = 0; $i < $zip->numFiles; $i++) {
+                        $filename = $zip->getNameIndex($i);
+                        if (endsWith(strtolower($filename), $expectedArchFileExt)) {
+                            $shp_file = $uploadTargetDir . $filename;
+                            break;
+                        }
                     }
-                }
-                $zip->extractTo($upload_target_dir);
-                $zip->close();
-                unlink($target_path);
-                if ($shp_file) {
-                    $zip_msg = "Your .zip file was uploaded and unpacked successfully!";
+                    $zip->extractTo($uploadTargetDir);
+                    $zip->close();
+                    unlink($target_path);
+                    if ($shp_file) {
+                        $zip_msg = "Your .zip file was uploaded and unpacked successfully!";
+                    } else {
+                        $zip_msg = "Your .zip file does not contain any (" . $expectedArchFileExt . ") file!";
+                    }
                 } else {
-                    $zip_msg = "Your .zip file does not contain any shape (.shp) file!";
+                    $zip_msg = "Your file is not a valid .zip archive!";
                 }
             } else {
-                $zip_msg = "Your file is not a valid .zip archive!";
+                // else, nothing to do, the file is just there, just update the $shp_file in case it will be later checked (if configured)
+                $shp_file = $target_path;
+                // TODO: Handle the eventual other archive types here                                
+            }
+            // verify if shape file, if it is the case has valid geometry
+            if ($chkExtractedShape && $shp_file) {
+                $shape_ok = false;                    
+                exec('scripts/check_shp.py -b '.$shp_file, $output, $ret);
+
+                if ($ret === FALSE) {
+                    $shp_msg = 'Invalid command line!';
+                } else {
+                    switch ($ret) {
+                        case 0:     $shape_ok = true; break;
+                        case 1:     $shp_file = false; $shp_msg = 'Unable to open the shape file!'; break;
+                        case 2:     $shp_file = false; $shp_msg = 'Shape file has invalid geometry!'; break;
+                        case 3:     $shp_file = false; $shp_msg = 'Shape file has overlapping polygons!'; break;
+                        case 4:     $shp_file = false; $shp_msg = 'Shape file is too complex!'; break;
+                        case 127:   $shp_file = false; $shp_msg = 'Invalid geometry detection script!'; break;
+                        default:    $shp_file = false; $shp_msg = 'Unexpected error with the geometry detection script!'; break;
+                    }
+                }
+                if ($shape_ok) {
+                    $last_line = $output[count($output) - 1];
+                    $r = preg_match('/^Union: (.+)$/m', $last_line, $matches);
+                    if (!$r) {
+                        $shp_file = false;
+                        $shp_msg = 'Unable to parse shape!';
+                    } else {
+                        $shp_msg = $matches[1];
+                    }
+                }
             }
         } else {
             $zip_msg = "Failed to upload the file you selected!";
         }
-    } else {
-        $zip_msg = 'Unable to access your selected file!';
+    }
+    if ($chkExtractedShape && ! $shp_file) {
+        $shp_msg = 'Missing shape file due to a problem with your selected file!';
     }
 
-    // verify if shape file has valid geometry
-    $shp_msg = '';
-    $shape_ok = false;
-    if ($chkExtractedShape) {
-        if ($shp_file) {
-            exec('scripts/check_shp.py -b '.$shp_file, $output, $ret);
+    return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg );
+}
 
-            if ($ret === FALSE) {
-                $shp_msg = 'Invalid command line!';
-            } else {
-                switch ($ret) {
-                    case 0:     $shape_ok = true; break;
-                    case 1:     $shp_file = false; $shp_msg = 'Unable to open the shape file!'; break;
-                    case 2:     $shp_file = false; $shp_msg = 'Shape file has invalid geometry!'; break;
-                    case 3:     $shp_file = false; $shp_msg = 'Shape file has overlapping polygons!'; break;
-                    case 4:     $shp_file = false; $shp_msg = 'Shape file is too complex!'; break;
-                    case 127:   $shp_file = false; $shp_msg = 'Invalid geometry detection script!'; break;
-                    default:    $shp_file = false; $shp_msg = 'Unexpected error with the geometry detection script!'; break;
-                }
-            }
-            if ($shape_ok) {
-                $last_line = $output[count($output) - 1];
-                $r = preg_match('/^Union: (.+)$/m', $last_line, $matches);
-                if (!$r) {
-                    $shp_file = false;
-                    $shp_msg = 'Unable to parse shape!';
-                } else {
-                    $shp_msg = $matches[1];
-                }
-            }
-        } else {
-            $shp_msg = 'Missing shape file due to a problem with your selected file!';
-        }
-    }
-
-    return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg, "upload_target_dir" => $upload_target_dir );
+function uploadReferencePolygons($zipFile, $uploadTargetDir, $fileExt, $archivedFileExt, $chkExtractedShape = true) {
+    if ($_FILES[$zipFile]["name"]) {
+        $filename = $_FILES[$zipFile]["name"];
+        $source = $_FILES[$zipFile]["tmp_name"];
+        return preprocessUploadedFile($filename, $uploadTargetDir, $fileExt, $archivedFileExt, $chkExtractedShape, $source);
+    } 
+    return array ( "polygons_file" => false, "result" => $chkExtractedShape ? 'Missing shape file due to a problem with your selected file!' : '', 
+                   "message" => 'Unable to access your selected file!' );
 }
 
 function getSatelliteEnableStatus($siteId, $satId) {
     return CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/products/enable/status/" . $satId . "/" . $siteId);
+}
+
+function getUploadTargetDir($siteId, $uploadRelPath) {
+    $date = date_create();
+    $time_stamp = date_timestamp_get($date);
+    $upload_target_dir = createCustomUploadFolder($siteId, $time_stamp, $uploadRelPath);
+    return $upload_target_dir;
 }
 
 // processing add site
@@ -317,9 +716,6 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
         return $row[0];
     }
 
-    $date = date_create();
-    $time_stamp = date_timestamp_get($date);
-
 //    TODO: In the end, should be used the service to create the site (from the services)
 //    For now,
 //    $sourceFile = $_FILES["zip_fileAdd"]["tmp_name"];
@@ -331,7 +727,8 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 //    $restResult = CallRestAPI("POST",  ConfigParams::$REST_SERVICES_URL . "/sites/" , $jsonObj);
 
     // upload polygons
-    $upload = uploadReferencePolygons("zip_fileAdd", $site_name, $time_stamp, '');
+    $uploadTargetDir = getUploadTargetDir($site_name, '');
+    $upload = uploadReferencePolygons("zip_fileAdd", $uploadTargetDir, ".zip", ".shp");
     $polygons_file = $upload ['polygons_file'];
     $coord_geog = $upload ['result'];
     $message = $upload ['message'];
@@ -350,15 +747,137 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
     die(Header("Location: {$_SERVER['PHP_SELF']}"));
 }
 
+// Get a file name
+if (isset($_REQUEST["upload_file"]) && isset($_REQUEST["site_shortname"])) {
+    // error_log(json_encode($_REQUEST), 0);
+    
+    //$targetDir = ini_get("upload_tmp_dir") . DIRECTORY_SEPARATOR . "plupload";
+    $cleanupTargetDir = true; // Remove old files
+    
+    $siteShortName                = $_REQUEST ['site_shortname'];
+    $upload_descr_id        = $_REQUEST ['upload_desc_id'];
+    $uploadDescr = getUploadDescriptionById($upload_descr_id);    
+    
+    $chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
+    $chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;  
+
+    if ($chunks == 0 || $chunk == 0) {
+        $uploadTargetDir = getUploadTargetDir($siteShortName, $uploadDescr->uploadRelPath);
+        $uploadTargetDirName = basename($uploadTargetDir);        
+    } else {
+        if( !isset($_REQUEST["upload_target_dir_name"])) {
+            // error_log('{"upload_response" : {"error" : {"code": 100, "message": "Target folder needs to be provided for chunks > 0."}, "id" : "id"}}');
+            die('{"upload_response" : {"error" : {"code": 100, "message": "Target folder needs to be provided for chunks > 0."}, "id" : "id"}}');
+        }
+        $uploadTargetDirName = $_REQUEST["upload_target_dir_name"];
+        $uploadTargetDirRoot = getCustomUploadFolderRoot($siteShortName);
+        $uploadTargetDir = $uploadTargetDirRoot . DIRECTORY_SEPARATOR . $uploadTargetDirName;
+    }
+    
+    if (isset($_REQUEST["name"])) {
+        $fileName = $_REQUEST["name"];
+    } elseif (!empty($_FILES)) {
+        $fileName = $_FILES["file"]["name"];
+    } else {
+        $fileName = uniqid("file_");
+    }
+    $filePath = $uploadTargetDir . DIRECTORY_SEPARATOR . $fileName;
+    // error_log("File path is " . $filePath, 0);
+    
+    // Remove old temp files	
+    if ($cleanupTargetDir) {
+        if (!is_dir($uploadTargetDir) || !$dir = opendir($uploadTargetDir)) {
+            // error_log('{"upload_response" : {"error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}}');
+            die('{"upload_response" : {"error" : {"code": 100, "message": "Failed to open temp directory."}, "id" : "id"}}');
+        }
+        while (($file = readdir($dir)) !== false) {
+            $tmpfilePath = $uploadTargetDir . DIRECTORY_SEPARATOR . $file;
+            // If temp file is current file proceed to the next
+            if ($tmpfilePath == "{$filePath}.part") {
+                continue;
+            }
+            // Remove temp file if it is older than the max age and is not the current file
+            if (preg_match('/\.part$/', $file) && (filemtime($tmpfilePath) < time() - $maxFileAge)) {
+                @unlink($tmpfilePath);
+            }
+        }
+        closedir($dir);
+    }	   
+
+    // Open temp file
+    if (!$out = @fopen("{$filePath}.part", $chunks ? "ab" : "wb")) {
+        // error_log('{"upload_response" : {"error" : {"code": 102, "message": "Failed to open output stream."}, "id" : "id"}}');
+        die('{"upload_response" : {"error" : {"code": 102, "message": "Failed to open output stream."}, "id" : "id"}}');
+    }
+    if (!empty($_FILES)) {
+        if ($_FILES["file"]["error"] || !is_uploaded_file($_FILES["file"]["tmp_name"])) {
+            // error_log('{"upload_response" : {"error" : {"code": 103, "message": "Failed to move uploaded file."}, "id" : "id"}}');
+            die('{"upload_response" : {"error" : {"code": 103, "message": "Failed to move uploaded file."}, "id" : "id"}}');
+        }
+        // Read binary input stream and append it to temp file
+        if (!$in = @fopen($_FILES["file"]["tmp_name"], "rb")) {
+            // error_log('{"upload_response" : {error" : {"code": 101, "message": "Failed to open input stream."}, "id" : "id"}}');
+            die('{""upload_response" : {"error" : {"code": 101, "message": "Failed to open input stream."}, "id" : "id"}}');
+        }
+    } else {	
+        if (!$in = @fopen("php://input", "rb")) {
+            // error_log('{"upload_response" : {"error" : {"code": 101, "message": "Failed to open input stream."}, "id" : "id"}}');
+            die('{""upload_response" : {"error" : {"code": 101, "message": "Failed to open input stream."}, "id" : "id"}}');
+        }
+    }
+    while ($buff = fread($in, 4096)) {
+        fwrite($out, $buff);
+    }
+    @fclose($out);
+    @fclose($in);
+    // Check if file has been uploaded
+    if (!$chunks || $chunk == $chunks - 1) {
+        // Strip the temp .part suffix off 
+        // error_log("renaming {$filePath}.part to $filePath");
+        rename("{$filePath}.part", $filePath);
+        
+        // Handle now the uploaded file
+        $upload        = preprocessUploadedFile($fileName, $uploadTargetDir, $uploadDescr->expectedUploadFileExt, $uploadDescr->fileExt, false, null);
+        $polygons_file = $upload ['polygons_file'];
+        $validationMsg = $upload ['result'];
+        $uploadMsg     = $upload ['message'];
+        if ($polygons_file) {
+            $targetFolder = getTargetFolder($siteShortName, $uploadDescr);
+            $resultMoveFiles = moveUploadedFilesToFinalDir($uploadTargetDir, $targetFolder);
+            if (!$resultMoveFiles) {
+                // error_log('{"upload_response" : {"error" : {"code": 103, "message": "Cannot move ' . strtolower($uploadDescr->id) . 
+                        '  files from ' . $uploadTargetDir . ' to ' . $targetFolder . '"}, "id" : "id"}}', 0);
+                die('{"upload_response" : {"error" : {"code": 103, "message": "Cannot move ' . strtolower($uploadDescr->id) . 
+                        '  files from ' . $uploadTargetDir . ' to ' . $targetFolder . '"}, "id" : "id"}}');
+            } else {
+                // error_log('{"upload_response" : {"result" : "message" : "' . $uploadDescr->id . ' file successfuly uploaded to ' . $targetFolder . '!", "id" : "' . $uploadDescr->id . '", 
+                        "upload_target_dir_name" : "' . $uploadTargetDirName . '"}}');
+                die('{"upload_response" : {"result" : "message" : "' . $uploadDescr->id . ' file successfuly uploaded!", "id" : "' . $uploadDescr->id . '", 
+                        "upload_target_dir_name" : "' . $uploadTargetDirName . '"}}');    
+            }
+        } else {
+            $errMsg = $upload ['message'];
+            if ($validationMsg != '') {
+                $errMsg = $validationMsg;
+            }
+            // error_log('{"upload_response" : {"error" : {"code": 103, "message": "Error uploading ' . strtolower($uploadDescr->id) . ' file. Error was: ' . $errMsg . '"}, "id" : "id"}}');            
+            die('{"upload_response" : {"error" : {"code": 103, "message": "Error preprocessing uploaded file ' . $fileName . ' for ' . strtolower($uploadDescr->id) . '. Error was: ' . $errMsg . '"}, "id" : "id"}}');
+        }
+    }
+    // Return Success JSON-RPC response
+    die('{"upload_response" : {"result" : {"message" : "success"}, "id" : "' . $uploadDescr->id . '", "upload_target_dir_name" : "' . $uploadTargetDirName . '"}}');    
+}
+
 // processing edit site
 if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site') {
+    // error_log(json_encode($_REQUEST), 0);
+    
     $site_id      = $_REQUEST ['edit_siteid'];
     $shortname    = $_REQUEST ['shortname'];
     $site_enabled = empty($_REQUEST ['edit_enabled']) ? "0" : "1";
-    //print_r($_REQUEST);
     $l8_enabled = empty($_REQUEST ['chkL8Edit']) ? "0" : "1";
     $tilesS2 =  isset($_REQUEST ['S2Tiles']) ? $_REQUEST ['S2Tiles']:'';
-   
+      
     if($site_enabled){
         if($l8_enabled){
             $tilesL8 = isset($_REQUEST ['L8Tiles']) ? $_REQUEST ['L8Tiles']:'';
@@ -401,7 +920,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
         }
     }
     
-    function polygonFileSelected($name) {
+    function uploadFileSelected($name) {
         foreach($_FILES as $key => $val){
             if (($key == $name) && (strlen($_FILES[$key]['name'])) > 0) {
                 return true;
@@ -418,57 +937,41 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
         ) ) or die ( "An error occurred." );
     }
 
-    $date = date_create();
-    $time_stamp = date_timestamp_get($date);
-
     // upload polygons if zip file selected
     $status     = "OK";
     $message    = "";
-    $insituMsg  = "";
-    $strataMsg  = "";
-    if (polygonFileSelected("siteInsituDataUpload")) {
-        $upload        = uploadReferencePolygons("siteInsituDataUpload", $site_id, $time_stamp, "insitu", false);
-        $polygons_file = $upload ['polygons_file'];
-        $validationMsg = $upload ['result'];
-        $insituMsg     = $upload ['message'];
-        if ($polygons_file) {
-            $upload_target_dir = $upload ['upload_target_dir'];
-            $insituFolder = getInsituFolder($site_id, false);
-            $resultMoveInsituFiles = moveInsituFiles($upload_target_dir, $insituFolder);
-            if (!$resultMoveInsituFiles) {
-                $insituMsg ="Cannot move insitu files from " . $upload_target_dir . " to " . $insituFolder . "\\n";
+    $allMsgs = array();    
+    
+    $uploadDescrs = getUploadFileDescriptorArray();
+    foreach ($uploadDescrs as $uploadDescr) { 
+        $uploadKey = "site" . $uploadDescr->id . "DataUpload";
+        if (uploadFileSelected($uploadKey)) {
+            $uploadTargetDir = getUploadTargetDir($shortname, $uploadDescr->uploadRelPath);
+            $upload        = uploadReferencePolygons($uploadKey, $uploadTargetDir, $uploadDescr->expectedUploadFileExt, $uploadDescr->fileExt, false);
+            $polygons_file = $upload ['polygons_file'];
+            $validationMsg = $upload ['result'];
+            $uploadMsg     = $upload ['message'];
+            if ($polygons_file) {
+                $targetFolder = getTargetFolder($shortname, $uploadDescr);
+                $resultMoveFiles = moveUploadedFilesToFinalDir($uploadTargetDir, $targetFolder);
+                if (!$resultMoveFiles) {
+                    $uploadMsg ="Cannot move " . strtolower($uploadDescr->id) . " files from " . $uploadTargetDir . " to " . $targetFolder . "\\n";
+                } else {
+                    $uploadMsg = $uploadDescr->id . " file successfuly uploaded!\\n";
+                }
             } else {
-                $insituMsg ="Insitu file successfuly uploaded!\\n";
+                $errMsg = $upload ['message'];
+                if ($validationMsg != '') {
+                    $errMsg = $validationMsg;
+                }
+                $uploadMsg = "Error uploading " . strtolower($uploadDescr->id) . " file. Error was: " . $errMsg . "\\n";
             }
-        } else {
-            $errMsg = $upload ['message'];
-            if ($validationMsg != '') {
-                $errMsg = $validationMsg;
-            }
-            $insituMsg = "Error uploading insitu file. Error was: " . $errMsg . "\\n";
+            $allMsgs[] = $uploadMsg;            
         }
     }
-    if (polygonFileSelected("siteStrataNewData")) {
-        $upload        = uploadReferencePolygons("siteStrataNewData", $site_id, $time_stamp, "strata", false);
-        $polygons_file = $upload ['polygons_file'];
-        $validationMsg = $upload ['result'];
-        if ($polygons_file) {
-            $upload_target_dir = $upload ['upload_target_dir'];
-            $strataFolder = getInsituFolder($site_id, true);
-            $resultMoveStrataFiles = moveInsituFiles($upload_target_dir, $strataFolder);
-            if (!$resultMoveStrataFiles) {
-                $strataMsg ="Cannot move strata files from " . $upload_target_dir . " to " . $strataFolder . "!\\n";
-            } else {
-                $strataMsg = "Strata file successfuly uploaded!\\n";
-            }
-        } else {
-            $errMsg = $upload ['message'];
-            if ($validationMsg != '') {
-                $errMsg = $validationMsg;
-            }
-            $strataMsg = "Error uploading strata file. Error was: " . $errMsg . "\\n";
-        }
-    }
+
+    // execute the commands for successfuly uploaded files 
+    postProcessUploadedFiles();
 
     if ($status == "OK") {
         updateSite($site_id, $site_enabled);
@@ -493,11 +996,22 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 
         $message = "Your site has been successfully modified!";
     }
-        if ($insituMsg != '' || $strataMsg != '') {
-            $message = $message . "\\nAlso:\\n";
+    if (isset($_REQUEST ['upload_msgs']) && ($_REQUEST ['upload_msgs'] != "")) {
+        $allMsgs[] = json_encode($_REQUEST ['upload_msgs']); 
+    }
+    
+    if (count($allMsgs) > 0) {
+        $nonEmptyMsgs = 0;
+        foreach ($allMsgs as $msg) {
+            if (!empty($msg)) {
+                if ($nonEmptyMsgs == 0) {
+                    $message = $message . "\\nAlso:\\n";
+                }
+                $message = $message . json_encode($msg);
+                $nonEmptyMsgs++;
+            }
         }
-
-        $message = $message . $insituMsg . $strataMsg;
+    }
 
     $_SESSION['status'] =  $status; $_SESSION['message'] = $message;
 
@@ -624,6 +1138,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 
                     <!---------------------------- form edit sites ------------------------------->
                     <div class="add-edit-site" id="div_editsite" style="display: none;">
+                        <!--   onsubmit="return doUploadChangedFiles()" -->
                         <form enctype="multipart/form-data" id="siteform_edit" action="create_site.php" method="post">
                             <div class="row">
                                 <div class="col-md-1">
@@ -632,6 +1147,8 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                                         <input type="text" class="form-control" id="edit_sitename" name="edit_sitename" value="" readonly>
                                         <input type="hidden" class="form-control" id="edit_siteid" name="edit_siteid" value="">
                                         <input type="hidden" class="form-control" id="shortname" name="shortname" value="">
+                                        <input type="hidden" class="form-control" id="succ_up_files" name="succ_up_files" value="">
+                                        <input type="hidden" class="form-control" id="err_up_files" name="err_up_files" value="">
                                     </div>
                                 </div>
                             </div>
@@ -694,67 +1211,78 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 
                             <div class="container-fluid">
                                 <div class="panel-group config" id="accordion">
-                                    <div class="panel panel-default">
-                                        <div class="panel-heading">
-                                            <h4 class="panel-title">
-                                                <a data-toggle="collapse" data-parent="#accordion" href="#siteInsituDataAcc" id="siteInsituDataAccHref">Insitu data</a>
-                                            </h4>
-                                        </div>
+                                    <?php 
+                                        $uploadDescrs = getUploadFileDescriptorArray();
+                                        foreach ($uploadDescrs as $uploadDescr) { 
+                                    ?>  
+                                            <div class="panel panel-default">
+                                                <div class="panel-heading">
+                                                    <h4 class="panel-title">
+                                                        <a data-toggle="collapse" data-parent="#accordion" href="#site<?php echo $uploadDescr->id ?>DataAcc" 
+                                                           id="site<?php echo $uploadDescr->id ?>DataAccHref"><?php echo $uploadDescr->descr ?></a>
+                                                    </h4>
+                                                </div>
 
-                                        <div id="siteInsituDataAcc" class="panel-collapse collapse">
-                                            <div class="panel-body">
-                                                <!-- <div class="subgroup lai">
-                                                    <label class="control-label">In situ:</label> -->
-                                                    <div class="form-group form-group-sm">
-                                                        <label class="inputlabel" for="siteInsituData">Existing file:</label>
-                                                        <input type="text" class="form-control labelinput" id="siteInsituData" name="siteInsituData" value="" readonly>
-                                                    </div>
-                                                    <div class="form-group form-group-sm">
-                                                        <label class="inputlabel" for="siteInsituDataUpload">Upload file:</label>
-                                                        <input type="file" class="form-control labelinput" id="siteInsituDataUpload" name="siteInsituDataUpload" onchange="onNewFileSelected('siteInsituDataAccHref');">
-                                                    </div>
-                                                <!-- </div>   -->
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="panel panel-default">
-                                        <div class="panel-heading">
-                                            <h4 class="panel-title">
-                                                <a data-toggle="collapse" data-parent="#accordion" href="#siteStrataDataAcc" id="siteStrataDataAccHref">Strata data</a>
-                                            </h4>
-                                        </div>
-
-                                        <div id="siteStrataDataAcc" class="panel-collapse collapse">
-                                            <div class="panel-body">
-                                                <!-- <div class="subgroup lai">
-                                                    <label class="control-label">In situ:</label>-->
-                                                    <div class="form-group form-group-sm">
-                                                        <label class="inputlabel" for="siteStrataData">Existing file:</label>
-                                                        <input type="text" class="form-control labelinput" id="siteStrataData" name="siteStrataData" value="" readonly>
-                                                    </div>
-                                                    <div class="form-group form-group-sm">
-                                                        <label class="inputlabel" for="siteStrataNewData">Upload file:</label>
-                                                        <input type="file" class="form-control labelinput" id="siteStrataNewData" name="siteStrataNewData" onchange="onNewFileSelected('siteStrataDataAccHref');">
-                                                        <!-- $(this).trigger('blur') -->
-
-                                                        <!--
-                                                        <input type="text" class="form-control labelinput2" id="siteStrataNewData" name="siteStrataNewData" readonly>
-                                                        <input type="file" id="selectedFile" style="display: none;" />
-                                                        <input type="button" class="labelinputbutton" value="Browse..." onclick="document.getElementById('selectedFile').click();" />
+                                                <div id="site<?php echo $uploadDescr->id ?>DataAcc" class="panel-collapse collapse">
+                                                    <div class="panel-body">
+                                                        <?php 
+                                                            if ($uploadDescr->addParams) {
+                                                                $paramsJson = json_decode($uploadDescr->addParams);
+                                                                foreach ($paramsJson as $param) { 
+                                                                    $paramId = $uploadDescr->id . $param->id;
+                                                            ?> 
+                                                                    <div class="form-group form-group-sm">
+                                                                        <label class="inputlabel" for="postUploadCmdParam<?php echo $paramId ?>"><?php echo $param->label?> </label>
+                                                                     <?php if ($param->type === "select") { ?> 
+                                                                        <select class="form-control labelinput" name="postUploadCmdParam<?php echo $paramId ?>" id="postUploadCmdParam<?php echo $paramId ?>">
+                                                                            <?php foreach ($param->options as $opt) { ?> 
+                                                                                 <option value="<?php echo $opt->id ?>"><?php echo $opt->label ?></option>
+                                                                            <?php } ?>
+                                                                        </select>
+                                                                     <?php } else if ($param->type === "text") {?> 
+                                                                        <input type="text" class="form-control labelinput" name="postUploadCmdParam<?php echo $paramId ?>" id="postUploadCmdParam<?php echo $paramId ?>">
+                                                                     <?php } ?>
+                                                                    </div>
+                                                              <?php 
+                                                                }
+                                                            } ?>       
+                                                    
+                                                        <div class="form-group form-group-sm">
+                                                            <label class="inputlabel" for="site<?php echo $uploadDescr->id ?>Data">Existing file:</label>
+                                                            <input type="text" class="form-control labelinput" id="site<?php echo $uploadDescr->id ?>Data" value="" readonly>
+                                                        </div>
+                                                        <div class="form-group form-group-sm">
+                                                            <label class="inputlabel" for="container<?php echo $uploadDescr->id ?>">Upload file:</label>
+                                                            <!-- ORIGINAL CODE
+                                                            <input type="file" accept="<?php echo $uploadDescr->expectedUploadFileExt ?>" class="form-control labelinput" 
+                                                                   id="site<?php echo $uploadDescr->id ?>DataUpload" name="site<?php echo $uploadDescr->id ?>DataUpload" 
+                                                                   onchange="onNewFileSelected('site<?php echo $uploadDescr->id ?>DataAccHref');">
+                                                            -->
+                                                            
+                                                            <div id="container<?php echo $uploadDescr->id ?>">
+                                                                <input type="text" style="padding-left:90px; height:25px;width:230px;border: 1px solid #000;margin-top: 5px;" id="filelist<?php echo $uploadDescr->id ?>" 
+                                                                        value="" onchange="onNewFileSelected('site<?php echo $uploadDescr->id ?>DataAccHref');" placeholder = "No file selected." readonly >
+                                                                 <div style="display:inline-block;margin-left:-325px;cursor:pointer;"><input type="button" id="pickfiles<?php echo $uploadDescr->id ?>" value="Browse ..."> </div>
+                                                            </div>
+                                                        </div>
+                                                        <!-- 
+                                                        <div style="padding-left: 300px">
+                                                            <input type="button" id="uploadfile<?php echo $uploadDescr->id ?>" value="Upload" style="height:25px;width:75px;" 
+                                                                    onclick="doUploadFile('<?php echo $uploadDescr->id ?>');">
+                                                        </div>
                                                         -->
-
+                                                        
                                                     </div>
-
-                                                <!-- </div>   -->
+                                                </div>
                                             </div>
-                                        </div>
-                                    </div>
+                                    <?php } ?>                                                
                                 </div>
                             </div>
                             <div class="submit-buttons">
                                 <input class="delete-btn" name="delete_site" type="button" value="Delete Site" onclick="formDeleteSite()">
-                                <input class="add-edit-btn" name="edit_site" type="submit" value="Save Site">
+                                <input class="add-edit-btn" name="edit_site" id="edit_site_submit_btn" type="submit" value="Save Site">
                                 <input class="add-edit-btn" name="abort_edit" type="button" value="Abort" onclick="abortEditAdd('edit')">
+                                <input type="hidden" name="upload_msgs" id="upload_msgs" value=""/>
                             </div>
                         </form>
                     </div>
@@ -786,43 +1314,25 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
                             $jsonArr = json_decode($restResult, true);
                             $userSites = (isset($_SESSION['siteId']) && sizeof($_SESSION['siteId'])>0)? $_SESSION['siteId']:array();
                             if(is_array($jsonArr)){
+                                $uploadDescrs = getUploadFileDescriptorArray();
 	                            foreach($jsonArr as $site) {                              
 	                                if((sizeof($userSites)>0 && in_array($site['id'], $userSites)) || (sizeof($userSites) == 0 && $_SESSION['isAdmin'])){
 	                                    $siteId        = $site['id'];
 	                                    $siteName      = $site['name'];
 	                                    $shortName     = $site['shortName'];
 	                                    $site_enabled  = $site['enabled'];
-	                                    $siteInsituFile = getInsituFileName($shortName, false);
-	                                    $siteStrataFile = getInsituFileName($shortName, true);
+                                        $existingUploadedFiles = array();
+                                        foreach ($uploadDescrs as $uploadDescr) { 
+                                            $existingUploadedFiles[] = getExistingUploadedFileName($shortName, $uploadDescr);
+                                        }
 	                                    $siteL8Enabled = (getSatelliteEnableStatus($siteId, 2) == "false" ? "" : "checked");  // only L8 for now
-	                               
-
-                            //}
-                            //
-                            //
-                            //$result = "";
-                            //$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-                            //if (empty($_SESSION['siteId'])) {
-                            //    $sql_select = "SELECT * FROM sp_get_sites(null)";
-                            //    $result = pg_query_params ( $db, $sql_select, array () ) or die ( "Could not execute." );
-                            //} else {
-                            //    $sql_select = "SELECT * FROM sp_get_sites($1)";
-                            //    $result = pg_query_params ( $db, $sql_select, array($_SESSION['siteId']) ) or die ( "Could not execute." );
-                            //}
-                            //while ( $row = pg_fetch_row ( $result ) ) {
-                            //    $siteId        = $row[0];
-                            //    $siteName      = $row[1];
-                            //    $shortName     = $row[2];
-                            //    $site_enabled  =($row[3] == "t") ? true : false;
-                            //    $siteInsituFile = getInsituFileName($shortName, false);
-                            //    $siteStrataFile = getInsituFileName($shortName, true);
                                 ?>
                                 <tr data-id="<?= $siteId ?>">
                                     <td><?= $siteName ?></td>
                                     <td><?= $shortName ?></td>
                                     <td class="seasons"></td>
-                                    <td class="link"><a onclick='formEditSite(<?= $siteId ?>,"<?= $siteName ?>","<?= $shortName ?>",<?= $site_enabled ? "true" : "false" ?>, "<?= $siteInsituFile ?>", "<?= $siteStrataFile ?>",
-                                    "<?= $siteL8Enabled ?>")'>Edit</a></td>
+                                    <td class="link"><a onclick='formEditSite(<?= $siteId ?>,"<?= $siteName ?>","<?= $shortName ?>",<?= $site_enabled ? "true" : "false" ?>,
+                                    <?= json_encode($existingUploadedFiles) ?>,  "<?= $siteL8Enabled ?>")'>Edit</a></td>
                                     <td><input type="checkbox" name="enabled-checkbox"<?= $site_enabled ? "checked" : "" ?>></td>
                                 </tr>
                         <?php  } } } } ?>
@@ -847,6 +1357,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 <!-- includes for validate form -->
 <script src="libraries/jquery-validate/jquery.validate.min.js"></script>
 <script src="libraries/jquery-validate/additional-methods.min.js"></script>
+<script src="libraries/plupload-2.3.6/js/plupload.full.min.js"></script>
 
 <script type="text/javascript">
 $(document).ready( function() {
@@ -1013,13 +1524,21 @@ $(document).ready( function() {
     			$(".invalidTilesL8").text("");
     			}
 			if(tilesS2NotValid=='' && tilesL8NotValid==''){
-				
-                $.ajax({
-                    url: $(form).attr('action'),
-                    type: $(form).attr('method'),
-                    data: new FormData(form),
-                    success: function(response) {}
-                });
+                var pendingUploads = getNumberOfPendingUploads();
+                if (pendingUploads == 0) {
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        type: $(form).attr('method'),
+                        data: new FormData(form),
+                        success: function(response) {}
+                    });
+                } else {
+                    doUploadChangedFiles(function() {
+                        // resubmit form, but now without any files upload
+                        var saveSiteBtn = document.getElementById("edit_site_submit_btn");
+                        saveSiteBtn.click();
+                    });
+                }
 			}
         },
         // set this class to error-labels to indicate valid fields
@@ -1179,9 +1698,17 @@ function formatDateFromJSonObj(jsonObj) {
 }
 
 function onNewFileSelected(id) {
-    if (document.getElementById(id).innerHTML.indexOf("<font color=\"red\"> (changed)</font>") == -1) {
-        document.getElementById(id).innerHTML = document.getElementById(id).innerHTML + "<font color=\"red\"> (changed)</font>";
-    }
+    var str = document.getElementById(id).innerHTML;
+    var modifIdx = str.indexOf('<font color');
+    document.getElementById(id).innerHTML = str.substring(0, modifIdx > 0 ? modifIdx : str.length);
+    document.getElementById(id).innerHTML = document.getElementById(id).innerHTML + "<font color=\"red\"> (changed)</font>";
+}
+
+function onFileUploadEventStatus(id, msg) {
+    var str = document.getElementById(id).innerHTML;
+    var modifIdx = str.indexOf('<font color');
+    document.getElementById(id).innerHTML = str.substring(0, modifIdx > 0 ? modifIdx : str.length);
+    document.getElementById(id).innerHTML = document.getElementById(id).innerHTML + "<font color=\"red\"> " + msg + "</font>";
 }
 
 // Open add site form
@@ -1279,16 +1806,24 @@ function formDeleteSite(){
 //}
 
 // Open edit site form
-function formEditSite(id, name, short_name, site_enabled, siteInsituFile, siteStrataFile, l8Enabled) {
+function formEditSite(id, name, short_name, site_enabled, existingUploadedFiles, l8Enabled) {
     // set values for all edited fields
-    removeAppendedColoredText("siteInsituDataAccHref");
-    removeAppendedColoredText("siteStrataDataAccHref");
+<?php    
+    $uploadDescrs = getUploadFileDescriptorArray();
+    foreach ($uploadDescrs as $uploadDescr) { 
+?>      removeAppendedColoredText("site<?php echo $uploadDescr->id ?>DataAccHref");
+<?php         
+    }?>    
 
     $("#edit_sitename").val(name);
     $("#edit_siteid").val(id);
     $("#shortname").val(short_name);
-    $("#siteInsituData").val(siteInsituFile);
-    $("#siteStrataData").val(siteStrataFile);
+<?php    
+    $upDescrs = array_values($uploadDescrs);
+    foreach ($upDescrs as $index => $value) { 
+?>      $("#site<?php echo $value->id ?>Data").val(existingUploadedFiles[<?php echo $index; ?>]);  
+<?php    
+    }?>    
     $("#edit_enabled").bootstrapSwitch('state', site_enabled);
     $("#accordion").collapse('hide');
 
@@ -1432,6 +1967,267 @@ function enableDisable(elem,site_enabled){
 		}
 
 }
+
+function createUploaders() {
+    var uploaders = new Array();
+<?php    
+    $uploadDescrs = getUploadFileDescriptorArray();
+    foreach ($uploadDescrs as $uploadDescr) { 
+?>      var uploader = createUploader("<?php echo $uploadDescr->id ?>", "<?php echo $uploadDescr->expectedUploadFileExt ?>");
+<?php
+        if ($uploadDescr->addParams) {
+            $jsonParams = json_decode($uploadDescr->addParams);
+            foreach ($jsonParams as $param) { 
+                $paramId = $uploadDescr->id . $param->id;
+?>      uploader.addPostUploadCmdParam("postUploadCmdParam<?php echo $paramId?>"); <?php
+            }
+        }    
+?>  
+        uploaders.push(uploader);
+<?php         
+    }?>        
+    return uploaders;
+}
+
+class UploaderWrapper {
+    constructor(id, uploader) {
+        this._id = id;
+        this._uploader = uploader;
+        this._postUploadCmdParams = new Array();
+    }
+    get id() {
+        return this._id;
+    }        
+    get uploader() {
+        return this._uploader;
+    }    
+    
+    addPostUploadCmdParam(paramId) {
+        this._postUploadCmdParams.push(paramId);
+    }
+    
+    get postUploadCmdParams() {
+        return this._postUploadCmdParams;
+    }
+}
+
+function checkAndHandleErrorMsg(up, file, info, isChunk) {
+    var errIdx = info.response.indexOf("{\"upload_response\" : {\"error\" : {\"code\":");
+    if (errIdx >= 0) {
+        var errMsg = info.response.substring(errIdx);
+        var jsonObj = JSON.parse(errMsg);
+        file.status = plupload.FAILED;
+        //up.trigger('UploadProgress', file);
+        up.trigger('QueueChanged');
+        up.trigger('Error', {
+            code: jsonObj.upload_response.error.code,
+            message: ((isChunk ? 'Upload error for chunk of file ' : 'Upload error for file ') + file.name + " : "  + jsonObj.upload_response.error.message),
+            file: file,
+            status: 0
+        });
+        // In this case, the state changed is not triggered so we need to trigger it manually
+        if (isChunk) {
+            up.trigger('StateChanged');
+        }
+        return true;
+    }
+    return false;
+}
+
+function addKeyValToJsonArr(curJson, key, value) {
+    if (curJson == "") {
+        curJson = "[]";
+    }
+    var jsonObj = JSON.parse(curJson);
+    jsonObj.push("{\"key\":\"" + key + "\", \"value\":\"" + value + "\"}");
+    return JSON.stringify(jsonObj);
+}
+
+function createUploader(id, fileExt) {
+    if (fileExt.startsWith(".")) {
+        fileExt = fileExt.slice(1);
+    }
+    var uploader = new plupload.Uploader({
+        runtimes : 'html5,flash,silverlight,html4',
+
+        browse_button : 'pickfiles'  + id, // you can pass an id...
+        container: document.getElementById('container' + id), // ... or DOM Element itself
+         
+        url : "/create_site.php",
+        
+        chunk_size : '10mb',
+         
+        filters : {
+            //max_file_size : '10mb',
+            mime_types: [
+                //{title : "Image files", extensions : "jpg,gif,png"},
+                {title : "Files", extensions : fileExt}
+            ]
+        },
+         // Flash settings
+        flash_swf_url : '/plupload/js/Moxie.swf',
+         // Silverlight settings
+        silverlight_xap_url : '/plupload/js/Moxie.xap',
+        multipart_params : {
+                "upload_file" : "1"
+        },        
+     
+        init: {
+            PostInit: function() {
+                $("#filelist"  + id).val('');
+            },
+     
+            FilesAdded: function(up, files) {
+                if(uploader.files.length > 1){
+                    uploader.removeFile(uploader.files[0]);
+                    $("#filelist" + id).val('');
+                }
+                plupload.each(files, function(file) {
+                    $("#filelist" + id).val(file.name + ' (' + plupload.formatSize(file.size) + ')').change();
+                });
+            },
+     
+            UploadProgress: function(up, file) {
+                onFileUploadEventStatus("site" + id + "DataAccHref", file.percent + " %");
+            },
+            
+            FileUploaded: function(up, file, info) {
+                // Called when file has finished uploading and if the upload was a success by checking also the result
+                if (!checkAndHandleErrorMsg(up, file, info, false)) {
+                    onFileUploadEventStatus("site" + id + "DataAccHref", "Upload finished successfully!");
+                    $("#succ_up_files").val(addKeyValToJsonArr($("#succ_up_files").val(), id, file.name));
+                    
+                }
+            },
+ 
+            ChunkUploaded: function(up, file, info) {
+                if (!checkAndHandleErrorMsg(up, file, info, true)) {
+                    // Called when file chunk has finished uploading
+                    var n = info.response.indexOf("{\"upload_response\" : {");
+                    var jsonStr = info.response.substring(n);                
+                    var jsonObj = JSON.parse(jsonStr);
+                    uploader.settings.multipart_params.upload_target_dir_name = jsonObj.upload_response.upload_target_dir_name;
+                }
+            },            
+     
+            Error: function(up, err) {
+                onFileUploadEventStatus("site" + id + "DataAccHref", "Error #" + err.code + ": " + err.message);
+                var curMsg = $("#upload_msgs").val();
+                var str = curMsg + "\n" + err.message;
+                $("#upload_msgs").val(str);
+                $("#err_up_files").val(addKeyValToJsonArr($("#err_up_files").val(), id, ""));
+            }
+        }
+    });
+     
+    uploader.init();
+    return new UploaderWrapper(id, uploader);
+}
+
+function doUploadFile(id) {
+    var uploader = null;
+    var upWrp = getUploaderWrp(id);
+    if (upWrp != null) {
+        var uploader = upWrp.uploader;
+        uploader.settings.multipart_params.site_shortname = $("#shortname").val();
+        uploader.settings.multipart_params.upload_desc_id = id;
+        // fill the upload parameters if supported in the upload descriptor
+        var cmdsParams = upWrp.postUploadCmdParams;
+        for (var i = 0; i<cmdsParams.length; i++) {
+            var e = document.getElementById(cmdsParams[i]);
+            var obj = {};
+            var key = cmdsParams[i];        
+            var selOpt = null;
+            if (e.tagName.toUpperCase() === "SELECT") {
+                selOpt = e.options[e.selectedIndex].value;
+            } else {
+                // Text only supported now
+                selOpt = e.value;
+            }
+            obj[key] = selOpt;
+            $.extend(uploader.settings.multipart_params, obj);
+        }
+        uploader.start();
+    }
+    
+    return uploader;
+}
+
+function isUploaderDoneForAllUploads(uploader) {
+    if( (uploader.files.length > 0) &&
+        (uploader.files.length != (uploader.total.uploaded + uploader.total.failed))) {
+        return false;
+    }
+    return true;
+}
+
+function getNumberOfPendingUploads() {
+    var cntSendingUploaders = 0;
+    var len = uploaders.length;
+    for(var idx = 0; idx < len; idx++) {
+        var id = uploaders[idx].id;
+        var uploader = uploaders[idx].uploader;
+        var str = $("#filelist" + id).val();
+        if ((str != "") && !isUploaderDoneForAllUploads(uploader)) {
+            cntSendingUploaders++;
+        }
+    }
+    return cntSendingUploaders;
+}
+
+function doUploadChangedFiles(callback) {
+    // get the modified files
+    var cntSendingUploaders = 0;
+    
+    var len = uploaders.length;
+    for(var idx = 0; idx < len; idx++) {
+        var id = uploaders[idx].id;
+        var uploader = uploaders[idx].uploader;
+        var str = $("#filelist" + id).val();
+        if ((str != "") && !isUploaderDoneForAllUploads(uploader)) {
+            cntSendingUploaders++;
+            uploader = doUploadFile(id);
+            uploader.bind('StateChanged', function() {
+                var allFinished = true;
+                for (var i = 0; i < len; i++) {
+                    if (!isUploaderDoneForAllUploads(uploader)) {
+                        allFinished = false;
+                    }
+                }
+                if (allFinished == true) {
+                    callback();
+                }
+            });                
+        }
+    }
+    // if no uploading file selected, then call the callback anyway
+    if (cntSendingUploaders == 0) {
+        callback();
+    }
+        
+    return true;
+}
+
+function getUploaderWrp(id) {
+    var len = uploaders.length;
+    for (var i = 0; i < len; i++) {
+        if (uploaders[i].id == id) {
+            return uploaders[i];
+        }
+    };
+    return null;
+}
+
+function getUploader(id) {
+    var upWrp = getUploaderWrp(id);
+    if (upWrp != null) {
+        return upWrp.uploader;
+    }
+    return null;
+}
+
+var uploaders = createUploaders();
+
 </script>
 
 <?php include 'ms_foot.php'; ?>
