@@ -107,7 +107,42 @@ function getUploadFileDescriptorArray() {
         $descr->uploadRelPath = "";                 // not really necessary to be explicitely set
         $descr->expectedUploadFileExt = ".txt";
         $descr->fileExt = "txt";
+        $uploadFileDescriptorArray[] = $descr;
+        
+        $descr = new UploadFileDescriptor();
+        $descr->id = "L4cCCPractices";
+        $descr->descr = "L4C CC practices infos";
+        $descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";        
+        $descr->uploadRelPath = "CC";                 
+        $descr->expectedUploadFileExt = ".csv";
+        $descr->fileExt = "csv";
+        $uploadFileDescriptorArray[] = $descr;
 
+        $descr = new UploadFileDescriptor();
+        $descr->id = "L4cFallowPractices";
+        $descr->descr = "L4C Fallow practices infos";
+        $descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";        
+        $descr->uploadRelPath = "Fallow";                 
+        $descr->expectedUploadFileExt = ".csv";
+        $descr->fileExt = "csv";
+        $uploadFileDescriptorArray[] = $descr;
+
+        $descr = new UploadFileDescriptor();
+        $descr->id = "L4cNFCPractices";
+        $descr->descr = "L4C NFC practices infos";
+        $descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";        
+        $descr->uploadRelPath = "NFC";                 
+        $descr->expectedUploadFileExt = ".csv";
+        $descr->fileExt = "csv";
+        $uploadFileDescriptorArray[] = $descr;
+
+        $descr = new UploadFileDescriptor();
+        $descr->id = "L4cNAPractices";
+        $descr->descr = "L4C NA practices infos";
+        $descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";        
+        $descr->uploadRelPath = "NA";                 
+        $descr->expectedUploadFileExt = ".csv";
+        $descr->fileExt = "csv";
         $uploadFileDescriptorArray[] = $descr;
     }
     return $uploadFileDescriptorArray;
