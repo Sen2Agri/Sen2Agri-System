@@ -18,6 +18,7 @@ class PostUploadCmd {
     public $triggerUpDescrIds;
     public $cmd;
     public $params;
+    public $isAsyncCmd;
 }
 
 function getUploadFileDescriptorArray() {
@@ -107,8 +108,25 @@ function getUploadFileDescriptorArray() {
         $descr->uploadRelPath = "";                 // not really necessary to be explicitely set
         $descr->expectedUploadFileExt = ".txt";
         $descr->fileExt = "txt";
+        $descr->addParams = '[
+                        {"id":"practices", 
+                         "label":"Practices:", 
+                         "type":"text",
+                         "required":1
+                        }, 
+                        {"id":"year", 
+                         "label":"Year:", 
+                         "type":"text",
+                         "required":1
+                        },
+                        {"id":"country", 
+                         "label":"Country:", 
+                         "type":"text",
+                         "required":1
+                        }
+                    ]';        
         $uploadFileDescriptorArray[] = $descr;
-        
+
         $descr = new UploadFileDescriptor();
         $descr->id = "L4cCCPractices";
         $descr->descr = "L4C CC practices infos";
@@ -144,6 +162,41 @@ function getUploadFileDescriptorArray() {
         $descr->expectedUploadFileExt = ".csv";
         $descr->fileExt = "csv";
         $uploadFileDescriptorArray[] = $descr;
+        
+
+        // TODO: remove this 
+//        $descr->addParams = '[
+//                        {"id":"importMode", 
+//                         "label":"Method:", 
+//                         "type":"select",
+//                         "required":1,
+//                         "options" : [{"id":"opt1", "label":"Update existing LPIS", "value" : "1"},
+//                                      {"id":"opt2", "label":"Remove existing LPIS", "value" : "2"}                                      
+//                                     ]
+//                        }, 
+//                        {"id":"year", 
+//                         "label":"Year:", 
+//                         "type":"text",
+//                         "required":0
+//                        },
+//                        {"id":"parcelIdCols", 
+//                         "label":"Parcel ID cols:", 
+//                         "type":"text",
+//                         "required":1
+//                        },
+//                        {"id":"holdingIdCols", 
+//                         "label":"Holding ID cols:", 
+//                         "type":"text",
+//                         "required":1
+//                        },
+//                        {"id":"cropCodeCols", 
+//                         "label":"Crop code cols:", 
+//                         "type":"text",
+//                         "required":1,
+//                         "tooltip":"Something"
+//                        }                           
+//                    ]';
+        // TODO: END remove this 
     }
     return $uploadFileDescriptorArray;
 }
@@ -154,9 +207,11 @@ function getPostUploadCmds() {
         
     } else {  
         $cmd = new PostUploadCmd();
+        $cmd->isAsyncCmd = 1;
         $cmd->triggerUpDescrIds = array();
         $cmd->triggerUpDescrIds[] = "Lpis";
         $cmd->triggerUpDescrIds[] = "lut";
+        //$cmd->triggerUpDescrIds[] = "L4cCfg";  // TODO: remove this -> it is just for testing
         $cmd->cmd = "data-preparation.py -s {site_shortname} {param2} {param3} {param4} {param5} {param6} {param7}";
         $cmd->params = '[
                             {"id":"param1", 
