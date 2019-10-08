@@ -782,7 +782,7 @@ while ( $row = pg_fetch_row ( $result ) ) {
 		};
 
 		initTree();
-
+	//# sourceURL=main.js
 	</script>
 
 <?php include "ms_foot.php" ?>

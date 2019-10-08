@@ -640,6 +640,7 @@ div.create-site table.table td{font-size:12px;text-align:left;padding:2px 4px;}
 div.create-site table.table th.seasons,
 div.create-site table.table td.seasons,
 div.create-site table.table td:last-child{text-align:center;}
+div.create-site table.table td.seasons{padding:0}
 div.create-site table.table tr td a{cursor:pointer;color:#009C00;font-size:1.1em;font-weight:700;cursor:pointer;text-decoration:underline;}
 div.create-site table.table tr td a:hover{color:#5CB85C;}
 div.create-site table.table tr.editing td a{color:white;}
@@ -807,7 +808,6 @@ input.add-edit-btn,
 /*
 fit
 */
-input.delete-btn,
 .config input[type="delete"] {
 	font-family:Arial,Helvetica,sans-serif;
 	border: 0px solid transparent;
