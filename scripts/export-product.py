@@ -122,6 +122,7 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
             ct."CT_conf_2"
         from {} lpis
         left outer join product_details_l4a ct on (ct."NewID", ct.product_id) = (lpis."NewID", {})
+        where not is_deleted
         """
     ).format(Identifier(lpis_table), Literal(product_id))
     query = query.as_string(conn)
@@ -139,9 +140,9 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
             lpis."Duplic",
             lpis."Overlap",
             lpis."Area_meters",
-            lpis."LC",
             lpis."S2Pix",
             lpis."S1Pix",
+            lut.lc as "LC",
             lut.ctnumdiv as "CTnumDIV",
             product_details_l4a."CT_decl",
             product_details_l4a."CT_pred_1",
@@ -149,8 +150,9 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
             product_details_l4a."CT_pred_2",
             product_details_l4a."CT_conf_2"
         from {} lpis
-        inner join {} lut on lut.ctnum = lpis."CTnum"
+        inner join {} lut using (ori_crop)
         left outer join product_details_l4a on (product_details_l4a."NewID", product_details_l4a.product_id) = (lpis."NewID", {})
+        where not is_deleted
         """
     ).format(Identifier(lpis_table), Identifier(lut_table), Literal(product_id))
     query = query.as_string(conn)
@@ -190,6 +192,9 @@ def export_agricultural_practices(conn, pg_path, product_id, lpis_table, path):
             """
             select
                 lpis.*,
+                lut.lc as "LC",
+                lut.ctnum as "CTnum",
+                lut.ct as "CT",
                 orig_id as "ORIG_ID",
                 country as "COUNTRY",
                 year as "YEAR",
@@ -223,9 +228,11 @@ def export_agricultural_practices(conn, pg_path, product_id, lpis_table, path):
                 p_s1_gaps as "P_S1GAPS"
             from product_details_l4c ap
             inner join {} lpis on lpis."NewID" = ap."NewID"
+            inner join {} lut using (ori_crop)
             where (ap.product_id, ap.practice_id) = ({}, {})
+              and not is_deleted
             """
-        ).format(Identifier(lpis_table), Literal(product_id), Literal(practice_id))
+        ).format(Identifier(lpis_table), Identifier(lut_table), Literal(product_id), Literal(practice_id))
         query = query.as_string(conn)
 
         practice_name = get_practice_name(practice_id)
