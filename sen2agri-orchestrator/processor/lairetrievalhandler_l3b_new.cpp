@@ -436,7 +436,7 @@ void LaiRetrievalHandlerL3BNew::HandleJobSubmittedImpl(EventProcessingContext &c
     // no products available from the scheduling ... just mark job as done
     if (ret == 0) {
         ctx.MarkJobFinished(event.jobId);
-        Logger::info(QStringLiteral("Scheduled job with id %1 for site %2 marked as done as no products are availabel for now to process").
+        Logger::info(QStringLiteral("Scheduled job with id %1 for site %2 marked as done as no products are available for now to process").
                      arg(event.jobId).arg(event.siteId));
         return;
     }
@@ -957,17 +957,18 @@ int LaiRetrievalHandlerL3BNew::UpdateJobSubmittedParamsFromSchedReq(EventProcess
             ProcessorHandlerHelper::GetParameterValueAsString(parameters, "end_date", strEndDate) &&
             parameters.contains("input_products")) {
         if (!parameters.contains("input_products") || parameters["input_products"].toArray().size() == 0) {
-            const auto &startDate = QDateTime::fromString(strStartDate, "yyyyMMdd");
-            const auto &endDate = QDateTime::fromString(strEndDate, "yyyyMMdd");
+            const auto &startDate = GetLocalDateTime(strStartDate);
+            const auto &endDate = GetLocalDateTime(strEndDate);
+
             QString strSeasonStartDate, strSeasonEndDate;
             QDateTime seasonStartDate, seasonEndDate;
             if (ProcessorHandlerHelper::GetParameterValueAsString(parameters, "season_start_date", strSeasonStartDate) &&
                     ProcessorHandlerHelper::GetParameterValueAsString(parameters, "season_end_date", strSeasonEndDate)) {
-                seasonStartDate = QDateTime::fromString(strSeasonStartDate, "yyyyMMdd");
-                seasonEndDate = QDateTime::fromString(strSeasonEndDate, "yyyyMMdd");
+                seasonStartDate = GetLocalDateTime(strSeasonStartDate);
+                seasonEndDate = GetLocalDateTime(strSeasonEndDate);
             }
             Logger::info(QStringLiteral("L3B Scheduled job received for siteId = %1, startDate=%2, endDate=%3").
-                         arg(event.siteId).arg(startDate.toString("yyyyMMdd")).arg(endDate.toString("yyyyMMdd")));
+                         arg(event.siteId).arg(startDate.toString("yyyyMMddTHHmmss")).arg(endDate.toString("yyyyMMddTHHmmss")));
             QJsonArray inputProductsArr;
             const ProductList &list  = GetL2AProductsNotProcessed(ctx, event.siteId, startDate, endDate);
             // we consider only products in the current season
@@ -1000,11 +1001,18 @@ ProductList LaiRetrievalHandlerL3BNew::GetL2AProductsNotProcessed(EventProcessin
     QStringList fullL2APathsFromL3Bs;
     Logger::info("Extracting L2A from DB...");
     const QStringList &l2aRelPathsFromDb = GetL2ARelPathsFromDB(ctx, siteId, startDate, endDate, fullL2APaths, l2aProducts);
-    qDebug() << "Extracting L2A from DB...DONE! ";
+    Logger::info("Extracting L2A from DB...DONE! ");
+    for (const QString &relPath: l2aRelPathsFromDb) {
+        Logger::info(QStringLiteral("  ==> DB L2A: %1").arg(relPath));
+    }
     Logger::info(QStringLiteral("Extracted a number of %1 L2A products from DB. Extracting the L2A from L3B products ...").arg(l2aRelPathsFromDb.size()));
     // Get the relative paths of the products from the L3B products
     const QStringList &l2aRelPathsFromL3B = GetL2ARelPathsFromProcessedL3Bs(ctx, siteId, startDate, endDate, fullL2APathsFromL3Bs);
     Logger::info(QStringLiteral("Extracted a number of %1 L2A products from the L3B products").arg(l2aRelPathsFromL3B.size()));
+    for (const QString &relPath: l2aRelPathsFromL3B) {
+        Logger::info(QStringLiteral("  ==> L3B L2A: %1").arg(relPath));
+    }
+
     QStringList missingPrdsPaths;
     ProductList missingPrds;
     for(int i = 0; i < l2aRelPathsFromDb.size(); i++) {
@@ -1014,6 +1022,12 @@ ProductList LaiRetrievalHandlerL3BNew::GetL2AProductsNotProcessed(EventProcessin
         }
     }
     Logger::info(QStringLiteral("Found a number of %1 L2A products not processed in L3B").arg(missingPrds.size()));
+    if (missingPrds.size() == 0) {
+        return newL2APrdsToProcess;
+    }
+    for (const Product &prd: missingPrds) {
+        Logger::info(QStringLiteral("  ==> Missing L2A from L3B: %1").arg(prd.fullPath));
+    }
 
     const std::map<QString, QString> &mapCfg = ctx.GetConfigurationParameters(PRODUCTS_LOCATION_CFG_KEY);
     std::map<QString, QString>::const_iterator it = mapCfg.find(PRODUCTS_LOCATION_CFG_KEY);
@@ -1027,47 +1041,46 @@ ProductList LaiRetrievalHandlerL3BNew::GetL2AProductsNotProcessed(EventProcessin
     fileParentPath = fileParentPath.replace("{processor}", processorDescr.shortName);
     const QString &filePath = QDir::cleanPath(fileParentPath + QDir::separator() + "current_processing_l3b.txt");
 
-    if (filePath.size() > 0) {
-        QDir().mkpath(QFileInfo(filePath).absolutePath());
-        QFile file( filePath );
-        // First read all the entries in the file to see what are the products that are currently processing
+    QDir().mkpath(QFileInfo(filePath).absolutePath());
+    QFile file( filePath );
+    // First read all the entries in the file to see what are the products that are currently processing
 
-        QStringList curProcPrds;
-        if (file.open(QIODevice::ReadOnly))
-        {
-           QTextStream in(&file);
-           while (!in.atEnd())
-           {
-              curProcPrds.append(in.readLine());
-           }
-           file.close();
-        }
-        if (curProcPrds.size() > 0) {
-            // remove already processed L2A products from this file
-            for(const QString &l2aRelPath: l2aRelPathsFromL3B) {
-                curProcPrds.removeAll(l2aRelPath);
-            }
-        }
-        // add the products that will be processed next
-        for (int i = 0; i<missingPrdsPaths.size(); i++) {
-            const QString &l2aRelPath =  missingPrdsPaths[i];
-            if (!curProcPrds.contains(l2aRelPath)) {
-                curProcPrds.append(l2aRelPath);
-                newRelL2APathsToProcess.append(l2aRelPath);
-                newL2APrdsToProcess.append(missingPrds[i]);
-            }
-            // else, if the product was already in this list, then it means it was already scheduled for processing
-            // by another schedule operation
-        }
-
-        if ( file.open(QIODevice::ReadWrite | QFile::Truncate) )
-        {
-            QTextStream stream( &file );
-            for (const QString &prdPath: curProcPrds) {
-                stream << prdPath << endl;
-            }
+    QStringList curProcPrds;
+    if (file.open(QIODevice::ReadOnly))
+    {
+       QTextStream in(&file);
+       while (!in.atEnd())
+       {
+          curProcPrds.append(in.readLine());
+       }
+       file.close();
+    }
+    if (curProcPrds.size() > 0) {
+        // remove already processed L2A products from this file
+        for(const QString &l2aRelPath: l2aRelPathsFromL3B) {
+            curProcPrds.removeAll(l2aRelPath);
         }
     }
+    // add the products that will be processed next
+    for (int i = 0; i<missingPrdsPaths.size(); i++) {
+        const QString &l2aRelPath =  missingPrdsPaths[i];
+        if (!curProcPrds.contains(l2aRelPath)) {
+            curProcPrds.append(l2aRelPath);
+            newRelL2APathsToProcess.append(l2aRelPath);
+            newL2APrdsToProcess.append(missingPrds[i]);
+        }
+        // else, if the product was already in this list, then it means it was already scheduled for processing
+        // by another schedule operation
+    }
+
+    if ( file.open(QIODevice::ReadWrite | QFile::Truncate) )
+    {
+        QTextStream stream( &file );
+        for (const QString &prdPath: curProcPrds) {
+            stream << prdPath << endl;
+        }
+    }
+
     Logger::info(QStringLiteral("A number of %1 L2A products needs to be processed in L3B after checking already launched products").
                  arg(newL2APrdsToProcess.size()));
     return newL2APrdsToProcess;
@@ -1103,13 +1116,14 @@ QStringList LaiRetrievalHandlerL3BNew::GetL2ARelPathsFromProcessedL3Bs(EventProc
                                                                        const QDateTime &startDate, const QDateTime &endDate,
                                                                        QStringList &retFullPaths) {
     // Get the products from the L3B products
-    qDebug() << "Extracting L3B from DB... ";
+    Logger::info(QStringLiteral("Extracting L3B from DB... "));
     const ProductList &l3bPrds = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
-    qDebug() << "Extracting L3B from DB...DONE!";
+    Logger::info(QStringLiteral("Extracting L3B from DB...DONE"));
     // Now search in the IPP XML files from each L3B product the L2A products that genetated it
     QStringList l2aRelPathsFromL3B;
-    qDebug() << "Extracting L2A from L3B...!";
+    Logger::info(QStringLiteral("Extracting L2A from L3B...!"));
     for(const Product &prd: l3bPrds) {
+        Logger::info(QStringLiteral("  ==> L3B: %1").arg(prd.fullPath));
         const QStringList &l2aSrcPrds = GetL3BSourceL2APrdsPaths(prd.fullPath);
         // we can have the situation when the L2A products were moved so they are now in another location
         for(const QString &l2aSrcPrd: l2aSrcPrds) {
@@ -1133,7 +1147,7 @@ QStringList LaiRetrievalHandlerL3BNew::GetL2ARelPathsFromProcessedL3Bs(EventProc
             }
         }
     }
-    qDebug() << "Extracting L2A from L3B...DONE!";
+    Logger::info(QStringLiteral("Extracting L2A from L3B...DONE!"));
     return  l2aRelPathsFromL3B;
 }
 
@@ -1177,4 +1191,14 @@ QStringList LaiRetrievalHandlerL3BNew::GetL3BSourceL2APrdsPaths(const QString &p
     }
 
     return retPrdsList;
+}
+
+QDateTime LaiRetrievalHandlerL3BNew::GetLocalDateTime(const QString &strTime) {
+    QDateTime dateTime = QDateTime::fromString(strTime, "yyyyMMdd");
+    dateTime.setTimeSpec(Qt::UTC); // mark the timestamp as UTC (but don't convert it)
+    dateTime = dateTime.toLocalTime();
+    if (dateTime.isDaylightTime()) {
+        dateTime = dateTime.addSecs(-3600);
+    }
+    return dateTime;
 }

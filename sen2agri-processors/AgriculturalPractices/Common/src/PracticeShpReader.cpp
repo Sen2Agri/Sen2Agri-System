@@ -1,7 +1,7 @@
 #include "PracticeShpReader.h"
 #include "otbOGRDataSourceWrapper.h"
 
-bool PracticeShpReader::ExtractFeatures(std::function<bool (const FeatureDescription&)> fnc)
+bool PracticeShpReader::ExtractFeatures(std::function<bool (const FeatureDescription&, void *payload)> fnc, void *payload)
 {
     otb::ogr::DataSource::Pointer source = otb::ogr::DataSource::New(
         this->m_source, otb::ogr::DataSource::Modes::Read);
@@ -13,7 +13,7 @@ bool PracticeShpReader::ExtractFeatures(std::function<bool (const FeatureDescrip
         {
             OgrFeatureDescription ftDescr;
             ftDescr.featIt = featIt;
-            fnc(ftDescr);
+            fnc(ftDescr, payload);
         }
     }
     return true;

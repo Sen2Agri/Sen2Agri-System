@@ -70,6 +70,127 @@ class Config(object):
 #            self.tiles_filter = [tile.strip() for tile in args.tiles_filter.split(',')]
 #        print ("Tiles filter is : {}".format(self.tiles_filter))
 
+class RadarProduct(object):
+    def __init__(self, dt, orbit_type_id, polarization, radar_product_type, path):
+        self.orbit_type_id = orbit_type_id
+        self.polarization = polarization
+        self.radar_product_type = radar_product_type
+        self.path = path
+
+        (year, week, _) = dt.isocalendar()
+        self.year = year
+        self.week = week
+
+class NdviProduct(object):
+    def __init__(self, dt, tile_id, path):
+        self.tile_id = tile_id
+        self.path = path
+
+        (year, week, _) = dt.isocalendar()
+        self.year = year
+        self.week = week
+
+def get_ndvi_products_from_db(config, conn, site_id):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+            with products as (
+                select product.site_id,
+                    product.name,
+                    product.created_timestamp as date,
+                    product.processor_id,
+                    product.product_type_id,
+                    product.full_path,
+                    product.tiles
+                from product
+                where product.site_id = {}
+                    and product.product_type_id = 3
+            )
+            select products.date,
+                    products.tiles,
+                    products.full_path
+            from products
+            where date between {} and {}
+            order by date;
+            """
+        )
+
+        site_id_filter = Literal(site_id)
+        start_date_filter = Literal(config.season_start)
+        end_date_filter = Literal(config.season_end)
+        query = query.format(site_id_filter, start_date_filter, end_date_filter)
+        # print(query.as_string(conn))
+        cursor.execute(query)
+
+        results = cursor.fetchall()
+        conn.commit()
+
+        products = []
+        for (dt, tiles, full_path) in results:
+            for tile in tiles :
+                ndviTilePath = os.path.join(full_path, "TILES")
+                acq_date = dt.strftime("%Y%m%dT%H%M%S")
+                ndviTilePath = os.path.join(ndviTilePath, "S2AGRI_L3B_A{}_T{}".format(acq_date, tile))
+                ndviTilePath = os.path.join(ndviTilePath, "IMG_DATA")
+                ndviTilePath = os.path.join(ndviTilePath, "S2AGRI_L3B_SNDVI_A{}_T{}.TIF".format(acq_date, tile))
+                products.append(NdviProduct(dt, tile, ndviTilePath))
+                #if not os.path.exists(ndviTilePath) :
+                #    print ("FILE DOES NOT EXISTS: ".format(ndviTilePath))
+
+        return products
+        
+def get_radar_products(config, conn, site_id):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+            with products as (
+                select product.site_id,
+                    product.name,
+                    case
+                        when substr(product.name, position('_V' in product.name) + 2, 8) > substr(product.name, position('_V' in product.name) + 18, 8) 
+                        then substr(product.name, position('_V' in product.name) + 2, 8)
+                        else substr(product.name, position('_V' in product.name) + 18, 8)
+                    end :: date as date,
+                    coalesce(product.orbit_type_id, 1) as orbit_type_id,
+                    substr(product.name, position('_V' in product.name) + 34, 2) as polarization,
+                    product.processor_id,
+                    product.product_type_id,
+                    substr(product.name, length(product.name) - strpos(reverse(product.name), '_') + 2) as radar_product_type,
+                    product.orbit_id,
+                    product.full_path
+                from product
+                where product.satellite_id = 3
+                    and product.site_id = {}
+            )
+            select products.date,
+                products.orbit_type_id,
+                products.polarization,
+                products.radar_product_type,
+                products.full_path
+            from products
+            where date between {} and {}
+            order by date;
+            """
+        )
+
+        site_id_filter = Literal(site_id)
+        start_date_filter = Literal(config.season_start)
+        end_date_filter = Literal(config.season_end)
+        query = query.format(site_id_filter, start_date_filter, end_date_filter)
+        # print(query.as_string(conn))
+        cursor.execute(query)
+
+        results = cursor.fetchall()
+        conn.commit()
+
+        products = []
+        for (dt, orbit_type_id, polarization, radar_product_type, full_path) in results:
+            if config.file_type == radar_product_type : 
+                if config.polarisation == "" or config.polarisation == polarization : 
+                    products.append(RadarProduct(dt, orbit_type_id, polarization, radar_product_type, full_path))
+
+        return products
+
 def run_command(args, env=None):
     args = list(map(str, args))
     cmd_line = " ".join(map(pipes.quote, args))
@@ -84,6 +205,10 @@ def main():
     parser.add_argument('--in-file-type', default="csv", help="The type of the files for merging")
     parser.add_argument('--out-file-type', default="csv", help="The type of the output file")
     parser.add_argument('--csvcompact', type=int, default=1, help="Compact CSV file")
+    parser.add_argument('-b', '--start-date', help="The begining of the interval to be considered ")
+    parser.add_argument('-e', '--end-date', help="The end of the interval to be considered ")
+    parser.add_argument('-t', '--product-type', help="The end of the interval to be considered ")
+    
     args = parser.parse_args()
 
     if not os.path.exists(os.path.dirname(args.output_file)):
@@ -94,6 +219,9 @@ def main():
                 raise
             
     #config = Config(args)
+#    with psycopg2.connect(host=config.host, dbname=config.dbname, user=config.user, password=config.password) as conn:
+#        productsNdvi = process_ndvi(config, conn)
+#        productsRadar = process_radar(config, conn)
 
     fileExt = ".{}".format(args.in_file_type)
     listFilePaths = []

@@ -9,18 +9,17 @@ ENDIF(WIN32)
 otb_create_application(
   NAME           TimeSeriesAnalysis
   SOURCES        otbTimeSeriesAnalysis.cpp
-                 ../../Common/include/CommonFunctions.h ../../Common/include/CommonDefs.h
+                 ../../Common/include/CommonFunctions.h
+                 ../../Common/include/CommonDefs.h
+                 ../../Common/include/PracticeReaderBase.h
+                 ../../Common/include/PracticeReaderFactory.h
+                 ../../Common/src/PracticeReaderFactory.cpp
+                 ../../Common/include/PracticeShpReader.h
+                 ../../Common/src/PracticeShpReader.cpp
+                 ../../Common/include/PracticeCsvReader.h
+                 ../../Common/src/PracticeCsvReader.cpp
                  TimeSeriesAnalysisTypes.h
                  TimeSeriesAnalysisUtils.h
-                 PracticesEvaluator.h
-                 PracticesEvaluator.cpp
-                 PracticeReaderBase.h
-                 PracticeReaderFactory.h
-                 PracticeReaderFactory.cpp
-                 PracticeShpReader.h
-                 PracticeShpReader.cpp
-                 PracticeCsvReader.h
-                 PracticeCsvReader.cpp
                  StatisticsInfosReaderBase.h
                  StatisticsInfosReaderFactory.h
                  StatisticsInfosReaderFactory.cpp
@@ -40,8 +39,6 @@ otb_create_application(
                  TsaDebugPrinter.cpp
                  TsaPrevPrdReader.h
                  TsaPrevPrdReader.cpp
-
-
   LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata Sen2AgriPrdMetaWriters ${Boost_LIBRARIES} gsl)
 
 #if(BUILD_TESTING)

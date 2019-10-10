@@ -1062,3 +1062,23 @@ TQStrQStrMap ProcessorHandlerHelper::FilterConfigParameters(const TQStrQStrMap &
     }
     return retMap;
 }
+
+int ProcessorHandlerHelper::GuessYear(const QDateTime &startDateTime, const QDateTime &endDateTime) {
+    const QDate &startDate = startDateTime.date();
+    const QDate &endDate = endDateTime.date();
+
+    int startYear = startDate.year();
+    int endYear = endDate.year();
+    if (startYear >= endYear) {
+        return endYear;
+    }
+    if (endYear - startYear > 1) {
+        return startYear;   // cannot deduce anything from here but we should not have this situation
+    }
+    QDate startDateEoy(startYear, 12, 31);
+    QDate endDateSoy(endYear, 1, 1);
+    qint64 startDiff = startDate.daysTo(startDateEoy);
+    qint64 endDiff = endDateSoy.daysTo(endDate);
+    // if there are more days in the first year, we consider this year, otherwise the end year
+    return startDiff > endDiff ? startYear : endYear;
+}

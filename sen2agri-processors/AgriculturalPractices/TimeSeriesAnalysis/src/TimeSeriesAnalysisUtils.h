@@ -323,8 +323,7 @@ inline int GetWeekFromDate(time_t ttTime) {
 //    return bDate.week_number();
 }
 
-inline bool GetWeekFromDate(const std::string &dateStr, int &retYear, int &retWeek,
-                     const std::string &pattern = "%4d-%2d-%2d")
+inline bool GetWeekFromDate(const std::string &dateStr, int &retYear, int &retWeek)
 {
     time_t ttTime = GetTimeFromString(dateStr);
     if (ttTime == 0) {

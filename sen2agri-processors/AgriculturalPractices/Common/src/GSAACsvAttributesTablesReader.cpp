@@ -1,7 +1,7 @@
-#include "GSAACsvAttributesTablesReader.h"
+#include "../include/GSAACsvAttributesTablesReader.h"
 
 #include <boost/algorithm/string.hpp>
-#include "CommonFunctions.h"
+#include "../include/CommonFunctions.h"
 
 bool GSAACsvAttributesTablesReader::ExtractAttributes(std::function<void (const AttributeEntry&)> fnc)
 {
@@ -26,21 +26,22 @@ bool GSAACsvAttributesTablesReader::ExtractAttributes(std::function<void (const 
     return true;
 }
 
-std::vector<std::string> GSAACsvAttributesTablesReader::CsvFeatureDescription::LineToVector(const std::string &line)
+std::vector<std::string> GSAACsvAttributesTablesReader::CsvFeatureDescription::LineToVector(const std::string &line, const char sep)
 {
     std::vector<std::string> results;
     std::istringstream ss(line);
     std::string field, push_field("");
     bool no_quotes = true;
+    std::string strSep(1, sep);
 
-    while (std::getline(ss, field, ','))
+    while (std::getline(ss, field, sep))
     {
         if (static_cast<size_t>(std::count(field.begin(), field.end(), '"')) % 2 != 0)
         {
             no_quotes = !no_quotes;
         }
 
-        push_field += field + (no_quotes ? "" : ",");
+        push_field += field + (no_quotes ? "" : strSep);
 
         if (no_quotes)
         {
@@ -62,7 +63,16 @@ std::vector<std::string> GSAACsvAttributesTablesReader::CsvFeatureDescription::L
 
 bool GSAACsvAttributesTablesReader::CsvFeatureDescription::ExtractHeaderInfos(const std::string &line)
 {
-    std::vector<std::string> inputFileHeader = LineToVector(line);
+    if (line.find(';') != line.npos) {
+        m_csvSeparator = ';';
+    } else if (line.find(',') != line.npos) {
+        m_csvSeparator = ',';
+    } else {
+        std::cout << "No supported separator found in header " << line << " for file " << m_source << std::endl;
+        return false;
+    }
+
+    std::vector<std::string> inputFileHeader = LineToVector(line, m_csvSeparator);
     if(inputFileHeader.size() == 0)
     {
         std::cout << "Header with size 0 found for file " << m_source << std::endl;
@@ -79,7 +89,7 @@ bool GSAACsvAttributesTablesReader::CsvFeatureDescription::ExtractHeaderInfos(co
 
 bool GSAACsvAttributesTablesReader::CsvFeatureDescription::ExtractLineInfos(const std::string &line)
 {
-    m_lineEntries = LineToVector(line);
+    m_lineEntries = LineToVector(line, m_csvSeparator);
     if (m_lineEntries.size() > 0 && m_lineEntries.size() == m_InputFileHeader.size()) {
         m_bIsValid = true;
         return true;

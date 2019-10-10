@@ -8,7 +8,7 @@
 
 #include "TimeSeriesAnalysisTypes.h"
 
-#define INPUT_FILE_DATE_PATTERN     "%4d-%2d-%2d"
+// #define INPUT_FILE_DATE_PATTERN     "%4d-%2d-%2d"
 
 //typedef struct InputFileLineInfo {
 //    std::string fielId;

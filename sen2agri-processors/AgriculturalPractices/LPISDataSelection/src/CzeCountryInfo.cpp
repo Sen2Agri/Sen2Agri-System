@@ -16,23 +16,23 @@ void CzeCountryInfo::InitializeIndexes(const AttributeEntry &firstOgrFeat)
     m_NKOD_DPB_FieldIdx = firstOgrFeat.GetFieldIndex("NKOD_DPB");
 }
 
-std::string CzeCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
+std::string CzeCountryInfo::GetOriId(const AttributeEntry &ogrFeat) {
   return ogrFeat.GetFieldAsString(m_NKOD_DPB_FieldIdx);
 }
 
 std::string CzeCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {
-  const std::string &plod2 = GetLpisInfos(GetUniqueId(ogrFeat)).plod2;
+  const std::string &plod2 = GetLpisInfos(GetOriId(ogrFeat)).plod2;
   // Ignore items that have plod2 filled
   if (plod2.size() > 0 && std::atoi(plod2.c_str()) > 0) {
     return "NA";
   }
-  return GetLpisInfos(GetUniqueId(ogrFeat)).plod1;
+  return GetLpisInfos(GetOriId(ogrFeat)).plod1;
 }
 
 bool CzeCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat,
                                     const std::string &practice) {
   bool bCheckVymera = false;
-  const std::string &uid = GetUniqueId(ogrFeat);
+  const std::string &uid = GetOriId(ogrFeat);
   const EfaInfosType &efaInfos = GetEfaInfos(uid);
   const std::string &typEfa = efaInfos.typ_efa;
   if (practice == CATCH_CROP_VAL && typEfa == "MPL") {
@@ -53,7 +53,7 @@ bool CzeCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat,
 
 std::string CzeCountryInfo::GetPracticeType(const AttributeEntry &ogrFeat) {
   if (m_practice == CATCH_CROP_VAL) {
-    const std::string &mpl = GetEfaInfos(GetUniqueId(ogrFeat)).var_mpl;
+    const std::string &mpl = GetEfaInfos(GetOriId(ogrFeat)).var_mpl;
     if (mpl == "L") {
       return "Summer";
     }

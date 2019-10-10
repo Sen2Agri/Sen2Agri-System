@@ -135,7 +135,8 @@ bool GrasslandMowingHandler::CheckInputParameters(GrasslandMowingExecConfig &cfg
             }
         }
     }
-    return true;
+    cfg.year = ProcessorHandlerHelper::GuessYear(cfg.startDate, cfg.endDate);
+    return LoadConfigFileAdditionalValues(cfg);
 }
 
 void GrasslandMowingHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -185,7 +186,7 @@ void GrasslandMowingHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 prodName, quicklook, footPrint, std::experimental::nullopt, TileIdList() });
 
             // Now remove the job folder containing temporary files
-            RemoveJobFolder(ctx, event.jobId, "l3e");
+            RemoveJobFolder(ctx, event.jobId, "s4c_l4b");
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
@@ -303,12 +304,17 @@ QStringList GrasslandMowingHandler::ExtractCoheProducts(EventProcessingContext &
     return S4CUtils::GetInputProducts(ctx, event, ProductType::S4CS1L2CoheProductTypeId, minDate, maxDate, L4B_GM_CFG_PREFIX);
 }
 
-
 QStringList GrasslandMowingHandler::GetInputShpGeneratorArgs(GrasslandMowingExecConfig &cfg,
                                                              const QString &outShpFile)
 {
-    return {"-s", QString::number(cfg.event.siteId),
-            "-o", outShpFile};
+    QStringList retArgs =  {"-s", QString::number(cfg.event.siteId),
+            "-y", QString::number(cfg.year),
+            "-p", outShpFile};
+    if (cfg.ctNumFilter.size() > 0) {
+        retArgs += "-f";
+        retArgs += cfg.ctNumFilter;
+    }
+    return retArgs;
 }
 
 QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecConfig &cfg, const InputProductsType &prdType,
@@ -336,7 +342,7 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
                             "--start-date", cfg.startDate.toString("yyyyMMdd"),
                             "--end-date", cfg.endDate.toString("yyyyMMdd"),
                             "--seg-parcel-id-attribute", segParcelIdAttrName,
-                            "--output-shapefile", outFile,      // TODO: Pay attention to ProductFormatter - shp has several files
+                            "--output-shapefile", outFile,
                             "--do-cmpl", "True",
                             "--test", "True"
                       };
@@ -377,6 +383,23 @@ QString GrasslandMowingHandler::GetProcessorDirValue(GrasslandMowingExecConfig &
     return dataExtrDirName;
 }
 
+bool GrasslandMowingHandler::LoadConfigFileAdditionalValues(GrasslandMowingExecConfig &cfg)
+{
+    const QString &cfgFile = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
+                                                                          "config_path", L4B_GM_CFG_PREFIX);
+    if (cfgFile == "") {
+        return false;
+    }
+
+    QSettings settings(cfgFile, QSettings::IniFormat);
+    QString cmnSectionKey("GENERAL/");
+
+    cfg.ctNumFilter = settings.value( cmnSectionKey + "CTNUM_FILTER").toString();
+
+    return true;
+}
+
+
 // ###################### GrasslandMowingExecConfig functions ############################
 InputProductsType GrasslandMowingExecConfig::GetInputProductsType(const QString &str)
 {
@@ -394,3 +417,4 @@ InputProductsType GrasslandMowingExecConfig::GetInputProductsType(const QJsonObj
                                                                              "input_product_types", L4B_GM_CFG_PREFIX);
     return GetInputProductsType(inPrdsType);
 }
+

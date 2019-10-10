@@ -270,7 +270,7 @@ bool StatisticsInfosSingleCsvReader::ExtractInfosFromLine(const std::string &fil
         int weekNo, yearNo;
         int itemYear = 0;
         // ignore products that are not from the current year
-        if (GetWeekFromDate(strDate, yearNo, weekNo, INPUT_FILE_DATE_PATTERN))
+        if (GetWeekFromDate(strDate, yearNo, weekNo))
         {
             lineInfo.fieldId = fid; // Normally, here the name should be normalized
             if (m_bIsCoheFile && m_bSwitchDates && strDate2 != "") {
@@ -293,7 +293,7 @@ bool StatisticsInfosSingleCsvReader::ExtractInfosFromLine(const std::string &fil
         if (m_bIsCoheFile)
         {
             int weekNo2, yearNo2;
-            if (GetWeekFromDate(strDate2, yearNo2, weekNo2, INPUT_FILE_DATE_PATTERN)) {
+            if (GetWeekFromDate(strDate2, yearNo2, weekNo2)) {
                 if (m_bIsCoheFile && m_bSwitchDates && strDate2 != "") {
                     lineInfo.strDate = strDate2;
                     lineInfo.ttDate = GetTimeFromString(strDate2);

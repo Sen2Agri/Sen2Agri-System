@@ -41,7 +41,7 @@ void EspCountryInfo::InitializeIndexes(const AttributeEntry &firstOgrFeat)
     }
 }
 
-std::string EspCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
+std::string EspCountryInfo::GetOriId(const AttributeEntry &ogrFeat) {
     return ogrFeat.GetFieldAsString(m_cDeclaraFieldIdx);
 }
 std::string EspCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {

@@ -30,7 +30,7 @@
 #include "TimeSeriesAnalysisTypes.h"
 #include "TimeSeriesAnalysisUtils.h"
 #include "StatisticsInfosReaderFactory.h"
-#include "PracticeReaderFactory.h"
+#include "../../Common/include/PracticeReaderFactory.h"
 
 #include "TsaPlotsWriter.h"
 #include "TsaCSVWriter.h"
@@ -38,7 +38,7 @@
 #include "TsaDebugPrinter.h"
 #include "TsaPrevPrdReader.h"
 
-#define INPUT_SHP_DATE_PATTERN      "%4d-%2d-%2d"
+//#define INPUT_SHP_DATE_PATTERN      "%4d-%2d-%2d"
 
 #define CATCH_CROP_VAL                  "CatchCrop"
 #define CATCH_CROP_IS_MAIN_VAL          "CatchCropIsMain"
@@ -523,12 +523,6 @@ private:
     }
     void DoExecute() override
     {
-        int yearNo, weekNo;
-        const std::string &strDate1 = "2018-06-03";
-        GetWeekFromDate(strDate1, yearNo, weekNo, INPUT_FILE_DATE_PATTERN);
-        const std::string &strDate2 = "2018-06-10";
-        GetWeekFromDate(strDate2, yearNo, weekNo, INPUT_FILE_DATE_PATTERN);
-
         // Extract the parameters
         ExtractParameters();
 
@@ -588,7 +582,7 @@ private:
 
         // start processing features
         using namespace std::placeholders;
-        std::function<bool(const FeatureDescription&)> f = std::bind(&TimeSeriesAnalysis::HandleFeature, this, _1);
+        std::function<bool(const FeatureDescription&, void*)> f = std::bind(&TimeSeriesAnalysis::HandleFeature, this, _1, _2);
         m_pPracticeReader->ExtractFeatures(f);
 
         // close the plots file
@@ -597,7 +591,7 @@ private:
         otbAppLogINFO("Execution DONE!");
     }
 
-    bool HandleFeature(const FeatureDescription& feature) {
+    bool HandleFeature(const FeatureDescription& feature, void*) {
         // DisplayFeature(feature);
 
         const std::string &fieldId = feature.GetFieldId();
@@ -635,7 +629,7 @@ private:
 //            return false;
 //        }
 
-//        if (feature.GetFieldSeqId() != "112460") {
+//        if (feature.GetFieldSeqId() != "1080071") {
 //            return false;
 //        }
 
@@ -664,14 +658,14 @@ private:
         }
 
         int year;
-        if (!GetWeekFromDate(vegetationStart, year, fieldInfos.vegStartWeekNo, INPUT_SHP_DATE_PATTERN))
+        if (!GetWeekFromDate(vegetationStart, year, fieldInfos.vegStartWeekNo))
         {
             otbAppLogWARNING("Cannot extract vegetation start week from the date " <<
                              vegetationStart << " of the feature " << fieldId);
             return false;
         }
         fieldInfos.year = year;
-        if (!GetWeekFromDate(harvestStart, year, fieldInfos.harvestStartWeekNo, INPUT_SHP_DATE_PATTERN))
+        if (!GetWeekFromDate(harvestStart, year, fieldInfos.harvestStartWeekNo))
         {
             otbAppLogWARNING("Cannot extract harvest start week from the date " <<
                              harvestStart << " of the feature " << fieldId);
@@ -1817,7 +1811,7 @@ private:
         time_t harvestConfirmWeekStart = harvestInfos.harvestConfirmed;
         if (prevHWeekStart.size() > 0) {
             time_t ttTime = GetTimeFromString(prevHWeekStart);
-            if ((ttTime != 0) && (IsNA(harvestInfos.harvestConfirmed) || harvestInfos.harvestConfirmed > ttTime)) {
+            if ((ttTime != 0)/* && (IsNA(harvestInfos.harvestConfirmed) || harvestInfos.harvestConfirmed > ttTime)*/) {
                 harvestConfirmWeekStart = ttTime;
             }
         }
@@ -1879,7 +1873,7 @@ private:
         time_t ttDateD = 0;
 
         time_t weekA;
-        time_t weekB;
+        //time_t weekB;
         time_t catchStart;
 
         ccHarvestInfos = harvestInfos;
@@ -1890,7 +1884,7 @@ private:
             // # last possible end of catch-crop period
             ttDateB = ttDateA + (m_CatchPeriod - 1) * SEC_IN_DAY;
             weekA = FloorDateToWeekStart(harvestInfos.evaluation.ttPracticeStartTime);
-            weekB = FloorDateToWeekStart(ttDateB);
+            //weekB = FloorDateToWeekStart(ttDateB);
             if (IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
                  // harvest is "NR", set the start of catch-crop period to the last possible start of
                 // catch-crop period (to select the NDVI values)
@@ -2047,7 +2041,7 @@ private:
         ttDateA = ccHarvestInfos.evaluation.ttPracticeStartTime;
         ttDateB = ccHarvestInfos.evaluation.ttPracticeEndTime;
         weekA = FloorDateToWeekStart(ttDateA);
-        weekB = FloorDateToWeekStart(ttDateB);
+        //weekB = FloorDateToWeekStart(ttDateB);
 
         bool efaPeriodStarted = retAllMergedValues[retAllMergedValues.size() - 1].ttDate > weekA;
         //bool efaPeriodEnded = retAllMergedValues[retAllMergedValues.size() - 1].ttDate >= weekB;

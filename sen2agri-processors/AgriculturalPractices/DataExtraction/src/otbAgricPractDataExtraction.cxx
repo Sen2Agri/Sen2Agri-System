@@ -29,6 +29,8 @@
 
 #include "ImageResampler.h"
 #include "GenericRSImageResampler.h"
+//#include "../../Common/include/GSAAAttributesTablesReaderFactory.h"
+//#include "DeclarationsInfo.h"
 
 #include "../../../Common/Filters/otbStreamingStatisticsMapFromLabelImageFilter.h"
 
@@ -167,6 +169,30 @@ private:
         AddParameter(ParameterType_InputFilename, "filterids", "File containing ids to be filtered");
         SetParameterDescription("filterids","File containing ids to be filtered i.e. the monitorable parcels ids");
         MandatoryOff("filterids");
+
+        // TODO: this parameters would allow extraction of filter IDs from the declarations and
+        // the input practices tables but unfortunately bring a significant delay in the execution
+        // as the filter ids are generated on the fly.
+
+//        AddParameter(ParameterType_InputFilename, "decls", "Declarations file to be used to create a list of filtered ids");
+//        SetParameterDescription("decls","Declarations file to be used to create a list of filtered ids");
+//        MandatoryOff("decls");
+
+//        AddParameter(ParameterType_InputFilename, "ccpract", "Input tables for the CC practices");
+//        SetParameterDescription("ccpract","Input tables for the CC practices. Used for filtering parcel ids");
+//        MandatoryOff("ccpract");
+
+//        AddParameter(ParameterType_InputFilename, "flpract", "Input tables for the FL practices");
+//        SetParameterDescription("flpract","Input tables for the FL practices. Used for filtering parcel ids");
+//        MandatoryOff("flpract");
+
+//        AddParameter(ParameterType_InputFilename, "nfcpract", "Input tables for the NFC practices");
+//        SetParameterDescription("nfcpract","Input tables for the NFC practices. Used for filtering parcel ids");
+//        MandatoryOff("nfcpract");
+
+//        AddParameter(ParameterType_InputFilename, "napract", "Input tables for the NA practices");
+//        SetParameterDescription("napract","Input tables for the NA practices. Used for filtering parcel ids");
+//        MandatoryOff("napract");
 
         AddParameter(ParameterType_String, "outdir", "Output directory for writing agricultural practices data extractin files");
         SetParameterDescription("outdir","Output directory to store agricultural practices data extractin files (txt format)");
@@ -747,11 +773,63 @@ private:
                 }
                 otbAppLogINFO("Loading filter IDs file done!");
             }
+/*        } else if (HasValue("decls")) {
+            // extract and filter the ids from the declarations file (csv or shp)
+            const std::string &declsFile = this->GetParameterString("decls");
+            otbAppLogINFO("Loading declarations infos from file " << declsFile);
+            boost::filesystem::path practicesInfoPath(declsFile);
+            std::string pfFormat = practicesInfoPath.extension().c_str();
+            pfFormat.erase(pfFormat.begin(), std::find_if(pfFormat.begin(), pfFormat.end(), [](int ch) {
+                    return ch != '.';
+                }));
+
+            auto practiceReadersFactory = GSAAAttributesTablesReaderFactory::New();
+            m_pGSAAAttrsTablesReader = practiceReadersFactory->GetPracticeReader(pfFormat);
+            m_pGSAAAttrsTablesReader->SetSource(declsFile);
+
+            // start processing features
+            using namespace std::placeholders;
+            std::function<void(const AttributeEntry&)> f = std::bind(&AgricPractDataExtraction::OnNewDeclarationEntry,
+                                                                     this, _1);
+            m_bFirstDeclarationsEntry = true;
+            m_pGSAAAttrsTablesReader->ExtractAttributes(f);
+            otbAppLogINFO("Loading declarations infos file done!");
+*/
         } else if (m_bUseS2RasterMasks) {
             otbAppLogFATAL("The filter IDs file should be provided when using the S2 raster masks");
         }
     }
+/*
+    void OnNewDeclarationEntry(const AttributeEntry& ogrFeat) {
+        if (m_bFirstDeclarationsEntry) {
+            // Initialize any indexes from the first feature
+            m_declInfos.InitializeIndexes(ogrFeat);
+            if (HasValue("ccpract")) {
+                // extract and filter the ids from the practices file (csv or shp)
+                m_declInfos.SetCCIdsFile(this->GetParameterString("ccpract"));
+            }
+            if (HasValue("flpract")) {
+                // extract and filter the ids from the practices file (csv or shp)
+                m_declInfos.SetFLIdsFile(this->GetParameterString("flpract"));
+            }
+            if (HasValue("nfcpract")) {
+                // extract and filter the ids from the practices file (csv or shp)
+                m_declInfos.SetNFCIdsFile(this->GetParameterString("nfcpract"));
+            }
+            if (HasValue("napract")) {
+                // extract and filter the ids from the practices file (csv or shp)
+                m_declInfos.SetNAIdsFile(this->GetParameterString("napract"));
+            }
+            m_bFirstDeclarationsEntry = false;
+        }
 
+        if (!m_declInfos.IsMonitoringParcel(ogrFeat)) {
+            return;
+        }
+        int seqId = m_declInfos.GetSeqId(ogrFeat);
+        m_FilterIdsMap[std::to_string(seqId)] = seqId;
+    }
+*/
     std::vector<InputFileInfoType> LoadProductS2MasksCsvFile(const std::string &fileName)
     {
         std::vector<InputFileInfoType> retFilesInfos;
@@ -808,6 +886,10 @@ private:
 
         typedef std::map<std::string, int> FilterIdsMapType;
         FilterIdsMapType m_FilterIdsMap;
+
+//        bool m_bFirstDeclarationsEntry;
+//        std::unique_ptr<GSAAAttributesTablesReaderBase> m_pGSAAAttrsTablesReader;
+//        DeclarationsInfo m_declInfos;
 };
 
 } // end of namespace Wrapper

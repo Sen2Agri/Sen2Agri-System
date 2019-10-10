@@ -13,9 +13,9 @@ public:
     static QStringList GetInputProducts(EventProcessingContext &ctx,
                                         const JobSubmittedEvent &event, const ProductType &prdType,
                                         QDateTime &minDate, QDateTime &maxDate, const QString &processorCfgPrefix,
-                                        bool bExtractTiffFiles = true);
+                                        bool extractFromInputParamOnly = true, bool bExtractTiffFiles = true);
     static QStringList FindL3BProductTiffFiles(const QString &path, const QStringList &s2L8TilesFilter,
-                                               const QString &l3bBioIndexType = "SNDVI");
+                                               const QString &l3bBioIndexType);
 
 private:
     static QString GetShortNameForProductType(const ProductType &prdType);

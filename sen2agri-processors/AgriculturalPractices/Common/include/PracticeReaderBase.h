@@ -27,7 +27,7 @@ class PracticeReaderBase
 {
 public:
     virtual void SetSource(const std::string &src) {m_source = src;}
-    virtual bool ExtractFeatures(std::function<bool (const FeatureDescription&)>) = 0;
+    virtual bool ExtractFeatures(std::function<bool (const FeatureDescription&, void *payload)>, void *payload=NULL) = 0;
     virtual std::string GetName() = 0;
 
 protected:

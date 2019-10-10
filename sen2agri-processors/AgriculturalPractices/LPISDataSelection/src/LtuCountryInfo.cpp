@@ -38,7 +38,7 @@ void LtuCountryInfo::InitializeIndexes(const AttributeEntry &firstOgrFeat)
     m_LAUKO_NR_FieldIdx = firstOgrFeat.GetFieldIndex("LAUKO_NR");
 }
 
-std::string LtuCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
+std::string LtuCountryInfo::GetOriId(const AttributeEntry &ogrFeat) {
     return GetGSAAUniqueId(ogrFeat);
 }
 
@@ -47,7 +47,7 @@ std::string LtuCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {
 }
 
 bool LtuCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice) {
-    const std::string &uid = GetUniqueId(ogrFeat);
+    const std::string &uid = GetOriId(ogrFeat);
     if (practice == CATCH_CROP_VAL) {
         return (m_ccISMap.find(uid) != m_ccISMap.end() ||
                 m_ccPOMap.find(uid) != m_ccPOMap.end() ||
@@ -62,7 +62,7 @@ bool LtuCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat, const std::st
 }
 
 std::string LtuCountryInfo::GetPracticeType(const AttributeEntry &ogrFeat) {
-    const std::string &uid = GetUniqueId(ogrFeat);
+    const std::string &uid = GetOriId(ogrFeat);
     if (m_practice == CATCH_CROP_VAL) {
         if (m_ccISMap.find(uid) != m_ccISMap.end()) {
             return "IS";
@@ -87,7 +87,7 @@ std::string LtuCountryInfo::GetPracticeType(const AttributeEntry &ogrFeat) {
 
 std::string LtuCountryInfo::GetPStart(const AttributeEntry &ogrFeat) {
     if (m_practice == CATCH_CROP_VAL) {
-        const std::string &uid = GetUniqueId(ogrFeat);
+        const std::string &uid = GetOriId(ogrFeat);
         if (m_ccISMap.find(uid) != m_ccISMap.end()) {
             std::map<std::string, CCPracticeDatesInfos>::const_iterator itMap = m_ccISPracticeDatesFilterMap.find(uid);
             if (itMap != m_ccISPracticeDatesFilterMap.end()) {
@@ -112,7 +112,7 @@ std::string LtuCountryInfo::GetPEnd(const AttributeEntry &ogrFeat) {
             return m_pWinterEnd;
         }
     } else if (m_practice == CATCH_CROP_VAL) {
-        const std::string &uid = GetUniqueId(ogrFeat);
+        const std::string &uid = GetOriId(ogrFeat);
         if (m_ccISMap.find(uid) != m_ccISMap.end()) {
             std::map<std::string, CCPracticeDatesInfos>::const_iterator itMap = m_ccISPracticeDatesFilterMap.find(uid);
             if (itMap != m_ccISPracticeDatesFilterMap.end()) {

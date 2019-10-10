@@ -1,8 +1,9 @@
-#include "PracticeCsvReader.h"
+#include "../include/PracticeCsvReader.h"
 
 #include <boost/algorithm/string.hpp>
+#include "../include/CommonFunctions.h"
 
-bool PracticeCsvReader::ExtractFeatures(std::function<bool (const FeatureDescription&)> fnc)
+bool PracticeCsvReader::ExtractFeatures(std::function<bool (const FeatureDescription&, void *payload)> fnc, void *payload)
 {
     std::ifstream fStream(m_source);
     if (!fStream.is_open()) {
@@ -18,24 +19,55 @@ bool PracticeCsvReader::ExtractFeatures(std::function<bool (const FeatureDescrip
         }
         while (std::getline(fStream, line)) {
             if(feature.ExtractLineInfos(line)) {
-                fnc(feature);
+                fnc(feature, payload);
             }
         }
     }
     return true;
 }
 
-std::vector<std::string> PracticeCsvReader::CsvFeatureDescription::LineToVector(const std::string &line)
+std::vector<std::string> PracticeCsvReader::CsvFeatureDescription::LineToVector(const std::string &line, const char sep)
 {
     std::vector<std::string> results;
-    boost::algorithm::split(results, line, [](char c){return c == ';';});
+    std::istringstream ss(line);
+    std::string field, push_field("");
+    bool no_quotes = true;
+    std::string strSep(1, sep);
+
+    while (std::getline(ss, field, sep))
+    {
+        if (static_cast<size_t>(std::count(field.begin(), field.end(), '"')) % 2 != 0)
+        {
+            no_quotes = !no_quotes;
+        }
+
+        push_field += field + (no_quotes ? "" : strSep.c_str());
+
+        if (no_quotes)
+        {
+            results.push_back(trim(push_field));
+            push_field.clear();
+        }
+    }
+
     return results;
+//    std::vector<std::string> results;
+//    boost::algorithm::split(results, line, [sep](char c){return (c == sep);});
+//    return results;
 }
 
 
 bool PracticeCsvReader::CsvFeatureDescription::ExtractHeaderInfos(const std::string &line)
 {
-    m_InputFileHeader = LineToVector(line);
+    if (line.find(';') != line.npos) {
+        m_csvSeparator = ';';
+    } else if (line.find(',') != line.npos) {
+        m_csvSeparator = ',';
+    } else {
+        std::cout << "No supported separator found in header " << line << " for file " << m_source << std::endl;
+        return false;
+    }
+    m_InputFileHeader = LineToVector(line, m_csvSeparator);
     if (m_InputFileHeader.size() != HEADER_SIZE && m_InputFileHeader.size() != HEADER_SIZE_WITH_SEQ_ID) {
         std::cout << "Header " << line << " does not correspond with the expected one for file " << m_source << std::endl;
         return false;
@@ -78,7 +110,7 @@ int PracticeCsvReader::CsvFeatureDescription::GetPosInHeader(const std::string &
 
 bool PracticeCsvReader::CsvFeatureDescription::ExtractLineInfos(const std::string &line)
 {
-    const std::vector<std::string> &lineEntries = LineToVector(line);
+    const std::vector<std::string> &lineEntries = LineToVector(line, m_csvSeparator);
     if (lineEntries.size() > 0 && lineEntries.size() == m_InputFileHeader.size()) {
         m_FieldIdVal       = lineEntries[m_FieldIdFieldIdx];
         m_CountryVal       = lineEntries[m_CountryFieldIdx];

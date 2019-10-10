@@ -1,7 +1,7 @@
-#include "PracticeReaderFactory.h"
+#include "../include/PracticeReaderFactory.h"
 
-#include "PracticeCsvReader.h"
-#include "PracticeShpReader.h"
+#include "../include/PracticeCsvReader.h"
+#include "../include/PracticeShpReader.h"
 
 std::unique_ptr<PracticeReaderBase> PracticeReaderFactory::GetPracticeReader(
         const std::string &name)

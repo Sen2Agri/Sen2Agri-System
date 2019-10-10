@@ -44,6 +44,11 @@ protected:
                                 QDateTime &startTime, QDateTime &endTime, const QString &keyStart, const QString &keyEnd,
                                 const QDateTime &executionDate);
 */
+    bool GetSeasonStartEndDates(const SeasonList &seasons,
+                                   QDateTime &startTime, QDateTime &endTime,
+                                   const QDateTime &executionDate,
+                                   const ConfigurationParameterValueMap &requestOverrideCfgValues);
+
     bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,
                                    QDateTime &startTime, QDateTime &endTime,
                                    const QDateTime &executionDate,

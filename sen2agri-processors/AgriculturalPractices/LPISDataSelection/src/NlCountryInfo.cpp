@@ -16,7 +16,7 @@ void NlCountryInfo::InitializeIndexes(const AttributeEntry &firstOgrFeat)
     m_GRONDBED_2_FieldIdx = firstOgrFeat.GetFieldIndex("GRONDBED_2");
 }
 
-std::string NlCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
+std::string NlCountryInfo::GetOriId(const AttributeEntry &ogrFeat) {
     return ogrFeat.GetFieldAsString(m_FUNCTIONEE_FieldIdx);
 }
 

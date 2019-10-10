@@ -3,39 +3,6 @@
 
 CountryInfoBase::CountryInfoBase()
 {
-    m_SeqIdFieldIdx = -1;
-    m_LandCoverFieldIdx = -1;
-
-    m_GeomValidIdx = -1;
-    m_DuplicIdx = -1;
-    m_OverlapIdx = -1;
-    m_Area_meterIdx = -1;
-    m_ShapeIndIdx = -1;
-    m_CTnumIdx = -1;
-    m_CTIdx = -1;
-    m_S1PixIdx = -1;
-    m_S2PixIdx = -1;
-}
-
-void CountryInfoBase::InitializeIndexes(const AttributeEntry &firstOgrFeat)
-{
-    m_SeqIdFieldIdx = firstOgrFeat.GetFieldIndex(SEQ_UNIQUE_ID);
-    m_OrigIdFieldIdx = firstOgrFeat.GetFieldIndex(ORIG_UNIQUE_ID);
-    m_LandCoverFieldIdx = firstOgrFeat.GetFieldIndex(LC_VAL);
-    if (m_LandCoverFieldIdx == -1) {
-        // Check if maybe we have the the old CR_CAT_VAL Field
-        m_LandCoverFieldIdx = firstOgrFeat.GetFieldIndex(CR_CAT_VAL);
-    }
-
-    m_GeomValidIdx = firstOgrFeat.GetFieldIndex("GeomValid");
-    m_DuplicIdx = firstOgrFeat.GetFieldIndex("Duplic");
-    m_OverlapIdx = firstOgrFeat.GetFieldIndex("Overlap");
-    m_Area_meterIdx = firstOgrFeat.GetFieldIndex("Area_meter");
-    m_ShapeIndIdx = firstOgrFeat.GetFieldIndex("ShapeInd");
-    m_CTnumIdx = firstOgrFeat.GetFieldIndex("CTnum");
-    m_CTIdx = firstOgrFeat.GetFieldIndex("CT");
-    m_S1PixIdx = firstOgrFeat.GetFieldIndex("S1Pix");
-    m_S2PixIdx = firstOgrFeat.GetFieldIndex("S2Pix");
 }
 
 void CountryInfoBase::SetAdditionalFiles(const std::vector<std::string> &additionalFiles) {
@@ -52,13 +19,6 @@ void CountryInfoBase::SetAdditionalFiles(const std::vector<std::string> &additio
             ParseShpFile(file, m_ShpFeatHandlerFnc);
         }
     }
-}
-
-int CountryInfoBase::GetSeqId(const AttributeEntry &ogrFeat) {
-    if (m_SeqIdFieldIdx == -1) {
-        return -1;    // we don't have the column
-    }
-    return (int)ogrFeat.GetFieldAsDouble(m_SeqIdFieldIdx);
 }
 
 void CountryInfoBase::SetYear(const std::string &val) { m_year = val;}
@@ -158,12 +118,3 @@ std::vector<std::string> CountryInfoBase::GetInputFileLineElements(const std::st
     return results;
 }
 
-std::string CountryInfoBase::GetFieldOrNA(const AttributeEntry &ogrFeat, int idx) {
-    if (idx != -1) {
-        const char* field = ogrFeat.GetFieldAsString(idx);
-        if (field != NULL) {
-            return field;
-        }
-    }
-    return "NA";
-}

@@ -9,7 +9,7 @@ class PracticeShpReader : public PracticeReaderBase
 {
 public:
     virtual std::string GetName() {return "shp";}
-    virtual bool ExtractFeatures(std::function<bool (const FeatureDescription&)> fnc);
+    virtual bool ExtractFeatures(std::function<bool (const FeatureDescription&, void *payload)> fnc, void *payload);
 
 private:
     class OgrFeatureDescription : public FeatureDescription

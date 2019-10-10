@@ -22,6 +22,10 @@
 #define FALLOW_LAND_VAL                 "Fallow"
 #define NITROGEN_FIXING_CROP_VAL        "NFC"
 
+#define CATCH_CROP_VAL_ID                  1
+#define FALLOW_LAND_VAL_ID                 2
+#define NITROGEN_FIXING_CROP_VAL_ID        3
+
 #define SEC_IN_DAY                   86400          // seconds in day = 24 * 3600
 
 #define NDVI_STR    "_SNDVI_"

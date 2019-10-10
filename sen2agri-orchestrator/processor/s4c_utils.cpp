@@ -50,7 +50,7 @@ QStringList S4CUtils::FindL3BProductTiffFiles(const QString &path, const QString
     QFileInfo fileInfo(path);
     if (!fileInfo.isDir()) {
         const QString &fileName = fileInfo.fileName();
-        const QString substr = QString("S2AGRI_L3B_S%1_A").arg(l3bBioIndexType);
+        const QString substr = QString("S2AGRI_L3B_%1_A").arg(l3bBioIndexType);
         if (fileName.contains(substr) && fileName.endsWith(".TIF")) {
             return QStringList(path);
         }
@@ -84,7 +84,7 @@ QStringList S4CUtils::FindL3BProductTiffFiles(EventProcessingContext &ctx, int s
         // if we have the product name, we need to get the product path from the database
         absPath = ctx.GetProductAbsolutePath(siteId, path);
     }
-    return FindL3BProductTiffFiles(absPath, s2L8TilesFilter);
+    return FindL3BProductTiffFiles(absPath, s2L8TilesFilter, "SNDVI");
 }
 
 QJsonArray S4CUtils::GetInputProducts(const QJsonObject &parameters, const ProductType &prdType) {
@@ -107,7 +107,7 @@ QJsonArray S4CUtils::GetInputProducts(const QJsonObject &parameters, const Produ
 QStringList S4CUtils::GetInputProducts(EventProcessingContext &ctx,
                                        const JobSubmittedEvent &event, const ProductType &prdType,
                                        QDateTime &minDate, QDateTime &maxDate, const QString &processorCfgPrefix,
-                                       bool bExtractTiffFiles) {
+                                       bool extractFromInputParamOnly, bool bExtractTiffFiles) {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     auto inputProducts = GetInputProducts(parameters, prdType);
 
@@ -118,7 +118,7 @@ QStringList S4CUtils::GetInputProducts(EventProcessingContext &ctx,
     QStringList listProducts;
 
     // get the products from the input_products or based on start_date or date_end
-    if(inputProducts.size() == 0) {
+    if(!extractFromInputParamOnly && inputProducts.size() == 0) {
         const auto &startDate = QDateTime::fromString(parameters["start_date"].toString(), "yyyyMMdd");
         const auto &endDateStart = QDateTime::fromString(parameters["end_date"].toString(), "yyyyMMdd");
         if(startDate.isValid() && endDateStart.isValid()) {

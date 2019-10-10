@@ -13,7 +13,7 @@ class PracticeCsvReader : public PracticeReaderBase
 {
 public:
     virtual std::string GetName() {return "csv";}
-    virtual bool ExtractFeatures(std::function<bool (const FeatureDescription&)> fnc);
+    virtual bool ExtractFeatures(std::function<bool (const FeatureDescription&, void *payload)> fnc, void *payload=NULL);
 
 private:
     class CsvFeatureDescription : public FeatureDescription
@@ -21,6 +21,7 @@ private:
         CsvFeatureDescription() : m_bIsValid(false) {
             m_SeqFieldIdFieldIdx = -1;
             m_S1PixIdx = -1;
+            m_csvSeparator = ',';
         }
         virtual std::string GetFieldId() const;
         virtual std::string GetFieldSeqId() const;
@@ -40,7 +41,7 @@ private:
 
         int GetPosInHeader(const std::string &item);
         bool ExtractLineInfos(const std::string &line);
-        std::vector<std::string> LineToVector(const std::string &line);
+        std::vector<std::string> LineToVector(const std::string &line, const char sep);
         bool ExtractHeaderInfos(const std::string &line);
 
 
@@ -77,6 +78,7 @@ private:
 
         bool m_bIsValid;
         std::string m_source;
+        char m_csvSeparator;
 
         friend class PracticeCsvReader;
     };

@@ -1,7 +1,7 @@
 #include "ItaCountryInfo.h"
 
 std::string ItaCountryInfo::GetName() { return "ITA"; }
-std::string ItaCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
+std::string ItaCountryInfo::GetOriId(const AttributeEntry &ogrFeat) {
     return ogrFeat.GetFieldAsString(ogrFeat.GetFieldIndex("ori_id"));
 }
 std::string ItaCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {

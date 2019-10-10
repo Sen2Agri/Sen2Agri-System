@@ -1,5 +1,9 @@
 #!/bin/bash
 
+WORKING_DIR_ROOT="/mnt/archive/agric_practices"
+INSITU_ROOT="$WORKING_DIR_ROOT/insitu/"
+INPUTS_FILES_ROOT="/mnt/archive/agric_practices/Inputs/exec_cmds/"
+
 function usage() {
     echo "Usage: ./agric_practices_data_extraction_2019.sh -c <COUNTRY_CODE - (NLD|CZE|LTU|ESP|ITA|ROU)> -t <PRODUCT_TYPE> [-p <POLARISATION>] -y <YEAR> -g <PRDS_PER_GROUP> -s <THREADS_POOL_SIZE>"
     exit 1
@@ -83,11 +87,7 @@ if [ "${COUNTRY_AND_REGION}" != "$COUNTRY" ] ; then
 fi    
 
 SITE_ID=""
-
-WORKING_DIR_ROOT="/mnt/archive/agric_practices"
-INSITU_ROOT="$WORKING_DIR_ROOT/insitu/"
 OUTPUTS_ROOT="$WORKING_DIR_ROOT/Outputs/${COUNTRY_AND_REGION}/"
-INPUTS_FILES_ROOT="/mnt/archive/agric_practices/Inputs/exec_cmds/"
 
 if [ -z $COUNTRY_REGION ] ; then 
     FILTER_IDS_FILE="$INSITU_ROOT/PracticesInfos/Sen4CAP_L4C_${YEAR}_FilterIDs.csv"

@@ -24,7 +24,7 @@
 #include "otbOGRDataSourceWrapper.h"
 
 #include "CountryInfoFactory.h"
-#include "GSAAAttributesTablesReaderFactory.h"
+#include "../../Common/include/GSAAAttributesTablesReaderFactory.h"
 
 #include "CommonFunctions.h"
 
@@ -337,7 +337,7 @@ private:
             std::cout << "Trying  to write feature in a closed stream!" << std::endl;
             return;
         }
-        const std::string &uid = m_pCountryInfos->GetUniqueId(ogrFeat);
+        const std::string &uid = m_pCountryInfos->GetOriId(ogrFeat);
         int seqId = m_pCountryInfos->GetSeqId(ogrFeat);
         const std::string &mainCrop = GetValueOrNA(m_pCountryInfos->GetMainCrop(ogrFeat));
         if (mainCrop == "NA") {
@@ -385,7 +385,7 @@ private:
 
     bool FilterFeature(const AttributeEntry &ogrFeat) {
         // if we have filters and we did not find the id
-        std::string uid = m_pCountryInfos->GetUniqueId(ogrFeat);
+        std::string uid = m_pCountryInfos->GetOriId(ogrFeat);
         NormalizeFieldId(uid);
         if(m_FieldFilters.size() != 0 && m_FieldFilters.find(uid) == m_FieldFilters.end()) {
             return false;

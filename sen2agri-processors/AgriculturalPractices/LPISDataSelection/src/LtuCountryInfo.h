@@ -17,7 +17,7 @@ public:
 
     virtual std::string GetName();
     virtual void InitializeIndexes(const AttributeEntry &firstOgrFeat);
-    virtual std::string GetUniqueId(const AttributeEntry &ogrFeat);
+    virtual std::string GetOriId(const AttributeEntry &ogrFeat);
 
     virtual std::string GetMainCrop(const AttributeEntry &ogrFeat);
     virtual bool GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice);

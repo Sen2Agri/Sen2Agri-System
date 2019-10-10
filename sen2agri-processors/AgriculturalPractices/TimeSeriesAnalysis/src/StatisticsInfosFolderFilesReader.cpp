@@ -137,7 +137,7 @@ bool StatisticsInfosFolderFilesReader::ExtractInfosFromLine(const std::string &f
     std::string::size_type sz;     // alias of size_t
     const std::string &strDate = lineElems[1];
     int weekNo, yearNo;
-    if (GetWeekFromDate(strDate, yearNo, weekNo, INPUT_FILE_DATE_PATTERN))
+    if (GetWeekFromDate(strDate, yearNo, weekNo))
     {
         lineInfo.fieldId = lineElems[0]; // Normally, here the name should be normalized
         lineInfo.strDate = strDate;
@@ -156,7 +156,7 @@ bool StatisticsInfosFolderFilesReader::ExtractInfosFromLine(const std::string &f
     {
         const std::string &strDate2 = lineElems[2];
         int weekNo2, yearNo2;
-        if (GetWeekFromDate(strDate2, yearNo2, weekNo2, INPUT_FILE_DATE_PATTERN)) {
+        if (GetWeekFromDate(strDate2, yearNo2, weekNo2)) {
             lineInfo.strDate2 = strDate2;
             lineInfo.ttDate2 = GetTimeFromString(strDate2);
             lineInfo.weekNo2 = weekNo2;

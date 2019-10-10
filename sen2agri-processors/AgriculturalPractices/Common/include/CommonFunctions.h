@@ -90,10 +90,6 @@ inline time_t GetTimeFromString(const std::string &strDate, const std::string &f
     return 0;
 }
 
-inline void NormalizeFieldId(std::string &fieldId) {
-    std::replace( fieldId.begin(), fieldId.end(), '/', '_');
-}
-
 inline std::string trim(std::string const& str, const std::string strChars="\"")
 {
     if(str.empty())
@@ -109,6 +105,11 @@ inline std::string trim(std::string const& str, const std::string strChars="\"")
         retStr = retStr.substr(first, last-first+1);
     }
     return retStr;
+}
+
+inline void NormalizeFieldId(std::string &fieldId) {
+    std::replace( fieldId.begin(), fieldId.end(), '/', '_');
+    fieldId = trim( fieldId);
 }
 
 inline bool GetFileInfosFromName(const std::string &filePath, std::string &fileType, std::string & polarisation,

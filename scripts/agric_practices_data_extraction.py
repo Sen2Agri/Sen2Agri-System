@@ -21,6 +21,10 @@ import subprocess
 import re
 import itertools
 from functools import partial
+import sys
+
+not_executed_cmds = []
+executed_cmds_cnt = 0
 
 try:
     from configparser import ConfigParser
@@ -140,26 +144,72 @@ class RadarGroup(object):
         orbit_type = get_orbit_type(self.orbit_type_id)
         return "SEN4CAP_L2A_PRD_S{}_W{:04}{:02}_T{}_{}_{}_{}_{}.tif".format(site_id, self.year, self.week, self.tile_id, dt.strftime("%Y%m%dT%H%M%S"), orbit_type, self.polarization, self.radar_product_type)
 
-def run_command2(args, allCmds, env=None): 
-    print("=================================================")
-    curIdx = allCmds.index(args) + 1
-    allCmdsLen = len(allCmds)
-    percentage = int(100 * float(curIdx)/float(allCmdsLen))
-    print ("Processing group idx {} from a total of {} - Global progress: {}%".format(curIdx, allCmdsLen, percentage))
-    print("=================================================")    
+# def run_command2(args, allCmds, env=None): 
+#     print("=================================================")
+#     curIdx = allCmds.index(args) + 1
+#     allCmdsLen = len(allCmds)
+#     percentage = int(100 * float(curIdx)/float(allCmdsLen))
+#     print ("Processing group idx {} from a total of {} - Global progress: {}%".format(curIdx, allCmdsLen, percentage))
+#     print("=================================================")    
     
 def run_command(args, allCmds, env=None):
-    print("=================================================")
-    curIdx = allCmds.index(args) + 1
-    allCmdsLen = len(allCmds)
-    percentage = int(100 * float(curIdx)/float(allCmdsLen))
-    print ("Processing group idx {} from a total of {} - Global progress: {}%".format(curIdx, allCmdsLen, percentage))
-    print("=================================================")    
+    global not_executed_cmds
+    global executed_cmds_cnt
+    
     args = list(map(str, args))
     cmd_line = " ".join(map(pipes.quote, args))
     print(cmd_line)
 
-    subprocess.call(args, env=env)
+    ret = True
+    try:
+        retCmd = subprocess.call(args, env=env)
+        if retCmd != 0 :
+            print("Error executing command {}. Return code was: {}".format(cmd_line, ret))
+            ret = False
+    except subprocess.CalledProcessError:
+        print("Error while executing command {}".format(cmd_line))
+        ret = False # handle errors in the called executable
+    except OSError:
+        print("OSError: Executable not found for command {}".format(cmd_line))
+        ret = False # executable not found    
+    
+    if ret == False :
+        not_executed_cmds.append(cmd_line)
+    
+    executed_cmds_cnt += 1
+    
+    print("=================================================")
+    allCmdsLen = len(allCmds)   
+    percentage = int(100 * float(executed_cmds_cnt)/float(allCmdsLen))    
+    print ("Processed a number of {} from a total of {}. Global progress = {}%".format(executed_cmds_cnt, allCmdsLen, percentage))
+    print("=================================================")    
+    
+    
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+    
+def run_commands(config, commands, env=None) :
+    global not_executed_cmds
+    
+    # Reset the workers after 10 executions - NOT WORKING
+    # pool = multiprocessing.Pool(config.pool_size, maxtasksperchild=10)
+    pool = multiprocessing.Pool(config.pool_size)
+    
+    results = []
+    run_command_x=partial(run_command, allCmds=commands)
+    r = pool.map_async(run_command_x, commands, callback=results.append)
+    r.wait() 
+    
+    print("###############################################")
+    print("COMMANDS THAT GAVE ERRORS AND SHOULD BE RETRIED")
+    print("###############################################")
+
+    eprint("###############################################")
+    eprint("COMMANDS THAT GAVE ERRORS AND SHOULD BE RETRIED")
+    eprint("###############################################")
+    for not_exec_cmd in not_executed_cmds: 
+        print(not_exec_cmd)
+        eprint(not_exec_cmd)
         
 def get_products_from_file(config) :
     with open(config.inputs_file) as f:
@@ -280,6 +330,7 @@ def get_ndvi_products_from_db(config, conn, site_id):
         return products
         
 def get_radar_products(config, conn, site_id):
+    # TODO: This should be updated as it does not work with site ids > 9
     with conn.cursor() as cursor:
         query = SQL(
             """
@@ -466,13 +517,14 @@ def execute_data_extraction(config, products) :
     #            #command += ["-s2ilcnts"] + tile_refs_cnts
 
 
-################## TODO: UNCOMMENT ##########################            
-    pool = multiprocessing.Pool(config.pool_size)
-    
-    results = []
-    run_command_x=partial(run_command, allCmds=commands)
-    r = pool.map_async(run_command_x, commands, callback=results.append)
-    r.wait() 
+################## TODO: UNCOMMENT ########################## 
+    run_commands(config, commands)
+#    pool = multiprocessing.Pool(config.pool_size)
+#    
+#    results = []
+#    run_command_x=partial(run_command, allCmds=commands)
+#    r = pool.map_async(run_command_x, commands, callback=results.append)
+#    r.wait() 
 ################## END: UNCOMMENT ##########################    
     
     #print(results)

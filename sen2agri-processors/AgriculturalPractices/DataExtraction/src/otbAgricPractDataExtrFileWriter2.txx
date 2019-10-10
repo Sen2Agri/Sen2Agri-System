@@ -380,7 +380,8 @@ AgricPractDataExtrFileWriter2<TMeasurementVector>
     // Check if the input are not null
     if(m_FileFieldsContainer.size() == 0) {
         std::cout << "At least one input is required, please set input using the methods AddInputMap" << std::endl;
-        return;
+        // Commented to allow writing of even empty files (containing only header), just output the warning
+//        return;
     }
 
     // Check if the filename is not empty

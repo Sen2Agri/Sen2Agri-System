@@ -17,6 +17,7 @@ private:
     class CsvFeatureDescription : public AttributeEntry
     {
         CsvFeatureDescription() {
+            m_csvSeparator = ',';
         }
         virtual int GetFieldIndex(const char *pszName) const;
         virtual const char* GetFieldAsString(int idx) const;
@@ -26,7 +27,7 @@ private:
     private:
 
         bool ExtractLineInfos(const std::string &line);
-        std::vector<std::string> LineToVector(const std::string &line);
+        std::vector<std::string> LineToVector(const std::string &line, const char sep);
         bool ExtractHeaderInfos(const std::string &line);
 
 
@@ -36,6 +37,7 @@ private:
 
         bool m_bIsValid;
         std::string m_source;
+        char m_csvSeparator;
 
         friend class GSAACsvAttributesTablesReader;
     };

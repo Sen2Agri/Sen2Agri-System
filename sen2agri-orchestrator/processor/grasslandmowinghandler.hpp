@@ -16,6 +16,7 @@ namespace grassland_mowing {
             parameters = QJsonDocument::fromJson(evt.parametersJson.toUtf8()).object();
             configParameters = pCtx->GetJobConfigurationParameters(evt.jobId, L4B_GM_CFG_PREFIX);
             inputPrdsType = GetInputProductsType(parameters, configParameters);
+            year = QDate::currentDate().year();
         }
         static InputProductsType GetInputProductsType(const QJsonObject &parameters, const std::map<QString, QString> &configParameters);
         static InputProductsType GetInputProductsType(const QString &str);
@@ -31,6 +32,8 @@ namespace grassland_mowing {
         QDateTime endDate;
         QStringList l3bPrds;
         QStringList s1Prds;
+        int year;
+        QString ctNumFilter;
 
     } GrasslandMowingExecConfig;
 }
@@ -57,8 +60,6 @@ private:
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
 
 private:
-    QString GetSiteConfigFilePath(const QString &siteName, const QJsonObject &parameters, std::map<QString, QString> &configParameters);
-
     QStringList ExtractL3BProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, QDateTime &minDate, QDateTime &maxDate);
     QStringList ExtractAmpProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, QDateTime &minDate, QDateTime &maxDate);
     QStringList ExtractCoheProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, QDateTime &minDate, QDateTime &maxDate);
@@ -72,6 +73,8 @@ private:
     bool CheckInputParameters(grassland_mowing::GrasslandMowingExecConfig &cfg, QString &err);
     void UpdatePrdInfos(grassland_mowing::GrasslandMowingExecConfig &cfg, const QJsonArray &arrPrds, QStringList &whereToAdd, QDateTime &startDate, QDateTime &endDate);
     QString GetProcessorDirValue(grassland_mowing::GrasslandMowingExecConfig &cfg, const QString &key, const QString &defVal);
+    int GuessYear(const QDateTime &startDateTime, const QDateTime &endDateTime);
+    bool LoadConfigFileAdditionalValues(grassland_mowing::GrasslandMowingExecConfig &cfg);
 };
 
 #endif // GRASSLANDMOWINGHANDLER_HPP

@@ -7,7 +7,7 @@ RouCountryInfo::RouCountryInfo() {
 
 std::string RouCountryInfo::GetName() { return "ROU"; }
 
-std::string RouCountryInfo::GetUniqueId(const AttributeEntry &ogrFeat) {
+std::string RouCountryInfo::GetOriId(const AttributeEntry &ogrFeat) {
     return GetGSAAUniqueId(ogrFeat);
 }
 
@@ -17,7 +17,7 @@ std::string RouCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {
 
 bool RouCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice) {
     if (practice == CATCH_CROP_VAL) {
-        const std::string &uid = GetUniqueId(ogrFeat);
+        const std::string &uid = GetOriId(ogrFeat);
         if (m_gsaaIdsMap.find(uid) != m_gsaaIdsMap.end()) {
             return true;
         }
@@ -38,7 +38,7 @@ std::string RouCountryInfo::GetPStart(const AttributeEntry &ogrFeat) {
             case 95561:
             case 97471:
             case 97481:
-                return "2018-03-19";
+                return m_year + "-03-19";
         }
     }
     return m_pstart;
@@ -51,21 +51,21 @@ std::string RouCountryInfo::GetPEnd(const AttributeEntry &ogrFeat) {
             case 1511:
             case 15171:
             case 1591:
-                return "2018-06-03";
+                return m_year + "-06-03";
             case 1281:
             case 1291:
             case 1301:
-                return "2018-08-26";
+                return m_year + "-08-26";
             case 9731:
             case 95531:
             case 95541:
             case 9751:
-                return "2018-06-30";
+                return m_year + "-06-30";
             case 9741:
             case 95561:
             case 97471:
             case 97481:
-                return "2018-05-06";
+                return m_year + "-05-06";
         }
         return m_pend;
     } else if (m_practice == FALLOW_LAND_VAL) {
