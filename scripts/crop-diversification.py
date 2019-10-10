@@ -84,7 +84,7 @@ def main():
                     out['Classif_r'] = 'Classified_not_conform_prediction_used'
                 else:
                     out['Classif_r'] = 'Classified_not_conform'
-            elif row['GeomValid'] == '0' or row['Duplic'] == '0' or row['Overlap'] == '1':
+            elif row['GeomValid'] == '0' or row['Duplic'] == '1' or row['Overlap'] == '1':
                 out['Classif_r'] = 'Not_classified_geometry'
             elif row['LC'] == '' or row['LC'] == '0' or row['LC'] == '5' or row['LC'] == 'NA':
                 out['Classif_r'] = 'Not_classified_land_cover'
