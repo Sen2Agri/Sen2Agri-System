@@ -2,15 +2,9 @@
 from __future__ import print_function
 
 import argparse
-import csv
-from collections import defaultdict
-from datetime import date
-from glob import glob
-import multiprocessing.dummy
 import os
 import os.path
-from osgeo import osr
-from osgeo import ogr
+import shutil
 import pipes
 import psycopg2
 from psycopg2.sql import SQL, Literal, Identifier
@@ -108,7 +102,7 @@ def get_srid(conn, lpis_table):
         return srid
 
 
-def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
+def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, gpkg_path, csv_path, lut_path):
     srid = get_srid(conn, lpis_table)
 
     query = SQL(
@@ -127,8 +121,8 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
     ).format(Identifier(lpis_table), Literal(product_id))
     query = query.as_string(conn)
 
-    name = os.path.splitext(os.path.basename(path))[0]
-    command = get_export_table_command(path, pg_path, "-nln", name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
+    name = os.path.splitext(os.path.basename(gpkg_path))[0]
+    command = get_export_table_command(gpkg_path, pg_path, "-nln", name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
     run_command(command)
 
     query = SQL(
@@ -157,17 +151,14 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, path):
     ).format(Identifier(lpis_table), Identifier(lut_table), Literal(product_id))
     query = query.as_string(conn)
 
-    name = os.path.basename(path)
-    path = os.path.splitext(name)[0] + ".csv"
-    command = get_export_table_command(path, pg_path, "-sql", query, "-gt", 100000)
+    command = get_export_table_command(csv_path, pg_path, "-sql", query, "-gt", 100000)
     run_command(command)
 
-    path = os.path.splitext(path)[0] + "_LUT" + ".csv"
-    command = get_export_table_command(path, pg_path, lut_table, "-gt", 100000)
+    command = get_export_table_command(lut_path, pg_path, lut_table, "-gt", 100000)
     run_command(command)
 
 
-def export_agricultural_practices(conn, pg_path, product_id, lpis_table, path):
+def export_agricultural_practices(conn, pg_path, product_id, lpis_table, lut_table, path):
     srid = get_srid(conn, lpis_table)
 
     practices = []
@@ -253,6 +244,7 @@ def main():
     parser = argparse.ArgumentParser(description="Exports product contents from the database")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
     parser.add_argument('-p', '--product-id', type=int, help="product id")
+    parser.add_argument('-w', '--working-path', help="working path")
     parser.add_argument('output', help="output path")
 
     args = parser.parse_args()
@@ -262,6 +254,10 @@ def main():
     pg_path = 'PG:dbname={} host={} port={} user={} password={}'.format(config.dbname, config.host,
                                                                         config.port, config.user, config.password)
 
+    if args.working_path:
+        output = os.path.join(args.working_path, os.path.basename(args.output))
+    else:
+        output = args.output
     with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
         r = get_product_info(conn, args.product_id)
         if r is None:
@@ -273,12 +269,21 @@ def main():
         lut_table = "lut_{}_{}".format(site_short_name, created_timestamp.year)
 
         if product_type == PRODUCT_TYPE_CROP_TYPE:
-            export_crop_type(conn, pg_path, args.product_id, lpis_table, lut_table, args.output)
+            csv_path = os.path.splitext(output)[0] + ".csv"
+            lut_path = os.path.splitext(output)[0] + "_LUT.csv"
+            export_crop_type(conn, pg_path, args.product_id, lpis_table, lut_table, output, csv_path, lut_path)
         elif product_type == PRODUCT_TYPE_AGRICULTURAL_PRACTICES:
-            export_agricultural_practices(conn, pg_path, args.product_id, lpis_table, args.output)
+            export_agricultural_practices(conn, pg_path, args.product_id, lpis_table, lut_table, output)
         else:
             print("Unknown product type {}".format(product_type))
             return 1
+
+    if args.working_path:
+        shutil.move(output, args.output)
+        if product_type == PRODUCT_TYPE_CROP_TYPE:
+            dest = os.path.dirname(args.output) or "."
+            shutil.move(csv_path, dest)
+            shutil.move(lut_path, dest)
 
 
 if __name__ == "__main__":
