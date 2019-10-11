@@ -157,6 +157,8 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, gpkg_path
     command = get_export_table_command(lut_path, pg_path, lut_table, "-gt", 100000)
     run_command(command)
 
+    return [gpkg_path, csv_path, lut_path]
+
 
 def export_agricultural_practices(conn, pg_path, product_id, lpis_table, lut_table, path):
     srid = get_srid(conn, lpis_table)
@@ -178,6 +180,7 @@ def export_agricultural_practices(conn, pg_path, product_id, lpis_table, lut_tab
             practices.append(row[0])
         conn.commit()
 
+    outputs = []
     for practice_id in practices:
         query = SQL(
             """
@@ -235,9 +238,11 @@ def export_agricultural_practices(conn, pg_path, product_id, lpis_table, lut_tab
         name = name.replace("PRACTICE", practice_name)
 
         file = os.path.join(dir, name)
+        outputs.append(file)
         table_name = os.path.splitext(name)[0].lower()
         command = get_export_table_command(file, pg_path, "-nln", table_name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
         run_command(command)
+    return outputs
 
 
 def main():
@@ -271,19 +276,17 @@ def main():
         if product_type == PRODUCT_TYPE_CROP_TYPE:
             csv_path = os.path.splitext(output)[0] + ".csv"
             lut_path = os.path.splitext(output)[0] + "_LUT.csv"
-            export_crop_type(conn, pg_path, args.product_id, lpis_table, lut_table, output, csv_path, lut_path)
+            outputs = export_crop_type(conn, pg_path, args.product_id, lpis_table, lut_table, output, csv_path, lut_path)
         elif product_type == PRODUCT_TYPE_AGRICULTURAL_PRACTICES:
-            export_agricultural_practices(conn, pg_path, args.product_id, lpis_table, lut_table, output)
+            outputs = export_agricultural_practices(conn, pg_path, args.product_id, lpis_table, lut_table, output)
         else:
             print("Unknown product type {}".format(product_type))
             return 1
 
     if args.working_path:
-        shutil.move(output, args.output)
-        if product_type == PRODUCT_TYPE_CROP_TYPE:
-            dest = os.path.dirname(args.output) or "."
-            shutil.move(csv_path, dest)
-            shutil.move(lut_path, dest)
+        dest = os.path.dirname(args.output) or "."
+        for f in outputs:
+            shutil.move(f, dest)
 
 
 if __name__ == "__main__":
