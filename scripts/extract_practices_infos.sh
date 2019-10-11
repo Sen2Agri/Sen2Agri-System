@@ -308,25 +308,48 @@ case "$COUNTRY" in
         NA_HEND="${YEAR}-12-15"
         ;;
     ROU)
-        IN_SHP_NAME="ROU_${YEAR}_DeclSTD_quality_indic.shp"
-        
-        VEG_START="${YEAR}-04-02"
+        if [ "${YEAR}" == "2018" ] ; then
+            IN_SHP_NAME="ROU_${YEAR}_DeclSTD_quality_indic.shp"
+            
+            VEG_START="${YEAR}-04-02"
 
-        CC_HSTART="${YEAR}-06-15"
-        CC_HEND="${YEAR}-10-31"
-        CC_PSTART="${YEAR}-10-01"
-        CC_ADD_FILES="${INSITU_ROOT}/RO_CatchCrops_${YEAR}.csv"
+            CC_HSTART="${YEAR}-06-15"
+            CC_HEND="${YEAR}-10-31"
+            CC_PSTART="${YEAR}-10-01"
+            CC_ADD_FILES="${INSITU_ROOT}/RO_CatchCrops_${YEAR}.csv"
 
-        NFC_VEG_START="${YEAR}-03-19"
-        NFC_HSTART="${YEAR}-04-02"
-        NFC_HEND="${YEAR}-10-31"
-        NFC_PSTART="${YEAR}-04-02"
-        NFC_PEND="${YEAR}-07-29"
-        NFC_ADD_FILES="${INSITU_ROOT}/Sen4CAP_L4C_NFC_ROU_${YEAR}.csv"
-        # TODO: Here handle the other dates according to the specified fields
+            NFC_VEG_START="${YEAR}-03-19"
+            NFC_HSTART="${YEAR}-04-02"
+            NFC_HEND="${YEAR}-10-31"
+            NFC_PSTART="${YEAR}-04-02"
+            NFC_PSTARTW="${YEAR}-03-19"
+            NFC_PEND="${YEAR}-07-29"
+            NFC_ADD_FILES="${INSITU_ROOT}/Sen4CAP_L4C_NFC_ROU_${YEAR}.csv"
+            # TODO: Here handle the other dates according to the specified fields
 
-        NA_HSTART="${YEAR}-04-02"
-        NA_HEND="${YEAR}-10-31"
+            NA_HSTART="${YEAR}-04-02"
+            NA_HEND="${YEAR}-10-31"
+        else         
+            IN_SHP_NAME="decl_rou_${YEAR}_${YEAR}.csv"
+            VEG_START="${YEAR}-04-15"
+
+            CC_VEG_START="${YEAR}-05-20"
+            CC_HSTART="${YEAR}-06-03"
+            CC_HEND="${YEAR}-10-31"
+            CC_ADD_FILES="${INSITU_ROOT}/RO_CatchCrops_${YEAR}.shp ${INSITU_ROOT}/catch_crops_sprout_rising_remove_duplicate.csv"
+
+            NFC_VEG_START="${YEAR}-03-25"
+            NFC_HSTART="${YEAR}-04-01"
+            NFC_HEND="${YEAR}-10-31"
+            NFC_PSTART="${YEAR}-04-01"
+            NFC_PSTARTW="${YEAR}-03-25"
+            NFC_PEND="${YEAR}-07-28"
+            #NFC_ADD_FILES="${INSITU_ROOT}/Sen4CAP_L4C_NFC_ROU_${YEAR}.csv"
+            # TODO: Here handle the other dates according to the specified fields
+
+            NA_HSTART="${YEAR}-05-01"
+            NA_HEND="${YEAR}-12-15"
+        fi
         ;;
     *)
         echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU}"

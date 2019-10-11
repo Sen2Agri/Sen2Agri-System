@@ -24,7 +24,8 @@ from functools import partial
 import sys
 
 not_executed_cmds = []
-executed_cmds_cnt = 0
+executed_cmds_cnt = multiprocessing.Value('i', 0)
+executed_cmds_cnt_lock = multiprocessing.Lock()
 
 try:
     from configparser import ConfigParser
@@ -176,24 +177,29 @@ def run_command(args, allCmds, env=None):
     if ret == False :
         not_executed_cmds.append(cmd_line)
     
-    executed_cmds_cnt += 1
-    
-    print("=================================================")
-    allCmdsLen = len(allCmds)   
-    percentage = int(100 * float(executed_cmds_cnt)/float(allCmdsLen))    
-    print ("Processed a number of {} from a total of {}. Global progress = {}%".format(executed_cmds_cnt, allCmdsLen, percentage))
-    print("=================================================")    
+    with executed_cmds_cnt_lock:
+        executed_cmds_cnt.value += 1
+        print("=================================================")
+        allCmdsLen = len(allCmds)   
+        percentage = int(100 * float(executed_cmds_cnt.value)/float(allCmdsLen))    
+        print ("Processed a number of {} from a total of {}. Global progress = {}%".format(executed_cmds_cnt.value, allCmdsLen, percentage))
+        print("=================================================")    
     
     
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
     
+def initializer(*args):
+    global executed_cmds_cnt, executed_cmds_cnt_lock
+    executed_cmds_cnt, executed_cmds_cnt_lock = args
+    
 def run_commands(config, commands, env=None) :
     global not_executed_cmds
+    global executed_cmds_cnt, executed_cmds_cnt_lock
     
     # Reset the workers after 10 executions - NOT WORKING
     # pool = multiprocessing.Pool(config.pool_size, maxtasksperchild=10)
-    pool = multiprocessing.Pool(config.pool_size)
+    pool = multiprocessing.Pool(config.pool_size, initializer, (executed_cmds_cnt, executed_cmds_cnt_lock))
     
     results = []
     run_command_x=partial(run_command, allCmds=commands)

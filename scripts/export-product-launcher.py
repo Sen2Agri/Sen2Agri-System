@@ -17,6 +17,8 @@ import psycopg2
 from psycopg2.sql import SQL, Literal, Identifier
 import psycopg2.extras
 
+import tempfile
+
 try:
     from configparser import ConfigParser
 except ImportError:
@@ -128,11 +130,18 @@ def run_import_details_cmd(prd_id):
     run_command(command)
 
 def run_export_product_cmd(prd_id, out_file_path):
+    # Create a temporary directory, which normally is not in a network share
+    temp_directory = tempfile.mkdtemp()
+    
     command = []
     command += ["export-product.py", "-p"]
     command += [prd_id]
+    command += ["-w", temp_directory]
     command += [out_file_path]
     run_command(command)
+    
+    #delete the temporary directory
+    os.removedirs(temp_directory)
     
 def create_prd_shp_files(vectDataDirPath):    
     print ("Checking files in {}".format(vectDataDirPath))        
@@ -162,7 +171,8 @@ def move_shp_files(vectDataDirPath):
     for ext in extensions:
         for file in glob(os.path.join(vectDataDirPath,'*.' + ext)):
             print("Moving product shp file: {}".format(file))
-            os.rename(file, vectShpDataDirPath)        
+            file_name = os.path.basename(file)
+            os.rename(file, os.path.join(vectShpDataDirPath, file_name))        
 
 def main():
     parser = argparse.ArgumentParser(description="Imports product contents into the database")
