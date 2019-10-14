@@ -20,7 +20,6 @@ int main(int argc, char *argv[])
 
     readers.reserve(argc - 2);
     for (int i = 2; i < argc; i++) {
-        std::cout << argv[i];
         readers.emplace_back(std::make_unique<std::ifstream>(argv[i]));
     }
 
