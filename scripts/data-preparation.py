@@ -476,12 +476,7 @@ add constraint {} unique(ori_crop);"""
                 conn.commit()
 
     def prepare_lpis_staging(
-        self,
-        mode,
-        parcel_id_cols,
-        holding_id_cols,
-        crop_code_col,
-        lpis,
+        self, mode, parcel_id_cols, holding_id_cols, crop_code_col, lpis
     ):
         print("Importing LPIS")
         cmd = get_import_table_command(
@@ -1076,14 +1071,7 @@ and product_type_id = %s
 and created_timestamp = %s;"""
                 )
                 logging.debug(sql.as_string(conn))
-                cursor.execute(
-                    sql,
-                    (
-                        self.config.site_id,
-                        PRODUCT_TYPE_LPIS,
-                        dt,
-                    ),
-                )
+                cursor.execute(sql, (self.config.site_id, PRODUCT_TYPE_LPIS, dt))
 
                 sql = SQL(
                     """
@@ -1121,10 +1109,8 @@ values(%s, %s, %s, %s, %s, %s, %s);"""
 select *
 from {}
 inner join {} using (ori_crop)
-where not is_deleted""").format(
-                    Identifier(self.lpis_table),
-                    Identifier(self.lut_table)
-                )
+where not is_deleted"""
+                ).format(Identifier(self.lpis_table), Identifier(self.lut_table))
                 sql = sql.as_string(conn)
 
                 command = []
@@ -1152,17 +1138,25 @@ where not is_deleted""").format(
                             continue
 
                         buf = resolution / 2
-                        output = "{}_{}_buf_{}m.shp".format(self.lpis_table, epsg_code, buf)
+                        output = "{}_{}_buf_{}m.shp".format(
+                            self.lpis_table, epsg_code, buf
+                        )
                         output = os.path.join(self.lpis_path, output)
-                        prj = "{}_{}_buf_{}m.prj".format(self.lpis_table, epsg_code, buf)
+                        prj = "{}_{}_buf_{}m.prj".format(
+                            self.lpis_table, epsg_code, buf
+                        )
                         prj = os.path.join(self.lpis_path, prj)
 
                         with open(prj, "wb") as f:
                             f.write(wkt)
 
-                        sql = SQL('select "NewID", ST_Buffer(ST_Transform(wkb_geometry, {}), -{}) from {} where not is_deleted')
+                        sql = SQL(
+                            'select "NewID", ST_Buffer(ST_Transform(wkb_geometry, {}), -{}) from {} where not is_deleted'
+                        )
                         sql = sql.format(
-                            Literal(epsg_code), Literal(buf), Identifier(self.lpis_table)
+                            Literal(epsg_code),
+                            Literal(buf),
+                            Identifier(self.lpis_table),
                         )
                         sql = sql.as_string(conn)
 
@@ -1401,7 +1395,13 @@ def main():
     parser.add_argument("--parcel-id-cols", nargs="+", help="parcel id columns")
     parser.add_argument("--holding-id-cols", nargs="+", help="holding id columns")
     parser.add_argument("--crop-code-col", help="crop code column")
-    parser.add_argument('-m', "--mode", help="run mode", default="update", choices=["update", "replace", "incremental"])
+    parser.add_argument(
+        "-m",
+        "--mode",
+        help="run mode",
+        default="update",
+        choices=["update", "replace", "incremental"],
+    )
     parser.add_argument("-d", "--debug", help="debug mode", action="store_true")
 
     args = parser.parse_args()
@@ -1423,9 +1423,7 @@ def main():
     config = Config(args)
     year = args.year or date.today().year
 
-    data_preparation = DataPreparation(
-        config, year
-    )
+    data_preparation = DataPreparation(config, year)
 
     if args.lut is not None:
         data_preparation.prepare_lut(args.lut)
