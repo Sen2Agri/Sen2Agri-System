@@ -65,13 +65,14 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
                 lpis."Area_meters",
                 lpis."S1Pix",
                 lpis."S2Pix",
-                lut."ctnuml4a" as "CTnumL4A",
-                lpis."LC"
+                lut.ctnuml4a as "CTnumL4A",
+                lut.lc
             from {} lpis
-            inner join {} lut on lut.ctnum = lpis."CTnum"
+            natural join {} lut
             where "GeomValid"
             and not "Duplic"
             and not "Overlap"
+            and not is_deleted
             order by "NewID"
             """
         q2 = """
@@ -82,14 +83,15 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
                 lpis."Area_meters",
                 lpis."S1Pix",
                 lpis."S2Pix",
-                lut."ctnuml4a" as "CTnumL4A",
-                lpis."LC"
+                lut.ctnuml4a as "CTnumL4A",
+                lut.lc
             from stratum
             inner join {} lpis on lpis.wkb_geometry && stratum.geom and ST_Relate(lpis.wkb_geometry, stratum.geom, '2********')
-            inner join {} lut on lut.ctnum = lpis."CTnum"
+            natural join {} lut
             where "GeomValid"
             and not "Duplic"
             and not "Overlap"
+            and not is_deleted
             order by "NewID"
             """
 
@@ -149,8 +151,7 @@ def main():
         for feature in layer:
             id = feature.GetField("id")
             geom = feature.GetGeometryRef()
-            if id == 2:
-                extract_parcels(config, args, lpis_table, lut_table, id, geom)
+            extract_parcels(config, args, lpis_table, lut_table, id, geom)
 
 
 if __name__ == "__main__":
