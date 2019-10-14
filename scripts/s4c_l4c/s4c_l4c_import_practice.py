@@ -44,6 +44,7 @@ class Config(object):
             self.country = args.country
         self.practice = args.practice
         self.input_file = args.input_file
+        self.ogr2ogr_path = args.ogr2ogr_path
 
 expected_columns = ['FIELD_ID', 'MAIN_CROP', 'VEG_START', 'H_START', 'H_END', 'PRACTICE', 'P_TYPE', 'P_START', 'P_END']
 
@@ -59,9 +60,9 @@ def checkInputFileColumnNames(cols) :
             return False
     return True
     
-def get_import_export_table_command(destination, source, *options):
+def get_import_export_table_command(ogr2ogr_path, destination, source, *options):
     command = []
-    command += ["ogr2ogr"]
+    command += [ogr2ogr_path]
     command += options
     command += [destination, source]
     return command
@@ -130,10 +131,10 @@ def getSiteConfigKey(conn, key, site_id):
 def getCountry(conn, site_id):
     return getSiteConfigKey(conn, 'processor.s4c_l4c.country', site_id)  
 
-def import_agricultural_practices(conn, pg_path, practice, file, site_id, year, country):
+def import_agricultural_practices(config, conn, pg_path, file, site_id):
     table_name = "pd_ap_staging_practices_{}_{}".format(site_id, practice.lower())
     drop_table(conn, table_name)
-    command = get_import_export_table_command(pg_path, file, "-nln", table_name, "-gt", 100000, "-lco", "UNLOGGED=YES")
+    command = get_import_export_table_command(config.ogr2ogr_path, pg_path, file, "-nln", table_name, "-gt", 100000, "-lco", "UNLOGGED=YES")
     run_command(command)
     
     with conn.cursor() as cursor:
@@ -147,7 +148,7 @@ def import_agricultural_practices(conn, pg_path, practice, file, site_id, year, 
     with conn.cursor() as cursor:
         query = SQL(
             """ update {} set site_id = {}, practice_short_name = {}, year = {}, country = {} """
-        ).format(Identifier(table_name), Literal(site_id), Literal(practice), Literal(year), Literal(country))
+        ).format(Identifier(table_name), Literal(site_id), Literal(config.practice), Literal(config.year), Literal(config.country))
         print(query.as_string(conn))
         cursor.execute(query)
         conn.commit()    
@@ -196,7 +197,7 @@ def import_agricultural_practices(conn, pg_path, practice, file, site_id, year, 
     with conn.cursor() as cursor:
         query = SQL(
             """ delete from  l4c_practices where site_id = {} and practice_short_name = {} and year = {}  and country = {} """
-        ).format(Literal(site_id), Literal(practice), Literal(year), Literal(country))
+        ).format(Literal(site_id), Literal(config.practice), Literal(config.year), Literal(config.country))
         print(query.as_string(conn))
         cursor.execute(query)
         conn.commit()    
@@ -250,12 +251,9 @@ def main():
     parser.add_argument('-t', '--country', help="The country short name")
     parser.add_argument('-p', '--practice', required=True, help="The practice for which this file corresponds")
     parser.add_argument('-i', '--input-file', required=True, help="The uploaded input file")
+    parser.add_argument('-g', '--ogr2ogr-path', default='ogr2ogr', help="The path to ogr2ogr")
     args = parser.parse_args()
 
-#    if args.out_dir :
-#        if not os.path.exists(args.out_dir):
-#            os.makedirs(args.out_dir)
-    
     config = Config(args)
     
     pg_path = 'PG:dbname={} host={} port={} user={} password={}'.format(config.dbname, config.host,
@@ -268,7 +266,7 @@ def main():
         site_id = getSiteId(conn, config.site_short_name)
         if not args.country :
             config.country = getCountry(conn, site_id)
-        import_agricultural_practices(conn, pg_path, config.practice, args.input_file, site_id, config.year, config.country)
+        import_agricultural_practices(config, conn, pg_path, args.input_file, site_id)
         
 if __name__ == "__main__":
     main()

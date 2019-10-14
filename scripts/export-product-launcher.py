@@ -34,6 +34,8 @@ class Config(object):
         self.dbname = parser.get("Database", "DatabaseName")
         self.user = parser.get("Database", "UserName")
         self.password = parser.get("Database", "Password")
+        
+        self.ogr2ogr_path = args.ogr2ogr_path
 
 def get_practice(name):
     if name == "NA":
@@ -123,13 +125,13 @@ def run_command(args, env=None):
     subprocess.call(args, env=env)
     #os.system(cmd_line)
 
-def run_import_details_cmd(prd_id):
+def run_import_details_cmd(ogr2ogr_path, prd_id):
     command = []
-    command += ["import-product-details.py", "-p"]
-    command += [prd_id]
+    command += ["import-product-details.py", "-p", prd_id]
+    command += ["-g", ogr2ogr_path]
     run_command(command)
 
-def run_export_product_cmd(prd_id, out_file_path):
+def run_export_product_cmd(ogr2ogr_path, prd_id, out_file_path):
     # Create a temporary directory, which normally is not in a network share
     temp_directory = tempfile.mkdtemp()
     
@@ -137,17 +139,18 @@ def run_export_product_cmd(prd_id, out_file_path):
     command += ["export-product.py", "-p"]
     command += [prd_id]
     command += ["-w", temp_directory]
+    command += ["-g", ogr2ogr_path]
     command += [out_file_path]
     run_command(command)
     
     #delete the temporary directory
     os.removedirs(temp_directory)
     
-def create_prd_shp_files(vectDataDirPath):    
+def create_prd_shp_files(ogr2ogrPath, vectDataDirPath):    
     print ("Checking files in {}".format(vectDataDirPath))        
     for f in glob(os.path.join(vectDataDirPath,'*.gpkg')):  
         gpkgFileName = os.path.splitext(os.path.basename(f))[0]
-        ogr2ogr_cmd = ["ogr2ogr"]
+        ogr2ogr_cmd = [ogr2ogrPath]
         ogr2ogr_cmd += [os.path.join(vectDataDirPath, gpkgFileName + '.shp'),
                         os.path.join(vectDataDirPath, gpkgFileName + '.gpkg')]
         ogr2ogr_cmd += ["-lco", "ENCODING=UTF-8"]
@@ -179,6 +182,7 @@ def main():
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="Configuration file location")
     parser.add_argument('-f', '--product-ids-file', help="product ids file")
     parser.add_argument('-o', '--out', default="", help="Out file name")
+    parser.add_argument('-g', '--ogr2ogr-path', default='ogr2ogr', help="The path to ogr2ogr")
 
     args = parser.parse_args()
     
@@ -200,14 +204,14 @@ def main():
                 delete_existing_gpkg_files(vectDataDirPath)
                 
                 # Import (again) the product into the product_details_l4c table
-                run_import_details_cmd(prdId)
+                run_import_details_cmd(config.ogr2ogr_path, prdId)
                 
                 # Export the product as gpkg files
                 vectDataPath = os.path.join(vectDataDirPath, args.out)
-                run_export_product_cmd(prdId, vectDataPath)
+                run_export_product_cmd(config.ogr2ogr_path, prdId, vectDataPath)
                 
                 # create shp files from gpkg files
-                create_prd_shp_files(vectDataDirPath)
+                create_prd_shp_files(config.ogr2ogr_path, vectDataDirPath)
                 
                 # move the shp files to the SHP subfolder
                 move_shp_files(vectDataDirPath)

@@ -44,6 +44,8 @@ class Config(object):
         self.dbname = parser.get("Database", "DatabaseName")
         self.user = parser.get("Database", "UserName")
         self.password = parser.get("Database", "Password")
+        
+        self.ogr2ogr_path = args.ogr2ogr_path
 
 
 def get_product_info(conn, product_id):
@@ -77,9 +79,9 @@ def get_practice(name):
         return None
 
 
-def get_import_table_command(destination, source, *options):
+def get_import_table_command(ogr2ogr_path, destination, source, *options):
     command = []
-    command += ["ogr2ogr"]
+    command += [ogr2ogr_path]
     command += options
     command += [destination, source]
     return command
@@ -104,14 +106,14 @@ def drop_table(conn, name):
         conn.commit()
 
 
-def import_crop_type(conn, pg_path, product_id, path):
+def import_crop_type(config, conn, pg_path, product_id, path):
     path = os.path.join(path, "VECTOR_DATA", "Predict_classif_*.csv")
     for file in glob(path):
         table_name = "pd_ct_staging_{}".format(product_id)
 
         drop_table(conn, table_name)
 
-        command = get_import_table_command(pg_path, file, "-nln", table_name, "-gt", 100000, "-lco", "UNLOGGED=YES", "-oo", "AUTODETECT_TYPE=YES")
+        command = get_import_table_command(config.ogr2ogr_path, pg_path, file, "-nln", table_name, "-gt", 100000, "-lco", "UNLOGGED=YES", "-oo", "AUTODETECT_TYPE=YES")
         run_command(command)
 
         with conn.cursor() as cursor:
@@ -144,7 +146,7 @@ def import_crop_type(conn, pg_path, product_id, path):
         drop_table(conn, table_name)
 
 
-def import_agricultural_practices(conn, pg_path, product_id, path):
+def import_agricultural_practices(config, conn, pg_path, product_id, path):
     path = os.path.join(path, "VECTOR_DATA", "*.csv")
     for file in glob(path):
         practice = os.path.basename(file).split("_")[2]
@@ -249,6 +251,7 @@ def main():
     parser = argparse.ArgumentParser(description="Imports product contents into the database")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
     parser.add_argument('-p', '--product-id', type=int, help="product id")
+    parser.add_argument('-g', '--ogr2ogr-path', default='ogr2ogr', help="The path to ogr2ogr")
 
     args = parser.parse_args()
 
@@ -265,9 +268,9 @@ def main():
         (product_type, path) = r
 
         if product_type == PRODUCT_TYPE_CROP_TYPE:
-            import_crop_type(conn, pg_path, args.product_id, path)
+            import_crop_type(config, conn, pg_path, args.product_id, path)
         elif product_type == PRODUCT_TYPE_AGRICULTURAL_PRACTICES:
-            import_agricultural_practices(conn, pg_path, args.product_id, path)
+            import_agricultural_practices(config, conn, pg_path, args.product_id, path)
         else:
             print("Unknown product type {}".format(product_type))
             return 1

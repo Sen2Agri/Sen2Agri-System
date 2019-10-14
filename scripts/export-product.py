@@ -52,6 +52,8 @@ class Config(object):
         self.user = parser.get("Database", "UserName")
         self.password = parser.get("Database", "Password")
 
+        self.ogr2ogr_path = args.ogr2ogr_path
+
 
 def get_product_info(conn, product_id):
     with conn.cursor() as cursor:
@@ -75,9 +77,9 @@ def get_product_info(conn, product_id):
         return row
 
 
-def get_export_table_command(destination, source, *options):
+def get_export_table_command(ogr2ogr_path, destination, source, *options):
     command = []
-    command += ["ogr2ogr"]
+    command += [ogr2ogr_path]
     command += [destination, source]
     command += options
     return command
@@ -102,7 +104,7 @@ def get_srid(conn, lpis_table):
         return srid
 
 
-def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, gpkg_path, csv_path, lut_path):
+def export_crop_type(config, conn, pg_path, product_id, lpis_table, lut_table, gpkg_path, csv_path, lut_path):
     srid = get_srid(conn, lpis_table)
 
     query = SQL(
@@ -122,7 +124,7 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, gpkg_path
     query = query.as_string(conn)
 
     name = os.path.splitext(os.path.basename(gpkg_path))[0]
-    command = get_export_table_command(gpkg_path, pg_path, "-nln", name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
+    command = get_export_table_command(config.ogr2ogr_path, gpkg_path, pg_path, "-nln", name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
     run_command(command)
 
     query = SQL(
@@ -151,16 +153,15 @@ def export_crop_type(conn, pg_path, product_id, lpis_table, lut_table, gpkg_path
     ).format(Identifier(lpis_table), Identifier(lut_table), Literal(product_id))
     query = query.as_string(conn)
 
-    command = get_export_table_command(csv_path, pg_path, "-sql", query, "-gt", 100000)
+    command = get_export_table_command(config.ogr2ogr_path, csv_path, pg_path, "-sql", query, "-gt", 100000)
     run_command(command)
 
-    command = get_export_table_command(lut_path, pg_path, lut_table, "-gt", 100000)
+    command = get_export_table_command(config.ogr2ogr_path, lut_path, pg_path, lut_table, "-gt", 100000)
     run_command(command)
 
     return [gpkg_path, csv_path, lut_path]
 
-
-def export_agricultural_practices(conn, pg_path, product_id, lpis_table, lut_table, path):
+def export_agricultural_practices(config, conn, pg_path, product_id, lpis_table, lut_table, path):
     srid = get_srid(conn, lpis_table)
 
     practices = []
@@ -240,7 +241,7 @@ def export_agricultural_practices(conn, pg_path, product_id, lpis_table, lut_tab
         file = os.path.join(dir, name)
         outputs.append(file)
         table_name = os.path.splitext(name)[0].lower()
-        command = get_export_table_command(file, pg_path, "-nln", table_name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
+        command = get_export_table_command(config.ogr2ogr_path, file, pg_path, "-nln", table_name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
         run_command(command)
     return outputs
 
@@ -250,6 +251,7 @@ def main():
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
     parser.add_argument('-p', '--product-id', type=int, help="product id")
     parser.add_argument('-w', '--working-path', help="working path")
+    parser.add_argument('-g', '--ogr2ogr-path', default='ogr2ogr', help="The path to ogr2ogr")
     parser.add_argument('output', help="output path")
 
     args = parser.parse_args()
@@ -276,9 +278,9 @@ def main():
         if product_type == PRODUCT_TYPE_CROP_TYPE:
             csv_path = os.path.splitext(output)[0] + ".csv"
             lut_path = os.path.splitext(output)[0] + "_LUT.csv"
-            outputs = export_crop_type(conn, pg_path, args.product_id, lpis_table, lut_table, output, csv_path, lut_path)
+            outputs = export_crop_type(config, conn, pg_path, args.product_id, lpis_table, lut_table, output, csv_path, lut_path)
         elif product_type == PRODUCT_TYPE_AGRICULTURAL_PRACTICES:
-            outputs = export_agricultural_practices(conn, pg_path, args.product_id, lpis_table, lut_table, output)
+            outputs = export_agricultural_practices(config, conn, pg_path, args.product_id, lpis_table, lut_table, output)
         else:
             print("Unknown product type {}".format(product_type))
             return 1

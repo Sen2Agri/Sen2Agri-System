@@ -41,10 +41,11 @@ class Config(object):
         self.site_short_name = args.site_short_name
         self.year = args.year
         self.country = args.country
+        self.ogr2ogr_path = args.ogr2ogr_path
 
-def get_export_table_command(destination, source, *options):
+def get_export_table_command(ogr2ogr_path, destination, source, *options):
     command = []
-    command += ["ogr2ogr"]
+    command += [ogr2ogr_path]
     command += [destination, source]
     command += options
     return command
@@ -112,7 +113,7 @@ def exportPracticesFile(config, conn, pg_path, practice, site_id, out_file):
 
         name = os.path.basename(out_file)
         table_name = os.path.splitext(name)[0].lower()
-        command = get_export_table_command(out_file, pg_path, "-nln", table_name, "-sql", query_str, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
+        command = get_export_table_command(config.ogr2ogr_path, out_file, pg_path, "-nln", table_name, "-sql", query_str, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
         run_command(command)
 
 def exportFilterIdsFile(config, conn, pg_path, site_id, out_file) :
@@ -136,7 +137,7 @@ def exportFilterIdsFile(config, conn, pg_path, site_id, out_file) :
 
         name = os.path.basename(out_file)
         table_name = os.path.splitext(name)[0].lower()
-        command = get_export_table_command(out_file, pg_path, "-nln", table_name, "-sql", query_str, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
+        command = get_export_table_command(config.ogr2ogr_path, out_file, pg_path, "-nln", table_name, "-sql", query_str, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
         run_command(command)
 
 def getSiteId(conn, siteShortName):
@@ -317,6 +318,7 @@ def main():
     parser.add_argument('-s', '--site-short-name', help="Site short name for which the file was uploaded")
     parser.add_argument('-y', '--year', type=int, help="The year")
     parser.add_argument('-t', '--country', help="The country short name")
+    parser.add_argument('-g', '--ogr2ogr-path', default='ogr2ogr', help="The path to ogr2ogr")
     args = parser.parse_args()
 
     config = Config(args)
