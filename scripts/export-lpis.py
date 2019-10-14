@@ -60,7 +60,7 @@ def get_site_name(conn, site_id):
         return rows[0][0]
 
 
-def get_site_epsg_codes(conn, site_id):
+def get_site_utm_epsg_codes(conn, site_id):
     with conn.cursor() as cursor:
         query = SQL(
             """
@@ -94,6 +94,18 @@ def get_esri_wkt(epsg_code):
     return srs.ExportToWkt()
 
 
+def get_srid(conn, lpis_table):
+    with conn.cursor() as cursor:
+        query = SQL("select Find_SRID('public', {}, 'wkb_geometry')")
+        query = query.format(Literal(lpis_table))
+        print(query.as_string(conn))
+
+        cursor.execute(query)
+        srid = cursor.fetchone()[0]
+        conn.commit()
+        return srid
+
+
 def main():
     parser = argparse.ArgumentParser(description="Crops and recompresses S1 L2A products")
     parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
@@ -115,6 +127,9 @@ def main():
         site_name = get_site_name(conn, config.site_id)
         year = args.year or date.today().year
         lpis_table = "decl_{}_{}".format(site_name, year)
+        lut_table = "lut_{}_{}".format(site_name, year)
+
+        site_srid = get_srid(conn, lpis_table)
 
         commands = []
 
@@ -124,8 +139,13 @@ def main():
         gpkg = "{}.gpkg".format(lpis_table)
         gpkg = os.path.join(args.path, gpkg)
 
-        sql = SQL('select "NewID", * from {}')
-        sql = sql.format(Identifier(lpis_table))
+        sql = SQL("""
+select *
+from {}
+inner join {} using (ori_crop)
+where not is_deleted
+""")
+        sql = sql.format(Identifier(lpis_table), Identifier(lut_table))
         sql = sql.as_string(conn)
 
         command = []
@@ -135,13 +155,25 @@ def main():
         command += [pg_path]
         commands.append(command)
 
+        sql = SQL("""
+select *
+from {}
+inner join {} using (ori_crop)
+where not is_deleted
+""")
+        sql = sql.format(Identifier(lpis_table), Identifier(lut_table))
+        sql = sql.as_string(conn)
+
         command = []
         command += ["ogr2ogr"]
+        command += ["-a_srs", "EPSG:{}".format(site_srid)]
+        command += ["-fieldTypeToString", "DateTime"]
+        command += ["-sql", sql]
         command += [gpkg]
-        command += [pg_path, lpis_table]
+        command += [pg_path]
         commands.append(command)
 
-        epsg_codes = get_site_epsg_codes(conn, config.site_id)
+        epsg_codes = get_site_utm_epsg_codes(conn, config.site_id)
         epsg_codes.append(3035)
 
         for epsg_code in epsg_codes:
@@ -163,6 +195,7 @@ def main():
                     """
                     select "NewID", ST_Buffer(ST_Transform(wkb_geometry, {}), {})
                     from {}
+                    where not is_deleted
                     """)
                 sql = sql.format(Literal(epsg_code), Literal(-buf),
                                  Identifier(lpis_table))
