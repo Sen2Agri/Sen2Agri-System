@@ -951,12 +951,20 @@ def process_radar(config, conn, pool):
     products = get_radar_products(config, conn, config.site_id)
     groups = defaultdict(list)
     input_srs = None
+    missing_products = set()
+    found_products = set()
     for product in products:
         if config.tiles is not None and product.tile_id not in config.tiles:
             continue
-        if not os.path.exists(product.path):
-            print("product {} does not exist".format(product.path))
+        if product.path in missing_products:
             continue
+        if product.path not in found_products:
+            if not os.path.exists(product.path):
+                print("product {} does not exist".format(product.path))
+                missing_products.add(product.path)
+                continue
+            else:
+                found_products.add(product.path)
 
         if input_srs is None:
             input_srs = get_projection(product.path)
