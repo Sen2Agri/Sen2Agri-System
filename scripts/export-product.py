@@ -161,6 +161,7 @@ def export_crop_type(config, conn, pg_path, product_id, lpis_table, lut_table, g
 
     return [gpkg_path, csv_path, lut_path]
 
+
 def export_agricultural_practices(config, conn, pg_path, product_id, lpis_table, lut_table, path):
     srid = get_srid(conn, lpis_table)
 
