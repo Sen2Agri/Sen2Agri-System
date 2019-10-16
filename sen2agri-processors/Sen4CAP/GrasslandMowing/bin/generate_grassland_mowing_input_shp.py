@@ -127,8 +127,7 @@ def main():
             sql = "select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", wkb_geometry from {} natural join {} where ctnum in ({})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums))
         else :
             sql = SQL('select "NewID", ori_hold as "Ori_hold", ori_id as "Ori_id", ori_crop as "Ori_crop", wkb_geometry from {} natural join {}')
-            sql = sql.format(Identifier(lpis_table))
-            sql = sql.format(Identifier(lut_table))
+            sql = sql.format(Identifier(lpis_table), Identifier(lut_table))
             sql = sql.as_string(conn)
 
         command = []
