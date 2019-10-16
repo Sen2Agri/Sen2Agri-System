@@ -101,32 +101,80 @@ def check_file(p):
 
 def main():
     parser = argparse.ArgumentParser(description="Crop type processor wrapper")
-    parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
-    parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
-    parser.add_argument('--season-start', help="season start date")
-    parser.add_argument('--season-end', help="season end date")
-    parser.add_argument('--out-path', default='.', help="output path")
-    parser.add_argument('--working-path', default='.', help="working path")
-    parser.add_argument('--tiles', default=None, nargs="+", help="tile filter")
-    parser.add_argument('--lc', help="LC classes to assess", default='1234')
-    parser.add_argument('--min-s2-pix', type=int, help="minimum number of S2 pixels", default=3)
-    parser.add_argument('--min-s1-pix', type=int, help="minimum number of S1 pixels", default=1)
-    parser.add_argument('--best-s2-pix', type=int, help="minimum number of S2 pixels for parcels to use in training", default=10)
-    parser.add_argument('--pa-min', type=int, help="minimum parcels to assess a crop type", default=30)
-    parser.add_argument('--pa-train-h', type=int, help="upper threshold for parcel counts by crop type", default=4000)
-    parser.add_argument('--pa-train-l', type=int, help="lower threshold for parcel counts by crop type", default=1100)
-    parser.add_argument('--sample-ratio-h', type=float, help="training ratio for common crop types", default=0.25)
-    parser.add_argument('--sample-ratio-l', type=float, help="training ratio for uncommon crop types", default=0.75)
-    parser.add_argument('--smote-target', type=int, help="target sample count for SMOTE", default=1000)
-    parser.add_argument('--smote-k', type=int, help="number of SMOTE neighbours", default=5)
-    parser.add_argument('--num-trees', type=int, help="number of RF trees", default=300)
-    parser.add_argument('--min-node-size', type=int, help="minimum node size", default=10)
+    parser.add_argument(
+        "-c",
+        "--config-file",
+        default="/etc/sen2agri/sen2agri.conf",
+        help="configuration file location",
+    )
+    parser.add_argument("-s", "--site-id", type=int, help="site ID to filter by")
+    parser.add_argument("--season-start", help="season start date")
+    parser.add_argument("--season-end", help="season end date")
+    parser.add_argument("--out-path", default=".", help="output path")
+    parser.add_argument("--working-path", default=".", help="working path")
+    parser.add_argument("--tiles", default=None, nargs="+", help="tile filter")
+    parser.add_argument("--lc", help="LC classes to assess", default="1234")
+    parser.add_argument(
+        "--min-s2-pix", type=int, help="minimum number of S2 pixels", default=3
+    )
+    parser.add_argument(
+        "--min-s1-pix", type=int, help="minimum number of S1 pixels", default=1
+    )
+    parser.add_argument(
+        "--best-s2-pix",
+        type=int,
+        help="minimum number of S2 pixels for parcels to use in training",
+        default=10,
+    )
+    parser.add_argument(
+        "--pa-min", type=int, help="minimum parcels to assess a crop type", default=30
+    )
+    parser.add_argument(
+        "--pa-train-h",
+        type=int,
+        help="upper threshold for parcel counts by crop type",
+        default=4000,
+    )
+    parser.add_argument(
+        "--pa-train-l",
+        type=int,
+        help="lower threshold for parcel counts by crop type",
+        default=1100,
+    )
+    parser.add_argument(
+        "--sample-ratio-h",
+        type=float,
+        help="training ratio for common crop types",
+        default=0.25,
+    )
+    parser.add_argument(
+        "--sample-ratio-l",
+        type=float,
+        help="training ratio for uncommon crop types",
+        default=0.75,
+    )
+    parser.add_argument(
+        "--smote-target", type=int, help="target sample count for SMOTE", default=1000
+    )
+    parser.add_argument(
+        "--smote-k", type=int, help="number of SMOTE neighbours", default=5
+    )
+    parser.add_argument("--num-trees", type=int, help="number of RF trees", default=300)
+    parser.add_argument(
+        "--min-node-size", type=int, help="minimum node size", default=10
+    )
+    parser.add_argument("--year", type=int, help="year")
 
     args = parser.parse_args()
 
     config = Config(args)
 
-    with psycopg2.connect(host=config.host, dbname=config.dbname, user=config.user, password=config.password) as conn:
+    with psycopg2.connect(
+        host=config.host,
+        dbname=config.dbname,
+        user=config.user,
+        password=config.password,
+    ) as conn:
         lpis_path = get_lpis_path(conn, config.site_id, config.season_end)
         print("Using LPIS from {}".format(lpis_path))
 
@@ -198,6 +246,17 @@ def main():
 
     os.chdir(current_path)
 
+    year = args.year or date.today().year
+    parcels = os.path.join(args.working_path, "parcels.csv")
+
+    command = []
+    command += ["extract-parcels.py"]
+    command += ["-s", config.site_id]
+    command += ["-y", year]
+    command += [parcels]
+
+    run_command(command)
+
     optical_features = os.path.join(args.working_path, "features/optical-features.csv")
     sar_features = os.path.join(args.working_path, "features/sar-features.csv")
     sar_temporal = os.path.join(args.working_path, "features/sar-temporal.csv")
@@ -215,7 +274,7 @@ def main():
     command += [sar_features]
     command += [optical_features]
     command += [sar_temporal]
-    command += [os.path.join(lpis_path, "parcels.csv")]
+    command += [parcels]
     command += ["CTnumL4A"]
     command += [args.lc]
     command += ["Area_meters"]
