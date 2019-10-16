@@ -6,8 +6,11 @@ function usage() {
 }
 
 conda_user="sen2agri-service"
-
+script_path="/usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/generate_grassland_mowing_input_shp.py"
+config_file="/etc/sen2agri/sen2agri.conf"
+filter_ctnum=""
 force=0
+
 
 POSITIONAL=()
 while [[ $# -gt 0 ]]
@@ -41,7 +44,7 @@ case $key in
     shift # past value
     ;;
     -y|--year)
-    new_acq_date="$2"
+    year="$2"
     shift # past argument
     shift # past value
     ;;
@@ -54,7 +57,6 @@ case $key in
     force=1
     shift # past argument
     shift # past value
-    ;;
     ;;
     *)    # unknown option
     POSITIONAL+=("$1") # save it in an array for later
@@ -83,7 +85,7 @@ if [ -z ${year} ] ; then
     echo "No year provided!" && usage
 fi 
 if [ -z ${filter_ctnum} ] ; then
-    echo "No filter-ctnum provided!" && usage
+    echo "No filter-ctnum provided!"
 fi 
 
 if [ $USER == ${conda_user} ] ; then
@@ -105,7 +107,12 @@ if [ "${force}" == "1" ] ; then
     FORCE_OPT="--force" 
 fi
 
-PY_CMD="python ${script_path} ${CFG_FILE} --site-id ${site_id} --path ${path} --year ${year} --filter-ctnum ${filter_ctnum} ${FORCE_OPT}"
+FILTER_CT_NUM_OPT=""
+if [ ! -z "${filter_ctnum}" ] ; then
+    FILTER_CT_NUM_OPT="--filter-ctnum ${filter_ctnum}" 
+fi
+
+PY_CMD="python ${script_path} ${CFG_FILE} --site-id ${site_id} --path ${path} --year ${year} ${FILTER_CT_NUM_OPT} ${FORCE_OPT}"
 
 CMD="${CONDA_CMD} && ${PY_CMD}"
 CMD="${CMD}${CMD_TERM}"
