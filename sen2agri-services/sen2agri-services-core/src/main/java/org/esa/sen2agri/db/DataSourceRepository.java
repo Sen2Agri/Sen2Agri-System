@@ -30,7 +30,7 @@ import java.util.List;
 @Repository
 @Qualifier(value = "dataSourceRepository")
 @Transactional
-public interface DataSourceRepository extends JpaRepository<DataSourceConfiguration, Integer> {
+public interface DataSourceRepository extends JpaRepository<DataSourceConfiguration, Short> {
 
     @Query(value = "SELECT DISTINCT ON (site_id, satellite_id, scope, enabled) id, site_id, satellite_id, name, scope, username, passwrd, fetch_mode, " +
             "max_retries, retry_interval_minutes, download_path, specific_params,max_connections, local_root, enabled, secondary_datasource_id " +

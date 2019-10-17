@@ -175,4 +175,43 @@
         </attributes>
     </entity>
 
+    <entity class="org.esa.sen2agri.entities.Job" access="PROPERTY" name="Job">
+        <table name="job"/>
+        <convert converter="org.esa.sen2agri.entities.converters.JobStartTypeConverter" attribute-name="jobStartType" />
+        <convert converter="org.esa.sen2agri.entities.converters.ActivityStatusConverter" attribute-name="status" />
+        <attributes>
+            <id name="id">
+                <column name="id" nullable="false" column-definition="serial NOT NULL"/>
+                <generated-value strategy="IDENTITY" />
+            </id>
+            <basic name="jobStartType">
+                <column name="start_type_id" nullable="false" column-definition="smallint NOT NULL"/>
+            </basic>
+            <basic name="parameters">
+                <column name="parameters" nullable="true" column-definition="json"/>
+            </basic>
+            <basic name="submitTimestamp">
+                <column name="submit_timestamp" nullable="false" column-definition="timestamp with time zone NOT NULL DEFAULT now()"/>
+            </basic>
+            <basic name="startTimestamp">
+                <column name="start_timestamp" nullable="true" column-definition="timestamp with time zone"/>
+            </basic>
+            <basic name="endTimestamp">
+                <column name="end_timestamp" nullable="true" column-definition="timestamp with time zone"/>
+            </basic>
+            <basic name="status">
+                <column name="status_id" nullable="false" column-definition="smallint NOT NULL"/>
+            </basic>
+            <basic name="statusTimestamp">
+                <column name="status_timestamp" nullable="false" column-definition="timestamp with time zone NOT NULL DEFAULT now()"/>
+            </basic>
+            <many-to-one name="processor" fetch="LAZY">
+                <join-column name="processor_id" nullable="false"/>
+            </many-to-one>
+            <many-to-one name="site" fetch="LAZY">
+                <join-column name="site_id" nullable="false"/>
+            </many-to-one>
+        </attributes>
+    </entity>
+
 </entity-mappings>

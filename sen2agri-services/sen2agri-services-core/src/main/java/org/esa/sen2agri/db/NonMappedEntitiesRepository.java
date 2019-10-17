@@ -17,17 +17,17 @@ package org.esa.sen2agri.db;
 
 import org.esa.sen2agri.entities.ProductCount;
 import org.esa.sen2agri.entities.ProductDetails;
-import org.esa.sen2agri.entities.Satellite;
 import org.esa.sen2agri.entities.SiteTiles;
+import org.esa.sen2agri.entities.enums.Satellite;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import ro.cs.tao.EnumUtils;
 
 import javax.sql.DataSource;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,8 +60,7 @@ class NonMappedEntitiesRepository {
                     },
                     (resultSet, i) -> {
                         siteTiles.setSiteId(resultSet.getShort(1));
-                        siteTiles.setSatellite(Enum.valueOf(Satellite.class,
-                                                            Objects.requireNonNull(Satellite.getEnumConstantNameByValue(resultSet.getShort(2)))));
+                        siteTiles.setSatellite(EnumUtils.getEnumConstantByValue(Satellite.class, resultSet.getShort(2)));
                         siteTiles.setTiles((String[]) resultSet.getArray(3).getArray());
                         return siteTiles;
                     });
@@ -87,8 +86,7 @@ class NonMappedEntitiesRepository {
                     (resultSet, i) -> {
                         ProductCount productCount = new ProductCount();
                         productCount.setSiteId(resultSet.getShort(1));
-                        productCount.setSatellite(Enum.valueOf(Satellite.class,
-                                                               Objects.requireNonNull(Satellite.getEnumConstantNameByValue(resultSet.getShort(2)))));
+                        productCount.setSatellite(EnumUtils.getEnumConstantByValue(Satellite.class, resultSet.getShort(2)));
                         productCount.setStartDate(resultSet.getDate(3).toLocalDate());
                         productCount.setEndDate(resultSet.getDate(4).toLocalDate());
                         productCount.setCount(resultSet.getInt(5));

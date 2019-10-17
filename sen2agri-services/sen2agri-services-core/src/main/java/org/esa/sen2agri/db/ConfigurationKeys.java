@@ -21,9 +21,10 @@ package org.esa.sen2agri.db;
 public final class ConfigurationKeys {
     public static final String SENSOR_STATE = "%s.enabled";
     public static final String DOWNLOAD_DIR = "downloader.%s.write-dir";
-    public static final String DOWNLOADER_STATE_ENABLED = "downloader.enabled";
-    public static final String DOWNLOADER_SITE_STATE_ENABLED = "downloader.%s.enabled";
-    public static final String DOWNLOADER_SITE_FORCE_START_ENABLED = "downloader.%s.forcestart";
+    public static final String UPLOAD_DIR = "site.upload-path";
+    public static final String DOWNLOADER_ENABLED = "downloader.enabled";
+    public static final String DOWNLOADER_SENSOR_ENABLED = "downloader.%s.enabled";
+    public static final String DOWNLOADER_SENSOR_FORCE_START = "downloader.%s.forcestart";
     public static final String DOWNLOADER_START_OFFSET = "downloader.start.offset";
     public static final String SKIP_EXISTING_PRODUCTS = "downloader.skip.existing";
     public static final String SCHEDULED_LOOKUP_ENABLED = "scheduled.lookup.enabled";

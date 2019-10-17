@@ -16,7 +16,11 @@
 package org.esa.sen2agri.commons;
 
 import org.esa.sen2agri.db.PersistenceManager;
-import org.esa.sen2agri.entities.*;
+import org.esa.sen2agri.entities.ConfigurationItem;
+import org.esa.sen2agri.entities.DataSourceConfiguration;
+import org.esa.sen2agri.entities.Scope;
+import org.esa.sen2agri.entities.Site;
+import org.esa.sen2agri.entities.enums.Satellite;
 import org.esa.sen2agri.services.DownloadService;
 import ro.cs.tao.EnumUtils;
 import ro.cs.tao.datasource.DataSource;
@@ -37,6 +41,7 @@ import java.util.logging.Logger;
  */
 public class Config {
 
+    private static final Logger logger = Logger.getLogger(Config.class.getName());
     private static final List<DataSourceConfiguration> dataSourceConfigurations = new ArrayList<>();
     private static final Map<DataSourceConfiguration, ThreadPoolExecutor> dataSourceExecutors = Collections.synchronizedMap(new HashMap<>());
     private static final ExecutorService backgroundWorker = Executors.newSingleThreadExecutor();
@@ -77,6 +82,9 @@ public class Config {
                 final DataSource dataSource = dataSourceManager.get(ds.getSatellite().name(), ds.getDataSourceName());
                 if (dataSource == null) {
                     toRemove.add(ds);
+                    continue;
+                } else if (!ds.isEnabled()) {
+                    // if the datasource is disabled in database, leave it "as-is"
                     continue;
                 }
                 final String simpleName = dataSource.getClass().getSimpleName();
@@ -121,6 +129,8 @@ public class Config {
                     }
                 }
                 if (changed) {
+                    logger.fine(String.format("Datasource [%s,%s] has changed, will update the database",
+                                              ds.getDataSourceName(), ds.getSatellite().friendlyName()));
                     persistenceManager.save(ds);
                 }
 
@@ -145,11 +155,13 @@ public class Config {
                 final ThreadPoolExecutor executor = dataSourceExecutors.get(ds);
                 if (executor != null && !executor.isShutdown() && !executor.isTerminated()) {
                     if (executor.getMaximumPoolSize() != maxConnections) {
+                        logger.fine(String.format("MaxConnections for datasource [%s,%s] has changed to %d, will re-initialize the executor pool",
+                                                  ds.getDataSourceName(), ds.getSatellite().friendlyName(), maxConnections));
                         backgroundWorker.submit(() -> {
                             executor.shutdownNow();
                             dataSourceExecutors.put(ds,
                                                     new NamedThreadPoolExecutor(ds.getDataSourceName() + "-" +
-                                                                                        ds.getSatellite().shortName(),
+                                                                                        ds.getSatellite().friendlyName(),
                                                                                 maxConnections));
                         });
                     }
@@ -157,17 +169,34 @@ public class Config {
             } else {
                 dataSourceExecutors.put(ds,
                                         new NamedThreadPoolExecutor(ds.getDataSourceName() + "-" +
-                                                                            ds.getSatellite().shortName(),
+                                                                            ds.getSatellite().friendlyName(),
                                                                     maxConnections));
+                logger.fine(String.format("Initialized datasource [%s,%s] with %d max connections",
+                                          ds.getDataSourceName(), ds.getSatellite().friendlyName(), maxConnections));
             }
         }
         for (DataSourceConfiguration ds : toRemove) {
+            logger.fine(String.format("Datasource configuration [%s,%s] will be removed from database.",
+                                      ds.getDataSourceName(), ds.getSatellite().friendlyName()));
             persistenceManager.remove(ds);
         }
     }
 
     public static ThreadPoolExecutor getWorkerFor(DataSourceConfiguration dataSourceConfiguration) {
-        return dataSourceExecutors.get(dataSourceConfiguration);
+        final String name = dataSourceConfiguration.getDataSourceName() + "," + dataSourceConfiguration.getSatellite().friendlyName();
+        ThreadPoolExecutor poolExecutor = dataSourceExecutors.get(dataSourceConfiguration);
+        logger.finest(String.format("Requested worker for %s (active workers: %d, queued tasks: %d)",
+                                    name, poolExecutor.getActiveCount(), poolExecutor.getQueue().size()));
+        /*if (poolExecutor.getActiveCount() < dataSourceConfiguration.getMaxConnections()) {
+            logger.warning(String.format("No worker for %s is available. Will wait for the next available one", name));
+        }
+        while (poolExecutor.getActiveCount() >= dataSourceConfiguration.getMaxConnections()) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ignored) { }
+        }
+        logger.finest(String.format("A worker for %s became available.", name));*/
+        return poolExecutor;
     }
 
     public static String getProperty(String name) {
@@ -191,7 +220,7 @@ public class Config {
         if (value.isPresent()) {
             return value.orElse(null);
         } else {
-            Logger.getLogger(Config.class.getName()).warning(String.format("Config key [%s] not found, using default value '%s'",
+            logger.warning(String.format("Config key [%s] not found, using default value '%s'",
                                                                            name, defaultValue));
             persistenceManager.saveSetting((short) 0, name, defaultValue);
             return defaultValue;
@@ -208,6 +237,10 @@ public class Config {
                 item = items.stream().filter(i -> i.getSiteId() == null)
                         .findFirst().orElse(null);
             }
+        } else {
+            logger.warning(String.format("Config key [%s] not found, using default value '%s'",
+                                                                           name, defaultValue));
+            persistenceManager.saveSetting((short) 0, name, defaultValue);
         }
         return item != null ? item.getValue() : defaultValue;
     }
@@ -247,7 +280,7 @@ public class Config {
      * @return the boolean value or null if not present in site config
      */
     public static Boolean getAsBoolean(short siteId, String name) {
-        String val = getSetting(siteId, name);
+        String val = getSetting(siteId, name, "false");
         return val != null ? Boolean.parseBoolean(val) : null;
     }
 

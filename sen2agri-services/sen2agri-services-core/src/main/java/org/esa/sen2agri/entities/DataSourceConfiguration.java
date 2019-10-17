@@ -15,6 +15,7 @@
  */
 package org.esa.sen2agri.entities;
 
+import org.esa.sen2agri.entities.enums.Satellite;
 import ro.cs.tao.datasource.remote.FetchMode;
 import ro.cs.tao.serialization.GenericAdapter;
 

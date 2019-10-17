@@ -16,7 +16,12 @@
 package org.esa.sen2agri.services.internal;
 
 import org.esa.sen2agri.db.PersistenceManager;
-import org.esa.sen2agri.entities.*;
+import org.esa.sen2agri.entities.DownloadProduct;
+import org.esa.sen2agri.entities.HighLevelProduct;
+import org.esa.sen2agri.entities.Season;
+import org.esa.sen2agri.entities.Site;
+import org.esa.sen2agri.entities.enums.ProductType;
+import org.esa.sen2agri.entities.enums.Satellite;
 import org.esa.sen2agri.services.ScheduleManager;
 import org.esa.sen2agri.services.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;

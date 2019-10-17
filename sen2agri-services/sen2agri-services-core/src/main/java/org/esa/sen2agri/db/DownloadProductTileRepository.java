@@ -17,10 +17,10 @@
 package org.esa.sen2agri.db;
 
 import org.esa.sen2agri.entities.DownloadProductTile;
-import org.esa.sen2agri.entities.Satellite;
-import org.esa.sen2agri.entities.TileProcessingStatus;
 import org.esa.sen2agri.entities.converters.SatelliteConverter;
 import org.esa.sen2agri.entities.converters.TileProcessingStatusConverter;
+import org.esa.sen2agri.entities.enums.Satellite;
+import org.esa.sen2agri.entities.enums.TileProcessingStatus;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -104,9 +104,9 @@ public class DownloadProductTileRepository extends NonMappedRepository<DownloadP
             @Override
             protected String conditionsSQL() {
                 return String.format("ORDER BY %s OFFSET %s LIMIT %s,",
-                                     String.join(",", pageRequest.getSort().stream()
+                                     pageRequest.getSort().stream()
                                              .map(o -> "th." + o.getProperty() + " " + o.getDirection().name())
-                                             .collect(Collectors.toList())),
+                                             .collect(Collectors.joining(",")),
                                      pageRequest.getOffset(),
                                      pageRequest.getPageSize());
             }
@@ -140,9 +140,9 @@ public class DownloadProductTileRepository extends NonMappedRepository<DownloadP
                     return "ORDER BY th.status_timestamp";
                 } else {
                     return String.format("WHERE th.status_id IN (%s) ORDER BY dh.status_timestamp",
-                                         String.join(",", Arrays.stream(statuses)
+                                         Arrays.stream(statuses)
                                                  .map(s -> String.valueOf(s.value()))
-                                                 .collect(Collectors.toList())));
+                                                 .collect(Collectors.joining(",")));
                 }
             }
 
@@ -162,9 +162,9 @@ public class DownloadProductTileRepository extends NonMappedRepository<DownloadP
                 } else {
                     return String.format("JOIN downloader_history dh ON dh.id = th.downloader_history_id " +
                                                  "WHERE dh.side_id = ? AND th.status_id IN (%s) ORDER BY dh.status_timestamp",
-                                         String.join(",", Arrays.stream(statuses)
+                                         Arrays.stream(statuses)
                                                  .map(s -> String.valueOf(s.value()))
-                                                 .collect(Collectors.toList())));
+                                                 .collect(Collectors.joining(",")));
                 }
             }
 
@@ -282,7 +282,7 @@ public class DownloadProductTileRepository extends NonMappedRepository<DownloadP
         protected RowMapper<DownloadProductTile> rowMapper() {
             return (resultSet, rowNum) -> {
                 DownloadProductTile tile = new DownloadProductTile();
-                tile.setSatellite(new SatelliteConverter().convertToEntityAttribute(resultSet.getInt(1)));
+                tile.setSatellite(new SatelliteConverter().convertToEntityAttribute(resultSet.getShort(1)));
                 tile.setOrbitId(resultSet.getInt(2));
                 tile.setTileId(resultSet.getString(3));
                 tile.setDownloadProductId(resultSet.getInt(4));

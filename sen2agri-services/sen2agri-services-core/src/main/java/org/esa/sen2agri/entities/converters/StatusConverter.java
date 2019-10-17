@@ -15,21 +15,22 @@
  */
 package org.esa.sen2agri.entities.converters;
 
-import org.esa.sen2agri.entities.Status;
+import org.esa.sen2agri.entities.enums.Status;
+import ro.cs.tao.EnumUtils;
 
 import javax.persistence.AttributeConverter;
 
 /**
  * @author Cosmin Cara
  */
-public class StatusConverter implements AttributeConverter<Status, Integer> {
+public class StatusConverter implements AttributeConverter<Status, Short> {
     @Override
-    public Integer convertToDatabaseColumn(Status status) {
+    public Short convertToDatabaseColumn(Status status) {
         return status != null ? status.value() : null;
     }
 
     @Override
-    public Status convertToEntityAttribute(Integer integer) {
-        return Status.getEnumConstantByValue(integer);
+    public Status convertToEntityAttribute(Short integer) {
+        return integer != null ? EnumUtils.getEnumConstantByValue(Status.class, integer) : null;
     }
 }

@@ -74,9 +74,23 @@ public class JobDescriptor {
         return TriggerBuilder.newTrigger()
                 .withIdentity(buildName(), getGroup())
                 .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                                                   .withMisfireHandlingInstructionNextWithExistingCount()
+                                                   //.withMisfireHandlingInstructionNextWithExistingCount()
                                                    .withIntervalInMinutes(this.repeatInterval)
                                                    .repeatForever())
+                .startAt(Date.from(fireTime.atZone(ZoneId.systemDefault()).toInstant()))
+                .usingJobData(dataMap)
+                .build();
+    }
+
+    public Trigger buildTrigger(JobDataMap dataMap) {
+        dataMap.put("fireTime", getFireTime());
+        dataMap.put("repeatInterval", getRepeatInterval());
+        return TriggerBuilder.newTrigger()
+                .withIdentity(buildName(), getGroup())
+                .withSchedule(SimpleScheduleBuilder.simpleSchedule()
+                                      //.withMisfireHandlingInstructionNextWithExistingCount()
+                                      .withIntervalInMinutes(this.repeatInterval)
+                                      .repeatForever())
                 .startAt(Date.from(fireTime.atZone(ZoneId.systemDefault()).toInstant()))
                 .usingJobData(dataMap)
                 .build();

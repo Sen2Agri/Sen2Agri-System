@@ -15,9 +15,9 @@
  */
 package org.esa.sen2agri.services;
 
-import org.esa.sen2agri.entities.ProductType;
 import org.esa.sen2agri.entities.Season;
 import org.esa.sen2agri.entities.Site;
+import org.esa.sen2agri.entities.enums.ProductType;
 
 import java.util.List;
 

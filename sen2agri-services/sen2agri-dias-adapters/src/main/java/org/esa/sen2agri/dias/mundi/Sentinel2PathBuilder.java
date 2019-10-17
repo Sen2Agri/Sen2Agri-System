@@ -16,7 +16,6 @@
 
 package org.esa.sen2agri.dias.mundi;
 
-import ro.cs.tao.datasource.DefaultProductPathBuilder;
 import ro.cs.tao.eodata.EOProduct;
 import ro.cs.tao.products.sentinels.Sentinel2ProductHelper;
 import ro.cs.tao.products.sentinels.SentinelProductHelper;
@@ -28,8 +27,9 @@ import java.util.logging.Logger;
 
 /**
  * For MUNDI DIAS, the S2 L1C path is:
- *      UU/L/SS/YYYY/MM/DD/L1C-product
- *  where:  UU = the UTM code
+ *      s2-l1c-YYYY-qq/UU/L/SS/YYYY/MM/DD/L1C-product
+ *  where:  qq = the quarter of the year of the product
+ *          UU = the UTM code
  *          L = the latitude band
  *          SS = the UTM square code
  *          YYYY = year
@@ -37,21 +37,21 @@ import java.util.logging.Logger;
  *          DD = day
  *          L1C-product = the product name
  */
-public class Sentinel2PathBuilder extends DefaultProductPathBuilder {
+public class Sentinel2PathBuilder extends SentinelPathBuilder {
     private String localPathDatePart;
 
     public Sentinel2PathBuilder(Path repositoryPath, String localPathFormat, Properties properties) {
-        super(repositoryPath, null, properties);
+        super(repositoryPath, localPathFormat, properties);
         List<String> tokens = Arrays.asList(localPathFormat.split("/"));
-        this.localPathFormat = String.join("/", tokens.subList(0, 3));
-        this.localPathDatePart = String.join("/", tokens.subList(3, 6));
+        this.localPathFormat = String.join("/", tokens.subList(1, 4));
+        this.localPathDatePart = String.join("/", tokens.subList(4, 7));
     }
 
     public Sentinel2PathBuilder(Path repositoryPath, String localPathFormat, Properties properties, boolean testOnly) {
-        super(repositoryPath, null, properties, testOnly);
+        super(repositoryPath, localPathFormat, properties, testOnly);
         List<String> tokens = Arrays.asList(localPathFormat.split("/"));
-        this.localPathFormat = String.join("/", tokens.subList(0, 3));
-        this.localPathDatePart = String.join("/", tokens.subList(3, 6));
+        this.localPathFormat = String.join("/", tokens.subList(1, 4));
+        this.localPathDatePart = String.join("/", tokens.subList(4, 7));
     }
 
     @Override
@@ -70,7 +70,7 @@ public class Sentinel2PathBuilder extends DefaultProductPathBuilder {
                 // Products are assumed to be organized according to the pattern defined in services.properties
                 Date date = product.getAcquisitionDate();
                 String productName = getProductName(product);
-                Path productFolderPath = tileToPath(this.repositoryPath, tileId);
+                Path productFolderPath = tileToPath(this.repositoryPath.resolve(getBucketPart(product)), tileId);
                 productFolderPath = dateToPath(productFolderPath, date, this.localPathDatePart);
                 path = productFolderPath.resolve(productName);
                 logger.fine(String.format("Looking for product %s into %s", product.getName(), path));
@@ -78,7 +78,7 @@ public class Sentinel2PathBuilder extends DefaultProductPathBuilder {
                     // maybe products are grouped by processing date
                     date = product.getProcessingDate();
                     if (date != null) {
-                        productFolderPath = dateToPath(tileToPath(this.repositoryPath, tileId), date, this.localPathDatePart);
+                        productFolderPath = dateToPath(tileToPath(this.repositoryPath.resolve(getBucketPart(product)), tileId), date, this.localPathDatePart);
                         path = productFolderPath.resolve(productName);
                         logger.fine(String.format("Alternatively looking for product %s into %s", product.getName(), path));
                         if (!Files.exists(path)) {

@@ -19,7 +19,7 @@ import org.esa.sen2agri.commons.Config;
 import org.esa.sen2agri.db.ConfigurationKeys;
 import org.esa.sen2agri.db.PersistenceManager;
 import org.esa.sen2agri.entities.DataSourceConfiguration;
-import org.esa.sen2agri.entities.Satellite;
+import org.esa.sen2agri.entities.enums.Satellite;
 import org.esa.sen2agri.services.DataSourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -102,14 +102,14 @@ public class DataSourceServiceImpl implements DataSourceService {
     @Override
     public void setSensorStatus(Satellite satellite, short siteId, boolean enabled) {
         Config.setSetting(siteId,
-                          String.format(ConfigurationKeys.SENSOR_STATE, satellite.shortName().toLowerCase()),
+                          String.format(ConfigurationKeys.SENSOR_STATE, satellite.friendlyName().toLowerCase()),
                           Boolean.toString(enabled));
     }
 
     @Override
     public boolean getSensorStatus(Satellite satellite, short siteId) {
         return Config.isFeatureEnabled(siteId, String.format(ConfigurationKeys.SENSOR_STATE,
-                satellite.shortName().toLowerCase()));
+                satellite.friendlyName().toLowerCase()));
     }
 
     private void validateFields(DataSourceConfiguration entity, List<String> errors) {

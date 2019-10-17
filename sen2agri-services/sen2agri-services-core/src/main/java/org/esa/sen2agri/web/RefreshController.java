@@ -61,6 +61,7 @@ public class RefreshController extends ControllerBase {
             threadNames[i] = threadInfos[i].getThreadName();
         }
         info.put("Threads", threadNames);
+        info.put("Quartz Jobs and Triggers", scheduleManager.getExecutingJobsWithTriggers());
         return new ResponseEntity<>(info, HttpStatus.OK);
     }
 }

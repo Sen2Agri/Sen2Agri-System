@@ -15,21 +15,22 @@
  */
 package org.esa.sen2agri.entities.converters;
 
-import org.esa.sen2agri.entities.Satellite;
+import org.esa.sen2agri.entities.enums.Satellite;
+import ro.cs.tao.EnumUtils;
 
 import javax.persistence.AttributeConverter;
 
 /**
  * @author Cosmin Cara
  */
-public class SatelliteConverter implements AttributeConverter<Satellite, Integer> {
+public class SatelliteConverter implements AttributeConverter<Satellite, Short> {
     @Override
-    public Integer convertToDatabaseColumn(Satellite satellite) {
-        return Integer.parseInt(satellite.toString());
+    public Short convertToDatabaseColumn(Satellite satellite) {
+        return satellite != null ? satellite.value() : null;
     }
 
     @Override
-    public Satellite convertToEntityAttribute(Integer integer) {
-        return Satellite.valueOf(Satellite.getEnumConstantNameByValue(integer));
+    public Satellite convertToEntityAttribute(Short integer) {
+        return integer != null ? EnumUtils.getEnumConstantByValue(Satellite.class, integer) : null;
     }
 }

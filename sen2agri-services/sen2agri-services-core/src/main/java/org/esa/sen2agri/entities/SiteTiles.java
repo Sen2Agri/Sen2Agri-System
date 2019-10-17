@@ -15,6 +15,7 @@
  */
 package org.esa.sen2agri.entities;
 
+import org.esa.sen2agri.entities.enums.Satellite;
 import org.hibernate.annotations.Type;
 
 import java.io.Serializable;

@@ -57,7 +57,7 @@ public class DatasourceController  extends ControllerBase {
     @RequestMapping(value = "/{satellite}", method = RequestMethod.GET, produces = "application/json")
     public ResponseEntity<List<DataSourceConfiguration>> getConfigurations(@PathVariable("satellite") short satelliteId) {
         final List<DataSourceConfiguration> list =
-                dataSourceService.getDataSourceConfigurations(new SatelliteConverter().convertToEntityAttribute((int)satelliteId));
+                dataSourceService.getDataSourceConfigurations(new SatelliteConverter().convertToEntityAttribute(satelliteId));
         if (list == null || list.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.OK);
         }
@@ -68,7 +68,7 @@ public class DatasourceController  extends ControllerBase {
     public ResponseEntity<DataSourceConfiguration> getConfiguration(@PathVariable("satellite") short satelliteId,
                                                                     @PathVariable("name") String name) {
         DataSourceConfiguration entity =
-                dataSourceService.getDataSourceConfiguration(new SatelliteConverter().convertToEntityAttribute((int)satelliteId),
+                dataSourceService.getDataSourceConfiguration(new SatelliteConverter().convertToEntityAttribute(satelliteId),
                                                              name);
         if (entity == null) {
             return new ResponseEntity<>(HttpStatus.OK);

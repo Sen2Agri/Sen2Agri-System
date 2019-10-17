@@ -20,11 +20,9 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.web.servlet.server.ConfigurableServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 
-import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 
 /**
@@ -46,8 +44,8 @@ public class ServletConfig {
         return new ConcurrentTaskScheduler();
     }
 
-    @Bean
+    /*@Bean
     public Executor taskExecutor() {
         return new SimpleAsyncTaskExecutor();
-    }
+    }*/
 }

@@ -16,7 +16,7 @@
 
 package org.esa.sen2agri.db;
 
-import org.esa.sen2agri.entities.HighLevelProduct;
+import org.esa.sen2agri.entities.*;
 import org.esa.sen2agri.entities.converters.OrbitTypeConverter;
 import org.esa.sen2agri.entities.converters.ProductTypeConverter;
 import org.esa.sen2agri.entities.converters.SatelliteConverter;
@@ -75,7 +75,7 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
             @Override
             protected String conditionsSQL() {
                 return "WHERE site_id = ? AND product_type_id in (" +
-                        String.join(",", productTypeIds.stream().map(Object::toString).collect(Collectors.toList())) + ") " +
+                        productTypeIds.stream().map(Object::toString).collect(Collectors.joining(",")) + ") " +
                         "AND is_archived = false ORDER BY inserted_timestamp";
             }
 
@@ -91,7 +91,7 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
             @Override
             protected String conditionsSQL() {
                 return "WHERE site_id = ? AND product_type_id in (" +
-                        String.join(",", productTypeIds.stream().map(Object::toString).collect(Collectors.toList())) + ")";
+                        productTypeIds.stream().map(Object::toString).collect(Collectors.joining(",")) + ")";
             }
 
             @Override
@@ -136,6 +136,57 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
                 statement.setInt(1, downloadHistoryId);
             }
         }.list();
+    }
+
+    Map<SiteInfo, Map<String, List<ProductFileInfo>>> getProductInfoBySite(int userId, int siteId, int productTypeId) {
+        Map<SiteInfo, Map<String, List<ProductFileInfo>>> products = new LinkedHashMap<>();
+        DataSource dataSource = persistenceManager.getDataSource();
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        int[] siteIds = siteId > 0 ? new int[] { siteId } :
+                        jdbcTemplate.query("SELECT site_id FROM public.user where id = " + userId,
+                                           resultSet -> {
+                                               Array array = null;
+                                               while (resultSet.next()) {
+                                                   array = resultSet.getArray(1);
+                                               }
+                                               return array != null ? (int[]) array.getArray() : null;
+                                           });
+        List<Site> sites = persistenceManager.getEnabledSites();
+        if (sites != null && sites.size() > 0) {
+            if (siteIds != null && siteIds.length > 0) {
+                Set<Integer> ids = new HashSet<>();
+                for (int id : siteIds) {
+                    ids.add(id);
+                }
+                sites = sites.stream().filter(s -> ids.contains((int) s.getId())).collect(Collectors.toList());
+            }
+            List<ProductTypeInfo> productTypes = persistenceManager.getProductTypes();
+            Map<Integer, String> typeDescriptions = productTypes.stream().collect(Collectors.toMap(ProductTypeInfo::getId, ProductTypeInfo::getDescription));
+            if (productTypeId > 0) {
+                productTypes = productTypes.stream().filter(p -> p.getId() == productTypeId).collect(Collectors.toList());
+            }
+            for (Site s : sites) {
+                final SiteInfo siteInfo = new SiteInfo(s.getId(), s.getName());
+                LinkedHashMap<String, List<ProductFileInfo>> productInfos = new LinkedHashMap<>();
+                for (ProductTypeInfo productTypeInfo : productTypes) {
+                    productInfos.put(productTypeInfo.getDescription() + ":" + productTypeInfo.getId(), new ArrayList<>());
+                }
+                if (productTypeId > 0) {
+                    List<HighLevelProduct> hlProducts = findProducts(siteId,
+                                                                     new HashSet<Integer>() {{ add(productTypeId); }});
+                    ProductTypeInfo typeInfo = productTypes.get(0);
+                    productInfos.get(typeInfo.getDescription() + ":" + typeInfo.getId())
+                                .addAll(hlProducts.stream()
+                                                  .map(p -> new ProductFileInfo(p.getProductName(),
+                                                                                p.getFullPath(),
+                                                                                0L,
+                                                                                typeDescriptions.get(p.getProductType().value())))
+                                                  .collect(Collectors.toList()));
+                }
+                products.put(siteInfo, productInfos);
+            }
+        }
+        return products;
     }
 
     HighLevelProduct saveProduct(HighLevelProduct product) {
@@ -241,7 +292,7 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
                 if (timestamp != null) {
                     product.setInserted(timestamp.toLocalDateTime());
                 }
-                product.setSatellite(new SatelliteConverter().convertToEntityAttribute(resultSet.getInt(10)));
+                product.setSatellite(new SatelliteConverter().convertToEntityAttribute(resultSet.getShort(10)));
                 product.setProductType(new ProductTypeConverter().convertToEntityAttribute(resultSet.getInt(11)));
                 try {
                     product.setFootprint(new GeometryAdapter().marshal(resultSet.getString(12)));

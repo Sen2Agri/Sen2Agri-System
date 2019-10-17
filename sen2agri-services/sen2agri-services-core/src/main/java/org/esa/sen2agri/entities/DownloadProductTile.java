@@ -16,6 +16,9 @@
 
 package org.esa.sen2agri.entities;
 
+import org.esa.sen2agri.entities.enums.Satellite;
+import org.esa.sen2agri.entities.enums.TileProcessingStatus;
+
 import java.time.LocalDateTime;
 
 public class DownloadProductTile {

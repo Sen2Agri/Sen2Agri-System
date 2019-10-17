@@ -8,14 +8,17 @@
 
         <mapping-file>META-INF/sen2agri_orm.xml</mapping-file>
 
-        <class>org.esa.sen2agri.entities.Status</class>
-        <class>org.esa.sen2agri.entities.Satellite</class>
+        <class>org.esa.sen2agri.entities.enums.ActivityStatus</class>
+        <class>org.esa.sen2agri.entities.enums.JobStartType</class>
+        <class>org.esa.sen2agri.entities.enums.Status</class>
+        <class>org.esa.sen2agri.entities.enums.Satellite</class>
         <class>org.esa.sen2agri.entities.DownloadProduct</class>
         <class>org.esa.sen2agri.entities.ConfigurationItem</class>
         <class>org.esa.sen2agri.entities.Site</class>
         <class>org.esa.sen2agri.entities.ProductTypeInfo</class>
         <class>org.esa.sen2agri.entities.Season</class>
         <class>org.esa.sen2agri.entities.DataSourceConfiguration</class>
+        <class>org.esa.sen2agri.entities.Job</class>
 
         <exclude-unlisted-classes>false</exclude-unlisted-classes>
 

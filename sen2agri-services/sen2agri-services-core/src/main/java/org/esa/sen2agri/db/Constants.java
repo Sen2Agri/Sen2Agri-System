@@ -26,5 +26,6 @@ public class Constants {
     static final FetchMode DEFAULT_FETCH_MODE = FetchMode.OVERWRITE;
     static final int DEFAULT_SCOPE = 0x03;
     public static final String DEFAULT_TARGET_PATH = "/mnt/archive";
+    public static final String DEFAULT_UPLOAD_PATH = "/mnt/upload/{user}";
     static final int DEFAULT_MAX_CONNECTIONS = 1;
 }

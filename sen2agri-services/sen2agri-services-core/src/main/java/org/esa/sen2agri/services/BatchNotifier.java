@@ -121,7 +121,10 @@ public class BatchNotifier extends NotifiableComponent {
         String mailUser = Config.getSetting(ConfigurationKeys.MAIL_USER, "sen2agri.system@gmail.com");
         String mailPwd = Config.getSetting(ConfigurationKeys.MAIL_PASSWORD, "esa-sen2agri2019");
         String mailFrom = Config.getSetting(ConfigurationKeys.MAIL_SENDER, "sen2agri.system@gmail.com");
-        String mailTo = Config.getSetting(ConfigurationKeys.MAIL_RECIPIENT, null);
+        String mailTo = Config.getSetting(ConfigurationKeys.MAIL_RECIPIENT, "");
+        if (mailTo == null || mailTo.trim().isEmpty()) {
+            throw new RuntimeException("Mail sender not configured");
+        }
         boolean authRequired = Boolean.parseBoolean(Config.getSetting(ConfigurationKeys.MAIL_AUTH, "true"));
         boolean startTLS = Boolean.parseBoolean(Config.getSetting(ConfigurationKeys.MAIL_STARTTLS, "true"));
         return new MailSender(mailHost, mailPort, authRequired, mailUser, mailPwd, startTLS, mailFrom, mailTo);

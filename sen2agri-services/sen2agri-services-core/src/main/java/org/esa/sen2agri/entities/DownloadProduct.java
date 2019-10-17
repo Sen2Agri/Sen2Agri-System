@@ -15,6 +15,9 @@
  */
 package org.esa.sen2agri.entities;
 
+import org.esa.sen2agri.entities.enums.OrbitType;
+import org.esa.sen2agri.entities.enums.Satellite;
+import org.esa.sen2agri.entities.enums.Status;
 import org.locationtech.jts.geom.Geometry;
 
 import java.time.LocalDateTime;

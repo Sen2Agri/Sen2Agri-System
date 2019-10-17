@@ -18,11 +18,11 @@ package org.esa.sen2agri.db;
 
 import org.esa.sen2agri.entities.DownloadProduct;
 import org.esa.sen2agri.entities.DownloadSummary;
-import org.esa.sen2agri.entities.Satellite;
-import org.esa.sen2agri.entities.Status;
 import org.esa.sen2agri.entities.converters.OrbitTypeConverter;
 import org.esa.sen2agri.entities.converters.SatelliteConverter;
 import org.esa.sen2agri.entities.converters.StatusConverter;
+import org.esa.sen2agri.entities.enums.Satellite;
+import org.esa.sen2agri.entities.enums.Status;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -234,12 +234,12 @@ public class DownloadProductRepository extends NonMappedRepository<DownloadProdu
         }.list();
     }
 
-    List<DownloadProduct> findByStatusAndDate(int siteId, int satelliteId, LocalDate date) {
+    List<DownloadProduct> findByStatusAndDate(int siteId, int satelliteId, LocalDate date, boolean latestFirst) {
         return new DownloadProductTemplate() {
             @Override
             protected String conditionsSQL() {
                 return "WHERE dh.site_id = ? AND dh.satellite_id = ? AND ((dh.status_id = ? AND dh.product_date <= ?) OR (dh.status_id = ? AND dh.no_of_retries < 3)) " +
-                        "ORDER BY dh.product_date";
+                        "ORDER BY dh.product_date " + (latestFirst ? "DESC" : "ASC");
             }
 
             @Override
@@ -282,12 +282,20 @@ public class DownloadProductRepository extends NonMappedRepository<DownloadProdu
     List<DownloadProduct> findIntersectingProducts(String productName, int daysBack, double threshold) {
         return new DownloadProductTemplate() {
             @Override
+            protected String baseSQL() {
+                return "SELECT dh.id, dh.site_id, dh.satellite_id, dh.product_name, " +
+                        "dh.full_path, dh.created_timestamp, dh.status_id, dh.no_of_retries, " +
+                        "dh.product_date, dh.orbit_id, dh.status_reason, dh.tiles, dh.footprint, dh.orbit_type_id " +
+                        "FROM downloader_history i " +
+                        "JOIN downloader_history dh on dh.site_id = i.site_id AND dh.satellite_id = i.satellite_id AND dh.orbit_id = i.orbit_id ";
+            }
+            @Override
             protected String conditionsSQL() {
-                return "WHERE EXISTS (SELECT * FROM downloader_history WHERE product_name = ? AND " +
-                        "ST_INTERSECTS(footprint, dh.footprint) AND satellite_id = dh.satellite_id AND " +
-                        "site_id = dh.site_id AND orbit_id = dh.orbit_id AND " +
-                        "DATE_PART('day', product_date - dh.product_date) BETWEEN ? AND ? " +
-                        "AND st_area(st_intersection(footprint, dh.footprint)) / st_area(footprint) > ?)";
+                return "WHERE i.product_name = ? " +
+                        "AND ST_INTERSECTS(dh.footprint, i.footprint) " +
+                        "AND DATE_PART('day', i.product_date - dh.product_date) BETWEEN ? AND ? " +
+                        "AND st_area(st_intersection(dh.footprint, i.footprint)) / st_area(dh.footprint) > ? " +
+                        "ORDER BY st_area(st_intersection(dh.footprint, i.footprint)) / st_area(dh.footprint) DESC, i.product_date ASC";
             }
 
             @Override
@@ -340,8 +348,8 @@ public class DownloadProductRepository extends NonMappedRepository<DownloadProdu
                     DownloadSummary row = new DownloadSummary();
                     row.setSiteName(resultSet.getString(1));
                     row.setYear(resultSet.getInt(2));
-                    row.setSatellite(satelliteConverter.convertToEntityAttribute(resultSet.getInt(3)));
-                    row.setStatus(statusConverter.convertToEntityAttribute(resultSet.getInt(4)));
+                    row.setSatellite(satelliteConverter.convertToEntityAttribute(resultSet.getShort(3)));
+                    row.setStatus(statusConverter.convertToEntityAttribute(resultSet.getShort(4)));
                     row.setCount(resultSet.getInt(5));
                     return row;
                 });
@@ -470,14 +478,14 @@ public class DownloadProductRepository extends NonMappedRepository<DownloadProdu
                 DownloadProduct product = new DownloadProduct();
                 product.setId(resultSet.getInt(1));
                 product.setSiteId(resultSet.getShort(2));
-                product.setSatelliteId(new SatelliteConverter().convertToEntityAttribute(resultSet.getInt(3)));
+                product.setSatelliteId(new SatelliteConverter().convertToEntityAttribute(resultSet.getShort(3)));
                 product.setProductName(resultSet.getString(4));
                 product.setFullPath(resultSet.getString(5));
                 Timestamp timestamp = resultSet.getTimestamp(6);
                 if (timestamp != null) {
                     product.setTimestamp(timestamp.toLocalDateTime());
                 }
-                product.setStatusId(new StatusConverter().convertToEntityAttribute(resultSet.getInt(7)));
+                product.setStatusId(new StatusConverter().convertToEntityAttribute(resultSet.getShort(7)));
                 product.setNbRetries(resultSet.getShort(8));
                 timestamp = resultSet.getTimestamp(9);
                 if (timestamp != null) {

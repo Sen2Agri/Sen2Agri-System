@@ -15,12 +15,15 @@
  */
 package org.esa.sen2agri.services;
 
+import org.esa.sen2agri.commons.Commands;
 import org.esa.sen2agri.commons.Config;
+import org.esa.sen2agri.commons.Topics;
 import org.esa.sen2agri.db.ConfigurationKeys;
 import org.esa.sen2agri.db.PersistenceManager;
 import org.esa.sen2agri.entities.DataSourceConfiguration;
-import org.esa.sen2agri.entities.Satellite;
 import org.esa.sen2agri.entities.Site;
+import org.esa.sen2agri.entities.enums.Satellite;
+import org.esa.sen2agri.scheduling.DownloadJob;
 import org.esa.sen2agri.scheduling.Job;
 import org.esa.sen2agri.scheduling.JobDescriptor;
 import org.quartz.*;
@@ -28,14 +31,15 @@ import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ro.cs.tao.eodata.Polygon2D;
+import ro.cs.tao.messaging.Message;
+import ro.cs.tao.messaging.Notifiable;
 import ro.cs.tao.spi.ServiceRegistryManager;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -43,8 +47,9 @@ import java.util.stream.Collectors;
  * @author Cosmin Cara
  */
 @Component("scheduleManager")
-public class ScheduleManager {
+public class ScheduleManager  extends Notifiable {
 
+    private static Set<Class<? extends Job>> jobTemplates;
     private Logger logger;
 
     @Autowired
@@ -63,17 +68,53 @@ public class ScheduleManager {
         Config.setDownloadService(service);
         service.setProductStatusListener(new ProductDownloadListener(persistenceManager));
         scheduler = StdSchedulerFactory.getDefaultScheduler();
+        scheduler.getListenerManager().addTriggerListener(new TriggerListener() {
+            private final Map<JobKey, Date> lastFireTimes = new HashMap<>();
+            @Override
+            public String getName() { return "prevent-duplicates"; }
+
+            @Override
+            public void triggerFired(Trigger trigger, JobExecutionContext context) {
+            }
+
+            @Override
+            public boolean vetoJobExecution(Trigger trigger, JobExecutionContext context) {
+                final Date fireTime = context.getScheduledFireTime();
+                final JobKey jobKey = trigger.getJobKey();
+                Date lastFireTime = lastFireTimes.get(jobKey);
+                if (fireTime.equals(lastFireTime))  {
+                    return true;
+                }
+                lastFireTimes.put(jobKey, fireTime);
+                return false;
+            }
+
+            @Override
+            public void triggerMisfired(Trigger trigger) {
+                logger.warning(String.format("Trigger '%s' misfired!", trigger.getKey()));
+            }
+
+            @Override
+            public void triggerComplete(Trigger trigger, JobExecutionContext context, Trigger.CompletedExecutionInstruction triggerInstructionCode) {
+                logger.fine(String.format("Trigger '%s' completed with code '%s'", trigger.getKey(), triggerInstructionCode.name()));
+            }
+        });
         scheduler.start();
         List<Site> enabledSites = getEnabledSites();
         logger.info("Enabled sites: " +
                             enabledSites.stream().map(Site::getShortName).collect(Collectors.joining(",")));
-        Set<Job> jobs = ServiceRegistryManager.getInstance().getServiceRegistry(Job.class).getServices();
-        logger.info("Found scheduled job types: " +
-                            jobs.stream().map(Job::groupName).collect(Collectors.joining(",")));
+        Set<Job> jobMocks = ServiceRegistryManager.getInstance().getServiceRegistry(Job.class).getServices();
+        logger.fine("Found scheduled job types: " + jobMocks.stream().map(Job::groupName).collect(Collectors.joining(",")));
+        jobTemplates = jobMocks.stream().map(Job::getClass).collect(Collectors.toSet());
         registeredJobs = new HashSet<>();
-        for (Job job : jobs) {
-            schedule(job, enabledSites);
+        for (Class<? extends Job> jobTemplate : jobTemplates) {
+            try {
+                schedule(jobTemplate, enabledSites, new HashSet<>());
+            } catch (IllegalAccessException | InstantiationException e) {
+               logger.severe(e.getMessage());
+            }
         }
+        subscribe(Topics.COMMAND);
     }
 
     @PreDestroy
@@ -85,9 +126,53 @@ public class ScheduleManager {
         Config.reload();
         logger.fine("Configuration refreshed from database ");
         List<Site> enabledSites = getEnabledSites();
-        Set<Job> jobs = ServiceRegistryManager.getInstance().getServiceRegistry(Job.class).getServices();
-        for (Job job : jobs) {
-            schedule(job, enabledSites);
+        if (jobTemplates == null) {
+            jobTemplates = ServiceRegistryManager.getInstance().getServiceRegistry(Job.class).getServices().stream().map(Job::getClass).collect(Collectors.toSet());
+        }
+        final Set<JobKey> executingJobs = getExecutingJobs();
+        for (Class<? extends Job> jobTemplate : jobTemplates) {
+            try {
+                schedule(jobTemplate, enabledSites, executingJobs);
+            } catch (IllegalAccessException | InstantiationException e) {
+                logger.severe(e.getMessage());
+            }
+        }
+        try {
+            logger.info(String.format("Running scheduled jobs: %d", scheduler.getCurrentlyExecutingJobs().size()));
+        } catch (SchedulerException e) {
+            logger.severe(e.getMessage());
+        }
+    }
+
+    @Override
+    protected void onMessageReceived(Message message) {
+        String command = message.getMessage();
+        if (Commands.DOWNLOADER_FORCE_START.equals(command)) {
+            String job = message.getItem("job");
+            String siteId = message.getItem("siteId");
+            String satelliteId = message.getItem("satelliteId");
+            if (job != null && siteId != null && satelliteId != null) {
+                Site site = persistenceManager.getSiteById(Short.parseShort(siteId));
+                if (site == null) {
+                    logger.warning(String.format("Received command '%s' for non-existent site id '%s'. Will do nothing.",
+                                                 command, siteId));
+                    return;
+                }
+                Job mockJob = ServiceRegistryManager.getInstance().getServiceRegistry(Job.class).getServices()
+                                                    .stream().filter(j -> j.groupName().toLowerCase().equals(job))
+                                                    .findFirst().orElse(null);
+                if (mockJob == null) {
+                    logger.warning(String.format("Received command '%s' for non-existent job type '%s'. Will do nothing.",
+                                                 command, job));
+                    return;
+                }
+                final Set<JobKey> executingJobs = getExecutingJobs();
+                try {
+                    schedule(mockJob.getClass(), new ArrayList<Site>() {{ add(site); }}, executingJobs);
+                } catch (Exception e) {
+                    logger.severe(e.getMessage());
+                }
+            }
         }
     }
 
@@ -103,26 +188,88 @@ public class ScheduleManager {
         return enabledSites;
     }
 
-    private void schedule(Job job, List<Site> sites) {
+    public Map<JobKey, List<TriggerKey>> getExecutingJobsWithTriggers() {
+        Map<JobKey, List<TriggerKey>> jobTriggers = new HashMap<>();
+        try {
+            final List<JobExecutionContext> executing = scheduler.getCurrentlyExecutingJobs();
+            for (JobExecutionContext context : executing) {
+                final JobKey key = context.getJobDetail().getKey();
+                jobTriggers.put(key, new ArrayList<>());
+                final TriggerKey currentTrigger = context.getTrigger().getKey();
+                jobTriggers.get(key).add(currentTrigger);
+                final List<? extends Trigger> triggers = scheduler.getTriggersOfJob(key);
+                for (Trigger trigger : triggers) {
+                    if (!trigger.getKey().equals(currentTrigger)) {
+                        jobTriggers.get(key).add(trigger.getKey());
+                    }
+                }
+            }
+        } catch (SchedulerException e) {
+            logger.severe(e.getMessage());
+        }
+        return jobTriggers;
+    }
+
+    private Set<JobKey> getExecutingJobs() {
+        final Set<JobKey> executingJobs = new HashSet<>();
+        try {
+            final List<JobExecutionContext> executing = scheduler.getCurrentlyExecutingJobs();
+            if (executing != null) {
+                StringBuilder builder = new StringBuilder();
+                builder.append("Jobs in progress: ");
+                if (executing.size() == 0) {
+                    builder.append("none");
+                }
+                for (JobExecutionContext context : executing) {
+                    final JobKey key = context.getJobDetail().getKey();
+                    builder.append(key).append(" [next run: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(context.getNextFireTime())).append("]; ");
+                    if (executingJobs.contains(key)) {
+                        logger.warning(String.format("Found executing job with same key: %s. The oldest one will be removed", key));
+                        List<JobExecutionContext> oldJobs = executing.stream().filter(c -> c.getNextFireTime().compareTo(context.getNextFireTime()) <= 0).collect(Collectors.toList());
+                        for (JobExecutionContext oldContext : oldJobs) {
+                            final JobKey previousKey = oldContext.getJobDetail().getKey();
+                            try {
+                                scheduler.deleteJob(previousKey);
+                                logger.info(String.format("Job with key %s removed", previousKey));
+                            } catch (SchedulerException ex) {
+                                logger.warning(String.format("Cannot remove job %s. Reason: %s", previousKey, ex.getMessage()));
+                            }
+                        }
+                    }
+                    executingJobs.add(key);
+                }
+                logger.fine(builder.toString());
+                builder.setLength(0);
+            }
+        } catch (SchedulerException e) {
+            logger.severe(e.getMessage());
+        }
+        return executingJobs;
+    }
+
+    private void schedule(Class<? extends Job> jobTemplate, List<Site> sites, Set<JobKey> executingJobs) throws IllegalAccessException, InstantiationException {
         final Map<Satellite, List<DataSourceConfiguration>> queryConfigurations = Config.getQueryConfigurations();
         final Map<Satellite, List<DataSourceConfiguration>> downloadConfigurations = Config.getDownloadConfigurations();
-        if (Config.isFeatureEnabled((short) 0, job.configKey())) {
+        Job mockJob = jobTemplate.newInstance();
+        final String jobKey = mockJob.configKey();
+        if (Config.isFeatureEnabled((short) 0, jobKey)) {
             downloadConfigurations.keySet().forEach(s -> {
-                final Set<Satellite> filter = job.getSatelliteFilter();
+                final Set<Satellite> filter = mockJob.getSatelliteFilter();
                 if (filter != null && !filter.contains(s)) {
-                    logger.fine(String.format("Job '%s' is not intended for sensor '%s'",
-                                              job.configKey(), s.shortName()));
+                    logger.fine(String.format("Job '%s' is not intended for sensor '%s'", mockJob.groupName(), s.friendlyName()));
                     return;
                 }
-                String sensorCode = s.shortName().toLowerCase();
+                String sensorCode = s.friendlyName().toLowerCase();
                 if (Config.isFeatureEnabled((short) 0, String.format(ConfigurationKeys.SENSOR_STATE, sensorCode)) ||
-                        Config.isFeatureEnabled((short) 0, String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED, sensorCode))) {
+                        Config.isFeatureEnabled((short) 0, String.format(ConfigurationKeys.DOWNLOADER_SENSOR_ENABLED, sensorCode))) {
                     for (Site site : sites) {
-                        JobDetail jobDetail = null;
+                        final String key = site.getShortName() + "-" + s.name();
                         try {
+                            Job job = jobTemplate.newInstance();
+                            job.setId(key);
                             if (!queryConfigurations.containsKey(s)) {
                                 throw new SchedulerException(String.format("No query configuration found for satellite %s",
-                                                                           s.shortName()));
+                                                                           s.friendlyName()));
                             }
                             final DataSourceConfiguration queryConfig = queryConfigurations.get(s).stream()
                                     .filter(ds -> ds.getSiteId() == null || ds.getSiteId().equals(site.getId()))
@@ -133,7 +280,7 @@ public class ScheduleManager {
                             }
                             if (!downloadConfigurations.containsKey(s)) {
                                 throw new SchedulerException(String.format("No download configuration found for satellite %s",
-                                                                           s.shortName()));
+                                                                           s.friendlyName()));
                             }
                             final DataSourceConfiguration downloadConfig = downloadConfigurations.get(s).stream()
                                     .filter(ds -> ds.getSiteId() == null || ds.getSiteId().equals(site.getId()))
@@ -142,69 +289,14 @@ public class ScheduleManager {
                                 throw new SchedulerException(String.format("Cannot find download configuration for site %s",
                                                                            site.getShortName()));
                             }
-                            final JobDescriptor descriptor = job.createDescriptor(site.getShortName() + "-" + s.name(), downloadConfig.getRetryInterval());
-
-                            jobDetail = job.buildDetail(site, s, queryConfig, downloadConfig);
-                            final Trigger trigger = descriptor.buildTrigger();
-                            if (!registeredJobs.contains(jobDetail.getKey())) {
-                                scheduler.scheduleJob(jobDetail, trigger);
-                                registeredJobs.add(jobDetail.getKey());
-                                logger.info(String.format("Scheduled new job '%s' (next run: %s)",
-                                                          jobDetail.getKey(), descriptor.getFireTime()));
+                            JobDetail jobDetail = job.buildDetail(site, queryConfig, downloadConfig);
+                            if (!executingJobs.contains(jobDetail.getKey())) {
+                                schedule(job, site, s, queryConfig, downloadConfig, executingJobs);
                             } else {
-                                JobDetail previousJobDetail = scheduler.getJobDetail(jobDetail.getKey());
-                                final Site oldSite = (Site) previousJobDetail.getJobDataMap().get("site");
-                                if (!site.equals(oldSite)) {
-                                    try {
-                                        scheduler.deleteJob(previousJobDetail.getKey());
-                                        logger.info(String.format("Deleted previous job '%s'", previousJobDetail.getKey()));
-                                    } catch (Exception e1) {
-                                        logger.warning(String.format("Unable to delete job '%s' (next run: %s)",
-                                                                     jobDetail.getKey(), descriptor.getFireTime()));
-                                    }
-                                    scheduler.scheduleJob(jobDetail, trigger);
-                                    logger.info(String.format("Scheduled new job '%s' (site info changed, next run: %s)",
-                                                              jobDetail.getKey(), descriptor.getFireTime()));
-                                }
+                                logger.warning(String.format("A job with key '%s' is already scheduled", jobDetail.getKey()));
                             }
-                            /*if (scheduler.checkExists(jobDetail.getKey())) {
-                                JobDetail previousJobDetail = scheduler.getJobDetail(jobDetail.getKey());
-                                final Site oldSite = (Site) previousJobDetail.getJobDataMap().get("site");
-                                if (!site.equals(oldSite)) {
-                                    try {
-                                        scheduler.deleteJob(previousJobDetail.getKey());
-                                        logger.info(String.format("Deleted previous job '%s'", previousJobDetail.getKey()));
-                                    } catch (Exception e1) {
-                                        logger.warning(String.format("Unable to delete job '%s' (next run: %s)",
-                                                                     jobDetail.getKey(), descriptor.getFireTime()));
-                                    }
-                                    scheduler.scheduleJob(jobDetail, trigger);
-                                    logger.info(String.format("Scheduled new job '%s' (site info changed, next run: %s)",
-                                                              jobDetail.getKey(), descriptor.getFireTime()));
-                                } else {
-                                    List<? extends Trigger> triggers = scheduler.getTriggersOfJob(jobDetail.getKey());
-                                    if (trigger != null && triggers.stream().noneMatch(t -> t.compareTo(trigger) == 0)) {
-                                        scheduler.deleteJob(jobDetail.getKey());
-                                        scheduler.scheduleJob(jobDetail, trigger);
-                                        logger.info(String.format("Rescheduled job '%s' (next run: %s)",
-                                                                  jobDetail.getKey(), descriptor.getFireTime()));
-                                    }
-                                }
-                            } else {
-                                scheduler.scheduleJob(jobDetail, trigger);
-                                logger.info(String.format("Scheduled new job '%s' (next run: %s)",
-                                                          jobDetail.getKey(), descriptor.getFireTime()));
-                            }*/
-                        } catch (SchedulerException e) {
-                            if (jobDetail != null) {
-                                logger.severe(String.format("Failed to schedule job '%s'. Reason: %s",
-                                                            jobDetail.getKey(),
-                                                            e.getMessage()));
-                            } else {
-                                logger.severe(String.format("Failed to create job for site '%s' and satellite '%s'. Reason: %s",
-                                                            site.getShortName(), s.shortName(),
-                                                            e.getMessage()));
-                            }
+                        } catch (IllegalAccessException | InstantiationException | SchedulerException e) {
+                            logger.severe(String.format("Failed to schedule job '%s'. Reason: %s", key, e.getMessage()));
                         }
                     }
                 } else {
@@ -212,7 +304,79 @@ public class ScheduleManager {
                 }
             });
         } else {
-            logger.info(String.format("Setting %s is disabled", job.configKey()));
+            logger.info(String.format("Setting %s is disabled", jobKey));
         }
     }
+
+    private void schedule(Job job, Site site, Satellite s,
+                               DataSourceConfiguration queryConfig, DataSourceConfiguration downloadConfig,
+                               Set<JobKey> executingJobs) {
+        String sensorCode = s.friendlyName().toLowerCase();
+        JobDetail jobDetail;
+        if (Config.isFeatureEnabled(site.getId(), String.format(ConfigurationKeys.SENSOR_STATE, sensorCode)) ||
+            Config.isFeatureEnabled(site.getId(), String.format(ConfigurationKeys.DOWNLOADER_SENSOR_ENABLED, sensorCode))) {
+            try {
+                final JobDescriptor descriptor = job.createDescriptor(downloadConfig.getRetryInterval());
+                jobDetail = job.buildDetail(site, queryConfig, downloadConfig);
+                final Trigger trigger;
+                if (job instanceof DownloadJob) {
+                    trigger = descriptor.buildTrigger(jobDetail.getJobDataMap());
+                } else {
+                    trigger = descriptor.buildTrigger();
+                }
+                final JobKey key = jobDetail.getKey();
+                if (!registeredJobs.contains(key)) {
+                    scheduler.scheduleJob(jobDetail, trigger);
+                    registeredJobs.add(key);
+                    logger.info(String.format("Scheduled new job '%s' (next run: %s, repeat after %d minutes)",
+                                              key,
+                                              descriptor.getFireTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
+                                              descriptor.getRepeatInterval()));
+                } else {
+                    JobDetail previousJobDetail = scheduler.getJobDetail(key);
+                    if (previousJobDetail == null) {
+                        throw new SchedulerException(String.format("Job %s seems to be scheduled, but its detail is missing", key));
+                    }
+                    TriggerKey triggerKey = TriggerKey.triggerKey(key.getName(), key.getGroup());
+                    SimpleTrigger oldTrigger = (SimpleTrigger) scheduler.getTrigger(triggerKey);
+                    if (oldTrigger == null) {
+                        throw new SchedulerException(String.format("Trigger %s not found for already scheduled job %s", triggerKey, key));
+                    }
+                    final JobDataMap jobDataMap = previousJobDetail.getJobDataMap();
+                    if (jobDataMap == null) {
+                        throw new SchedulerException(String.format("JobDataMap is missing for already scheduled job %s", key));
+                    }
+                    final Site oldSite = (Site) jobDataMap.get("site");
+                    if (oldSite != null && !site.equals(oldSite)) {
+                        logger.fine(String.format("Job %s: old site=%s, new site=%s",
+                                                  key, oldSite.getId(), site.getId()));
+                        try {
+                            if (!scheduler.deleteJob(previousJobDetail.getKey())) {
+                                throw new SchedulerException("Cannot delete");
+                            }
+                            logger.info(String.format("Deleted previous job '%s'", previousJobDetail.getKey()));
+                            scheduler.scheduleJob(jobDetail, trigger);
+                            logger.info(String.format("Scheduled new job '%s' (next run: %s)",
+                                                      key, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(trigger.getNextFireTime())));
+                        } catch (SchedulerException e1) {
+                            logger.warning(String.format("Unable to delete job '%s'", jobDetail.getKey()));
+                        }
+                    } else if (oldTrigger.getJobDataMap ().containsKey("downloadConfig") &&
+                               (long) downloadConfig.getRetryInterval() != (oldTrigger.getRepeatInterval() / 60000)) {
+                        logger.fine(String.format("Old interval: %d min; new interval: %d min",
+                                                  oldTrigger.getRepeatInterval() / 60000, downloadConfig.getRetryInterval()));
+                        scheduler.rescheduleJob(trigger.getKey(), trigger);
+                        logger.info(String.format("Rescheduled job '%s' (next run: %s, repeat after %d minutes)",
+                                                  jobDetail.getKey(),
+                                                  descriptor.getFireTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
+                                                  descriptor.getRepeatInterval()));
+                    }
+                }
+            } catch (SchedulerException e) {
+                logger.severe(String.format("Failed to schedule job '%s-%s'. Reason: %s",
+                                            job.getId(), job.groupName(), e.getMessage()));
+            }
+        }
+    }
+
 }

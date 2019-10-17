@@ -16,7 +16,7 @@
 package org.esa.sen2agri.web;
 
 import org.esa.sen2agri.commons.TaskProgress;
-import org.esa.sen2agri.entities.Satellite;
+import org.esa.sen2agri.entities.enums.Satellite;
 import org.esa.sen2agri.services.DownloadService;
 import org.esa.sen2agri.services.ScheduleManager;
 import org.esa.sen2agri.services.SensorProgress;
@@ -28,6 +28,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import ro.cs.tao.services.commons.ControllerBase;
 
 import java.util.ArrayList;
@@ -155,11 +156,16 @@ public class DownloadController extends ControllerBase {
      * Forces the downloader to start from the beginning for the specific site.
      * @param siteId    The site identifier
      */
-    @RequestMapping(value = "/forcestart/{id}", method = RequestMethod.GET, produces = "application/json")
-    public ResponseEntity<?> forceStart(@PathVariable("id") short siteId) {
-        downloadService.forceStart(siteId);
-        scheduleManager.refresh();
-        info("/downloader/forcestart/%s received", siteId);
+    @RequestMapping(value = "/forcestart", method = RequestMethod.GET, produces = "application/json")
+    public ResponseEntity<?> forceStart(@RequestParam("job") String job, @RequestParam("siteId") short siteId,
+                                        @RequestParam(name = "satelliteId", required = false) Short satelliteId) {
+        if (satelliteId == null) {
+            downloadService.forceStart(job, siteId);
+        } else {
+            downloadService.forceStart(job, siteId, satelliteId);
+        }
+        //scheduleManager.refresh();
+        //info("/downloader/forcestart/%s received", siteId);
         return new ResponseEntity<>("Force start message sent", HttpStatus.OK);
     }
 
@@ -173,21 +179,6 @@ public class DownloadController extends ControllerBase {
                                    @PathVariable("satelliteId") short satelliteId) {
         downloadService.start(siteId, satelliteId);
         scheduleManager.refresh();
-        info("/downloader/start/%s/%s received", siteId, satelliteId);
         return new ResponseEntity<>("Start message sent", HttpStatus.OK);
-    }
-
-    /**
-     * Forces the downloader to start from the beginning for the specific site and satellite.
-     * @param siteId    The site identifier
-     * @param satelliteId   The satellite identifier
-     */
-    @RequestMapping(value = "/forcestart/{id}/{satelliteId}", method = RequestMethod.GET, produces = "application/json")
-    public ResponseEntity<?> forceStart(@PathVariable("id") short siteId,
-                                        @PathVariable("satelliteId") short satelliteId) {
-        downloadService.forceStart(siteId, satelliteId);
-        scheduleManager.refresh();
-        info("/downloader/forcestart/%s/%s received", siteId, satelliteId);
-        return new ResponseEntity<>("Force message sent", HttpStatus.OK);
     }
 }

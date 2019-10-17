@@ -15,7 +15,8 @@
  */
 package org.esa.sen2agri.entities.converters;
 
-import org.esa.sen2agri.entities.ProductType;
+import org.esa.sen2agri.entities.enums.ProductType;
+import ro.cs.tao.EnumUtils;
 
 import javax.persistence.AttributeConverter;
 
@@ -25,11 +26,11 @@ import javax.persistence.AttributeConverter;
 public class ProductTypeConverter implements AttributeConverter<ProductType, Integer> {
     @Override
     public Integer convertToDatabaseColumn(ProductType productType) {
-        return Integer.parseInt(productType.toString());
+        return productType != null ? productType.value() : null;
     }
 
     @Override
     public ProductType convertToEntityAttribute(Integer integer) {
-        return ProductType.valueOf(ProductType.getEnumConstantNameByValue(integer));
+        return integer != null ? EnumUtils.getEnumConstantByValue(ProductType.class, integer) : null;
     }
 }

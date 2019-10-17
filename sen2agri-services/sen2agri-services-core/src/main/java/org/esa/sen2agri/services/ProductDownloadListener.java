@@ -20,10 +20,10 @@ import org.esa.sen2agri.commons.CheckSumManager;
 import org.esa.sen2agri.commons.Config;
 import org.esa.sen2agri.db.PersistenceManager;
 import org.esa.sen2agri.entities.DownloadProduct;
-import org.esa.sen2agri.entities.OrbitType;
-import org.esa.sen2agri.entities.Satellite;
-import org.esa.sen2agri.entities.Status;
 import org.esa.sen2agri.entities.converters.ProductConverter;
+import org.esa.sen2agri.entities.enums.OrbitType;
+import org.esa.sen2agri.entities.enums.Satellite;
+import org.esa.sen2agri.entities.enums.Status;
 import ro.cs.tao.datasource.ProductStatusListener;
 import ro.cs.tao.eodata.EOProduct;
 import ro.cs.tao.eodata.metadata.MetadataInspector;
@@ -56,102 +56,117 @@ public class ProductDownloadListener implements ProductStatusListener {
 
     @Override
     public boolean downloadStarted(EOProduct product) {
-        DownloadProduct dbProduct = getDbProduct(product);
-        if (dbProduct == null) {
-            dbProduct = new ProductConverter().convertToDatabaseColumn(product);
-        } else {
-            if (dbProduct.getFootprint() == null && product.getGeometry() != null) {
-                try {
-                    dbProduct.setFootprint(new GeometryAdapter().marshal(product.getGeometry()));
-                } catch (Exception e) {
-                    logger.warning(String.format("Cannot update fooprint for product %s. Reason: %s",
-                                                 product.getName(), e.getMessage()));
+        try {
+            DownloadProduct dbProduct = getDbProduct(product);
+            if (dbProduct == null) {
+                dbProduct = new ProductConverter().convertToDatabaseColumn(product);
+            } else {
+                final String geometry = product.getGeometry();
+                if (dbProduct.getFootprint() == null && geometry != null) {
+                    try {
+                        dbProduct.setFootprint(new GeometryAdapter().marshal(geometry));
+                    } catch (Exception e) {
+                        logger.warning(String.format("Cannot update footprint for product %s. Reason: %s",
+                                                     product.getName(), e.getMessage()));
+                    }
+                }
+                final String orbitdirection = product.getAttributeValue("orbitdirection");
+                if (dbProduct.getOrbitType() == null && orbitdirection != null) {
+                    dbProduct.setOrbitType(OrbitType.valueOf(orbitdirection));
+                }
+                dbProduct = persistenceManager.save(dbProduct);
+                // avoid re-downloading the products aborted, downloaded or processed
+                if (!Status.DOWNLOADING.equals(dbProduct.getStatusId()) && !Status.FAILED.equals(dbProduct.getStatusId())) {
+                    return false;
                 }
             }
-            if (dbProduct.getOrbitType() == null && product.getAttributeValue("orbitdirection") != null) {
-                dbProduct.setOrbitType(OrbitType.valueOf(product.getAttributeValue("orbitdirection")));
+            final String site = product.getAttributeValue("site");
+            if (site != null) {
+                dbProduct.setSiteId(Short.parseShort(site));
             }
-            dbProduct = persistenceManager.save(dbProduct);
-            // avoid redownloading the products aborted, downloaded or processed
-            if (!Status.DOWNLOADING.equals(dbProduct.getStatusId()) &&
-                    !Status.FAILED.equals(dbProduct.getStatusId())) {
-                return false;
-            }
+            //if (dbProduct.getStatusId() == Status.FAILED) {
+            dbProduct.setNbRetries((short) (dbProduct.getNbRetries() + 1));
+            //}
+            dbProduct.setStatusId(Status.DOWNLOADING);
+            dbProduct.setTimestamp(LocalDateTime.now());
+            persistenceManager.save(dbProduct);
+            logger.info(String.format("Download started [%s]", product.getName()));
+            return true;
+        } catch (Exception ex) {
+            logger.warning(String.format("Exception in downloadStarted: %s", ExceptionUtils.getStackTrace(ex)));
+            return false;
         }
-        String site = product.getAttributeValue("site");
-        if (site != null) {
-            dbProduct.setSiteId(Short.parseShort(site));
-        }
-        //if (dbProduct.getStatusId() == Status.FAILED) {
-        dbProduct.setNbRetries((short) (dbProduct.getNbRetries() + 1));
-        //}
-        dbProduct.setStatusId(Status.DOWNLOADING);
-        dbProduct.setTimestamp(LocalDateTime.now());
-        persistenceManager.save(dbProduct);
-        return true;
     }
 
     @Override
     public void downloadCompleted(EOProduct product) {
-        DownloadProduct dbProduct = getDbProduct(product);
-        if (dbProduct != null) {
-            String site = product.getAttributeValue("site");
-            if (site != null) {
-                dbProduct.setSiteId(Short.parseShort(site));
-            }
-            String tiles = product.getAttributeValue("tiles");
-            if (tiles != null) {
-                dbProduct.setTiles(tiles.split(","));
-            }
-            dbProduct.setStatusId(Status.DOWNLOADED);
-            boolean duplicate = false;
-            try {
-                String path = product.getLocation();
-                Path productPath;
-                if (!path.contains(dbProduct.getProductName()) &&
-                        (!path.toLowerCase().endsWith(".zip") || !path.toLowerCase().endsWith(".tar.gz"))) {
-                    productPath = Paths.get(new URI(path)).resolve(dbProduct.getProductName());
-                } else {
-                    // hack for Sentinel-1 to exclude products with the same MD5 sums for the rasters
-                    if (this.checkMd5 && Satellite.Sentinel1.name().equals(product.getProductType())) {
-                        MetadataInspector inspector = new Sentinel1MetadataInspector();
-                        try {
-                            MetadataInspector.Metadata metadata = inspector.getMetadata(Paths.get(path));
-                            Set<String> md5 = metadata.getControlSums();
-                            Set<String> existingProducts = new HashSet<>();
-                            if (md5.size() > 0) {
-                                final CheckSumManager verifier = CheckSumManager.getInstance();
-                                md5.forEach(m -> {
-                                                     if (verifier.containsChecksum(m)) {
-                                                         existingProducts.addAll(verifier.getProducts(m));
-                                                     }
-                                                     verifier.put(m, product.getName());
-                                                 });
-                                duplicate = existingProducts.size() >= 1;
-                                if (duplicate) {
-                                    logger.warning(String.format("Product %s has equal rasters with products %s",
-                                                                 product.getName(), String.join(",", existingProducts)));
-                                }
-                                verifier.flush();
-                            }
-                        } catch (IOException e) {
-                            logger.severe(String.format("Cannot open product %s metadata. Reason: %s",
-                                                        product.getName(), ExceptionUtils.getStackTrace(e)));
-                        }
-                    }
-                    productPath = Paths.get(new URI(path));
+        try {
+            DownloadProduct dbProduct = getDbProduct(product);
+            if (dbProduct != null) {
+                final String site = product.getAttributeValue("site");
+                if (site != null) {
+                    dbProduct.setSiteId(Short.parseShort(site));
                 }
-                dbProduct.setFullPath(productPath.toString());
-            } catch (URISyntaxException e) {
-                e.printStackTrace();
-                logger.warning(String.format("Error setting the location for product %s. The error was %s", product.getName(),
-                        e.getMessage()));
+                final String tiles = product.getAttributeValue("tiles");
+                if (tiles != null) {
+                    dbProduct.setTiles(tiles.split(","));
+                }
+                dbProduct.setStatusId(Status.DOWNLOADED);
+                boolean duplicate = false;
+                try {
+                    final String path = product.getLocation();
+                    Path productPath;
+                    if (!path.contains(dbProduct.getProductName()) &&
+                            !(path.toLowerCase().endsWith(".zip") || path.toLowerCase().endsWith(".tar.gz"))) {
+                        productPath = Paths.get(new URI(path)).resolve(dbProduct.getProductName());
+                    } else {
+                        // hack for Sentinel-1 to exclude products with the same MD5 sums for the rasters
+                        if (this.checkMd5 && Satellite.Sentinel1.name().equals(product.getProductType())) {
+                            MetadataInspector inspector = new Sentinel1MetadataInspector();
+                            try {
+                                MetadataInspector.Metadata metadata = inspector.getMetadata(Paths.get(path));
+                                Set<String> md5 = metadata.getControlSums();
+                                Set<String> existingProducts = new HashSet<>();
+                                if (md5.size() > 0) {
+                                    final CheckSumManager verifier = CheckSumManager.getInstance();
+                                    md5.forEach(m -> {
+                                                         if (verifier.containsChecksum(m)) {
+                                                             existingProducts.addAll(verifier.getProducts(m));
+                                                         }
+                                                         verifier.put(m, product.getName());
+                                                     });
+                                    duplicate = existingProducts.size() >= 1;
+                                    if (duplicate) {
+                                        logger.warning(String.format("Product %s has equal rasters with products %s",
+                                                                     product.getName(), String.join(",", existingProducts)));
+                                    }
+                                    verifier.flush();
+                                }
+                            } catch (IOException e) {
+                                logger.severe(String.format("Cannot open product %s metadata. Reason: %s",
+                                                            product.getName(), ExceptionUtils.getStackTrace(e)));
+                            }
+                        }
+                        productPath = Paths.get(new URI(path));
+                    }
+                    dbProduct.setFullPath(productPath.toString());
+                } catch (URISyntaxException e) {
+                    e.printStackTrace();
+                    logger.warning(String.format("Error setting the location for product %s. The error was %s",
+                                                 product.getName(), e.getMessage()));
+                }
+                dbProduct.setTimestamp(LocalDateTime.now());
+                dbProduct.setStatusReason(null);
+                if (!duplicate) {
+                    persistenceManager.save(dbProduct);
+                }
+                logger.info(String.format("Download completed [%s]", product.getName()));
+            } else {
+                logger.warning(String.format("Received download completed event for product %s, but it was not found in the database",
+                                             product.getName()));
             }
-            dbProduct.setTimestamp(LocalDateTime.now());
-            dbProduct.setStatusReason(null);
-            if (!duplicate) {
-                persistenceManager.save(dbProduct);
-            }
+        } catch (Exception ex) {
+            logger.warning(String.format("Exception in downloadCompleted: %s", ExceptionUtils.getStackTrace(ex)));
         }
     }
 
@@ -171,30 +186,33 @@ public class ProductDownloadListener implements ProductStatusListener {
     }
 
     private void handleDownloadUnsuccessful(EOProduct product, String reason, Status status) {
-        DownloadProduct dbProduct = getDbProduct(product);
-        if (dbProduct == null) {
-            dbProduct = new ProductConverter().convertToDatabaseColumn(product);
+        try {
+            DownloadProduct dbProduct = getDbProduct(product);
+            if (dbProduct == null) {
+                dbProduct = new ProductConverter().convertToDatabaseColumn(product);
+            }
+            final short site = getSiteId(product);
+            if (site != 0) {
+                dbProduct.setSiteId(site);
+            }
+            final String tiles = product.getAttributeValue("tiles");
+            if (tiles != null) {
+                dbProduct.setTiles(tiles.split(","));
+            }
+            final String maxRetries = product.getAttributeValue("maxRetries");
+            if (status == Status.FAILED &&
+                    (maxRetries != null && !maxRetries.trim().isEmpty()) &&
+                    (dbProduct.getNbRetries() > Integer.parseInt(maxRetries))) {
+                status = Status.ABORTED;
+                logger.warning(String.format("Product %s aborted after %s retries", product.getName(), maxRetries));
+            }
+            dbProduct.setStatusId(status);
+            dbProduct.setStatusReason(reason);
+            dbProduct.setTimestamp(LocalDateTime.now());
+            persistenceManager.save(dbProduct);
+        } catch (Exception ex) {
+            logger.warning(String.format("Exception in handleDownloadUnsuccessful: %s", ExceptionUtils.getStackTrace(ex)));
         }
-        short site = getSiteId(product);
-        if (site != 0) {
-            dbProduct.setSiteId(site);
-        }
-        String tiles = product.getAttributeValue("tiles");
-        if (tiles != null) {
-            dbProduct.setTiles(tiles.split(","));
-        }
-        String maxRetries = product.getAttributeValue("maxRetries");
-        if (status == Status.FAILED && (maxRetries != null && !"".equals(maxRetries.trim())) &&
-                (dbProduct.getNbRetries() >= Integer.parseInt(maxRetries))) {
-            status = Status.ABORTED;
-            logger.info(String.format("Product %s aborted after %s retries", product.getName(),
-                    maxRetries));
-        }
-
-        dbProduct.setStatusId(status);
-        dbProduct.setStatusReason(reason);
-        dbProduct.setTimestamp(LocalDateTime.now());
-        persistenceManager.save(dbProduct);
     }
 
     private DownloadProduct getDbProduct(EOProduct product) {

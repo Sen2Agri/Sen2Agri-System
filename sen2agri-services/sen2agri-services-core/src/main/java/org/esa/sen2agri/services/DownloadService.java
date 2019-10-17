@@ -44,11 +44,10 @@ public interface DownloadService {
      * @param siteId        The site identifier
      * @param queryObject   The query parameters
      * @param configuration The data source configuration
-     * @param expected      The expected count returned by query (if count was previously called)
      * @throws ParseException   If the query parameters are not of the expected type
      */
     List<EOProduct> query(short siteId, Query queryObject,
-                          DataSourceConfiguration configuration, long expected) throws ParseException;
+                          DataSourceConfiguration configuration) throws ParseException;
 
     /**
      * Retrieves the given list of products to a specific path, based on the given configuration.
@@ -97,17 +96,19 @@ public interface DownloadService {
     /**
      * Forces the downloader for the specific site to start from the beginning of the first defined season.
      * If the <code>siteId</code> parameter value is 0, it forces the downloader to start from the beginning for all the sites.
+     * @param job       The job type
      * @param siteId    The site identifier
      */
-    void forceStart(short siteId);
+    void forceStart(String job, short siteId);
     /**
      * Forces the downloader for the specific site and sensor to start from the beginning of the first defined season.
      * If the <code>siteId</code> parameter value is 0, it forces the downloader to start from the beginning for all the sites
      * and the given sensor.
+     * @param job       The job type
      * @param siteId    The site identifier
      * @param satelliteId   The sensor identifier
      */
-    void forceStart(short siteId, short satelliteId);
+    void forceStart(String job, short siteId, short satelliteId);
 
     /**
      * Registers the given product status listener with this instance.

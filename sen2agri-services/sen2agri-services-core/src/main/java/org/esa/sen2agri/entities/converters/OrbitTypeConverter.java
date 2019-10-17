@@ -16,7 +16,8 @@
 
 package org.esa.sen2agri.entities.converters;
 
-import org.esa.sen2agri.entities.OrbitType;
+import org.esa.sen2agri.entities.enums.OrbitType;
+import ro.cs.tao.EnumUtils;
 
 import javax.persistence.AttributeConverter;
 
@@ -28,7 +29,6 @@ public class OrbitTypeConverter implements AttributeConverter<OrbitType, Integer
 
     @Override
     public OrbitType convertToEntityAttribute(Integer integer) {
-        return integer != null && integer > 0 ?
-                OrbitType.valueOf(OrbitType.getEnumConstantNameByValue(integer)) : null;
+        return integer != null ? EnumUtils.getEnumConstantByValue(OrbitType.class, integer) : null;
     }
 }

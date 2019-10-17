@@ -20,15 +20,16 @@ import org.esa.sen2agri.db.ConfigurationKeys;
 import org.esa.sen2agri.db.PersistenceManager;
 import org.esa.sen2agri.entities.DataSourceConfiguration;
 import org.esa.sen2agri.entities.ProductCount;
-import org.esa.sen2agri.entities.Satellite;
 import org.esa.sen2agri.entities.Site;
 import org.esa.sen2agri.entities.converters.SatelliteConverter;
+import org.esa.sen2agri.entities.enums.Satellite;
 import org.esa.sen2agri.services.DownloadService;
 import org.esa.sen2agri.services.SensorProgress;
 import org.esa.sen2agri.services.SiteHelper;
 import org.esa.sen2agri.web.beans.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ro.cs.tao.EnumUtils;
 import ro.cs.tao.datasource.*;
 import ro.cs.tao.datasource.converters.ConversionException;
 import ro.cs.tao.datasource.param.CommonParameterNames;
@@ -38,6 +39,7 @@ import ro.cs.tao.eodata.EOProduct;
 import ro.cs.tao.messaging.Message;
 import ro.cs.tao.messaging.Messaging;
 import ro.cs.tao.messaging.Notifiable;
+import ro.cs.tao.messaging.progress.*;
 import ro.cs.tao.security.SystemPrincipal;
 import ro.cs.tao.utils.Tuple;
 
@@ -147,7 +149,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
 
     @Override
     public List<SensorProgress> getProgress(short siteId, short satelliteId) {
-        Satellite satellite = new SatelliteConverter().convertToEntityAttribute((int)satelliteId);
+        Satellite satellite = new SatelliteConverter().convertToEntityAttribute(satelliteId);
         List<SensorProgress> progress = new ArrayList<>();
         List<ProductCount> productCounts = persistenceManager.countEstimated(siteId, satellite);
         if (productCounts != null) {
@@ -166,7 +168,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
 
     @Override
     public List<EOProduct> query(short siteId, Query queryObject,
-                                 DataSourceConfiguration configuration, long expected) throws ParseException {
+                                 DataSourceConfiguration configuration) throws ParseException {
         List<EOProduct> results = null;
         if (queryObject != null) {
             final DataSourceComponent dataSourceComponent = getDataSourceComponent(siteId, queryObject.getUser(), queryObject.getPassword(), configuration, false);
@@ -175,7 +177,6 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
             }
             final Satellite satellite = configuration.getSatellite();
             try {
-                long total = expected > 0 ? expected : count(siteId, queryObject, configuration);
                 final Map<String, DataSourceParameter> parameterDescriptorMap =
                         DataSourceManager.getInstance().getSupportedParameters(satellite.name(),
                                 configuration.getDataSourceName());
@@ -190,6 +191,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                     subQueries.add(queryObject);
                 }
                 results = new ArrayList<>();
+                int queryIdx = 1;
                 for (Query subQuery : subQueries) {
                     DataQuery query = dataSourceComponent.createQuery();
                     query.setPageSize(DEFAULT_PRODUCTS_PER_PAGE_NO);
@@ -223,23 +225,20 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                         }
                         query.addParameter(queryParameter);
                     }
-                    if (total >= 0) {
-                        int page = 1;
-                        do {
-                            query.setPageNumber(page);
-                            logger.fine(String.format("Query page #%d for site id %d", page, siteId));
-                            List<EOProduct> products = query.execute();
-                            results.addAll(products);
-                            total -= products.size();
-                            if (products.size() >= DEFAULT_PRODUCTS_PER_PAGE_NO) {
-                                page++;
-                            } else {
-                                break;
-                            }
-                        } while (total > 0);
-                    } else {
-                        results.addAll(query.execute());
-                    }
+                    int page = 1;
+                    int currentCount;
+                    do {
+                        query.setPageNumber(page);
+                        logger.fine(String.format("Querying page #%d (query %d of %d) for {site id=%d,satellite=%s}",
+                                                  page, queryIdx, subQueries.size(), siteId, satellite.friendlyName()));
+                        List<EOProduct> products = query.execute();
+                        logger.fine(String.format("Page #%d (query %d of %d) for {site id=%d,satellite=%s} returned %d results",
+                                                  page, queryIdx, subQueries.size(), siteId, satellite.friendlyName(), products.size()));
+                        results.addAll(products);
+                        currentCount = products.size();
+                        page++;
+                    } while (currentCount > 0);
+                    queryIdx++;
                 }
                 results.sort(Comparator.comparing(EOProduct::getAcquisitionDate));
             } finally {
@@ -312,17 +311,17 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
 
                           }
                       }));
-            Config.setSetting(siteId, ConfigurationKeys.DOWNLOADER_STATE_ENABLED, "false");
+            Config.setSetting(siteId, ConfigurationKeys.DOWNLOADER_ENABLED, "false");
         } else {
             dwnSiteDataSources.values().forEach(ldsc -> ldsc.forEach(DataSourceComponent::cancel));
-            Config.setSetting((short) 0, ConfigurationKeys.DOWNLOADER_STATE_ENABLED, "false");
+            Config.setSetting((short) 0, ConfigurationKeys.DOWNLOADER_ENABLED, "false");
             downloadsInProgress.clear();
         }
     }
 
     @Override
     public void stop(short siteId, short satelliteId) {
-        Satellite satellite = new SatelliteConverter().convertToEntityAttribute((int)satelliteId);
+        Satellite satellite = new SatelliteConverter().convertToEntityAttribute(satelliteId);
         if (siteId > 0) {
             dwnSiteDataSources.entrySet().stream()
                     .filter(e -> siteId == e.getKey().getKeyOne() && satellite.equals(e.getKey().getKeyTwo()))
@@ -353,13 +352,16 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
         }
         //dwnSiteDataSources.entrySet().removeIf(e -> siteId == e.getKey().getKeyOne() && satellite.equals(e.getKey().getKeyTwo()));
         Config.setSetting(siteId,
-                          String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
-                                  satellite.shortName().toLowerCase()),
+                          String.format(ConfigurationKeys.DOWNLOADER_SENSOR_ENABLED,
+                                  satellite.friendlyName().toLowerCase()),
                           "false");
     }
 
     @Override
-    public void forceStart(short siteId) {
+    public void forceStart(String job, short siteId) {
+        if (job == null || job.isEmpty()) {
+            throw new IllegalArgumentException("Parameter [job] cannot be empty");
+        }
         if (siteId == 0) {
             throw new IllegalArgumentException("Parameter [siteId] cannot be zero");
         }
@@ -367,8 +369,8 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                 .map(DataSourceConfiguration::getSatellite).distinct().collect(Collectors.toList());
         boolean canForce = false;
         for (Satellite satellite : satellites) {
-            canForce |= Config.getAsBoolean(siteId, String.format(ConfigurationKeys.DOWNLOADER_SITE_FORCE_START_ENABLED,
-                                                                  satellite.shortName()), false);
+            canForce |= Config.getAsBoolean(siteId, String.format(ConfigurationKeys.DOWNLOADER_SENSOR_FORCE_START,
+                                                                  satellite.friendlyName()), false);
         }
         if (!canForce) {
             return;
@@ -387,23 +389,23 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                                                               }
                                                           }));
         for (Satellite satellite : satellites) {
-            Config.setSetting(siteId, String.format(ConfigurationKeys.DOWNLOADER_SITE_FORCE_START_ENABLED,
-                                                    satellite.shortName()), "true");
+            Config.setSetting(siteId, String.format(ConfigurationKeys.DOWNLOADER_SENSOR_FORCE_START,
+                                                    satellite.friendlyName()), "true");
         }
         start(siteId);
-        sendCommand(Commands.DOWNLOADER_FORCE_START, siteId, null);
+        sendCommand(Commands.DOWNLOADER_FORCE_START, job.toLowerCase(), siteId, null);
     }
 
     @Override
-    public void forceStart(short siteId, short satelliteId) {
+    public void forceStart(String job, short siteId, short satelliteId) {
         if (siteId == 0) {
             throw new IllegalArgumentException("Parameter [siteId] cannot be zero");
         }
-        final Satellite satellite = Satellite.getEnumConstantByValue(satelliteId);
+        final Satellite satellite = EnumUtils.getEnumConstantByValue(Satellite.class, satelliteId);
         if (satellite == null) {
             throw new IllegalArgumentException("Invalid value for parameter [satelliteId]");
         }
-        String configKey = String.format(ConfigurationKeys.DOWNLOADER_SITE_FORCE_START_ENABLED, satellite.shortName());
+        String configKey = String.format(ConfigurationKeys.DOWNLOADER_SENSOR_FORCE_START, satellite.friendlyName());
         if (Config.getAsBoolean(siteId, configKey, false)) {
             return;
         }
@@ -421,7 +423,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                                                           }));
         Config.setSetting(siteId, configKey, "true");
         start(siteId, satelliteId);
-        sendCommand(Commands.DOWNLOADER_FORCE_START, siteId, (int) satelliteId);
+        sendCommand(Commands.DOWNLOADER_FORCE_START, job, siteId, (int) satelliteId);
     }
 
     @Override
@@ -438,12 +440,12 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
         } else {
             dwnSiteDataSources.values().forEach(ldsc -> ldsc.forEach(DataSourceComponent::resume));
         }
-        Config.setSetting(siteId, ConfigurationKeys.DOWNLOADER_STATE_ENABLED, "true");
+        Config.setSetting(siteId, ConfigurationKeys.DOWNLOADER_ENABLED, "true");
     }
 
     @Override
     public void start(short siteId, short satelliteId) {
-        Satellite satellite = new SatelliteConverter().convertToEntityAttribute((int) satelliteId);
+        Satellite satellite = EnumUtils.getEnumConstantByValue(Satellite.class, satelliteId);
         if (siteId > 0) {
             dwnSiteDataSources.entrySet().stream()
                     .filter(e -> siteId == e.getKey().getKeyOne() && satellite.equals(e.getKey().getKeyTwo()))
@@ -464,31 +466,30 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
             );
         }
         Config.setSetting(siteId,
-                          String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
-                                  satellite.shortName().toLowerCase()),
+                          String.format(ConfigurationKeys.DOWNLOADER_SENSOR_ENABLED,
+                                  satellite.friendlyName().toLowerCase()),
                           "true");
     }
 
     @Override
     protected void onMessageReceived(Message data) {
-        String contents = data.getItem(Message.PAYLOAD_KEY);
+        String contents = data.getPayload();
         String taskName;
         Site site = null;
         Satellite satellite = null;
         Tuple<Site, Satellite> productInfo;
-        if (contents.startsWith("Started") && !contents.contains(":")) {
-            taskName = contents.substring(8);
+        if (data instanceof ActivityStartMessage) {
+            taskName = ((ActivityStartMessage) data).getTaskName();
             if ((productInfo = getProductInfo(taskName)) != null) {
                 site = productInfo.getKeyOne();
                 satellite = productInfo.getKeyTwo();
             }
             downloadsInProgress.put(taskName,
                                     new TaskProgress(taskName, site, satellite, 0));
-        } else if (contents.startsWith("Completed") && !contents.contains(":")) {
-            taskName = contents.substring(10);
-            downloadsInProgress.remove(taskName);
-        } else if (contents.startsWith("Started")) {
-            taskName = contents.substring(8, contents.indexOf(":"));
+        } else if (data instanceof ActivityEndMessage) {
+            downloadsInProgress.remove(((ActivityEndMessage) data).getTaskName());
+        } else if (data instanceof SubActivityStartMessage) {
+            taskName = ((SubActivityStartMessage) data).getTaskName();
             if (downloadsInProgress.containsKey(taskName)) {
                 double mainProgress = downloadsInProgress.get(taskName).getProgress();
                 if ((productInfo = getProductInfo(taskName)) != null) {
@@ -498,8 +499,8 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                 downloadsInProgress.put(taskName,
                                         new TaskProgress(taskName, site, satellite, mainProgress));
             }
-        } else if (contents.startsWith("Completed")) {
-            final String mainTask = contents.substring(10, contents.indexOf(":"));
+        } else if (data instanceof SubActivityEndMessage) {
+            final String mainTask = ((SubActivityEndMessage) data).getTaskName();
             final TaskProgress taskProgress = downloadsInProgress.get(mainTask);
             if (taskProgress != null) {
                 double mainProgress = taskProgress.getProgress();
@@ -510,39 +511,33 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                 downloadsInProgress.put(mainTask,
                                         new TaskProgress(mainTask, site, satellite, mainProgress));
             }
-        } else if (contents.startsWith("[")) {
-            // "[%s: %s] - %s: %s"
-            final int firstSeparator = contents.indexOf(":");
-            final String mainTask = contents.substring(1, firstSeparator);
-            final double mainProgress = Double.parseDouble(contents.substring(firstSeparator + 2,
-                                                                              contents.indexOf("]", firstSeparator)));
-            /*final int secondSeparator = contents.lastIndexOf(":");
-            final String subTask = contents.substring(contents.indexOf("-") + 2, secondSeparator);
-            final double subTaskProgress = Double.parseDouble(contents.substring(secondSeparator + 2));*/
+        } else if (data instanceof SubActivityProgressMessage) {
+            SubActivityProgressMessage casted = (SubActivityProgressMessage) data;
+            final String mainTask = casted.getTaskName();
             if ((productInfo = getProductInfo(mainTask)) != null) {
                 site = productInfo.getKeyOne();
                 satellite = productInfo.getKeyTwo();
             }
-            downloadsInProgress.put(mainTask, new TaskProgress(mainTask, site, satellite, mainProgress));
-        } else {
-            final int firstSeparator = contents.indexOf(":");
-            final String mainTask = contents.substring(0, firstSeparator);
-            final double mainProgress = Double.parseDouble(contents.substring(firstSeparator + 2));
+            downloadsInProgress.put(mainTask, new TaskProgress(mainTask, site, satellite, casted.getTaskProgress()));
+        } else if (data instanceof ActivityProgressMessage) {
+            ActivityProgressMessage casted = (ActivityProgressMessage) data;
+            final String mainTask = casted.getTaskName();
             if ((productInfo = getProductInfo(mainTask)) != null) {
                 site = productInfo.getKeyOne();
                 satellite = productInfo.getKeyTwo();
             }
-            downloadsInProgress.put(mainTask, new TaskProgress(mainTask, site, satellite, mainProgress));
+            downloadsInProgress.put(mainTask, new TaskProgress(mainTask, site, satellite, casted.getProgress()));
         }
 
     }
 
-    private void sendCommand(String name, int siteId, Integer satelliteId) {
+    private void sendCommand(String name, String job, int siteId, Integer satelliteId) {
         Message message = new Message();
         message.setUser(SystemPrincipal.instance().getName());
         message.setTopic(Topics.COMMAND);
         message.setTimestamp(Instant.now().toEpochMilli());
-        message.setMessage("Force start");
+        message.setMessage(name);
+        message.addItem("job", job);
         message.addItem("siteId", String.valueOf(siteId));
         if (satelliteId != null) {
             message.addItem("satelliteId", String.valueOf(satelliteId.intValue()));
@@ -574,8 +569,8 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
     private DataSourceComponent getDataSourceComponent(short siteId, String user, String password, DataSourceConfiguration configuration, boolean isDwn) {
         final Satellite satellite = configuration.getSatellite();
         boolean dwnEnabled = Config.getAsBoolean(siteId,
-                String.format(ConfigurationKeys.DOWNLOADER_SITE_STATE_ENABLED,
-                        satellite.shortName().toLowerCase()),
+                String.format(ConfigurationKeys.DOWNLOADER_SENSOR_ENABLED,
+                        satellite.friendlyName().toLowerCase()),
                 true);
         if (!dwnEnabled) {
             return null;

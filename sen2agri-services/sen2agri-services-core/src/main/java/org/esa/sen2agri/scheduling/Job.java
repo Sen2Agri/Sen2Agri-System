@@ -16,8 +16,8 @@
 package org.esa.sen2agri.scheduling;
 
 import org.esa.sen2agri.entities.DataSourceConfiguration;
-import org.esa.sen2agri.entities.Satellite;
 import org.esa.sen2agri.entities.Site;
+import org.esa.sen2agri.entities.enums.Satellite;
 import org.quartz.JobDetail;
 
 import java.time.LocalDateTime;
@@ -29,24 +29,26 @@ import java.util.Set;
 public interface Job extends org.quartz.Job {
     String configKey();
     String groupName();
+    String getId();
+    void setId(String id);
+    default boolean isSingleInstance() { return false; }
     /**
      * Returns the set of satellites for which this job is intended.
      * By default, jobs are intended for all satellites, therefore, override the method in a subclass that is
      * intended only for a subset of satellites.
      */
     default Set<Satellite> getSatelliteFilter() { return null; }
-    default JobDescriptor createDescriptor(String name, int rateInMinutes) {
+    default JobDescriptor createDescriptor(int rateInMinutes) {
         return new JobDescriptor()
-                .setName(name)
+                .setName(getId())
                 .setGroup(groupName())
                 .setFireTime(LocalDateTime.now().plusSeconds(10))
                 .setRate(rateInMinutes);
     }
     default JobDetail buildDetail(Site site,
-                                  Satellite satellite,
                                   DataSourceConfiguration queryConfig,
                                   DataSourceConfiguration downloadConfig) {
-        return createDescriptor(site.getShortName() + "-" + satellite.name(), downloadConfig.getRetryInterval())
+        return createDescriptor(downloadConfig.getRetryInterval())
                 .buildJobDetail(getClass(), site, queryConfig, downloadConfig);
     }
 }

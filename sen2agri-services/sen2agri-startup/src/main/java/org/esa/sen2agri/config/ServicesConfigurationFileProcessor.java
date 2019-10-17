@@ -50,6 +50,7 @@ public class ServicesConfigurationFileProcessor implements ConfigurationFileProc
         }
         try {
             Database.checkDatasource();
+            Database.checkConfig();
         } catch (Exception e) {
             System.err.println(e.getMessage());
         }

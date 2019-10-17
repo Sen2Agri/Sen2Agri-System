@@ -17,23 +17,30 @@ package org.esa.sen2agri.db;
 
 import org.esa.sen2agri.commons.Config;
 import org.esa.sen2agri.entities.*;
+import org.esa.sen2agri.entities.enums.ProductType;
+import org.esa.sen2agri.entities.enums.Satellite;
+import org.esa.sen2agri.entities.enums.Status;
+import org.esa.sen2agri.entities.enums.TileProcessingStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Transactional;
 import ro.cs.tao.datasource.DataSourceManager;
 import ro.cs.tao.datasource.param.DataSourceParameter;
 
 import javax.sql.DataSource;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Predicate;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -58,6 +65,8 @@ public class PersistenceManager {
     private ProductTypeRepository productTypeRepository;
     @Autowired
     private ProcessorRepository processorRepository;
+    @Autowired
+    private JobRepository jobRepository;
 
     private ProductRepository productRepository;
     private DownloadProductRepository downloadProductRepository;
@@ -128,7 +137,7 @@ public class PersistenceManager {
 
     public DataSource getDataSource() { return dbConfig.dataSource(); }
 
-    public DataSourceConfiguration getDataSourceConfiguration(int id) {
+    public DataSourceConfiguration getDataSourceConfiguration(short id) {
         return dataSourceRepository.findById(id).orElse(null);
     }
 
@@ -266,8 +275,8 @@ public class PersistenceManager {
                                        Status.DOWNLOADED, Status.PROCESSING, Status.PROCESSING_FAILED, Status.PROCESSED);
     }
 
-    public List<DownloadProduct> getDownloadedProducts(int siteId, Satellite satellite, LocalDate olderThan) {
-        return getDownloadProductRepository().findByStatusAndDate(siteId, satellite.value(), olderThan);
+    public List<DownloadProduct> getDownloadedProducts(int siteId, Satellite satellite, LocalDate olderThan, boolean latestFirst) {
+        return getDownloadProductRepository().findByStatusAndDate(siteId, satellite.value(), olderThan, latestFirst);
     }
 
     public List<DownloadProduct> getStalledProducts(int siteId, int daysBack) {
@@ -384,6 +393,10 @@ public class PersistenceManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public Map<SiteInfo, Map<String, List<ProductFileInfo>>> getProductInfoBySite(int userId, int siteId, int productTypeId) {
+        return getProductRepository().getProductInfoBySite(userId, siteId, productTypeId);
     }
 
     public Processor getProcessor(String shortName) {
@@ -503,18 +516,42 @@ public class PersistenceManager {
         return siteRepository.getSiteById(id);
     }
 
+    public int login(String user, String password) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(getDataSource());
+        List<Integer> result = jdbcTemplate.query(String.format("SELECT sp_authenticate('%s', '%s');", user, password),
+                                    new RowMapper<Integer>() {
+                                        @Override
+                                        public Integer mapRow(ResultSet resultSet, int i) throws SQLException {
+                                            String result = resultSet.getString(1);
+                                            return result != null && result.startsWith("(") ?
+                                                    Integer.parseInt(result.substring(1, result.indexOf(','))) : -1;
+                                        }
+                                    });
+        return result.size() == 1 ? result.get(0) : -1;
+    }
+
+    public Job saveJob(Job job) {
+        return jobRepository.save(job);
+    }
+
     private List<DataSourceConfiguration> registeredDataSources() {
         List<DataSourceConfiguration> configurations = new ArrayList<>();
         final DataSourceManager dataSourceManager = DataSourceManager.getInstance();
         final SortedSet<String> sensors = dataSourceManager.getSupportedSensors();
         for (String sensor : sensors) {
-            final Satellite satellite = Enum.valueOf(Satellite.class, sensor);
+            final Satellite satellite;
+            try {
+                satellite = Enum.valueOf(Satellite.class, sensor);
+            } catch (IllegalArgumentException e) {
+                Logger.getLogger(PersistenceManager.class.getName()).warning(String.format("Sensor %s is not supported in Sen2Agri", sensor));
+                continue;
+            }
             final List<String> dataSourceNames = dataSourceManager.getNames(sensor);
             dataSourceNames.sort(Comparator.reverseOrder());
             int scopeMask = dataSourceNames.size() > 1 ? Scope.QUERY : Scope.QUERY | Scope.DOWNLOAD;
             for (String dataSourceName : dataSourceNames) {
                 String downloadPath = Config.getSetting(String.format(ConfigurationKeys.DOWNLOAD_DIR,
-                                                                      satellite.shortName().toLowerCase()),
+                                                                      satellite.friendlyName().toLowerCase()),
                                                         Constants.DEFAULT_TARGET_PATH);
                 final ro.cs.tao.datasource.DataSource dataSource = dataSourceManager.get(sensor, dataSourceName);
                 DataSourceConfiguration configuration = new DataSourceConfiguration();
@@ -535,7 +572,7 @@ public class PersistenceManager {
                         configuration.setParameter(param.getName(), param.getType(), param.getDefaultValue());
                     }
                 }
-                configuration.setEnabled(true);
+                configuration.setEnabled(false);
                 configurations.add(configuration);
                 if (((scopeMask <<= 1) & Scope.DOWNLOAD) == 0) {
                     break;

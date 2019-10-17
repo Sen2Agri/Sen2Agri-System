@@ -51,16 +51,19 @@ public class CoreLauncher implements SchedulingConfigurer, ServiceLauncher {
 
     @Override
     public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        long interval = Long.parseLong(Config.getProperty("database.config.polling", "15")) * 60000;
+        long interval = Long.parseLong(Config.getProperty("database.config.polling", "0")) * 60000;
         int netUtilTimeout = Integer.parseInt(Config.getProperty("network.connexions.timeout", "30")) * 1000;
         NetUtils.setTimeout(netUtilTimeout);
         Logger logger = Logger.getLogger(CoreLauncher.class.getName());
         logger.info(String.format("Network connection timeout initialized at %d seconds", netUtilTimeout / 1000));
-
-        taskRegistrar.addFixedRateTask(new IntervalTask(() -> {
-            scheduleManager.refresh();
-        }, interval, interval));
-        logger.info(String.format("Database configuration polling initialized at %d minutes", interval / 60000));
+        if (interval == 0) {
+            logger.info("Database configuration polling is disabled");
+        } else {
+            taskRegistrar.addFixedRateTask(new IntervalTask(() -> {
+                scheduleManager.refresh();
+            }, interval, interval));
+            logger.info(String.format("Database configuration polling initialized at %d minutes", interval / 60000));
+        }
         long[] ret = batchNotifier.initialize();
         logger.info(String.format("Batch notification initialized at %d minutes with message limit of %d",
                                   ret[1] / 60000, ret[0]));

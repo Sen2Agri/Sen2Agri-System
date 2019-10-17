@@ -16,8 +16,8 @@
 package org.esa.sen2agri.entities.converters;
 
 import org.esa.sen2agri.entities.DownloadProduct;
-import org.esa.sen2agri.entities.OrbitType;
-import org.esa.sen2agri.entities.Satellite;
+import org.esa.sen2agri.entities.enums.OrbitType;
+import org.esa.sen2agri.entities.enums.Satellite;
 import ro.cs.tao.datasource.remote.ProductHelper;
 import ro.cs.tao.eodata.EOProduct;
 import ro.cs.tao.products.sentinels.SentinelProductHelper;

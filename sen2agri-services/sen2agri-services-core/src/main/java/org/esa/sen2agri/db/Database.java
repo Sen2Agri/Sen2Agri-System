@@ -89,6 +89,47 @@ public class Database {
         }
     }
 
+    public static void checkConfig() throws Exception {
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement("SELECT key FROM config WHERE key = 'scheduled.reports.enabled'")) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (!resultSet.next()) {
+                logger.fine("Configuration keys from services need an update");
+                String[] statements = new String[] {
+                        "UPDATE config SET key = 'processor.l2s1.extract.histogram' WHERE key = 'l2.extract.histogram';",
+                        "UPDATE config SET key = 'processor.l2s1.gpt.tile.cache.size' WHERE key = 's1.preprocessing.gpt.tile.cache.size';",
+                        "UPDATE config SET key = 'processor.l2s1.gpt.parallelism' WHERE key = 's1.preprocessing.parallelism';",
+                        "UPDATE config SET key = 'processor.l2s1.compute.amplitude' WHERE key = 's1.amplitude.enabled';",
+                        "UPDATE config SET key = 'processor.l2s1.compute.coherence' WHERE key = 's1.coherence.enabled';",
+                        "UPDATE config SET key = 'processor.l2s1.crop.output' WHERE key = 's1.preprocessing.crop.output';",
+                        "UPDATE config SET key = 'processor.l2s1.keep.intermediate' WHERE key = 's1.preprocessing.keep.intermediate';",
+                        "UPDATE config SET key = 'processor.l2s1.crop.nodata' WHERE key = 's1.preprocessing.crop.nodata';",
+                        "UPDATE config SET key = 'processor.l2s1.output.format' WHERE key = 's1.preprocessing.output.format';",
+                        "UPDATE config SET key = 'processor.l2s1.output.extension' WHERE key = 's1.preprocessing.output.extension';",
+                        "UPDATE config SET key = 'processor.l2s1.parallel.steps.enabled' WHERE key = 's1.preprocessing.parallel.steps.enabled';",
+                        "UPDATE config SET key = 'processor.l2s1.projection' WHERE key = 's1.preprocessing.projection';",
+                        "UPDATE config SET key = 'processor.l2s1.pixel.spacing' WHERE key = 's1.preprocessing.pixel.spacing';",
+                        "UPDATE config SET key = 'processor.l2s1.copy.locally' WHERE key = 's1.preprocessing.copy.locally';",
+                        "UPDATE config SET key = 'processor.l2s1.overwrite.existing' WHERE key = 's1.preprocessing.overwrite.existing';",
+                        "UPDATE config SET key = 'processor.l2s1.path' WHERE key = 's1.preprocessing.path';",
+                        "UPDATE config SET key = 'processor.l2s1.parallelism' WHERE key = 's1.preprocessing.parallelism';",
+                        "UPDATE config SET key = 'processor.l2s1.enabled' WHERE key = 's1.preprocessing.enabled';",
+                        "UPDATE config SET key = 'scheduled.reports.enabled' WHERE key = 'reports.enabled';",
+                        "UPDATE config SET key = 'scheduled.reports.interval' WHERE key = 'reports.interval';"
+                };
+                for (String statement : statements) {
+                    try (PreparedStatement pStatement = connection.prepareStatement(statement)) {
+                        pStatement.execute();
+                    } catch (DataAccessException ex) {
+                        logger.severe(String.format("SQL Statement failed ('%s'): %s", statement, ex.getMessage()));
+                        break;
+                    }
+                }
+            }
+            resultSet.close();
+        }
+    }
+
     protected static Connection getConnection() throws SQLException {
         String dbUrl = Config.getProperty("spring.datasource.url");
         String user = Config.getProperty("spring.datasource.username");

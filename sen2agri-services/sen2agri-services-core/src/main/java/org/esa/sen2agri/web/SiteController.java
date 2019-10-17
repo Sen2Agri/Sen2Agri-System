@@ -15,9 +15,9 @@
  */
 package org.esa.sen2agri.web;
 
-import org.esa.sen2agri.entities.ProductType;
 import org.esa.sen2agri.entities.Season;
 import org.esa.sen2agri.entities.Site;
+import org.esa.sen2agri.entities.enums.ProductType;
 import org.esa.sen2agri.services.DownloadService;
 import org.esa.sen2agri.services.SiteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import ro.cs.tao.EnumUtils;
 import ro.cs.tao.services.commons.ControllerBase;
 
 import java.util.ArrayList;
@@ -75,7 +76,7 @@ public class SiteController extends ControllerBase {
         downloadService.stop(siteId, (short)1);
         downloadService.stop(siteId, (short)2);
         siteService.deleteSite(siteId, entity.productTypeIds != null ?
-                entity.productTypeIds.stream().map(ProductType::getEnumByValue).toArray(ProductType[]::new) :
+                entity.productTypeIds.stream().map(pt -> EnumUtils.getEnumConstantByValue(ProductType.class, pt)).toArray(ProductType[]::new) :
                 null);
         return new ResponseEntity<>("{}", HttpStatus.OK);
     }

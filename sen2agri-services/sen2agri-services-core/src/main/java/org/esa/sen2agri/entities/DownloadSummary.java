@@ -16,6 +16,9 @@
 
 package org.esa.sen2agri.entities;
 
+import org.esa.sen2agri.entities.enums.Satellite;
+import org.esa.sen2agri.entities.enums.Status;
+
 public class DownloadSummary {
     private String siteName;
     private int year;

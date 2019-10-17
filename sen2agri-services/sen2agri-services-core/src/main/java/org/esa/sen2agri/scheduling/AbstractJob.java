@@ -22,6 +22,7 @@ import org.esa.sen2agri.services.DownloadService;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.quartz.JobKey;
 import ro.cs.tao.messaging.Message;
 import ro.cs.tao.messaging.Messaging;
 import ro.cs.tao.messaging.Notifiable;
@@ -35,7 +36,7 @@ import java.util.logging.Logger;
 public abstract class AbstractJob extends Notifiable implements Job {
 
     protected static final String MESSAGE = "[site '%s',sensor '%s'] %s";
-
+    protected String id;
     protected PersistenceManager persistenceManager;
     protected DownloadService downloadService;
     protected Logger logger = Logger.getLogger(getClass().getName());
@@ -52,14 +53,23 @@ public abstract class AbstractJob extends Notifiable implements Job {
     }
 
     @Override
+    public String getId() { return id; }
+
+    @Override
+    public void setId(String id) { this.id = id; }
+
+    @Override
     public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
-        logger.info(String.format("Job '%s' started", jobExecutionContext.getJobDetail().getKey()));
+        final JobKey key = jobExecutionContext.getJobDetail().getKey();
+        logger.info(String.format("Starting job '%s'", key));
         final JobDataMap dataMap = jobExecutionContext.getMergedJobDataMap();
         try {
             executeImpl(dataMap);
         } catch (Throwable t) {
             logger.warning(t.getMessage());
             t.printStackTrace();
+        } finally {
+            logger.info(String.format("Job '%s' completed", key));
         }
     }
 

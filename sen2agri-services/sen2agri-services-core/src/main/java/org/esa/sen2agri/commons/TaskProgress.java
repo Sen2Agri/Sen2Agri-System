@@ -15,8 +15,8 @@
  */
 package org.esa.sen2agri.commons;
 
-import org.esa.sen2agri.entities.Satellite;
 import org.esa.sen2agri.entities.Site;
+import org.esa.sen2agri.entities.enums.Satellite;
 
 /**
  * @author Cosmin Cara

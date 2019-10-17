@@ -16,7 +16,8 @@
 
 package org.esa.sen2agri.entities.converters;
 
-import org.esa.sen2agri.entities.TileProcessingStatus;
+import org.esa.sen2agri.entities.enums.TileProcessingStatus;
+import ro.cs.tao.EnumUtils;
 
 import javax.persistence.AttributeConverter;
 
@@ -28,6 +29,6 @@ public class TileProcessingStatusConverter implements AttributeConverter<TilePro
 
     @Override
     public TileProcessingStatus convertToEntityAttribute(Integer integer) {
-        return TileProcessingStatus.getEnumConstantByValue(integer);
+        return integer != null ? EnumUtils.getEnumConstantByValue(TileProcessingStatus.class, integer) : null;
     }
 }

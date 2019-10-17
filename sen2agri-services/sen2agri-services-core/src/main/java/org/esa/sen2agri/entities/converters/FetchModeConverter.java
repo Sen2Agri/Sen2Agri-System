@@ -31,6 +31,6 @@ public class FetchModeConverter implements AttributeConverter<FetchMode, Integer
 
     @Override
     public FetchMode convertToEntityAttribute(Integer integer) {
-        return EnumUtils.getEnumConstantByValue(FetchMode.class, integer);
+        return integer != null ? EnumUtils.getEnumConstantByValue(FetchMode.class, integer) : null;
     }
 }

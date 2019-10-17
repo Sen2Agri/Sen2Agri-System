@@ -16,7 +16,7 @@
 package org.esa.sen2agri.services;
 
 import org.esa.sen2agri.entities.DataSourceConfiguration;
-import org.esa.sen2agri.entities.Satellite;
+import org.esa.sen2agri.entities.enums.Satellite;
 import ro.cs.tao.component.validation.ValidationException;
 
 import java.util.List;

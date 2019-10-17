@@ -16,6 +16,8 @@
 
 package org.esa.sen2agri.entities;
 
+import org.esa.sen2agri.entities.enums.Satellite;
+
 import java.time.LocalDate;
 
 public class ProductCount {
