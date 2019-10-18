@@ -30,6 +30,10 @@ namespace grassland_mowing {
         InputProductsType inputPrdsType;
         QDateTime startDate;
         QDateTime endDate;
+
+        QDateTime seasonStartDate;
+        QDateTime seasonEndDate;
+
         QStringList l3bPrds;
         QStringList s1Prds;
         int year;

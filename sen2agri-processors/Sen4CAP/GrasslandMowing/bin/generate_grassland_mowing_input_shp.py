@@ -114,12 +114,9 @@ def main():
         lut_table = "lut_{}_{}".format(site_name, year)
 
         commands = []
-
-        shp = "{}.shp".format(lpis_table)
-        shp = os.path.join(args.path, shp)
-
+        shp = args.path
         ctnumFilter = ""
-        
+       
         ctnums = []
         if args.filter_ctnum : 
             ctnums = map(int, args.filter_ctnum.split(','))

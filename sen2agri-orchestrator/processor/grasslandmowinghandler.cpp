@@ -11,6 +11,8 @@
 
 using namespace grassland_mowing;
 
+#define DEFAULT_SHP_GEN_PATH "/mnt/archive/grassland_mowing_files/{site}/{year}/InputShp/SEN4CAP_L4B_GeneratedInputShp.shp"
+
 void GrasslandMowingHandler::CreateTasks(GrasslandMowingExecConfig &cfg,
                                          QList<TaskToSubmit> &outAllTasksList)
 {
@@ -46,8 +48,7 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
     TaskToSubmit &genInputShpTask = allTasksList[curTaskIdx++];
     QString inputShpLocation;
     if (IsScheduledJobRequest(cfg.parameters)) {
-        inputShpLocation = GetProcessorDirValue(cfg, "prepared-input-shp-location",
-                 "/mnt/archive/grassland_mowing_files/{site}/InputShp/SEN4CAP_L4B_GeneratedInputShp.shp");
+        inputShpLocation = GetProcessorDirValue(cfg, "prepared-input-shp-location", DEFAULT_SHP_GEN_PATH);
     } else {
         inputShpLocation = genInputShpTask.GetFilePath("SEN4CAP_L4B_GeneratedInputShp.shp");
     }
@@ -98,6 +99,12 @@ bool GrasslandMowingHandler::CheckInputParameters(GrasslandMowingExecConfig &cfg
             cfg.isScheduled = true;
             cfg.startDate = QDateTime::fromString(strStartDate, "yyyyMMdd");
             cfg.endDate = QDateTime::fromString(strEndDate, "yyyyMMdd");
+
+            QString strSeasonStartDate, strSeasonEndDate;
+            ProcessorHandlerHelper::GetParameterValueAsString(cfg.parameters, "season_start_date", strSeasonStartDate);
+            ProcessorHandlerHelper::GetParameterValueAsString(cfg.parameters, "season_end_date", strSeasonEndDate);
+            cfg.seasonStartDate = QDateTime::fromString(strSeasonStartDate, "yyyyMMdd");
+            cfg.seasonEndDate = QDateTime::fromString(strSeasonEndDate, "yyyyMMdd");
 
             QString startDateOverride;
             bool found = ProcessorHandlerHelper::GetParameterValueAsString(
@@ -238,7 +245,7 @@ ProcessorJobDefinitionParams GrasslandMowingHandler::GetProcessingDefinitionImpl
         return params;
     }
 
-    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.s4c_l4b."), siteId, requestOverrideCfgValues);
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString(L4B_GM_CFG_PREFIX), siteId, requestOverrideCfgValues);
     // we might have an offset in days from starting the downloading products to start the S4C_L4B production
     int startSeasonOffset = mapCfg["processor.s4c_l4b.start_season_offset"].value.toInt();
     seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
@@ -307,9 +314,16 @@ QStringList GrasslandMowingHandler::ExtractCoheProducts(EventProcessingContext &
 QStringList GrasslandMowingHandler::GetInputShpGeneratorArgs(GrasslandMowingExecConfig &cfg,
                                                              const QString &outShpFile)
 {
+    const QString &pyScriptPath = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
+                                                                          "gen_shp_py_script", L4B_GM_CFG_PREFIX);
+
     QStringList retArgs =  {"-s", QString::number(cfg.event.siteId),
             "-y", QString::number(cfg.year),
-            "-p", outShpFile};
+            "-o", outShpFile};
+    if (pyScriptPath.size() > 0) {
+        retArgs += "-p";
+        retArgs += pyScriptPath;
+    }
     if (cfg.ctNumFilter.size() > 0) {
         retArgs += "-f";
         retArgs += cfg.ctNumFilter;
@@ -346,6 +360,16 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
                             "--do-cmpl", "True",
                             "--test", "True"
                       };
+
+    if (cfg.isScheduled) {
+        retArgs += "--season-start";
+        retArgs += cfg.seasonStartDate.toString("yyyyMMdd");
+        retArgs += "--season-end";
+        retArgs += cfg.seasonEndDate.toString("yyyyMMdd");
+    } else {
+        retArgs += "--input-products-list";
+        retArgs += (prdType == L2_S1) ? cfg.s1Prds : cfg.l3bPrds;
+    }
     return retArgs;
 }
 
@@ -379,6 +403,7 @@ QString GrasslandMowingHandler::GetProcessorDirValue(GrasslandMowingExecConfig &
         dataExtrDirName = defVal;
     }
     dataExtrDirName = dataExtrDirName.replace("{site}", siteShortName);
+    dataExtrDirName = dataExtrDirName.replace("{year}", QString::number(cfg.year));
 
     return dataExtrDirName;
 }

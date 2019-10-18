@@ -6,7 +6,7 @@ function usage() {
 }
 
 conda_user="sen2agri-service"
-script_path="/usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/generate_grassland_mowing_input_shp.py"
+script_path="generate_grassland_mowing_input_shp.py"
 config_file="/etc/sen2agri/sen2agri.conf"
 filter_ctnum=""
 force=0
@@ -70,6 +70,25 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 #echo YEAR           = "${YEAR}"
 if [ -z ${script_path} ] ; then
     echo "No script-path provided!" && usage
+else
+    if [[ "${script_path}" = /* ]] ; then
+        echo "${script_path} is absolute!"
+    else
+        path_to_executable=$(which ${script_path})
+        if [ -x "$path_to_executable" ] ; then
+            echo "${script_path} found in path!"
+        else 
+            # check if in the same directory as the sh script
+            SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+            script_path1="${SCRIPT_DIR}/${script_path}"
+            if [ ! -f ${script_path1} ] ; then 
+                echo "Cannot find $script_path anywhere!"
+                exit 1
+            fi
+            echo "${script_path1} found in the same folder with sh script (${SCRIPT_DIR}). Using it ..."
+            script_path=${script_path1}
+        fi
+    fi
 fi 
 
 if [ -z ${site_id} ] ; then
@@ -87,6 +106,9 @@ fi
 if [ -z ${filter_ctnum} ] ; then
     echo "No filter-ctnum provided!"
 fi 
+
+echo "$USER"
+echo "${conda_user}"
 
 if [ $USER == ${conda_user} ] ; then
     echo "Activating conda sen4cap for user $USER"

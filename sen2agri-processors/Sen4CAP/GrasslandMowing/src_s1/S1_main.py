@@ -640,9 +640,11 @@ class S4CConfig(object):
 
         if args.season_start:
             self.season_start = parse_date(args.season_start)
+            print("Season_start = ", args.season_start)
         
         if args.season_end:        
             self.season_end = parse_date(args.season_end)
+            print("Season_end = ", args.season_end)            
 
 def get_s1_products(config, conn, site_id, prds_list):
     with conn.cursor() as cursor:
@@ -749,9 +751,6 @@ def main() :
     args = parser.parse_args()
     
     s4cConfig = S4CConfig(args)
-    
-    print("Season_start = ", s4cConfig.season_start)
-    print("Season_end = ", s4cConfig.season_end)
     
     with psycopg2.connect(host=s4cConfig.host, dbname=s4cConfig.dbname, user=s4cConfig.user, password=s4cConfig.password) as conn:
         products = get_s1_products(s4cConfig, conn, s4cConfig.site_id, args.input_products_list)

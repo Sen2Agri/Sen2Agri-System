@@ -37,6 +37,7 @@ install(FILES   src_val/validation.py
 
 install(FILES   bin/grassland_mowing.sh
                 bin/generate_grassland_mowing_input_shp.py
+                bin/generate_grassland_mowing_input_shp.sh
         DESTINATION usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/
         PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                     GROUP_READ GROUP_EXECUTE
