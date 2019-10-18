@@ -91,7 +91,7 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
             @Override
             protected String conditionsSQL() {
                 return "WHERE site_id = ? AND product_type_id in (" +
-                        productTypeIds.stream().map(Object::toString).collect(Collectors.joining(",")) + ")";
+                        productTypeIds.stream().map(Object::toString).collect(Collectors.joining(",")) + ") ORDER BY name DESC";
             }
 
             @Override
@@ -138,6 +138,34 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
         }.list();
     }
 
+    private List<HighLevelProductCount> getProductCountBySite(int...siteIds) {
+        if (siteIds == null || siteIds.length == 0) {
+            return null;
+        }
+        final List<HighLevelProductCount> results = new ArrayList<>();
+        String[] sites = new String[siteIds.length];
+        for (int i = 0; i < sites.length; i++) {
+            sites[i] = String.valueOf(siteIds[i]);
+        }
+        DataSource dataSource = persistenceManager.getDataSource();
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        final ProductTypeConverter converter = new ProductTypeConverter();
+        jdbcTemplate.query("SELECT site_id, product_type_id, COUNT(id) FROM product WHERE site_id IN (" +
+                                     String.join(",", sites) + ") GROUP BY site_id, product_type_id",
+                                    resultSet -> {
+                                        if (resultSet.isFirst()) {
+                                            do {
+                                                HighLevelProductCount row = new HighLevelProductCount();
+                                                row.setSiteId(resultSet.getShort(1));
+                                                row.setProductType(converter.convertToEntityAttribute(resultSet.getInt(2)));
+                                                row.setCount(resultSet.getInt(3));
+                                                results.add(row);
+                                            } while (resultSet.next());
+                                        }
+                                    });
+        return results;
+    }
+
     Map<SiteInfo, Map<String, List<ProductFileInfo>>> getProductInfoBySite(int userId, int siteId, int productTypeId) {
         Map<SiteInfo, Map<String, List<ProductFileInfo>>> products = new LinkedHashMap<>();
         DataSource dataSource = persistenceManager.getDataSource();
@@ -146,7 +174,7 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
                         jdbcTemplate.query("SELECT site_id FROM public.user where id = " + userId,
                                            resultSet -> {
                                                Array array = null;
-                                               while (resultSet.next()) {
+                                               if (resultSet.isFirst()) {
                                                    array = resultSet.getArray(1);
                                                }
                                                return array != null ? (int[]) array.getArray() : null;
@@ -159,23 +187,36 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
                     ids.add(id);
                 }
                 sites = sites.stream().filter(s -> ids.contains((int) s.getId())).collect(Collectors.toList());
+            } else {
+                siteIds = new int[sites.size()];
+                for (int i = 0; i < siteIds.length; i++) {
+                    siteIds[i] = sites.get(i).getId();
+                }
             }
             List<ProductTypeInfo> productTypes = persistenceManager.getProductTypes();
             Map<Integer, String> typeDescriptions = productTypes.stream().collect(Collectors.toMap(ProductTypeInfo::getId, ProductTypeInfo::getDescription));
             if (productTypeId > 0) {
                 productTypes = productTypes.stream().filter(p -> p.getId() == productTypeId).collect(Collectors.toList());
             }
+            final List<HighLevelProductCount> countList = getProductCountBySite(siteIds);
             for (Site s : sites) {
                 final SiteInfo siteInfo = new SiteInfo(s.getId(), s.getName());
                 LinkedHashMap<String, List<ProductFileInfo>> productInfos = new LinkedHashMap<>();
+                HighLevelProductCount typeCount;
+                int stc;
                 for (ProductTypeInfo productTypeInfo : productTypes) {
-                    productInfos.put(productTypeInfo.getDescription() + ":" + productTypeInfo.getId(), new ArrayList<>());
+                    typeCount = countList.stream().filter(c -> c.getSiteId() == s.getId() && c.getProductType().value().equals(productTypeInfo.getId())).findFirst().orElse(null);
+                    stc = typeCount != null ? typeCount.getCount() : 0;
+                    productInfos.put(productTypeInfo.getDescription() + " (" + stc + "):" + productTypeInfo.getId(), new ArrayList<>());
                 }
                 if (productTypeId > 0) {
                     List<HighLevelProduct> hlProducts = findProducts(siteId,
                                                                      new HashSet<Integer>() {{ add(productTypeId); }});
+                    if (hlProducts == null) {
+                        hlProducts = new ArrayList<>();
+                    }
                     ProductTypeInfo typeInfo = productTypes.get(0);
-                    productInfos.get(typeInfo.getDescription() + ":" + typeInfo.getId())
+                    productInfos.get(typeInfo.getDescription() + " (" + hlProducts.size() + "):" + typeInfo.getId())
                                 .addAll(hlProducts.stream()
                                                   .map(p -> new ProductFileInfo(p.getProductName(),
                                                                                 p.getFullPath(),

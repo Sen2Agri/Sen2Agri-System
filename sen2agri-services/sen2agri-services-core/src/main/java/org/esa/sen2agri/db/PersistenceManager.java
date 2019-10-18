@@ -543,7 +543,7 @@ public class PersistenceManager {
             try {
                 satellite = Enum.valueOf(Satellite.class, sensor);
             } catch (IllegalArgumentException e) {
-                Logger.getLogger(PersistenceManager.class.getName()).warning(String.format("Sensor %s is not supported in Sen2Agri", sensor));
+                Logger.getLogger(PersistenceManager.class.getName()).fine(String.format("Sensor %s is not supported in Sen2Agri", sensor));
                 continue;
             }
             final List<String> dataSourceNames = dataSourceManager.getNames(sensor);

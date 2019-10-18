@@ -98,7 +98,8 @@ public class Database {
                 String[] statements = new String[] {
                         "UPDATE config SET key = 'processor.l2s1.extract.histogram' WHERE key = 'l2.extract.histogram';",
                         "UPDATE config SET key = 'processor.l2s1.gpt.tile.cache.size' WHERE key = 's1.preprocessing.gpt.tile.cache.size';",
-                        "UPDATE config SET key = 'processor.l2s1.gpt.parallelism' WHERE key = 's1.preprocessing.parallelism';",
+                        "UPDATE config SET key = 'processor.l2s1.parallelism' WHERE key = 's1.preprocessing.parallelism';",
+                        "UPDATE config SET key = 'processor.l2s1.gpt.parallelism' WHERE key = 's1.preprocessing.gpt.parallelism';",
                         "UPDATE config SET key = 'processor.l2s1.compute.amplitude' WHERE key = 's1.amplitude.enabled';",
                         "UPDATE config SET key = 'processor.l2s1.compute.coherence' WHERE key = 's1.coherence.enabled';",
                         "UPDATE config SET key = 'processor.l2s1.crop.output' WHERE key = 's1.preprocessing.crop.output';",
@@ -115,7 +116,15 @@ public class Database {
                         "UPDATE config SET key = 'processor.l2s1.parallelism' WHERE key = 's1.preprocessing.parallelism';",
                         "UPDATE config SET key = 'processor.l2s1.enabled' WHERE key = 's1.preprocessing.enabled';",
                         "UPDATE config SET key = 'scheduled.reports.enabled' WHERE key = 'reports.enabled';",
-                        "UPDATE config SET key = 'scheduled.reports.interval' WHERE key = 'reports.interval';"
+                        "UPDATE config SET key = 'scheduled.reports.interval' WHERE key = 'reports.interval';",
+                        "UPDATE config SET key = 'processor.l2s1.work.dir' WHERE key = 's1.preprocessing.work.dir';",
+                        "UPDATE config SET key = 'processor.l2s1.temporal.offset' WHERE key = 's1.preprocessing.temporal.offset';",
+                        "UPDATE config SET key = 'processor.l2s1.step.timeout' WHERE key = 's1.preporcessing.step.timeout';",
+                        "UPDATE config SET key = 'processor.l2s1.min.intersection' WHERE key = 's1.preprocessing.min.intersection';",
+                        "UPDATE config SET key = 'processor.l2s1.min.memory' WHERE key = 's1.preprocessing.min.memory';",
+                        "UPDATE config SET key = 'processor.l2s1.polarisations' WHERE key = 's1.preprocessing.polarisations';",
+                        "UPDATE config SET key = 'processor.l2s1.resolve.links' WHERE key = 's1.preprocessing.resolve.links';",
+                        "UPDATE config SET key = 'processor.l2s1.process.newest' WHERE key = 's1.process.newest'"
                 };
                 for (String statement : statements) {
                     try (PreparedStatement pStatement = connection.prepareStatement(statement)) {

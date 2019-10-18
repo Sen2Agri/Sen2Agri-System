@@ -111,17 +111,19 @@ class NonMappedEntitiesRepository {
                         return statement;
                     }, resultSet -> {
                         ProductDetails productDetails = null;
-                        if (resultSet.next()) {
-                            productDetails = new ProductDetails();
-                            productDetails.setId(resultSet.getInt(1));
-                            productDetails.setMinValue(resultSet.getDouble(2));
-                            productDetails.setMaxValue(resultSet.getDouble(3));
-                            productDetails.setMeanValue(resultSet.getDouble(4));
-                            productDetails.setStdDevValue(resultSet.getDouble(5));
-                            Array array = resultSet.getArray(6);
-                            if (array != null) {
-                                productDetails.setHistogram((Integer[]) array.getArray());
-                            }
+                        if (resultSet.isFirst()) {
+                            do {
+                                productDetails = new ProductDetails();
+                                productDetails.setId(resultSet.getInt(1));
+                                productDetails.setMinValue(resultSet.getDouble(2));
+                                productDetails.setMaxValue(resultSet.getDouble(3));
+                                productDetails.setMeanValue(resultSet.getDouble(4));
+                                productDetails.setStdDevValue(resultSet.getDouble(5));
+                                Array array = resultSet.getArray(6);
+                                if (array != null) {
+                                    productDetails.setHistogram((Integer[]) array.getArray());
+                                }
+                            } while (resultSet.next());
                         }
                         return productDetails;
                     });

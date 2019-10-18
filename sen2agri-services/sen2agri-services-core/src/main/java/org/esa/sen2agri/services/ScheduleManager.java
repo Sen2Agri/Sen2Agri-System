@@ -59,7 +59,7 @@ public class ScheduleManager  extends Notifiable {
 
     private Scheduler scheduler;
 
-    private Set<JobKey> registeredJobs;
+    private Set<String> registeredJobs;
 
     @PostConstruct
     public void initialize() throws SchedulerException {
@@ -325,9 +325,10 @@ public class ScheduleManager  extends Notifiable {
                     trigger = descriptor.buildTrigger();
                 }
                 final JobKey key = jobDetail.getKey();
-                if (!registeredJobs.contains(key)) {
+                final String jobKey = key.getGroup() + "-" + key.getName();
+                if (!registeredJobs.contains(jobKey)) {
                     scheduler.scheduleJob(jobDetail, trigger);
-                    registeredJobs.add(key);
+                    registeredJobs.add(jobKey);
                     logger.info(String.format("Scheduled new job '%s' (next run: %s, repeat after %d minutes)",
                                               key,
                                               descriptor.getFireTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),

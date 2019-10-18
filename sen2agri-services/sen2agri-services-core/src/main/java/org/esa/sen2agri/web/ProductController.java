@@ -57,7 +57,10 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -91,27 +94,26 @@ public class ProductController extends ControllerBase {
         Path path;
         for (Map<String, List<ProductFileInfo>> productType : products.values()) {
             for (List<ProductFileInfo> infos : productType.values()) {
-                final Iterator<ProductFileInfo> iterator = infos.iterator();
-                //for (ProductFileInfo info : infos) {
-                while (iterator.hasNext()) {
-                    ProductFileInfo info = iterator.next();
-                    path = Paths.get(info.getPath()).toAbsolutePath();
-                    try {
-                        if (Files.exists(path)) {
-                            path = FileUtilities.resolveSymLinks(path);
-                            if (Files.isRegularFile(path)) {
-                                info.setSize(Files.size(path));
-                                info.setPath(path.getParent().getFileName().toString());
-                            } else if (Files.isDirectory(path)) {
-                                info.setSize(FileUtilities.folderSize(path));
-                                info.setPath(path.getFileName().toString());
+                for (ProductFileInfo info : infos) {
+                    if (info.getPath() != null) {
+                        path = Paths.get(info.getPath()).toAbsolutePath();
+                        try {
+                            if (Files.exists(path)) {
+                                path = FileUtilities.resolveSymLinks(path);
+                                if (Files.isRegularFile(path)) {
+                                    info.setSize(Files.size(path));
+                                    info.setPath(path.getParent().getFileName().toString());
+                                } else if (Files.isDirectory(path)) {
+                                    info.setSize(FileUtilities.folderSize(path));
+                                    info.setPath(path.getFileName().toString());
+                                }
+                            } else {
+                                info.setPath(null);
                             }
-                        } else {
-                            iterator.remove();
+                        } catch (Exception e) {
+                            Logger.getLogger(ProductController.class.getName()).warning(String.format("Cannot determine size of path %s. Reason: %s",
+                                                                                                      path, ExceptionUtils.getStackTrace(e)));
                         }
-                    } catch (Exception e) {
-                        Logger.getLogger(ProductController.class.getName()).warning(String.format("Cannot determine size of path %s. Reason: %s",
-                                                                                                  path, ExceptionUtils.getStackTrace(e)));
                     }
                 }
             }
