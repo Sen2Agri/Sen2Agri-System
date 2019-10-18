@@ -94,9 +94,9 @@ def exportPracticesFile(config, conn, pg_path, practice, site_id, out_file):
                 lpis."Overlap",
                 lpis."Area_meters" as "Area_meter",
                 lpis."ShapeInd",
-                lut.lc as "LC",
                 lut.ctnum as "CTnum",
                 lut.ct as "CT",
+                lut.lc as "LC",                
                 lpis."S1Pix",
                 lpis."S2Pix"
             from l4c_practices ap
