@@ -478,6 +478,10 @@ add constraint {} unique(ori_crop);"""
     def prepare_lpis_staging(
         self, mode, parcel_id_cols, holding_id_cols, crop_code_col, lpis
     ):
+        parcel_id_cols = [col.lower() for col in parcel_id_cols]
+        holding_id_cols = [col.lower() for col in holding_id_cols]
+        crop_code_col = crop_code_col.lower()
+
         print("Importing LPIS")
         cmd = get_import_table_command(
             self.get_ogr_connection_string(),
