@@ -957,15 +957,15 @@ int LaiRetrievalHandlerL3BNew::UpdateJobSubmittedParamsFromSchedReq(EventProcess
             ProcessorHandlerHelper::GetParameterValueAsString(parameters, "end_date", strEndDate) &&
             parameters.contains("input_products")) {
         if (!parameters.contains("input_products") || parameters["input_products"].toArray().size() == 0) {
-            const auto &startDate = GetLocalDateTime(strStartDate);
-            const auto &endDate = GetLocalDateTime(strEndDate);
+            const auto &startDate = ProcessorHandlerHelper::GetLocalDateTime(strStartDate);
+            const auto &endDate = ProcessorHandlerHelper::GetLocalDateTime(strEndDate);
 
             QString strSeasonStartDate, strSeasonEndDate;
             QDateTime seasonStartDate, seasonEndDate;
             if (ProcessorHandlerHelper::GetParameterValueAsString(parameters, "season_start_date", strSeasonStartDate) &&
                     ProcessorHandlerHelper::GetParameterValueAsString(parameters, "season_end_date", strSeasonEndDate)) {
-                seasonStartDate = GetLocalDateTime(strSeasonStartDate);
-                seasonEndDate = GetLocalDateTime(strSeasonEndDate);
+                seasonStartDate = ProcessorHandlerHelper::GetLocalDateTime(strSeasonStartDate);
+                seasonEndDate = ProcessorHandlerHelper::GetLocalDateTime(strSeasonEndDate);
             }
             Logger::info(QStringLiteral("L3B Scheduled job received for siteId = %1, startDate=%2, endDate=%3").
                          arg(event.siteId).arg(startDate.toString("yyyyMMddTHHmmss")).arg(endDate.toString("yyyyMMddTHHmmss")));
@@ -1191,14 +1191,4 @@ QStringList LaiRetrievalHandlerL3BNew::GetL3BSourceL2APrdsPaths(const QString &p
     }
 
     return retPrdsList;
-}
-
-QDateTime LaiRetrievalHandlerL3BNew::GetLocalDateTime(const QString &strTime) {
-    QDateTime dateTime = QDateTime::fromString(strTime, "yyyyMMdd");
-    dateTime.setTimeSpec(Qt::UTC); // mark the timestamp as UTC (but don't convert it)
-    dateTime = dateTime.toLocalTime();
-    if (dateTime.isDaylightTime()) {
-        dateTime = dateTime.addSecs(-3600);
-    }
-    return dateTime;
 }

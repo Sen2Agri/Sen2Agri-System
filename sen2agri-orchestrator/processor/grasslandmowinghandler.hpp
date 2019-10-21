@@ -17,6 +17,7 @@ namespace grassland_mowing {
             configParameters = pCtx->GetJobConfigurationParameters(evt.jobId, L4B_GM_CFG_PREFIX);
             inputPrdsType = GetInputProductsType(parameters, configParameters);
             year = QDate::currentDate().year();
+            siteShortName = pContext->GetSiteShortName(event.siteId);
         }
         static InputProductsType GetInputProductsType(const QJsonObject &parameters, const std::map<QString, QString> &configParameters);
         static InputProductsType GetInputProductsType(const QString &str);
@@ -36,6 +37,7 @@ namespace grassland_mowing {
 
         QStringList l3bPrds;
         QStringList s1Prds;
+        QString siteShortName;
         int year;
         QString ctNumFilter;
 
@@ -77,6 +79,7 @@ private:
     bool CheckInputParameters(grassland_mowing::GrasslandMowingExecConfig &cfg, QString &err);
     void UpdatePrdInfos(grassland_mowing::GrasslandMowingExecConfig &cfg, const QJsonArray &arrPrds, QStringList &whereToAdd, QDateTime &startDate, QDateTime &endDate);
     QString GetProcessorDirValue(grassland_mowing::GrasslandMowingExecConfig &cfg, const QString &key, const QString &defVal);
+    QString GetL4BConfigFilePath(grassland_mowing::GrasslandMowingExecConfig &jobCfg);
     int GuessYear(const QDateTime &startDateTime, const QDateTime &endDateTime);
     bool LoadConfigFileAdditionalValues(grassland_mowing::GrasslandMowingExecConfig &cfg);
 };

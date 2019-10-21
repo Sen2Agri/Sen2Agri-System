@@ -12,6 +12,7 @@
 using namespace grassland_mowing;
 
 #define DEFAULT_SHP_GEN_PATH "/mnt/archive/grassland_mowing_files/{site}/{year}/InputShp/SEN4CAP_L4B_GeneratedInputShp.shp"
+#define L4B_GM_DEF_CFG_DIR   "/mnt/archive/grassland_mowing_files/{site}/{year}/config/"
 
 void GrasslandMowingHandler::CreateTasks(GrasslandMowingExecConfig &cfg,
                                          QList<TaskToSubmit> &outAllTasksList)
@@ -48,7 +49,9 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
     TaskToSubmit &genInputShpTask = allTasksList[curTaskIdx++];
     QString inputShpLocation;
     if (IsScheduledJobRequest(cfg.parameters)) {
-        inputShpLocation = GetProcessorDirValue(cfg, "prepared-input-shp-location", DEFAULT_SHP_GEN_PATH);
+        inputShpLocation = GetProcessorDirValue(cfg, "gen_input_shp_path", DEFAULT_SHP_GEN_PATH);
+        // create folder for the file if it doesn't exist
+        QDir().mkpath(QFileInfo(inputShpLocation).absolutePath());
     } else {
         inputShpLocation = genInputShpTask.GetFilePath("SEN4CAP_L4B_GeneratedInputShp.shp");
     }
@@ -149,7 +152,6 @@ bool GrasslandMowingHandler::CheckInputParameters(GrasslandMowingExecConfig &cfg
 void GrasslandMowingHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    const QString &siteName = ctx.GetSiteShortName(event.siteId);
     QString err;
     GrasslandMowingExecConfig cfg(&ctx, event);
 
@@ -157,7 +159,7 @@ void GrasslandMowingHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(
             QStringLiteral("Error producing S4C_L4B product for site %1. The error was %2!\n").
-                    arg(siteName).arg(err).toStdString());
+                    arg(cfg.siteShortName).arg(err).toStdString());
     }
 
     QList<TaskToSubmit> allTasksList;
@@ -337,7 +339,7 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
                                                            const QString &outFile)
 {
     const QString &cfgFile = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
-                                                                          "config_path", L4B_GM_CFG_PREFIX);
+                                                                          "default_config_path", L4B_GM_CFG_PREFIX);
     const QString keyScript = (prdType == L2_S1) ? "s1_py_script" : "s2_py_script";
     const QString &scriptToInvoke = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
                                                                                  keyScript, L4B_GM_CFG_PREFIX);
@@ -353,8 +355,8 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
                             "--config-file", cfgFile,
                             "--input-shape-file", inputShpLocation,
                             "--output-data-dir", outDataDir,
-                            "--start-date", cfg.startDate.toString("yyyyMMdd"),
-                            "--end-date", cfg.endDate.toString("yyyyMMdd"),
+                            "--start-date", cfg.startDate.toString("yyyy-MM-dd"),
+                            "--end-date", cfg.endDate.toString("yyyy-MM-dd"),
                             "--seg-parcel-id-attribute", segParcelIdAttrName,
                             "--output-shapefile", outFile,
                             "--do-cmpl", "True",
@@ -363,9 +365,9 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
 
     if (cfg.isScheduled) {
         retArgs += "--season-start";
-        retArgs += cfg.seasonStartDate.toString("yyyyMMdd");
+        retArgs += cfg.seasonStartDate.toString("yyyy-MM-dd");
         retArgs += "--season-end";
-        retArgs += cfg.seasonEndDate.toString("yyyyMMdd");
+        retArgs += cfg.seasonEndDate.toString("yyyy-MM-dd");
     } else {
         retArgs += "--input-products-list";
         retArgs += (prdType == L2_S1) ? cfg.s1Prds : cfg.l3bPrds;
@@ -395,23 +397,54 @@ void GrasslandMowingHandler::UpdatePrdInfos(GrasslandMowingExecConfig &cfg,
 
 QString GrasslandMowingHandler::GetProcessorDirValue(GrasslandMowingExecConfig &cfg,
                                                     const QString &key, const QString &defVal ) {
-    const QString &siteShortName = cfg.pCtx->GetSiteShortName(cfg.event.siteId);
     QString dataExtrDirName = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
                                                                            key, L4B_GM_CFG_PREFIX);
 
     if (dataExtrDirName.size() == 0) {
         dataExtrDirName = defVal;
     }
-    dataExtrDirName = dataExtrDirName.replace("{site}", siteShortName);
+    dataExtrDirName = dataExtrDirName.replace("{site}", cfg.siteShortName);
     dataExtrDirName = dataExtrDirName.replace("{year}", QString::number(cfg.year));
+    dataExtrDirName = dataExtrDirName.replace("{processor}", processorDescr.shortName);
 
     return dataExtrDirName;
 }
 
+QString GrasslandMowingHandler::GetL4BConfigFilePath(GrasslandMowingExecConfig &jobCfg)
+{
+    QString strCfgPath;
+    const QString &strCfgDir = GetProcessorDirValue(jobCfg, "cfg_dir", L4B_GM_DEF_CFG_DIR);
+    QDir directory(strCfgDir);
+    QString preferedCfgFileName = "S4C_L4B_Config_" + QString::number(jobCfg.year) + ".ini";
+    if (directory.exists()) {
+        const QStringList &dirFiles = directory.entryList(QStringList() <<"*.ini",QDir::Files);
+        foreach(const QString &fileName, dirFiles) {
+            if (strCfgPath.size() == 0) {
+                // get the first available file
+                strCfgPath = directory.filePath(fileName);
+            }
+            // check if the filename is a prefered file name
+            if (fileName == preferedCfgFileName) {
+                strCfgPath = directory.filePath(fileName);
+                break;
+            }
+        }
+    }
+    // get the default config path
+    if (strCfgPath.size() == 0 || strCfgPath == "N/A") {
+        strCfgPath = ProcessorHandlerHelper::GetStringConfigValue(jobCfg.parameters, jobCfg.configParameters,
+                                                                                   "default_config_path", L4B_GM_CFG_PREFIX);
+    }
+
+    if (strCfgPath.isEmpty() || strCfgPath == "N/A" || !QFileInfo::exists(strCfgPath)) {
+        return "";
+    }
+    return strCfgPath;
+}
+
 bool GrasslandMowingHandler::LoadConfigFileAdditionalValues(GrasslandMowingExecConfig &cfg)
 {
-    const QString &cfgFile = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
-                                                                          "config_path", L4B_GM_CFG_PREFIX);
+    const QString &cfgFile = GetL4BConfigFilePath(cfg);
     if (cfgFile == "") {
         return false;
     }

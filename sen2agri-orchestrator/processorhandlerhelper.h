@@ -131,6 +131,7 @@ public:
 
     static TQStrQStrMap FilterConfigParameters(const TQStrQStrMap &configParameters, const QString &cfgPrefix);
     static int GuessYear(const QDateTime &startDateTime, const QDateTime &endDateTime);
+    static QDateTime GetLocalDateTime(const QString &strTime);
 
 
 

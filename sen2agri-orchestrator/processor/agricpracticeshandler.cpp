@@ -26,6 +26,8 @@
 #define L4C_AP_DEF_TS_ROOT          "/mnt/archive/agric_practices_files/{site}/{year}/ts_input_tables/"
 #define L4C_AP_DEF_CFG_DIR          "/mnt/archive/agric_practices_files/{site}/{year}/config/"
 
+#define SECS_TILL_EOD               86399   // 24 hour x 3600 + 59 minutes x 60 + 59 seconds
+
 bool compareL4CProductDates(const Product& prod1,const Product& prod2)
 {
     return (prod1.created < prod2.created);
@@ -144,10 +146,8 @@ void AgricPracticesHandler::CreateSteps(QList<TaskToSubmit> &allTasksList,
 
         const auto & productFormatterPrdFileIdFile = productFormatterTask.GetFilePath("prd_infos.txt");
         TaskToSubmit &exportCsvToShpProductTask = allTasksList[curTaskIdx++];
-        const QStringList &exportCsvToShpProductArgs = { "-f", productFormatterPrdFileIdFile,
-                                                          "-o", "Sen4CAP_L4C_PRACTICE_" + jobCfg.siteCfg.country + "_" +
-                                                         jobCfg.siteCfg.year + ".gpkg"
-                                                    };
+
+        const QStringList &exportCsvToShpProductArgs = GetExportProductLauncherArgs(jobCfg, productFormatterPrdFileIdFile);
         steps.append(exportCsvToShpProductTask.CreateStep("export-product-launcher", exportCsvToShpProductArgs));
     }
 }
@@ -243,6 +243,24 @@ void AgricPracticesHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         // Now remove the job folder containing temporary files
         RemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
     }
+}
+
+QStringList AgricPracticesHandler::GetExportProductLauncherArgs(const AgricPracticesJobCfg &jobCfg,
+                                                                const QString &productFormatterPrdFileIdFile) {
+    // Get the path for the ogr2ogr
+    const auto &paths = jobCfg.pCtx->GetJobConfigurationParameters(jobCfg.event.jobId, QStringLiteral("executor.module.path.ogr2ogr"));
+    QString ogr2OgrPath = "ogr2ogr";
+    for (const auto &p : paths) {
+        ogr2OgrPath = p.second;
+        break;
+    }
+
+    const QStringList &exportCsvToShpProductArgs = { "-f", productFormatterPrdFileIdFile,
+                                                      "-o", "Sen4CAP_L4C_PRACTICE_" + jobCfg.siteCfg.country + "_" +
+                                                     jobCfg.siteCfg.year + ".gpkg",
+                                                     "-g", ogr2OgrPath
+                                                };
+    return exportCsvToShpProductArgs;
 }
 
 QStringList AgricPracticesHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, const AgricPracticesJobCfg &jobCfg,
@@ -367,7 +385,7 @@ QString AgricPracticesHandler::GetL4CConfigFilePath(AgricPracticesJobCfg &jobCfg
     // get the default config path
     if (strCfgPath.size() == 0 || strCfgPath == "N/A") {
         strCfgPath = ProcessorHandlerHelper::GetStringConfigValue(jobCfg.parameters, jobCfg.configParameters,
-                                                                                   "config_path", L4C_AP_CFG_PREFIX);
+                                                                                   "default_config_path", L4C_AP_CFG_PREFIX);
     }
 
     if (strCfgPath.isEmpty() || strCfgPath == "N/A" || !QFileInfo::exists(strCfgPath)) {
@@ -531,7 +549,8 @@ QStringList AgricPracticesHandler::GetDataExtractionArgs(const AgricPracticesJob
 
 QStringList AgricPracticesHandler::GetFilesMergeArgs(const QStringList &listInputPaths, const QString &outFileName)
 {
-    QStringList retArgs = { "AgricPractMergeDataExtractionFiles", "-csvcompact", "1", "-outformat", "csv", "-out", outFileName, "-il" };
+    QStringList retArgs = { "AgricPractMergeDataExtractionFiles", "-csvcompact", "1", "-sort", "1",
+                            "-outformat", "csv", "-out", outFileName, "-il" };
     retArgs += listInputPaths;
     return retArgs;
 }
@@ -878,9 +897,17 @@ void AgricPracticesHandler::HandleProductAvailableImpl(EventProcessingContext &c
 bool AgricPracticesHandler::GetPrevL4CProduct(const AgricPracticesJobCfg &jobCfg,  const QDateTime &seasonStart,
                                               const QDateTime &curDate, QString &prevL4cProd) {
     ProductList l4cPrds = jobCfg.pCtx->GetProducts(jobCfg.siteId, (int)ProductType::S4CL4CProductTypeId, seasonStart, curDate);
-    if (l4cPrds.size() > 0) {
-        qSort(l4cPrds.begin(), l4cPrds.end(), compareL4CProductDates);
-        prevL4cProd = l4cPrds[l4cPrds.size()-1].fullPath;
+    ProductList l4cPrdsFiltered;
+    for (const Product &prd: l4cPrds) {
+        if (prd.created.addDays(3) > curDate) {
+            continue;
+        }
+        l4cPrdsFiltered.append(prd);
+    }
+    if (l4cPrdsFiltered.size() > 0) {
+        qSort(l4cPrdsFiltered.begin(), l4cPrdsFiltered.end(), compareL4CProductDates);
+        // remove products that have the same day as the current one
+        prevL4cProd = l4cPrdsFiltered[l4cPrdsFiltered.size()-1].fullPath;
         return true;
     }
     return false;
@@ -959,18 +986,27 @@ int AgricPracticesHandler::UpdateJobSubmittedParamsFromSchedReq(AgricPracticesJo
             jobCfg.parameters.contains("input_products") && jobCfg.parameters["input_products"].toArray().size() == 0) {
 
         isSchedJob = true;
+        // If is scheduled job and we have only analysis operation, then force to perform the data extraction
+        // for the missing products
+        if (!IsOperationEnabled(jobCfg.execOper, dataExtraction)) {
+            jobCfg.execOper = (AgricPractOperation)(jobCfg.execOper | dataExtraction);
+        }
 
         QString strSeasonStartDate, strSeasonEndDate;
         ProcessorHandlerHelper::GetParameterValueAsString(jobCfg.parameters, "season_start_date", strSeasonStartDate);
         ProcessorHandlerHelper::GetParameterValueAsString(jobCfg.parameters, "season_end_date", strSeasonEndDate);
+
+        // TODO: Should we use here ProcessorHandlerHelper::GetLocalDateTime ???
+
         jobCfg.seasonStartDate = QDateTime::fromString(strSeasonStartDate, "yyyyMMdd");
-        jobCfg.seasonEndDate = QDateTime::fromString(strSeasonEndDate, "yyyyMMdd");
+        jobCfg.seasonEndDate = QDateTime::fromString(strSeasonEndDate, "yyyyMMdd").addSecs(SECS_TILL_EOD);
+
         if (jobCfg.siteCfg.year.size() == 0) {
             jobCfg.siteCfg.year = QString::number(ProcessorHandlerHelper::GuessYear(jobCfg.seasonStartDate, jobCfg.seasonEndDate));
         }
 
         const auto &startDate = QDateTime::fromString(strStartDate, "yyyyMMdd");
-        const auto &endDate = QDateTime::fromString(strEndDate, "yyyyMMdd");
+        const auto &endDate = QDateTime::fromString(strEndDate, "yyyyMMdd").addSecs(SECS_TILL_EOD);
 
         // set these values by default
         jobCfg.prdMinDate = startDate;
@@ -1014,6 +1050,7 @@ int AgricPracticesHandler::UpdateJobSubmittedParamsFromSchedReq(AgricPracticesJo
         }
 
         newEvent.parametersJson = jsonToString(jobCfg.parameters);
+        jobCfg.event = newEvent;
         return ndviInputProductsArr.size() + ampInputProductsArr.size() + coheInputProductsArr.size();
     }
     return -1;

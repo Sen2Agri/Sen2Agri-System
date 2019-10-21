@@ -61,7 +61,7 @@ typedef struct AgricPracticesJobCfg {
     static AgricPractOperation GetExecutionOperation(const QJsonObject &parameters,
                                                      const std::map<QString, QString> &configParameters);
     EventProcessingContext *pCtx;
-    const JobSubmittedEvent &event;
+    JobSubmittedEvent event;
     QJsonObject parameters;
     std::map<QString, QString> configParameters;
 
@@ -104,6 +104,8 @@ private:
                      const QStringList &cohePrds, NewStepList &steps);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                  const QStringList &listProducts);
+    QStringList GetExportProductLauncherArgs(const AgricPracticesJobCfg &jobCfg,
+                                            const QString &productFormatterPrdFileIdFile);
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, const AgricPracticesJobCfg &jobCfg,
                                         const QStringList &listFiles);
 

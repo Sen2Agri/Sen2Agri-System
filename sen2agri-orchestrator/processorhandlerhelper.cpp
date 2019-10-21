@@ -1082,3 +1082,13 @@ int ProcessorHandlerHelper::GuessYear(const QDateTime &startDateTime, const QDat
     // if there are more days in the first year, we consider this year, otherwise the end year
     return startDiff > endDiff ? startYear : endYear;
 }
+
+QDateTime ProcessorHandlerHelper::GetLocalDateTime(const QString &strTime) {
+    QDateTime dateTime = QDateTime::fromString(strTime, "yyyyMMdd");
+    dateTime.setTimeSpec(Qt::UTC); // mark the timestamp as UTC (but don't convert it)
+    dateTime = dateTime.toLocalTime();
+    if (dateTime.isDaylightTime()) {
+        dateTime = dateTime.addSecs(-3600);
+    }
+    return dateTime;
+}

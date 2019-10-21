@@ -124,7 +124,6 @@ private:
                                      const QDateTime &startDate, const QDateTime &endDate, QStringList &retFullPaths, ProductList &prdList);
     QStringList GetL2ARelPathsFromProcessedL3Bs(EventProcessingContext &ctx, int siteId,
                                                 const QDateTime &startDate, const QDateTime &endDate, QStringList &retFullPaths);
-    QDateTime GetLocalDateTime(const QString &strTime);
 
 };
 
