@@ -17,6 +17,8 @@ public:
     virtual std::string GetPStart(const AttributeEntry &ogrFeat);
     virtual std::string GetPEnd(const AttributeEntry &ogrFeat);
 
+    virtual std::string GetHEnd(const AttributeEntry &ogrFeat);
+
 private :
     typedef struct {
         std::string plod1;
@@ -34,6 +36,9 @@ private :
     std::map<std::string, LpisInfosType> lpisInfosMap;
 
     int HandleFileLine(const MapHdrIdx& header, const std::vector<std::string>& line, int fileIdx);
+    int Handle2018FileLine(const MapHdrIdx &header, const std::vector<std::string> &line, int fileIdx);
+    int Handle2019FileLine(const MapHdrIdx &header, const std::vector<std::string> &line, int);
+
     LpisInfosType GetLpisInfos(const std::string &fid);
     EfaInfosType GetEfaInfos(const std::string &fid);
 

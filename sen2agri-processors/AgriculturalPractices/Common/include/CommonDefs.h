@@ -17,6 +17,7 @@
 // The unique sequencial ID as it appears in the database or in the shapefile
 #define SEQ_UNIQUE_ID                       "NewID"
 #define ORIG_UNIQUE_ID                      "ori_id"
+#define ORIG_CROP                           "ori_crop"
 
 #define CATCH_CROP_VAL                  "CatchCrop"
 #define FALLOW_LAND_VAL                 "Fallow"

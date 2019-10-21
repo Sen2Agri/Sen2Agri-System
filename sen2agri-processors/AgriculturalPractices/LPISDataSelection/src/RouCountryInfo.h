@@ -5,7 +5,11 @@
 
 class RouCountryInfo : public CountryInfoBase {
 private:
-    std::map<std::string, int> m_gsaaIdsMap;
+    typedef struct {
+        std::string pStartDate;
+        std::string pEndDate;
+    } GsaaInfoType;
+    std::map<std::string, GsaaInfoType> m_ccGsaaIdsMap;
     const std::map<int, int> m_nfcCropCodes = {{1511 , 1511}, {15171, 15171}, {1591 , 1591}, {1521 , 1521}, {15271, 15271},
                                                {2031 , 2031}, {20371, 20371}, {1271 , 1271}, {1281 , 1281}, {1291 , 1291},
                                                {1301 , 1301}, {1531 , 1531}, {1551 , 1551}, {95591, 95591}, {1571 , 1571},
@@ -17,7 +21,6 @@ public:
     RouCountryInfo();
 
     virtual std::string GetName();
-    virtual std::string GetOriId(const AttributeEntry &ogrFeat);
     virtual std::string GetMainCrop(const AttributeEntry &ogrFeat);
     virtual bool GetHasPractice(const AttributeEntry &ogrFeat, const std::string &practice);
 
@@ -25,10 +28,12 @@ public:
     virtual std::string GetPEnd(const AttributeEntry &ogrFeat);
 
     int HandleCCFeature(OGRFeature &ogrFeat, int fileIdx);
+    int HandleCCParcelsDescrFile(const MapHdrIdx &header, const std::vector<std::string> &line, int);
 
 private:
     template <typename T>
     std::string GetGSAAUniqueId(T &ogrFeat);
+    std::string GetUidFromCCParcelDescrFile(const MapHdrIdx &header, const std::vector<std::string> &line);
 };
 
 #endif

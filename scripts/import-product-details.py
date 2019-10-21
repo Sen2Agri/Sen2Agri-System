@@ -160,7 +160,7 @@ def import_agricultural_practices(config, conn, pg_path, product_id, path):
 
         drop_table(conn, table_name)
 
-        command = get_import_table_command(pg_path, file, "-nln", table_name, "-gt", 100000, "-lco", "UNLOGGED=YES")
+        command = get_import_table_command(config.ogr2ogr_path, pg_path, file, "-nln", table_name, "-gt", 100000, "-lco", "UNLOGGED=YES")
         run_command(command)
 
         with conn.cursor() as cursor:

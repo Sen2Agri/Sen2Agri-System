@@ -13,7 +13,12 @@ void CzeCountryInfo::InitializeIndexes(const AttributeEntry &firstOgrFeat)
 {
     CountryInfoBase::InitializeIndexes(firstOgrFeat);
 
-    m_NKOD_DPB_FieldIdx = firstOgrFeat.GetFieldIndex("NKOD_DPB");
+    if (m_year == "2018") {
+        m_NKOD_DPB_FieldIdx = firstOgrFeat.GetFieldIndex("NKOD_DPB");
+    } else {
+        m_NKOD_DPB_FieldIdx = firstOgrFeat.GetFieldIndex("ori_id");
+    }
+
 }
 
 std::string CzeCountryInfo::GetOriId(const AttributeEntry &ogrFeat) {
@@ -21,25 +26,42 @@ std::string CzeCountryInfo::GetOriId(const AttributeEntry &ogrFeat) {
 }
 
 std::string CzeCountryInfo::GetMainCrop(const AttributeEntry &ogrFeat) {
-  const std::string &plod2 = GetLpisInfos(GetOriId(ogrFeat)).plod2;
-  // Ignore items that have plod2 filled
-  if (plod2.size() > 0 && std::atoi(plod2.c_str()) > 0) {
-    return "NA";
-  }
-  return GetLpisInfos(GetOriId(ogrFeat)).plod1;
+    if (m_year == "2018") {
+        const std::string &plod2 = GetLpisInfos(GetOriId(ogrFeat)).plod2;
+        // Ignore items that have plod2 filled
+        if (plod2.size() > 0 && std::atoi(plod2.c_str()) > 0) {
+            return "NA";
+        }
+        return GetLpisInfos(GetOriId(ogrFeat)).plod1;
+    }
+    return GetOriCrop(ogrFeat);
 }
 
 bool CzeCountryInfo::GetHasPractice(const AttributeEntry &ogrFeat,
                                     const std::string &practice) {
   bool bCheckVymera = false;
   const std::string &uid = GetOriId(ogrFeat);
+  int seqId = GetSeqId(ogrFeat);
+  if (seqId == 9744) {
+      int i = 0;
+      i++;
+  }
+
   const EfaInfosType &efaInfos = GetEfaInfos(uid);
   const std::string &typEfa = efaInfos.typ_efa;
   if (practice == CATCH_CROP_VAL && typEfa == "MPL") {
-    bCheckVymera = true;
+      if(m_year == "2018") {
+        bCheckVymera = true;
+      } else {
+          return true;
+      }
   } else if (practice == NITROGEN_FIXING_CROP_VAL && typEfa == "PVN") {
-    bCheckVymera = true;
-  } else if (practice == FALLOW_LAND_VAL && typEfa == "UHOZ") {
+      if(m_year == "2018") {
+        bCheckVymera = true;
+      } else {
+          return true;
+      }
+  } else if ((practice == FALLOW_LAND_VAL) && (typEfa == "UHOZ" || typEfa == "UHOM")) {
     return true;
   }
   if (bCheckVymera) {
@@ -58,6 +80,13 @@ std::string CzeCountryInfo::GetPracticeType(const AttributeEntry &ogrFeat) {
       return "Summer";
     }
     return "Winter";
+  } else if (m_practice == FALLOW_LAND_VAL) {
+      const std::string &uid = GetOriId(ogrFeat);
+      const EfaInfosType &efaInfos = GetEfaInfos(uid);
+      const std::string &typEfa = efaInfos.typ_efa;
+      if (typEfa == "UHOZ" || typEfa == "UHOM") {
+         return typEfa;
+      }
   }
   return "NA";
 }
@@ -91,59 +120,101 @@ std::string CzeCountryInfo::GetPEnd(const AttributeEntry &ogrFeat) {
   return "NA";
 }
 
+std::string CzeCountryInfo::GetHEnd(const AttributeEntry &ogrFeat) {
+    if (m_practice == CATCH_CROP_VAL && m_year != "2018") {
+        const std::string &pType = GetPracticeType(ogrFeat);
+        if (pType == "Winter") {
+            return m_hWinterEnd;
+        }
+    }
+    return m_hend;
+}
+
+int CzeCountryInfo::Handle2018FileLine(const MapHdrIdx &header,
+                                   const std::vector<std::string> &line,
+                                   int fileIdx) {
+    MapHdrIdx::const_iterator itMap;
+    LpisInfosType lpisInfos;
+    EfaInfosType efaInfos;
+    switch (fileIdx) {
+      case 0:  // LPIS file
+        itMap = header.find("PLOD1");
+        if (itMap != header.end() && itMap->second < line.size()) {
+          lpisInfos.plod1 = line[itMap->second];
+        }
+        itMap = header.find("PLOD2");
+        if (itMap != header.end() && itMap->second < line.size()) {
+          lpisInfos.plod2 = line[itMap->second];
+        }
+        itMap = header.find("VYMERA");
+        if (itMap != header.end() && itMap->second < line.size()) {
+          lpisInfos.vymera = line[itMap->second];
+          std::replace(lpisInfos.vymera.begin(), lpisInfos.vymera.end(), ',',
+                       '.');
+        }
+        itMap = header.find("NKOD_DPB");
+        if (itMap != header.end() && itMap->second < line.size()) {
+          lpisInfosMap[line[itMap->second]] = lpisInfos;
+        }
+        break;
+      case 1:  // EFA file
+        itMap = header.find("TYP_EFA");
+        if (itMap != header.end() && itMap->second < line.size()) {
+          efaInfos.typ_efa = line[itMap->second];
+        }
+        itMap = header.find("VYM_EFA");
+        if (itMap != header.end() && itMap->second < line.size()) {
+          efaInfos.vym_efa = line[itMap->second];
+          std::replace(efaInfos.vym_efa.begin(), efaInfos.vym_efa.end(), ',',
+                       '.');
+        }
+
+        itMap = header.find("VAR_MPL");
+        if (itMap != header.end() && itMap->second < line.size()) {
+          efaInfos.var_mpl = line[itMap->second];
+        }
+
+        itMap = header.find("NKOD_DPB");
+        if (itMap != header.end() && itMap->second < line.size()) {
+          efaInfosMap[line[itMap->second]] = efaInfos;
+        }
+        break;
+      default:
+        return false;
+    }
+    return true;
+}
+
+int CzeCountryInfo::Handle2019FileLine(const MapHdrIdx &header,
+                                   const std::vector<std::string> &line,
+                                   int) {
+    MapHdrIdx::const_iterator itMap;
+    EfaInfosType efaInfos;
+    itMap = header.find("TYP_EFA");
+    if (itMap != header.end() && itMap->second < line.size()) {
+      efaInfos.typ_efa = line[itMap->second];
+    }
+    itMap = header.find("VAR_MPL");
+    if (itMap != header.end() && itMap->second < line.size()) {
+      efaInfos.var_mpl = line[itMap->second];
+    }
+
+    itMap = header.find("KOD_PB");
+    if (itMap != header.end() && itMap->second < line.size()) {
+      efaInfosMap[line[itMap->second]] = efaInfos;
+    }
+    return true;
+}
+
 int CzeCountryInfo::HandleFileLine(const MapHdrIdx &header,
                                    const std::vector<std::string> &line,
                                    int fileIdx) {
-  MapHdrIdx::const_iterator itMap;
-  LpisInfosType lpisInfos;
-  EfaInfosType efaInfos;
-  switch (fileIdx) {
-    case 0:  // LPIS file
-      itMap = header.find("PLOD1");
-      if (itMap != header.end() && itMap->second < line.size()) {
-        lpisInfos.plod1 = line[itMap->second];
-      }
-      itMap = header.find("PLOD2");
-      if (itMap != header.end() && itMap->second < line.size()) {
-        lpisInfos.plod2 = line[itMap->second];
-      }
-      itMap = header.find("VYMERA");
-      if (itMap != header.end() && itMap->second < line.size()) {
-        lpisInfos.vymera = line[itMap->second];
-        std::replace(lpisInfos.vymera.begin(), lpisInfos.vymera.end(), ',',
-                     '.');
-      }
-      itMap = header.find("NKOD_DPB");
-      if (itMap != header.end() && itMap->second < line.size()) {
-        lpisInfosMap[line[itMap->second]] = lpisInfos;
-      }
-      break;
-    case 1:  // EFA file
-      itMap = header.find("TYP_EFA");
-      if (itMap != header.end() && itMap->second < line.size()) {
-        efaInfos.typ_efa = line[itMap->second];
-      }
-      itMap = header.find("VYM_EFA");
-      if (itMap != header.end() && itMap->second < line.size()) {
-        efaInfos.vym_efa = line[itMap->second];
-        std::replace(efaInfos.vym_efa.begin(), efaInfos.vym_efa.end(), ',',
-                     '.');
-      }
-
-      itMap = header.find("VAR_MPL");
-      if (itMap != header.end() && itMap->second < line.size()) {
-        efaInfos.var_mpl = line[itMap->second];
-      }
-
-      itMap = header.find("NKOD_DPB");
-      if (itMap != header.end() && itMap->second < line.size()) {
-        efaInfosMap[line[itMap->second]] = efaInfos;
-      }
-      break;
-    default:
-      return false;
-  }
-  return true;
+    if (m_year == "2018") {
+        return Handle2018FileLine(header, line, fileIdx);
+    } else if (m_year == "2019") {
+        return Handle2019FileLine(header, line, fileIdx);
+    }
+    return false;
 }
 
 CzeCountryInfo::LpisInfosType CzeCountryInfo::GetLpisInfos(

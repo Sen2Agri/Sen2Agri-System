@@ -20,6 +20,7 @@ public:
     virtual void InitializeIndexes(const AttributeEntry &firstOgrFeat);
     virtual int GetSeqId(const AttributeEntry &ogrFeat);
     virtual std::string GetOriId(const AttributeEntry &ogrFeat);
+    virtual std::string GetOriCrop(const AttributeEntry &ogrFeat);
     
     virtual bool IsMonitoringParcel(const AttributeEntry &ogrFeat);
 
@@ -41,6 +42,7 @@ protected:
 protected:
     int m_SeqIdFieldIdx;
     int m_OrigIdFieldIdx;
+    int m_OrigCropFieldIdx;
     int m_LandCoverFieldIdx;
 
     int m_GeomValidIdx;

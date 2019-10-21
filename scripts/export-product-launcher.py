@@ -165,7 +165,8 @@ def move_shp_files(vectDataDirPath):
     vectShpDataDirPath = os.path.join(vectDataDirPath, "SHP")
     extensions = ["shp", "shx", "prj", "cpg", "dbf"]
     try:
-        os.mkdir(vectShpDataDirPath)
+        if not os.path.exists(vectShpDataDirPath):
+            os.mkdir(vectShpDataDirPath)
     except OSError:
         print ("Creation of the directory %s failed" % vectShpDataDirPath)
     else:

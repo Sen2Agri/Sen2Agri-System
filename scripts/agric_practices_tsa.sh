@@ -159,7 +159,7 @@ case "$COUNTRY" in
         ;;
     CZE)
         # TODO: See if this remains like this
-        S1PIX=8
+#        S1PIX=8
         
         CC_NDVIUP=500
         CC_AMPTHRMIN=0.2
@@ -183,7 +183,7 @@ case "$COUNTRY" in
         FL_OPTTHRBUFDEN=6 
         FL_AMPTHRBREAKDEN=3
         FL_AMPTHRVALDEN=3
-        FL_FLMARKSTARTDATE="${YEAR}-06-04" 
+        FL_FLMARKSTARTDATE="${YEAR}-06-01" 
         FL_FLMARKSTENDDATE="${YEAR}-08-31"
 
         NFC_OPTTHRVEGCYCLE=500

@@ -158,7 +158,7 @@ case "${COUNTRY}" in
         fi    
         ;;
     ROU)
-        DEFAULT_PROJ="32634"
+        DEFAULT_PROJ="32635"
         ;;
     *)
         echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU}"
@@ -194,7 +194,7 @@ case "${COUNTRY}" in
         fi    
         ;;
     ROU)
-        INSITU_FILE_NAME_PATTERN="ROM_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        INSITU_FILE_NAME_PATTERN="decl_rou_${YEAR}_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
         ;;
     *)
         echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU}"

@@ -157,7 +157,8 @@ public:
     }
 
 private:
-    AgricPractMergeDataExtractionFiles() : m_bForceKeepSuffixInOutput(false)
+    AgricPractMergeDataExtractionFiles() : m_bForceKeepSuffixInOutput(false),
+        m_bSortInputProducts(false)
     {
         m_HeaderFields = {"KOD_PB", "date", "mean", "stdev"};
     }
@@ -212,6 +213,11 @@ private:
         MandatoryOff("limit");
         SetDefaultParameterInt("limit",5000);
 
+        AddParameter(ParameterType_Int, "sort", "Sorts the input products lexicographically");
+        SetParameterDescription("sort","If set, the input products will be sorted lexicographically");
+        MandatoryOff("sort");
+        SetDefaultParameterInt("sort",0);
+
         AddRAMParameter();
 
         // Doc example parameter settings
@@ -236,6 +242,9 @@ private:
 
         if (HasValue("skeep")) {
             m_bForceKeepSuffixInOutput = (GetParameterInt("skeep") != 0);
+        }
+        if (HasValue("sort")) {
+            m_bSortInputProducts = (GetParameterInt("sort") != 0);
         }
         if (HasValue("outformat")) {
             m_outFormat = GetParameterAsString("outformat");
@@ -744,6 +753,11 @@ private:
           otbAppLogFATAL(<<"No image was given as input!");
       }
 
+      if (m_bSortInputProducts) {
+          //auto pred = []( const std::string& lhs, const std::string& rhs ) {return (lhs.date < rhs.date);};
+          std::sort(retFilePaths.begin(), retFilePaths.end()/*, pred*/);
+      }
+
       return retFilePaths;
   }
 
@@ -757,6 +771,7 @@ private:
     bool m_bUseDate2;
     std::string m_suffixFilter;
     bool m_bForceKeepSuffixInOutput;
+    bool m_bSortInputProducts;
 
 };
 

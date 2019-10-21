@@ -193,6 +193,8 @@ private:
         m_country = this->GetParameterString("country");
         auto factory = CountryInfoFactory::New();
         m_pCountryInfos = factory->GetCountryInfo(m_country);
+        m_year = this->GetParameterString("year");
+        m_pCountryInfos->SetYear(m_year);
 
         if (!m_bWriteIdsOnlyFile) {
             if (!HasValue("vegstart")) {
@@ -208,7 +210,6 @@ private:
                 otbAppLogFATAL(<<"year is mandatory when extracting practices file!");
             }
             m_pCountryInfos->SetVegStart(trim(GetParameterAsString("vegstart")));
-            m_year = this->GetParameterString("year");
 
             std::string practice;
             std::string practiceStart;

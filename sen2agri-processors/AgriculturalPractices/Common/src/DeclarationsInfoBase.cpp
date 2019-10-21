@@ -22,6 +22,7 @@ void DeclarationsInfoBase::InitializeIndexes(const AttributeEntry &firstOgrFeat)
 {
     m_SeqIdFieldIdx = firstOgrFeat.GetFieldIndex(SEQ_UNIQUE_ID);
     m_OrigIdFieldIdx = firstOgrFeat.GetFieldIndex(ORIG_UNIQUE_ID);
+    m_OrigCropFieldIdx = firstOgrFeat.GetFieldIndex(ORIG_CROP);
     m_LandCoverFieldIdx = firstOgrFeat.GetFieldIndex(LC_VAL);
     if (m_LandCoverFieldIdx == -1) {
         // Check if maybe we have the the old CR_CAT_VAL Field
@@ -48,6 +49,10 @@ int DeclarationsInfoBase::GetSeqId(const AttributeEntry &ogrFeat) {
 
 std::string DeclarationsInfoBase::GetOriId(const AttributeEntry &ogrFeat) {
     return GetFieldOrNA(ogrFeat, m_OrigIdFieldIdx);
+}
+
+std::string DeclarationsInfoBase::GetOriCrop(const AttributeEntry &ogrFeat) {
+    return GetFieldOrNA(ogrFeat, m_OrigCropFieldIdx);
 }
 
 bool DeclarationsInfoBase::IsMonitoringParcel(const AttributeEntry &ogrFeat) {
