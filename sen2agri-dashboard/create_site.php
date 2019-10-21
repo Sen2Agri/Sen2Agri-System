@@ -757,8 +757,8 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 	# TODO: create an endpoint for checking if site with name exists
 	$restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/sites/");
 	if ($restResult == "") {
-		die ("Cannot get site lists! Please check that the sen2agri-services are started!");
-		$message = "Cannot get site lists!";
+		die ("Cannot get sites list! Please check that the sen2agri-services are started!");
+		$message = "Cannot get sites list!";
 		$result =  "Please check that the sen2agri-services are started!";
 		$_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $result;
 		die(Header("Location: {$_SERVER['PHP_SELF']}"));
@@ -942,6 +942,37 @@ if (isset($_REQUEST["upload_file"]) && isset($_REQUEST["site_shortname"])) {
 	}
 	// Return Success JSON-RPC response
 	die('{"upload_response" : {"result" : {"message" : "success"}, "id" : "' . $uploadDescr->id . '", "upload_target_dir" : "' . $uploadTargetDir . '", "upload_rel_path" : "' . $uploadRelPath . '"}}');
+}
+
+// processing LPIS/LUT Import
+if (isset($_REQUEST['lpis_start_import']) && $_REQUEST['lpis_start_import'] == 'Start Import') {
+	// error_log(json_encode($_REQUEST), 0);
+	
+	$lpisUrl = ConfigParams::$REST_SERVICES_URL . "/import/lpis?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+	// add Lpis parameters
+	if (isset($_REQUEST['lpis_on']) && $_REQUEST['lpis_on'] == "1") {
+		$lpisUrl .= "&mode="           . $_REQUEST['mode'];
+		$lpisUrl .= "&parcelColumns="  . $_REQUEST['parcelColumns'];
+		$lpisUrl .= "&holdingColumns=" . $_REQUEST['holdingColumns'];
+		$lpisUrl .= "&cropCodeColumn=" . $_REQUEST['cropCodeColumn'];
+		$lpisUrl .= "&lpisFile="       . $_REQUEST['lpisFile'];
+	}
+	// add Lut parameters
+	if (isset($_REQUEST['lut_on']) && $_REQUEST['lut_on'] == "1") {
+		$lpisUrl .= "&lutFile=" . $_REQUEST['lutFile'];
+	}
+	
+	error_log($lpisUrl, 0);
+	
+	//CallRestAPI($method, $url, $data = false)
+	$restResult = CallRestAPI("GET", $lpisUrl);
+	$restResult = str_replace("'", "`", $restResult);
+	
+	// Return Success JSON-RPC response
+	if (strpos($restResult, "{") < 0) {
+		$restResult = '{"data": "error", "message": "' . str_replace('"', '`', $restResult) . '"}';
+	}
+	die('lpis_import_response->' . $restResult);
 }
 
 // processing edit site
@@ -1457,7 +1488,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 
 						$restResult = CallRestAPI("GET",  ConfigParams::$REST_SERVICES_URL . "/sites/");
 						 if ($restResult == "") {
-							print_r ("Cannot get site lists! Please check that the sen2agri-services are started!");
+							print_r ("Cannot get sites list! Please check that the sen2agri-services are started!");
 						} else {
 							$jsonArr = json_decode($restResult, true);
 							$userSites = (isset($_SESSION['siteId']) && sizeof($_SESSION['siteId'])>0)? $_SESSION['siteId']:array();
@@ -1723,36 +1754,54 @@ $(document).ready( function() {
 			var lpisStatus = uploadStatus("Lpis");
 			var lutStatus  = uploadStatus("lut");
 			if ((lpisStatus.uploaded + lutStatus.uploaded > 0) && (lpisStatus.failed + lutStatus.failed == 0)) {
-				// /import/lpis?siteId=1&parcelColumns=valdos_nr,kzs_nr,lauko_nr&holdingColumns=valdos_nr&cropCodeColumn=psl_kodas&lpisFile= %2Fmnt%2Fupload%2Fltu%2Flpis%2FLTU_2019_07_02_Decl.shp';
-				var lpisUrl = "<?= ConfigParams::$REST_SERVICES_URL ?>/import/lpis?siteId=" + $("#edit_siteid").val() + "&year=" + $("#upload_year").val();
-				// add Lpis parameters
-				if (lpisStatus.uploaded > 0 && lpisStatus.failed == 0) {
-					lpisUrl += "&mode=" + $("#postUploadCmdParamLpisimportMode" ).val();
-					lpisUrl += "&parcelColumns="  + encodeURIComponent($("#postUploadCmdParamLpisparcelIdCols" ).val());
-					lpisUrl += "&holdingColumns=" + encodeURIComponent($("#postUploadCmdParamLpisholdingIdCols").val());
-					lpisUrl += "&cropCodeColumn=" + encodeURIComponent($("#postUploadCmdParamLpiscropCodeCols" ).val());
-					lpisUrl += "&lpisFile=" + encodeURIComponent(lpisStatus.fileName);
-				}
-				// add Lut parameters
-				if (lutStatus.uploaded > 0 && lutStatus.failed == 0) {
-					lpisUrl += "&lutFile=" + encodeURIComponent(lutStatus.fileName);
-				}
+				$importForm = $('<form action="create_site.php" method="post">' +
+									'<input type="hidden" name="lpis_start_import" value="Start Import">' +
+									'<input type="hidden" name="importSiteId" value="' + $("#edit_siteid").val() + '">' +
+									'<input type="hidden" name="importYear" value="' + $("#upload_year").val() + '">' +
+									((lpisStatus.uploaded > 0 && lpisStatus.failed == 0) ?
+									'<input type="hidden" name="lpis_on" value="1">' +
+									'<input type="hidden" name="mode" value="' + $("#postUploadCmdParamLpisimportMode" ).val() + '">' +
+									'<input type="hidden" name="parcelColumns" value="'  + encodeURIComponent($("#postUploadCmdParamLpisparcelIdCols" ).val()) + '">' +
+									'<input type="hidden" name="holdingColumns" value="' + encodeURIComponent($("#postUploadCmdParamLpisholdingIdCols").val()) + '">' +
+									'<input type="hidden" name="cropCodeColumn" value="' + encodeURIComponent($("#postUploadCmdParamLpiscropCodeCols" ).val()) + '">' +
+									'<input type="hidden" name="lpisFile" value="' + encodeURIComponent(lpisStatus.fileName) + '">'
+									: "") +
+									((lutStatus.uploaded > 0 && lutStatus.failed == 0) ?
+									'<input type="hidden" name="lut_on" value="1">' +
+									'<input type="hidden" name="lutFile" value="' + encodeURIComponent(lutStatus.fileName) + '">'
+									: "") +
+								'</form>');
 				$.ajax({
-					url: lpisUrl,
-					type: "GET",
+					url: "create_site.php",
+					type: "POST",
+					data: $importForm.serialize(),
 					success: function(response) {
-						if (response.status == "SUCCEEDED") {
-							alert("SUCCESS: " + response.data);
-							resetEditAdd("edit");
+						var needle = "lpis_import_response->";
+						var n = response.indexOf(needle);
+						if (n >= 0) {
+							var jsonStr = response.substring(n + needle.length);
+							try {
+									var jsonObj = JSON.parse(jsonStr);
+									if (jsonObj.status === "SUCCEEDED") {
+										alert("SUCCESS: " + jsonObj.data);
+										resetEditAdd("edit");
+									} else {
+										alert("FAILED: " + jsonObj.message);
+									}
+							} catch (e) {
+								alert(e.message + "\n" + jsonStr);
+							}
 						} else {
-							alert("FAILED: " + response.message);
+							alert("Could not retrive a response from the server after LPIS/LUT import.");
 						}
 					},
 					error: function (jqXHR, textStatus, errorThrown) {
 						var msg = textStatus;
-						$.each(jqXHR.responseJSON, function (key, val) {
-							msg += "\n" + key + ": " + val;
-						});
+						if (jqXHR.responseJSON) {
+							$.each(jqXHR.responseJSON, function (key, val) {
+								msg += "\n" + key + ": " + val;
+							});
+						}
 						alert(msg);
 					}
 				});
@@ -2212,8 +2261,8 @@ function resetEditAdd(formName) {
 		$("#siteform")[0].reset();
 	} else if (formName == "edit") {
 		// reload sites page
-		$(document.body).append('<form name="clone_do_nothing" action="create_site.php" method="post"></form>');
-		$("form[name=clone_do_nothing").submit();
+		$(document.body).append('<form id="clone_do_nothing" action="create_site.php" method="post"></form>');
+		$("form#clone_do_nothing").submit();
 /*		
 		//delete error messages for tiles
 		$(".invalidTilesS2").text("");
@@ -2531,4 +2580,3 @@ var uploaders = createUploaders();
 </script>
 
 <?php include 'ms_foot.php'; ?>
-
