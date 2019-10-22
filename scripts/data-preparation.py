@@ -476,7 +476,7 @@ add constraint {} unique(ori_crop);"""
                 conn.commit()
 
     def prepare_lpis_staging(
-        self, mode, parcel_id_cols, holding_id_cols, crop_code_col, lpis
+        self, mode, parcel_id_cols, holding_id_cols, crop_code_col, lpis, parcel_id_offset, holding_id_offset,
     ):
         parcel_id_cols = [col.lower() for col in parcel_id_cols]
         holding_id_cols = [col.lower() for col in holding_id_cols]
@@ -666,7 +666,7 @@ set "NewID" = (
                 print("Renumbering new parcels")
                 query = SQL(
                     """update {} new
-set "NewID" = t.rn + (
+set "NewID" = t.rn + %s + (
     select coalesce(max("NewID"), 0)
     from {}
 )
@@ -678,7 +678,7 @@ from (
 where new.ogc_fid = t.id;"""
                 ).format(lpis_table_staging_id, lpis_table_id, lpis_table_staging_id)
                 logging.debug(query.as_string(conn))
-                cursor.execute(query)
+                cursor.execute(query, (parcel_id_offset, ))
                 # conn.commit()
 
                 print("Copying old holding identifiers")
@@ -699,7 +699,7 @@ set "HoldID" = (
                 query = SQL(
                     """
 update {} new
-set "HoldID" = t.rk + (
+set "HoldID" = t.rk + %s + (
     select coalesce(max("HoldID"), 0)
     from {}
 )
@@ -712,7 +712,7 @@ from (
 where new.ogc_fid = t.id;"""
                 ).format(lpis_table_staging_id, lpis_table_id, lpis_table_staging_id)
                 logging.debug(query.as_string(conn))
-                cursor.execute(query)
+                cursor.execute(query, (holding_id_offset, ))
                 # conn.commit()
 
                 conn.commit()
@@ -745,6 +745,7 @@ where not exists (
                 for col in cols:
                     if col in ("ogc_fid", "is_new", "NewID", "ori_id", "wkb_geometry"):
                         continue
+
                     col_id = Identifier(col)
                     old_cols += SQL("{}, ").format(col_id)
                     p_old_cols += SQL("old.{}, ").format(col_id)
@@ -1407,6 +1408,8 @@ def main():
         choices=["update", "replace", "incremental"],
     )
     parser.add_argument("-d", "--debug", help="debug mode", action="store_true")
+    parser.add_argument("--parcel-id-offset", help="offset for parcel renumbering", type=int, default=0)
+    parser.add_argument("--holding-id-offset", help="offset for holding renumbering", type=int, default=0)
 
     args = parser.parse_args()
 
@@ -1439,6 +1442,8 @@ def main():
             args.holding_id_cols,
             args.crop_code_col,
             args.lpis,
+            args.parcel_id_offset,
+            args.holding_id_offset,
         )
         data_preparation.prepare_lpis()
 
