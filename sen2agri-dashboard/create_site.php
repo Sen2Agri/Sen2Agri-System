@@ -102,8 +102,8 @@ function getUploadFileDescriptorArray() {
 		$descr->descr = "L4B configuration";
 		$descr->dbUploadDirKey = "processor.s4c_l4b.cfg_dir";
 		$descr->uploadRelPath = "";
-		$descr->expectedUploadFileExt = ".txt";
-		$descr->fileExt = "txt";
+		$descr->expectedUploadFileExt = ".cfg";
+		$descr->fileExt = "cfg";
 		$descr->addParams = '[
 						{"id":"year",
 						 "label":"Year:",
@@ -116,10 +116,10 @@ function getUploadFileDescriptorArray() {
 		$descr = new UploadFileDescriptor();
 		$descr->id = "L4cCfg";
 		$descr->descr = "L4C configuration";
-		$descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";
+		$descr->dbUploadDirKey = "processor.s4c_l4c.cfg_upload_dir";
 		$descr->uploadRelPath = "";
-		$descr->expectedUploadFileExt = ".txt";
-		$descr->fileExt = "txt";
+		$descr->expectedUploadFileExt = ".cfg";
+		$descr->fileExt = "cfg";
 		$descr->addParams = '[
 						{"id":"year",
 						 "label":"Year:",
@@ -139,69 +139,23 @@ function getUploadFileDescriptorArray() {
 					]';
 		$uploadFileDescriptorArray[] = $descr;
 
-		$descr = new UploadFileDescriptor();
-		$descr->id = "L4cCCPractices";
-		$descr->descr = "L4C CC practices infos";
-		$descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";
-		$descr->uploadRelPath = "CC";
-		$descr->expectedUploadFileExt = ".csv";
-		$descr->fileExt = "csv";
-		$descr->addParams = '[
-						{"id":"year",
-						 "label":"Year:",
-						 "type":"text",
-						 "required":1
-						}
-					]';
-		$uploadFileDescriptorArray[] = $descr;
-
-		$descr = new UploadFileDescriptor();
-		$descr->id = "L4cFallowPractices";
-		$descr->descr = "L4C Fallow practices infos";
-		$descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";
-		$descr->uploadRelPath = "Fallow";
-		$descr->expectedUploadFileExt = ".csv";
-		$descr->fileExt = "csv";
-		$descr->addParams = '[
-						{"id":"year",
-						 "label":"Year:",
-						 "type":"text",
-						 "required":1
-						}
-					]';
-		$uploadFileDescriptorArray[] = $descr;
-
-		$descr = new UploadFileDescriptor();
-		$descr->id = "L4cNFCPractices";
-		$descr->descr = "L4C NFC practices infos";
-		$descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";
-		$descr->uploadRelPath = "NFC";
-		$descr->expectedUploadFileExt = ".csv";
-		$descr->fileExt = "csv";
-		$descr->addParams = '[
-						{"id":"year",
-						 "label":"Year:",
-						 "type":"text",
-						 "required":1
-						}
-					]';
-		$uploadFileDescriptorArray[] = $descr;
-
-		$descr = new UploadFileDescriptor();
-		$descr->id = "L4cNAPractices";
-		$descr->descr = "L4C NA practices infos";
-		$descr->dbUploadDirKey = "processor.s4c_l4c.cfg_dir";
-		$descr->uploadRelPath = "NA";
-		$descr->expectedUploadFileExt = ".csv";
-		$descr->fileExt = "csv";
-		$descr->addParams = '[
-						{"id":"year",
-						 "label":"Year:",
-						 "type":"text",
-						 "required":1
-						}
-					]';
-		$uploadFileDescriptorArray[] = $descr;
+		$arrPractices = array("CC", "FL", "NFC", "NA");
+		foreach ($arrPractices as $practice) {
+		     $descr = new UploadFileDescriptor();
+		     $descr->id = "L4c" . $practice . "Practices";
+		     $descr->descr = "L4C " . $practice . " practices infos";
+		     $descr->dbUploadDirKey = "processor.s4c_l4c.ts_input_tables_upload_root_dir";        
+		     $descr->uploadRelPath = $practice;                 
+		     $descr->expectedUploadFileExt = ".csv";
+		     $descr->fileExt = "csv";
+		     $descr->addParams = '[
+                            {"id":"year", 
+                             "label":"Year:", 
+                             "type":"text",
+                             "required":1
+                            }]';        
+		     $uploadFileDescriptorArray[] = $descr;
+		}
 	}
 	return $uploadFileDescriptorArray;
 }
@@ -262,6 +216,82 @@ function getPostUploadCmds() {
 							}
 						]';
 		$cmds[] = $cmd;
+
+		$cmd = new PostUploadCmd();
+		$cmd->isAsyncCmd = 1;
+		$cmd->triggerUpDescrIds = array();
+		$cmd->triggerUpDescrIds[] = "L4cCfg";
+		$cmd->cmd = "s4c_l4c_import_config.py -s {site_shortname} {yearParam} {countryParam} \"{practicesParam}\" {configFileParam}";
+		$cmd->params = '[
+                            {"id":"yearParam", 
+                             "key": "-y {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"year",
+                             "required":1
+                            },
+                            {"id":"countryParam", 
+                             "key": "-t {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"country",
+                             "required":1
+                            },
+                            {"id":"practicesParam", 
+                             "key": "-p {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"practices",
+                             "required":1
+                            },                                                   
+                            {"id":"configFileParam", 
+                             "key": "-i {value}",
+                             "refUp":"L4cCfg",
+                             "refUpParam":"",
+                             "required":1
+                            }                                                   
+                        ]';
+		$cmds[] = $cmd;
+        
+		$arrPractices = array("CC", "FL", "NFC", "NA");
+		foreach ($arrPractices as $practice) {
+		     $cmd = new PostUploadCmd();
+		     $cmd->isAsyncCmd = 1;
+		     $cmd->triggerUpDescrIds = array();
+		     $practiceId = "L4c" . $practice . "Practices";
+		     $cmd->triggerUpDescrIds[] = $practiceId;
+		     $cmd->cmd = "s4c_l4c_import_practice.py -s {site_shortname} {inputFileParam} {yearParam} -p " . $practice;
+		     $cmd->params = '[
+                                {"id":"inputFileParam", 
+                                 "key": "-i {value}",
+                                 "refUp":"' . $practiceId . '",
+                                 "refUpParam":"",
+                                 "required":1
+                                },
+                                {"id":"yearParam", 
+                                 "key": "-y {value}",
+                                 "refUp":"' . $practiceId . '",
+                                 "refUpParam":"year",
+                                 "required":1
+                                }
+                            ]';
+		     $cmds[] = $cmd;
+		}
+		// This command will be triggered by any of the uploads
+		$arrTriggers = array("Lpis", "lut", "L4cCCPractices", "L4cFLPractices", "L4cNFCPractices", "L4cNAPractices");
+		foreach ($arrTriggers as $trigger) {        
+		    $cmd = new PostUploadCmd();
+		    $cmd->isAsyncCmd = 1;
+		    $cmd->triggerUpDescrIds = array();
+		    $cmd->triggerUpDescrIds[] = $trigger;
+		    $cmd->cmd = "s4c_l4c_export_all_practices.py -s {site_shortname} {yearParam}";
+		    $cmd->params = '[
+                                {"id":"yearParam", 
+                                 "key": "-y {value}",
+                                 "refUp":"' . $trigger . '",
+                                 "refUpParam":"year",
+                                 "required":1
+                                }
+                            ]';
+		    $cmds[] = $cmd;
+		}        
 	}
 	return $cmds;
 }
@@ -541,7 +571,7 @@ function buildCommand($cmdObj, $cmdParams, $succUpFiles, $errUpFiles) {
 			$cmdStr = str_replace('{' . $param->id . '}', '', $cmdStr);
 		}
 	}
-	// error_log("Cmd to execute : " . $cmdStr);
+	error_log("Cmd to execute : " . $cmdStr);
 	return $cmdStr;
 }
 
@@ -568,9 +598,13 @@ function postProcessUploadedFiles() {
 				continue;
 			}
 			// error_log("building cmd: " . $succUpFilesStr);
-			if (!buildCommand($cmdObj, $cmdParams, $succUpFiles, $errUpFiles)) {
+			$cmdStr = buildCommand($cmdObj, $cmdParams, $succUpFiles, $errUpFiles);
+			if (!$cmdStr) {
 				continue;
 			}
+			// Invoke the command here
+			error_log("Executing cmd: " . $cmdStr);
+			exec($cmdStr);
 		}
 	}
 }
@@ -945,35 +979,112 @@ if (isset($_REQUEST["upload_file"]) && isset($_REQUEST["site_shortname"])) {
 }
 
 // processing LPIS/LUT Import
-if (isset($_REQUEST['lpis_start_import']) && $_REQUEST['lpis_start_import'] == 'Start Import') {
-	// error_log(json_encode($_REQUEST), 0);
-	
-	$lpisUrl = ConfigParams::$REST_SERVICES_URL . "/import/lpis?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
-	// add Lpis parameters
-	if (isset($_REQUEST['lpis_on']) && $_REQUEST['lpis_on'] == "1") {
-		$lpisUrl .= "&mode="           . $_REQUEST['mode'];
-		$lpisUrl .= "&parcelColumns="  . $_REQUEST['parcelColumns'];
-		$lpisUrl .= "&holdingColumns=" . $_REQUEST['holdingColumns'];
-		$lpisUrl .= "&cropCodeColumn=" . $_REQUEST['cropCodeColumn'];
-		$lpisUrl .= "&lpisFile="       . $_REQUEST['lpisFile'];
-	}
-	// add Lut parameters
-	if (isset($_REQUEST['lut_on']) && $_REQUEST['lut_on'] == "1") {
-		$lpisUrl .= "&lutFile=" . $_REQUEST['lutFile'];
-	}
-	
-	error_log($lpisUrl, 0);
-	
-	//CallRestAPI($method, $url, $data = false)
-	$restResult = CallRestAPI("GET", $lpisUrl);
+$arrStartImportTokens = array("LPIS", "L4bCfg", "L4cCfg", "CC", "FL", "NFC", "NA");
+$startImportSet = 0;
+
+error_log(json_encode($_REQUEST), 0);
+
+foreach ($arrStartImportTokens as $startImportToken) {
+    $lcStartImportToken = strtolower ($startImportToken);
+    if (isset($_REQUEST[$lcStartImportToken . '_start_import']) && $_REQUEST[$lcStartImportToken . '_start_import'] == $startImportToken . ' Start Import') {
+        $startImportSet = 1;
+        break;
+    }
+}
+
+error_log("startImportSet is : " . strval($startImportSet), 0);
+
+if ($startImportSet == 1){
+    $globalRestResult = '';
+	if (isset($_REQUEST['lpis_start_import']) && $_REQUEST['lpis_start_import'] == 'LPIS Start Import') {
+        $lpisUrl = ConfigParams::$REST_SERVICES_URL . "/import/lpis?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+        // add Lpis parameters
+        if (isset($_REQUEST['lpis_on']) && $_REQUEST['lpis_on'] == "1") {
+            $lpisUrl .= "&mode="           . $_REQUEST['mode'];
+            $lpisUrl .= "&parcelColumns="  . $_REQUEST['parcelColumns'];
+            $lpisUrl .= "&holdingColumns=" . $_REQUEST['holdingColumns'];
+            $lpisUrl .= "&cropCodeColumn=" . $_REQUEST['cropCodeColumn'];
+            $lpisUrl .= "&lpisFile="       . $_REQUEST['lpisFile'];
+        }
+        // add Lut parameters
+        if (isset($_REQUEST['lut_on']) && $_REQUEST['lut_on'] == "1") {
+            $lpisUrl .= "&lutFile=" . $_REQUEST['lutFile'];
+        }
+        
+        error_log($lpisUrl, 0);
+        
+        //CallRestAPI($method, $url, $data = false)
+        $restResult = CallRestAPI("GET", $lpisUrl);
+        $globalRestResult = $restResult;
+    }
+    if (isset($_REQUEST['l4bcfg_start_import']) && $_REQUEST['l4bcfg_start_import'] == 'L4bCfg Start Import'){
+        $l4bCfgUrl = ConfigParams::$REST_SERVICES_URL . "/import/l4bcfg?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+        $l4bCfgUrl .= "&l4bCfgFile="       . $_REQUEST['l4bCfgFile'];
+        error_log($l4bCfgUrl, 0);
+        //CallRestAPI($method, $url, $data = false)
+        $restResult = CallRestAPI("GET", $l4bCfgUrl);
+        $globalRestResult = $globalRestResult . "S4C L4B Import Result : " . $restResult;
+    }
+    
+    if (isset($_REQUEST['l4ccfg_start_import']) && $_REQUEST['l4ccfg_start_import'] == 'L4cCfg Start Import'){
+        $l4cCfgUrl = ConfigParams::$REST_SERVICES_URL . "/import/l4ccfg?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+        $l4cCfgUrl .= "&practices="       . $_REQUEST['l4cCfgpractices'];
+        $l4cCfgUrl .= "&country="       . $_REQUEST['l4cCfgCountry'];
+        $l4cCfgUrl .= "&l4cCfgFile="    . $_REQUEST['l4cCfgFile'];
+        
+        error_log($l4cCfgUrl, 0);
+        //CallRestAPI($method, $url, $data = false)
+        $restResult = CallRestAPI("GET", $l4cCfgUrl);
+        $globalRestResult = $globalRestResult . "S4C L4B Import Result : " . $restResult;
+    }
+    $arrPractices = array("CC", "FL", "NFC", "NA");
+    foreach ($arrPractices as $practice) {
+        $lcPractice = strtolower ($practice);
+        if (isset($_REQUEST[$lcPractice . '_start_import']) && $_REQUEST[$lcPractice . '_start_import'] == $practice . ' Start Import') {
+            $practiceCfgUrl = ConfigParams::$REST_SERVICES_URL . "/import/l4cpractice?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+            $practiceCfgUrl .= "&practiceFile="    . $_REQUEST["l4c" . $practice . "PracticesFile"];
+            error_log($practiceCfgUrl, 0);
+            //CallRestAPI($method, $url, $data = false)
+            $restResult = CallRestAPI("GET", $practiceCfgUrl);
+            $globalRestResult = $globalRestResult . "S4C " . $practice . " Practice Import Result : " . $restResult;
+        }
+    }
+    
 	$restResult = str_replace("'", "`", $restResult);
 	
 	// Return Success JSON-RPC response
 	if (strpos($restResult, "{") < 0) {
 		$restResult = '{"data": "error", "message": "' . str_replace('"', '`', $restResult) . '"}';
 	}
-	die('lpis_import_response->' . $restResult);
+	die('all_import_done_response->' . $restResult);
 }
+
+
+
+//				importFormStr = importFormStr +
+//									'<input type="hidden" name="l4bcfg_start_import" value="L4BCfg Start Import">' +
+//									'<input type="hidden" name="l4bCfgFile" value="' + encodeURIComponent(l4bCfgStatus.fileName) + '">';
+//            }
+//
+//   			var l4cCfgStatus = uploadStatus("L4cCfg");
+//			if ((l4cCfgStatus.uploaded > 0) && (l4cCfgStatus.failed == 0)) {
+//                formStrCreated = 1;
+//				importFormStr = importFormStr +
+//									'<input type="hidden" name="l4bcfg_start_import" value="L4CCfg Start Import">' +
+//                                    '<input type="hidden" name="L4cCfgpractices" value="'  + encodeURIComponent($("#postUploadCmdParamL4cCfgpractices" ).val()) + '">' +
+//                                    '<input type="hidden" name="L4CCfgCountry" value="'  + encodeURIComponent($("#postUploadCmdParamL4cCfgcountry" ).val()) + '">' +
+//									'<input type="hidden" name="l4cCfgFile" value="' + encodeURIComponent(l4cCfgStatus.fileName) + '">';
+//            }
+//            var practicesArray = ["CC", "FL", "NFC", "NA"];
+//            for (var i = 0; i<practicesArray.length; i++) {
+//                var practiceName = practicesArray[i];
+//                var practiceStatus = uploadStatus("L4c" + practiceName + "Practices");
+//                if ((practiceStatus.uploaded > 0) && (practiceStatus.failed == 0)) {
+//                    formStrCreated = 1;
+//                    importFormStr = importFormStr +
+//                                        '<input type="hidden" name=s4c_l4c_"' + practiceName + '_start_import" value="L4C ' + practiceName + ' Practice Start Import">' +
+//                                        '<input type="hidden" name="l4c' + practiceName + 'PracticesFile" value="' + encodeURIComponent(practiceStatus.fileName) + '">';
+
 
 // processing edit site
 if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site') {
@@ -1729,6 +1840,7 @@ $(document).ready( function() {
 		});
 		return status;
 	}
+    
 	function startUpload() {
 		// Collapse all configuration panels
 		//$("#accordion .panel-collapse.in").collapse("hide");
@@ -1753,11 +1865,19 @@ $(document).ready( function() {
 			// Start LPIS/LUT processing
 			var lpisStatus = uploadStatus("Lpis");
 			var lutStatus  = uploadStatus("lut");
+            var l4bCfgStatus  = uploadStatus("L4bCfg");
+            var l4cCfgStatus  = uploadStatus("L4cCfg");
+            var l4cCCStatus  = uploadStatus("L4cCCPractices");
+            var l4cFLStatus  = uploadStatus("L4cFLPractices");
+            var l4cNFCStatus  = uploadStatus("L4cNFCPractices");
+            var l4cNAStatus  = uploadStatus("L4cCCPractices");
+            var importFormStr = '<form action="create_site.php" method="post">';
+            var formStrCreated = 0;
+            
 			if ((lpisStatus.uploaded + lutStatus.uploaded > 0) && (lpisStatus.failed + lutStatus.failed == 0)) {
-				$importForm = $('<form action="create_site.php" method="post">' +
-									'<input type="hidden" name="lpis_start_import" value="Start Import">' +
-									'<input type="hidden" name="importSiteId" value="' + $("#edit_siteid").val() + '">' +
-									'<input type="hidden" name="importYear" value="' + $("#upload_year").val() + '">' +
+                formStrCreated = 1;
+                importFormStr = importFormStr +
+									'<input type="hidden" name="lpis_start_import" value="LPIS Start Import">' +
 									((lpisStatus.uploaded > 0 && lpisStatus.failed == 0) ?
 									'<input type="hidden" name="lpis_on" value="1">' +
 									'<input type="hidden" name="mode" value="' + $("#postUploadCmdParamLpisimportMode" ).val() + '">' +
@@ -1769,14 +1889,50 @@ $(document).ready( function() {
 									((lutStatus.uploaded > 0 && lutStatus.failed == 0) ?
 									'<input type="hidden" name="lut_on" value="1">' +
 									'<input type="hidden" name="lutFile" value="' + encodeURIComponent(lutStatus.fileName) + '">'
-									: "") +
-								'</form>');
+									: "");
+            }   
+
+   			var l4bCfgStatus = uploadStatus("L4bCfg");
+			if ((l4bCfgStatus.uploaded > 0) && (l4bCfgStatus.failed == 0)) {
+                formStrCreated = 1;
+				importFormStr = importFormStr +
+									'<input type="hidden" name="l4bcfg_start_import" value="L4cCfg Start Import">' +
+									'<input type="hidden" name="l4bCfgFile" value="' + encodeURIComponent(l4bCfgStatus.fileName) + '">';
+            }
+
+   			var l4cCfgStatus = uploadStatus("L4cCfg");
+			if ((l4cCfgStatus.uploaded > 0) && (l4cCfgStatus.failed == 0)) {
+                formStrCreated = 1;
+				importFormStr = importFormStr +
+									'<input type="hidden" name="l4ccfg_start_import" value="L4cCfg Start Import">' +
+                                    '<input type="hidden" name="l4cCfgpractices" value="'  + encodeURIComponent($("#postUploadCmdParamL4cCfgpractices" ).val()) + '">' +
+                                    '<input type="hidden" name="l4cCfgCountry" value="'  + encodeURIComponent($("#postUploadCmdParamL4cCfgcountry" ).val()) + '">' +
+									'<input type="hidden" name="l4cCfgFile" value="' + encodeURIComponent(l4cCfgStatus.fileName) + '">';
+            }
+            var practicesArray = ["CC", "FL", "NFC", "NA"];
+            for (var i = 0; i<practicesArray.length; i++) {
+                var practiceName = practicesArray[i];
+                var practiceStatus = uploadStatus("L4c" + practiceName + "Practices");
+                if ((practiceStatus.uploaded > 0) && (practiceStatus.failed == 0)) {
+                    formStrCreated = 1;
+                    importFormStr = importFormStr +
+                                        '<input type="hidden" name="' + practiceName.toLowerCase() + '_start_import" value="' + practiceName + ' Start Import">' +
+                                        '<input type="hidden" name="l4c' + practiceName + 'PracticesFile" value="' + encodeURIComponent(practiceStatus.fileName) + '">';
+                }
+            }
+
+            if (formStrCreated == 1) {
+                importFormStr = importFormStr +
+                                    '<input type="hidden" name="importSiteId" value="' + $("#edit_siteid").val() + '">' +
+                                    '<input type="hidden" name="importYear" value="' + $("#upload_year").val() + '">';                
+                importFormStr = importFormStr + '</form>';                
+                $importForm = $(importFormStr);
 				$.ajax({
 					url: "create_site.php",
 					type: "POST",
 					data: $importForm.serialize(),
 					success: function(response) {
-						var needle = "lpis_import_response->";
+						var needle = "all_import_done_response->";
 						var n = response.indexOf(needle);
 						if (n >= 0) {
 							var jsonStr = response.substring(n + needle.length);
