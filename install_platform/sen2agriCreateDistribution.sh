@@ -70,6 +70,17 @@ function prepare_distribution()
    ##copy RPMs for SLURM  into  folder /rpm_binaries/slurm
    cp -f ${SOURCES_DIR_PATH}/install_platform/slurm_rpm_package/*.rpm  ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/rpm_binaries/slurm
 
+   #----------------------tools dir--------------------------------------------------------------------#
+
+   ##create dir "rpm_binaries" inside distribution folder Sen2AgriDistribution
+   mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/tools
+
+   ##create subdir "slurm" inside distribution folder Sen2AgriDistribution/rpm_binaries
+   mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/tools/miniconda
+
+   ##copy miniconda sh into  folder tools/miniconda
+   cp -f ${SOURCES_DIR_PATH}/install_platform/miniconda/Miniconda3-latest-Linux-x86_64.sh  ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/tools/miniconda
+
    #----------------------install_scripts dir--------------------------------------------------------------------#
    ##create dir "install_script" inside distribution folder Sen2AgriDistribution
    mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script
@@ -79,6 +90,8 @@ function prepare_distribution()
 
    #copy content of dir "config_files" found at sent2agri/install_platform into created install_script/config
    cp -f ${SOURCES_DIR_PATH}/install_platform/config_files/*.conf ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/config
+   #copy sen4cap conda file
+   cp -f ${SOURCES_DIR_PATH}/install_platform/config_files/*.yml ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/config
 
    #copy database migration scripts
    cp -rf ${SOURCES_DIR_PATH}/install_platform/migrations/ ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/

@@ -48,6 +48,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.p
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.files-remover', NULL, '/usr/bin/rm', '2015-08-24 17:44:38.29255+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.gdalbuildvrt', NULL, '/usr/local/bin/gdalbuildvrt', '2018-08-30 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.gdal_translate', NULL, '/usr/local/bin/gdal_translate', '2018-08-30 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.ogr2ogr',  NULL, '/usr/local/bin/ogr2ogr', '2019-10-18 22:39:08.407059+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.image-classifier', NULL, '/usr/bin/otbcli_ImageClassifier', '2015-08-12 17:09:20.418973+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.image-compression', NULL, '/usr/bin/otbcli_Convert', '2016-02-22 22:39:08.386406+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-bv-err-image-invertion', NULL, '/usr/bin/otbcli', '2016-01-12 14:56:57.501918+02');
@@ -69,12 +70,16 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.p
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.xml-statistics', NULL, '/usr/bin/otbcli', '2016-02-22 22:39:08.407059+02');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.s4c-crop-type', NULL, 'crop-type-wrapper.py', '2016-02-22 22:39:08.407059+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.s4c-grassland-mowing-s1', NULL, '/usr/share/sen2agri/S4C_L4B_GrasslandMowing/src_s1/S1_main.py', '2016-02-22 22:39:08.407059+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.s4c-grassland-mowing-s2', NULL, '/usr/share/sen2agri/S4C_L4B_GrasslandMowing/src_s2/S2_main.py', '2016-02-22 22:39:08.407059+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.s4c-grassland-gen-input-shp',  NULL, '/usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/generate_grassland_mowing_input_shp.sh', '2019-10-18 22:39:08.407059+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.s4c-grassland-mowing',  NULL, '/usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/grassland_mowing.sh', '2019-10-18 22:39:08.407059+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.export-product-launcher', NULL, '/usr/bin/export-product-launcher.py', '2019-04-12 14:56:57.501918+02');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l2a.name', NULL, 'L2A', '2015-06-03 17:02:50.028002+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l2a.path', NULL, '/bin/false', '2015-07-20 16:31:23.208369+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b.keep_job_folders', NULL, '0', '2016-03-09 16:41:20.194169+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.s4c_l4b.keep_job_folders', NULL, '0', '2016-10-18 16:41:20.194169+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.s4c_l4c.keep_job_folders', NULL, '0', '2016-10-18 16:41:20.194169+02');
+
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b.name', NULL, 'L3B', '2015-06-03 17:02:50.028002+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b.path', NULL, '/bin/false', '2015-07-20 16:31:23.208369+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b_lai.slurm_qos', NULL, 'qoslai', '2015-08-24 17:44:38.29255+03');
@@ -130,6 +135,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.sch
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.reference_data_dir', NULL, 'N/A', '2019-02-19 11:09:58.820032+02');
 
+-- S4C L4A configuration 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4a.lc', NULL, '1234', '2019-02-19 11:09:58.820032+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4a.min-s2-pix', NULL, '3', '2019-02-19 11:09:58.820032+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4a.min-s1-pix', NULL, '1', '2019-02-19 11:09:58.820032+02');
@@ -151,10 +157,45 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.input_cohe', NULL, 'N/A', '2019-02-18 15:28:41.060339+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.input_ndvi', NULL, 'N/A', '2019-02-18 15:27:41.861613+02');
 
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.config_path', NULL, '/usr/share/sen2agri/S4C_L4B_Configurations/S4C_L4B_Config.cfg', '2019-02-18 15:27:41.861613+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.config_path', NULL, '/usr/share/sen2agri/S4C_L4C_Configurations/S4C_L4C_Config_NLD.cfg', '2019-02-18 15:27:41.861613+02');
+-- S4C L4B configuration 
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.cfg_upload_dir',  NULL, '/mnt/archive/grassland_mowing_files/upload/{site}', '2019-10-18 15:27:41.861613+02');
 
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.lpis.path', NULL, '/mnt/archive/lpis/{site}', '2019-06-11 16:15:00.0+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.default_config_path', NULL, '/usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/src_ini/S4C_L4B_Default_Config.ini', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.gen_input_shp_path', NULL, '/mnt/archive/grassland_mowing_files/{site}/{year}/InputShp/SEN4CAP_L4B_GeneratedInputShp.shp', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.s1_py_script',  NULL, '/usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/src_s1/S1_main.py', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.s2_py_script',  NULL, '/usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/src_s2/S2_main.py', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.sub_steps',  NULL, 'S1_S2, S1, S2', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.input_product_types',  NULL, 'S1_S2', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.cfg_dir',  NULL, '/mnt/archive/grassland_mowing_files/{site}/{year}/config/', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4b.gen_shp_py_script',  NULL, '/usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/generate_grassland_mowing_input_shp.py', '2019-10-18 15:27:41.861613+02');
+
+-- S4C L4C configuration 
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.cfg_upload_dir',  NULL, '/mnt/archive/agric_practices_files/upload/{site}', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ts_input_tables_upload_root_dir',  NULL, '/mnt/archive/agric_practices_files/upload/{site}/ts_input_tables', '2019-10-18 15:27:41.861613+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.default_config_path', NULL, '/usr/share/sen2agri/S4C_L4C_Configurations/S4C_L4C_Default_Config.cfg', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.cfg_dir', NULL, '/mnt/archive/agric_practices_files/{site}/{year}/config/', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/{year}/data_extraction/{product_type}', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ts_input_tables_dir', NULL, '/mnt/archive/agric_practices_files/{site}/{year}/ts_input_tables/{practice}', '2019-10-18 15:27:41.861613+02');
+                                          
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.practices', NULL, 'NA', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.country', NULL, 'CNTRY', '2019-10-18 15:27:41.861613+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.tsa_min_acqs_no', NULL, '15', '2019-10-18 15:27:41.861613+02');
+                                          
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.use_prev_prd', NULL, '1', '2019-10-18 15:27:41.861613+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.sub_steps', NULL, 'ALL,DataExtraction,CatchCrop,Fallow,NFC,HarvestOnly,AllTimeSeriesAnalysis', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.nrt_data_extr_enabled', NULL, 'true', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ts_input_tables_dir', NULL, '/mnt/archive/agric_practices_files/{site}/input_files', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ndvi_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/data_extraction/ndvi', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.amp_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/data_extraction/amp', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.cohe_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/data_extraction/cohe', '2019-04-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.prds_per_group', NULL, '1', '2019-04-12 14:56:57.501918+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.execution_operation', NULL, 'ALL', '2019-04-12 14:56:57.501918+02');
+
+-- LPIS configuration 
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.lpis.path', NULL, '/mnt/archive/lpis/{site}/{year}', '2019-06-11 16:15:00.0+02');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('resources.working-mem', NULL, '1024', '2015-09-08 11:03:21.87284+03');
 
@@ -179,14 +220,5 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s1.for
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.skip.existing', NULL, 'false', '2019-04-12 14:56:57.501918+02');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b_lai.sub_products', NULL, 'L3B,L3C', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.sub_steps', NULL, 'ALL,DataExtraction,CatchCrop,Fallow,NFC,HarvestOnly,AllTimeSeriesAnalysis', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.nrt_data_extr_enabled', NULL, 'true', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ts_input_tables_dir', NULL, '/mnt/archive/agric_practices_files/{site}/input_files', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ndvi_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/data_extraction/ndvi', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.amp_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/data_extraction/amp', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.cohe_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/data_extraction/cohe', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.prds_per_group', NULL, '1', '2019-04-12 14:56:57.501918+02');
 
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.execution_operation', NULL, 'ALL', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.export-product-launcher', NULL, '/usr/bin/export-product-launcher.py', '2019-04-12 14:56:57.501918+02');
 

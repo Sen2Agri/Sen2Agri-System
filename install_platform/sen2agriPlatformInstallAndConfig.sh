@@ -366,18 +366,6 @@ function install_and_config_postgresql()
     SEN2AGRI_DATABASE_NAME=${DB_NAME}
 
     if ! [[ "${SEN2AGRI_DATABASE_NAME}" == "sen2agri" ]] ; then
-        wget http://step.esa.int/downloads/6.0/installers/esa-snap_sentinel_unix_6_0.sh && \
-        chmod +x esa-snap_sentinel_unix_6_0.sh && \
-        ./esa-snap_sentinel_unix_6_0.sh -q && \
-        snap --nosplash --nogui --modules --update-all \
-        rm -f esa-snap_sentinel_unix_6_0.sh
-        if [ ! -h /usr/local/bin/gpt ]; then sudo ln -s /opt/snap/bin/gpt /usr/local/bin/gpt;fi
-        
-        cp -f $(find ./ -name ${GPT_CONFIG_FILE}) /opt/snap/bin/
-        
-        yum install -y R-devel
-        echo 'install.packages(c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily"), repos = c(CRAN = "https://cran.rstudio.com"))' | Rscript -
-
         echo "Using database '${SEN2AGRI_DATABASE_NAME}'"
         sed -i -- "s/-- DataBase Create: sen2agri/-- DataBase Create: ${SEN2AGRI_DATABASE_NAME}/g" ./database/00-database/sen2agri.sql
         sed -i -- "s/CREATE DATABASE sen2agri/CREATE DATABASE ${SEN2AGRI_DATABASE_NAME}/g" ./database/00-database/sen2agri.sql
@@ -531,6 +519,44 @@ function install_RPMs()
 ../rpm_binaries/slurm/slurm-sql-15.08.7-1.el7.centos.x86_64.rpm \
 ../rpm_binaries/slurm/slurm-torque-15.08.7-1.el7.centos.x86_64.rpm
 }
+
+#-----------------------------------------------------------#
+function install_additional_packages()
+{
+    if ! [[ "${SEN2AGRI_DATABASE_NAME}" == "sen2agri" ]] ; then
+        # Install and config SNAP
+        wget http://step.esa.int/downloads/6.0/installers/esa-snap_sentinel_unix_6_0.sh && \
+        cp -f esa-snap_sentinel_unix_6_0.sh /tmp/ && \
+        chmod +x /tmp/esa-snap_sentinel_unix_6_0.sh && \
+        /tmp/esa-snap_sentinel_unix_6_0.sh -q && \
+        /opt/snap/bin/snap --nosplash --nogui --modules --update-all
+        rm -f ./esa-snap_sentinel_unix_6_0.sh /tmp/esa-snap_sentinel_unix_6_0.sh
+        if [ ! -h /usr/local/bin/gpt ]; then sudo ln -s /opt/snap/bin/gpt /usr/local/bin/gpt;fi
+        
+        cp -f ${GPT_CONFIG_FILE} /opt/snap/bin/
+        
+        # Install R-devel
+        yum install -y R-devel
+        echo 'install.packages(c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily"), repos = c(CRAN = "https://cran.rstudio.com"))' | Rscript -
+        
+        # Install Miniconda and the environment for the execution of processors
+        SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+        cp "${SCRIPTPATH}/../tools/miniconda/Miniconda3-latest-Linux-x86_64.sh" "/mnt/archive/"
+        cp "${SCRIPTPATH}/../tools/miniconda/sen4cap_conda.yml" "/mnt/archive/"
+
+        sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b"
+      # sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b -p /mnt/archive/sen4cap_miniconda/miniconda3/"
+        sudo -u sen2agri-service bash -c 'echo ". /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
+        sudo su -l sen2agri-service -c bash -c "conda config --set report_errors false"
+        sudo su -l sen2agri-service -c bash -c "conda env create --file=/mnt/archive/sen4cap_conda.yml"
+        sudo su -l sen2agri-service -c bash -c "conda info --envs"
+        
+        rm "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh"
+        rm "/mnt/archive/sen4cap_conda.yml"
+        
+    fi
+}
+
 
 function maccs_or_maja()
 {
@@ -918,6 +944,11 @@ updateWebConfigParams
 ####  DOWNLOADERS AND DEMMACS  INSTALL                  #####
 #-----------------------------------------------------------#
 install_downloaders_demmacs
+
+#-----------------------------------------------------------#
+####  ADDITIONAL PACKAGES      INSTALL                  #####
+#-----------------------------------------------------------#
+install_additional_packages
 
 #-----------------------------------------------------------#
 ####  START ORCHESTRATOR SERVICES                       #####

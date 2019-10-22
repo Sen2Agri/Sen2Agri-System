@@ -54,6 +54,9 @@ function install_sen2agri_services()
                 if [ -f /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties ] ; then 
                     mv /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties /usr/share/sen2agri/sen2agri-services/config/services.properties
                 fi
+                if [ -f /usr/share/sen2agri/sen2agri-services/config/application.properties ] ; then 
+                    cp -f /usr/share/sen2agri/sen2agri-services/config/application.properties /usr/share/sen2agri/sen2agri-services/config/application.properties.bkp
+                fi
                 # update the application.properties file even if some user changes might be lost
                 unzip -o ${zipArchive} 'config/application.properties' -d /usr/share/sen2agri/sen2agri-services/
             else
@@ -136,6 +139,19 @@ function resetDownloadFailedProducts()
     echo "Resetting failed downloaded products from downloader_history ... Done!"
 }
 
+function run_migration_scripts()
+{
+   local curPath=$1
+   local dbName=$2
+   #for each sql scripts found in this folder
+   for scriptName in "$curPath"/*.sql
+   do
+        scriptToExecute=${scriptName}
+        ## perform execution of each sql script
+        echo "Executing SQL script: $scriptToExecute"
+        cat "$scriptToExecute" | su - postgres -c 'psql '${dbName}''
+   done
+}
 
 systemctl stop sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent sen2agri-services
 
@@ -156,18 +172,22 @@ fi
 
 echo "$DB_NAME"
 
-cat migrations/migration-1.3-1.3.1.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.3.1-1.4.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.4-1.5.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.5-1.6.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.6-1.6.2.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.6.2-1.7.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.7-1.8.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.8.0-1.8.1.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.8.1-1.8.2.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.8.2-1.8.3.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-1.8.3-2.0.sql | su -l postgres -c "psql $DB_NAME"
-cat migrations/migration-2.0.0-2.0.1.sql | su -l postgres -c "psql $DB_NAME"
+if [ "$DB_NAME" == "sen2agri" ] ; then 
+    cat migrations/migration-1.3-1.3.1.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.3.1-1.4.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.4-1.5.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.5-1.6.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.6-1.6.2.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.6.2-1.7.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.7-1.8.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.8.0-1.8.1.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.8.1-1.8.2.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.8.2-1.8.3.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-1.8.3-2.0.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-2.0.0-2.0.1.sql | su -l postgres -c "psql $DB_NAME"
+else 
+    run_migration_scripts "migrations/${DB_NAME}" "${DB_NAME}"
+fi
 
 systemctl daemon-reload
 
@@ -177,16 +197,49 @@ if [ -d ../reference_data/ ]; then
     cp -rf ../reference_data/* /mnt/archive/reference_data
 fi
 
-updateDownloadCredentials
+if [ "$DB_NAME" == "sen2agri" ] ; then 
+    updateDownloadCredentials
 
-# Update the port in /var/www/html/ConfigParams.php as version 1.8 had 8080 instead of 8081
-updateWebRestPort
+    # Update the port in /var/www/html/ConfigParams.php as version 1.8 had 8080 instead of 8081
+    updateWebRestPort
 
-# Enable SciHub as the download datasource 
-enableSciHubDwnDS
+    # Enable SciHub as the download datasource 
+    enableSciHubDwnDS
 
-# Reset the download failed products
-resetDownloadFailedProducts
+    # Reset the download failed products
+    resetDownloadFailedProducts
+else
+    # Install and config SNAP
+#    wget http://step.esa.int/downloads/6.0/installers/esa-snap_sentinel_unix_6_0.sh && \
+#    cp -f esa-snap_sentinel_unix_6_0.sh /tmp/ && \
+#    chmod +x /tmp/esa-snap_sentinel_unix_6_0.sh && \
+#    /tmp/esa-snap_sentinel_unix_6_0.sh -q && \
+#    /opt/snap/bin/snap --nosplash --nogui --modules --update-all
+#    rm -f ./esa-snap_sentinel_unix_6_0.sh /tmp/esa-snap_sentinel_unix_6_0.sh
+#    if [ ! -h /usr/local/bin/gpt ]; then sudo ln -s /opt/snap/bin/gpt /usr/local/bin/gpt;fi
+#    
+#    cp -f ${GPT_CONFIG_FILE} /opt/snap/bin/
+#    
+#    # Install R-devel
+#    yum install -y R-devel
+#    echo 'install.packages(c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily"), repos = c(CRAN = "https://cran.rstudio.com"))' | Rscript -
+    
+    # Install Miniconda and the environment for the execution of processors
+    SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
+    cp "${SCRIPTPATH}/../tools/miniconda/Miniconda3-latest-Linux-x86_64.sh" "/mnt/archive/"
+    cp "${SCRIPTPATH}/../tools/miniconda/sen4cap_conda.yml" "/mnt/archive/"
+    
+    sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b"
+    # sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b -p /mnt/archive/sen4cap_miniconda/miniconda3/"
+    sudo -u sen2agri-service bash -c 'echo ". /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
+    sudo su -l sen2agri-service -c bash -c "conda config --set report_errors false"
+    sudo su -l sen2agri-service -c bash -c "conda env create --file=/mnt/archive/sen4cap_conda.yml"
+    sudo su -l sen2agri-service -c bash -c "conda info --envs"
+    
+    rm "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh"
+    rm "/mnt/archive/sen4cap_conda.yml"
+    
+fi
 
 #systemctl start sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent sen2agri-scheduler
 
