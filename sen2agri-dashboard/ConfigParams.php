@@ -36,8 +36,12 @@ class ConfigParams {
     }
     
     static function getServicePort(){
-    	if( file_exists("/usr/share/sen2agri/sen2agri-services/config/services.properties")){
-		    $lines = file("/usr/share/sen2agri/sen2agri-services/config/services.properties");
+        $props_file = "/usr/share/sen2agri/sen2agri-services/config/services.properties";
+        if( file_exists("/usr/share/sen2agri/" . self::$DB_NAME . "-services/config/services.properties")){
+            $props_file = "/usr/share/sen2agri/" . self::$DB_NAME . "-services/config/services.properties";
+        }
+    	if( file_exists($props_file)){
+		    $lines = file($props_file);
 		    $searchword = 'server.port';
 		    $matches = array();
 		    foreach($lines as $k=>$v) {
