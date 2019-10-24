@@ -1407,6 +1407,7 @@ def main():
     parser.add_argument("--year", help="year")
     parser.add_argument("--lpis", help="LPIS dataset")
     parser.add_argument("--lut", help="LUT dataset")
+    parser.add_argument("--export", help="export dataset", action="store_true")
     parser.add_argument("--parcel-id-cols", nargs="+", help="parcel id columns")
     parser.add_argument("--holding-id-cols", nargs="+", help="holding id columns")
     parser.add_argument("--crop-code-col", help="crop code column")
@@ -1457,7 +1458,7 @@ def main():
         )
         data_preparation.prepare_lpis()
 
-    if args.lpis or args.lut:
+    if args.lpis or args.lut or args.export:
         data_preparation.export_lpis()
 
 
