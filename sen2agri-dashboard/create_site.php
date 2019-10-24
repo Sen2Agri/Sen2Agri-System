@@ -100,7 +100,7 @@ function getUploadFileDescriptorArray() {
 		$descr = new UploadFileDescriptor();
 		$descr->id = "L4bCfg";
 		$descr->descr = "L4B configuration";
-		$descr->dbUploadDirKey = "processor.s4c_l4b.cfg_dir";
+		$descr->dbUploadDirKey = "processor.s4c_l4b.cfg_upload_dir";
 		$descr->uploadRelPath = "";
 		$descr->expectedUploadFileExt = ".cfg";
 		$descr->fileExt = "cfg";
@@ -992,7 +992,7 @@ foreach ($arrStartImportTokens as $startImportToken) {
     }
 }
 
-error_log("startImportSet is : " . strval($startImportSet), 0);
+// error_log("startImportSet is : " . strval($startImportSet), 0);
 
 if ($startImportSet == 1){
     $globalRestResult = '';
@@ -1042,6 +1042,7 @@ if ($startImportSet == 1){
         $lcPractice = strtolower ($practice);
         if (isset($_REQUEST[$lcPractice . '_start_import']) && $_REQUEST[$lcPractice . '_start_import'] == $practice . ' Start Import') {
             $practiceCfgUrl = ConfigParams::$REST_SERVICES_URL . "/import/l4cpractice?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+            $practiceCfgUrl .= "&practice="        . $practice;
             $practiceCfgUrl .= "&practiceFile="    . $_REQUEST["l4c" . $practice . "PracticesFile"];
             error_log($practiceCfgUrl, 0);
             //CallRestAPI($method, $url, $data = false)
