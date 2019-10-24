@@ -652,12 +652,9 @@ where not exists (
                 print("Copying old parcel identifiers")
                 query = SQL(
                     """update {} new
-set "NewID" = (
-    select old."NewID"
-    from {} old
-    where old.ori_id = new.ori_id
-    limit 1
-);"""
+set "NewID" = old."NewID"
+from {} old
+where old.ori_id = new.ori_id;"""
                 ).format(lpis_table_staging_id, lpis_table_id)
                 logging.debug(query.as_string(conn))
                 cursor.execute(query)
@@ -684,12 +681,9 @@ where new.ogc_fid = t.id;"""
                 print("Copying old holding identifiers")
                 query = SQL(
                     """update {} new
-set "HoldID" = (
-    select old."HoldID"
-    from {} old
-    where old.ori_hold = new.ori_hold
-    limit 1
-);"""
+set "HoldID" = old."HoldID"
+from {} old
+where old.ori_hold = new.ori_hold;"""
                 ).format(lpis_table_staging_id, lpis_table_id)
                 logging.debug(query.as_string(conn))
                 cursor.execute(query)
