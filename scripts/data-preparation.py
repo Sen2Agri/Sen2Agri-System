@@ -1014,42 +1014,58 @@ and not is_deleted;"""
             updates = [(id, s2pix, s1pix) for (id, (s2pix, s1pix)) in counts.items()]
             del counts
 
-            total = len(updates)
-            progress = 0
-            sys.stdout.write("Updating pixel counts: 0.00%")
-            sys.stdout.flush()
+            def update_batch(b):
+                id = [e[0] for e in b]
+                s2_pix = [e[1] for e in b]
+                s1_pix = [e[2] for e in b]
 
-            with self.get_connection() as conn:
-                with conn.cursor() as cursor:
-                    for b in batch(updates, self.DB_UPDATE_BATCH_SIZE):
-                        id = [e[0] for e in b]
-                        s2_pix = [e[1] for e in b]
-                        s1_pix = [e[2] for e in b]
-
-                        sql = SQL(
-                            """
-update {} lpis
+                sql = SQL(
+                    """update {} lpis
 set "S2Pix" = s2_pix,
     "S1Pix" = s1_pix
 from (select unnest(%s) as id,
                 unnest(%s) as s2_pix,
                 unnest(%s) as s1_pix) upd
-where upd.id = lpis."NewID";"""
-                        )
-                        sql = sql.format(Identifier(self.lpis_table))
+where upd.id = lpis."NewID";""")
+                sql = sql.format(Identifier(self.lpis_table))
+
+                with self.get_connection() as conn:
+                    with conn.cursor() as cursor:
                         logging.debug(sql.as_string(conn))
                         cursor.execute(sql, (id, s2_pix, s1_pix))
                         conn.commit()
 
-                        progress += len(b)
-                        sys.stdout.write(
-                            "\rUpdating pixel counts: {0:.2f}%".format(
-                                100.0 * progress / total
-                            )
-                        )
-                        sys.stdout.flush()
-                    sys.stdout.write("\n")
-                    sys.stdout.flush()
+            def work(w):
+                (c, cost) = w
+                c()
+                q.put(cost)
+
+            total = len(updates)
+            progress = 0
+            sys.stdout.write("Updating pixel counts: 0.00%")
+            sys.stdout.flush()
+
+            commands = []
+            for b in batch(updates, self.DB_UPDATE_BATCH_SIZE):
+                def f(b=b):
+                    update_batch(b)
+
+                commands.append((f, len(b)))
+
+            res = self.pool.map_async(work, commands)
+
+            for i in range(len(commands)):
+                progress += q.get()
+                sys.stdout.write(
+                    "\rUpdating pixel counts: {0:.2f}%".format(
+                        100.0 * progress / total
+                    )
+                )
+                sys.stdout.flush()
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+
+            res.get()
 
             with conn.cursor() as cursor:
                 print("Cleaning up")
