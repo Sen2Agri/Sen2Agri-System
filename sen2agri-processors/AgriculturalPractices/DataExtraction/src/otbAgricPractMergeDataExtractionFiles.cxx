@@ -235,6 +235,9 @@ private:
 
     void DoExecute() override
     {
+        if (HasValue("sort")) {
+            m_bSortInputProducts = (GetParameterInt("sort") != 0);
+        }
         const std::vector<std::string> &inFilePaths = GetInputFilePaths();
         if (HasValue("sfilter")) {
             m_suffixFilter = GetParameterAsString("sfilter");
@@ -242,9 +245,6 @@ private:
 
         if (HasValue("skeep")) {
             m_bForceKeepSuffixInOutput = (GetParameterInt("skeep") != 0);
-        }
-        if (HasValue("sort")) {
-            m_bSortInputProducts = (GetParameterInt("sort") != 0);
         }
         if (HasValue("outformat")) {
             m_outFormat = GetParameterAsString("outformat");
@@ -755,6 +755,7 @@ private:
 
       if (m_bSortInputProducts) {
           //auto pred = []( const std::string& lhs, const std::string& rhs ) {return (lhs.date < rhs.date);};
+          otbAppLogINFO(<<"Sorting input products ...");
           std::sort(retFilePaths.begin(), retFilePaths.end()/*, pred*/);
       }
 

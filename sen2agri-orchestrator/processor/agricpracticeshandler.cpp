@@ -870,11 +870,13 @@ void AgricPracticesHandler::HandleProductAvailableImpl(EventProcessingContext &c
 
     // Check that the product type is NDVI, AMP or COHE
     const QString &prdTypeShortName = GetShortNameForProductType(prd.productTypeId);
-    const QString &prdKey = "input_" + prdTypeShortName;
-    if (prdKey == "input_") {
-        Logger::error(QStringLiteral("Unsupported product type %1.").arg(QString::number((int)prd.productTypeId)));
+    if (prdTypeShortName.size() == 0) {
+        // Ignore silently to avoid poluting the log messages
+        //Logger::error(QStringLiteral("Agric_practices - HandleProductAvailable - Unsupported product type %1. Ignoring it ...").arg(QString::number((int)prd.productTypeId)));
         return;
     }
+
+
     // check if the NRT data extraction is configured for the site
     bool nrtDataExtrEnabled = ProcessorHandlerHelper::GetBoolConfigValue(parameters, configParameters, "nrt_data_extr_enabled", L4C_AP_CFG_PREFIX);
     if (nrtDataExtrEnabled) {
@@ -887,6 +889,8 @@ void AgricPracticesHandler::HandleProductAvailableImpl(EventProcessingContext &c
         QJsonObject processorParamsObj;
         QJsonArray prodsJsonArray;
         prodsJsonArray.append(prd.fullPath);
+
+        const QString &prdKey = "input_" + prdTypeShortName;
         processorParamsObj[prdKey] = prodsJsonArray;
         processorParamsObj["execution_operation"] = "DataExtraction";
         newJob.parametersJson = jsonToString(processorParamsObj);
