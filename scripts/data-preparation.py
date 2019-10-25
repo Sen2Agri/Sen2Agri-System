@@ -33,6 +33,14 @@ MODE_REPLACE = 1
 MODE_INCREMENTAL = 2
 
 
+def try_rm_file(f):
+    try:
+        os.remove(f)
+        return True
+    except OSError:
+        return False
+
+
 class Config(object):
     def __init__(self, args):
         parser = ConfigParser()
@@ -1000,19 +1008,25 @@ and not is_deleted;"""
 
         res.get()
 
+        for f in class_counts:
+            try_rm_file(f)
+        for f in class_counts_20m:
+            try_rm_file(f)
+
         print("Reading pixel counts")
         class_counts = read_counts_csv(counts)
         class_counts_20m = read_counts_csv(counts_20m)
-        counts = defaultdict(lambda: (0, 0))
-        for (id, count) in class_counts.items():
-            counts[id] = (count, counts[id][1])
-        for (id, count) in class_counts_20m.items():
-            counts[id] = (counts[id][0], count)
-        del counts[0]
 
-        if counts:
-            updates = [(id, s2pix, s1pix) for (id, (s2pix, s1pix)) in counts.items()]
-            del counts
+        c = defaultdict(lambda: (0, 0))
+        for (id, count) in class_counts.items():
+            c[id] = (count, c[id][1])
+        for (id, count) in class_counts_20m.items():
+            c[id] = (c[id][0], count)
+        del c[0]
+
+        if c:
+            updates = [(id, s2pix, s1pix) for (id, (s2pix, s1pix)) in c.items()]
+            del c
 
             def update_batch(b):
                 id = [e[0] for e in b]
@@ -1066,6 +1080,9 @@ where upd.id = lpis."NewID";""")
             sys.stdout.flush()
 
             res.get()
+
+            try_rm_file(counts)
+            try_rm_file(counts_20m)
 
             with conn.cursor() as cursor:
                 print("Cleaning up")
