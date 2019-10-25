@@ -34,7 +34,6 @@ import ro.cs.tao.datasource.DataSource;
 import ro.cs.tao.datasource.DataSourceManager;
 import ro.cs.tao.datasource.param.CommonParameterNames;
 import ro.cs.tao.datasource.param.DataSourceParameter;
-import ro.cs.tao.datasource.param.ParameterName;
 import ro.cs.tao.datasource.remote.FetchMode;
 import ro.cs.tao.eodata.EOProduct;
 import ro.cs.tao.utils.Triple;
@@ -71,7 +70,6 @@ public class RetryJob extends DownloadJob {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     protected void executeImpl(JobDataMap dataMap) {
         final Site site = (Site) dataMap.get("site");
         if (!site.isEnabled()) {
@@ -135,12 +133,12 @@ public class RetryJob extends DownloadJob {
             final Tuple<String, String> key = new Tuple<>(site.getName(), downloadCfg.getSatellite().friendlyName());
             if (productsToRetry != null && productsToRetry.size() > 0) {
                 runningJobs.put(key, productsToRetry.size());
-                final DataSource dataSource = DataSourceManager.getInstance().get(queryCfg.getSatellite().name(),
+                final DataSource<?> dataSource = DataSourceManager.getInstance().get(queryCfg.getSatellite().name(),
                                                                                   queryCfg.getDataSourceName());
-                final Map<String, Map<ParameterName, DataSourceParameter>> parameters = dataSource.getSupportedParameters();
-                final Map<ParameterName, DataSourceParameter> satelliteParameters = parameters.get(queryCfg.getSatellite().name());
+                final Map<String, Map<String, DataSourceParameter>> parameters = dataSource.getSupportedParameters();
+                final Map<String, DataSourceParameter> satelliteParameters = parameters.get(queryCfg.getSatellite().name());
                 final boolean canFilterByProduct = satelliteParameters.keySet().stream()
-                        .filter(pn -> pn.getSystemName().equals(CommonParameterNames.PRODUCT))
+                        .filter(pn -> pn.equals(CommonParameterNames.PRODUCT))
                         .findFirst().orElse(null) != null;
                 productsToRetry.forEach(p -> {
                     p.setStatusId(Status.DOWNLOADING);
@@ -214,12 +212,12 @@ public class RetryJob extends DownloadJob {
                 if (secondaryDatasourceId != null) {
                     final DataSourceConfiguration secondaryDS = persistenceManager.getDataSourceConfiguration(secondaryDatasourceId.shortValue());
                     logger.info(String.format("Retry will be attempted using %s", secondaryDS.getDataSourceName()));
-                    final DataSource dataSource = DataSourceManager.getInstance().get(queryCfg.getSatellite().name(),
+                    final DataSource<?> dataSource = DataSourceManager.getInstance().get(queryCfg.getSatellite().name(),
                                                                                       queryCfg.getDataSourceName());
-                    final Map<String, Map<ParameterName, DataSourceParameter>> parameters = dataSource.getSupportedParameters();
-                    final Map<ParameterName, DataSourceParameter> satelliteParameters = parameters.get(queryCfg.getSatellite().name());
+                    final Map<String, Map<String, DataSourceParameter>> parameters = dataSource.getSupportedParameters();
+                    final Map<String, DataSourceParameter> satelliteParameters = parameters.get(queryCfg.getSatellite().name());
                     final boolean canFilterByProduct = satelliteParameters.keySet().stream()
-                            .filter(pn -> pn.getSystemName().equals(CommonParameterNames.PRODUCT))
+                            .filter(pn -> pn.equals(CommonParameterNames.PRODUCT))
                             .findFirst().orElse(null) != null;
                     lastChanceProducts.forEach(p -> {
                         p.setStatusId(Status.DOWNLOADING);

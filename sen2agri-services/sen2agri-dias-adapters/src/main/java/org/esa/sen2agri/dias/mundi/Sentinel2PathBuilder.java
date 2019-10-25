@@ -58,7 +58,7 @@ public class Sentinel2PathBuilder extends SentinelPathBuilder {
     public Path getProductPath(Path repositoryPath, EOProduct product) {
         Path path = null;
         if (product != null) {
-            String tileId = product.getAttributeValue("tileid");
+            String tileId = product.getAttributeValue("tiles");
             if (tileId == null) {
                 Sentinel2ProductHelper helper = (Sentinel2ProductHelper) SentinelProductHelper.create(product.getName());
                 tileId = helper.getTileIdentifier();

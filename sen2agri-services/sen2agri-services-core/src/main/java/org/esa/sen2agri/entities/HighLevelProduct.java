@@ -42,6 +42,7 @@ public class HighLevelProduct {
     private String[] tiles;
     private OrbitType orbitType;
     private int downloadProductId;
+    private String quickLookPath;
     private ProductDetails productDetails;
 
     public int getId() {
@@ -137,13 +138,15 @@ public class HighLevelProduct {
     public OrbitType getOrbitType() { return orbitType; }
     public void setOrbitType(OrbitType orbitType) { this.orbitType = orbitType; }
 
+    public String getQuickLookPath() { return quickLookPath; }
+    public void setQuickLookPath(String quickLookPath) { this.quickLookPath = quickLookPath; }
+
     public int getDownloadProductId() { return downloadProductId; }
     public void setDownloadProductId(int downloadProductId) { this.downloadProductId = downloadProductId; }
 
     public ProductDetails getProductDetails() {
         return productDetails;
     }
-
     public void setProductDetails(ProductDetails productDetails) {
         this.productDetails = productDetails;
     }

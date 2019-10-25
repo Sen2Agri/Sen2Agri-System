@@ -291,7 +291,7 @@ public class ScheduleManager  extends Notifiable {
                             }
                             JobDetail jobDetail = job.buildDetail(site, queryConfig, downloadConfig);
                             if (!executingJobs.contains(jobDetail.getKey())) {
-                                schedule(job, site, s, queryConfig, downloadConfig, executingJobs);
+                                schedule(job, site, s, queryConfig, downloadConfig);
                             } else {
                                 logger.warning(String.format("A job with key '%s' is already scheduled", jobDetail.getKey()));
                             }
@@ -308,75 +308,84 @@ public class ScheduleManager  extends Notifiable {
         }
     }
 
-    private void schedule(Job job, Site site, Satellite s,
-                               DataSourceConfiguration queryConfig, DataSourceConfiguration downloadConfig,
-                               Set<JobKey> executingJobs) {
+    private void schedule(Job job, Site site, Satellite s, DataSourceConfiguration queryConfig, DataSourceConfiguration downloadConfig) {
         String sensorCode = s.friendlyName().toLowerCase();
         JobDetail jobDetail;
-        if (Config.isFeatureEnabled(site.getId(), String.format(ConfigurationKeys.SENSOR_STATE, sensorCode)) ||
-            Config.isFeatureEnabled(site.getId(), String.format(ConfigurationKeys.DOWNLOADER_SENSOR_ENABLED, sensorCode))) {
-            try {
-                final JobDescriptor descriptor = job.createDescriptor(downloadConfig.getRetryInterval());
-                jobDetail = job.buildDetail(site, queryConfig, downloadConfig);
-                final Trigger trigger;
-                if (job instanceof DownloadJob) {
-                    trigger = descriptor.buildTrigger(jobDetail.getJobDataMap());
-                } else {
-                    trigger = descriptor.buildTrigger();
+        boolean canSchedule = Config.isFeatureEnabled(site.getId(), String.format(ConfigurationKeys.SENSOR_STATE, sensorCode));
+        if (!canSchedule) {
+            logger.info(String.format("Sensor '%s' is disabled for site %s", sensorCode, site.getShortName()));
+            return;
+        }
+        canSchedule = !(job instanceof DownloadJob) || Config.isFeatureEnabled(site.getId(), String.format(ConfigurationKeys.DOWNLOADER_SENSOR_ENABLED, sensorCode));
+        if (!canSchedule) {
+            logger.info(String.format("Download is disabled for site %s and sensor '%s'", site.getShortName(), sensorCode));
+            return;
+        }
+        try {
+            final JobDescriptor descriptor = job.createDescriptor(downloadConfig.getRetryInterval());
+            jobDetail = job.buildDetail(site, queryConfig, downloadConfig);
+            final Trigger trigger;
+            if (job instanceof DownloadJob) {
+                trigger = descriptor.buildTrigger(jobDetail.getJobDataMap());
+            } else {
+                trigger = descriptor.buildTrigger();
+            }
+            final JobKey key = jobDetail.getKey();
+            final String jobKey = key.getGroup() + "-" + key.getName();
+            if (!registeredJobs.contains(jobKey)) {
+                scheduler.scheduleJob(jobDetail, trigger);
+                registeredJobs.add(jobKey);
+                logger.info(String.format("Scheduled new job '%s' (next run: %s, repeat after %d minutes)",
+                                          key,
+                                          descriptor.getFireTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
+                                          descriptor.getRepeatInterval()));
+            } else {
+                JobDetail previousJobDetail = scheduler.getJobDetail(key);
+                if (previousJobDetail == null) {
+                    throw new SchedulerException(String.format("Job %s seems to be scheduled, but its detail is missing", key));
                 }
-                final JobKey key = jobDetail.getKey();
-                final String jobKey = key.getGroup() + "-" + key.getName();
-                if (!registeredJobs.contains(jobKey)) {
+                TriggerKey triggerKey = TriggerKey.triggerKey(key.getName(), key.getGroup());
+                SimpleTrigger oldTrigger = (SimpleTrigger) scheduler.getTrigger(triggerKey);
+                if (oldTrigger == null) {
+                    throw new SchedulerException(String.format("Trigger %s not found for already scheduled job %s", triggerKey, key));
+                }
+                final JobDataMap jobDataMap = previousJobDetail.getJobDataMap();
+                if (jobDataMap == null) {
+                    throw new SchedulerException(String.format("JobDataMap is missing for already scheduled job %s", key));
+                }
+                final Site oldSite = (Site) jobDataMap.get("site");
+                final long oldRepeatInterval = oldTrigger.getRepeatInterval() / 60000L;
+                if (oldSite != null && !site.equals(oldSite)) {
+                    logger.fine(String.format("Job %s: old site=%s, new site=%s", key, oldSite.getId(), site.getId()));
+                    try {
+                        if (!scheduler.deleteJob(previousJobDetail.getKey())) {
+                            throw new SchedulerException("Cannot delete");
+                        }
+                        logger.info(String.format("Deleted previous job '%s'", previousJobDetail.getKey()));
+                        scheduler.scheduleJob(jobDetail, trigger);
+                        logger.info(String.format("Scheduled new job '%s' (next run: %s)",
+                                                  key, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(trigger.getNextFireTime())));
+                    } catch (SchedulerException e1) {
+                        logger.warning(String.format("Unable to delete job '%s'", jobDetail.getKey()));
+                    }
+                } else if (oldTrigger.getJobDataMap ().containsKey("downloadConfig") &&
+                            ((long) downloadConfig.getRetryInterval()) != oldRepeatInterval) {
+                    logger.fine(String.format("Old interval: %d min; new interval: %d min",
+                                              oldRepeatInterval / 60000, downloadConfig.getRetryInterval()));
+                    if (!scheduler.deleteJob(previousJobDetail.getKey())) {
+                        throw new SchedulerException("Cannot delete");
+                    }
+                    logger.info(String.format("Deleted previous job '%s'", previousJobDetail.getKey()));
                     scheduler.scheduleJob(jobDetail, trigger);
-                    registeredJobs.add(jobKey);
-                    logger.info(String.format("Scheduled new job '%s' (next run: %s, repeat after %d minutes)",
-                                              key,
+                    logger.info(String.format("Rescheduled job '%s' (next run: %s, repeat after %d minutes)",
+                                              jobDetail.getKey(),
                                               descriptor.getFireTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
                                               descriptor.getRepeatInterval()));
-                } else {
-                    JobDetail previousJobDetail = scheduler.getJobDetail(key);
-                    if (previousJobDetail == null) {
-                        throw new SchedulerException(String.format("Job %s seems to be scheduled, but its detail is missing", key));
-                    }
-                    TriggerKey triggerKey = TriggerKey.triggerKey(key.getName(), key.getGroup());
-                    SimpleTrigger oldTrigger = (SimpleTrigger) scheduler.getTrigger(triggerKey);
-                    if (oldTrigger == null) {
-                        throw new SchedulerException(String.format("Trigger %s not found for already scheduled job %s", triggerKey, key));
-                    }
-                    final JobDataMap jobDataMap = previousJobDetail.getJobDataMap();
-                    if (jobDataMap == null) {
-                        throw new SchedulerException(String.format("JobDataMap is missing for already scheduled job %s", key));
-                    }
-                    final Site oldSite = (Site) jobDataMap.get("site");
-                    if (oldSite != null && !site.equals(oldSite)) {
-                        logger.fine(String.format("Job %s: old site=%s, new site=%s",
-                                                  key, oldSite.getId(), site.getId()));
-                        try {
-                            if (!scheduler.deleteJob(previousJobDetail.getKey())) {
-                                throw new SchedulerException("Cannot delete");
-                            }
-                            logger.info(String.format("Deleted previous job '%s'", previousJobDetail.getKey()));
-                            scheduler.scheduleJob(jobDetail, trigger);
-                            logger.info(String.format("Scheduled new job '%s' (next run: %s)",
-                                                      key, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss").format(trigger.getNextFireTime())));
-                        } catch (SchedulerException e1) {
-                            logger.warning(String.format("Unable to delete job '%s'", jobDetail.getKey()));
-                        }
-                    } else if (oldTrigger.getJobDataMap ().containsKey("downloadConfig") &&
-                               (long) downloadConfig.getRetryInterval() != (oldTrigger.getRepeatInterval() / 60000)) {
-                        logger.fine(String.format("Old interval: %d min; new interval: %d min",
-                                                  oldTrigger.getRepeatInterval() / 60000, downloadConfig.getRetryInterval()));
-                        scheduler.rescheduleJob(trigger.getKey(), trigger);
-                        logger.info(String.format("Rescheduled job '%s' (next run: %s, repeat after %d minutes)",
-                                                  jobDetail.getKey(),
-                                                  descriptor.getFireTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")),
-                                                  descriptor.getRepeatInterval()));
-                    }
                 }
-            } catch (SchedulerException e) {
-                logger.severe(String.format("Failed to schedule job '%s-%s'. Reason: %s",
-                                            job.getId(), job.groupName(), e.getMessage()));
             }
+        } catch (SchedulerException e) {
+            logger.severe(String.format("Failed to schedule job '%s-%s'. Reason: %s",
+                                        job.getId(), job.groupName(), e.getMessage()));
         }
     }
 

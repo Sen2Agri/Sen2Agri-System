@@ -147,21 +147,6 @@ public class ProductController extends ControllerBase {
                 siteId), HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/objectstorage/get", method = RequestMethod.GET, produces = "application/json")
-    public ResponseEntity<String[]> getProductTypesForObjectStorage() {
-        return new ResponseEntity<>(Config.getSettingValues("scheduled.object.storage.move.product.types",
-                                                            new String[0]),
-                                            HttpStatus.OK);
-    }
-
-    @RequestMapping(value = "/objectstorage/set/{productTypeIds}", method = RequestMethod.GET, produces = "application/json")
-    public ResponseEntity<?> setProductTypesForObjectStorage(@PathVariable String[] productTypeIds) {
-        if (productTypeIds != null && productTypeIds.length > 0) {
-            Config.setSetting("scheduled.object.storage.move.product.types", String.join(";", productTypeIds));
-        }
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
-
     @RequestMapping(value = "/types/", method = RequestMethod.GET)
     public ResponseEntity<List<ProductTypeInfo>> getProductTypes() {
         return new ResponseEntity<>(productTypesService.list(), HttpStatus.OK);

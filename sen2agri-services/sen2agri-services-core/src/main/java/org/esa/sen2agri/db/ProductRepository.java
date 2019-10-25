@@ -247,7 +247,7 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
         params.put("_full_path", product.getFullPath());
         params.put("_created_timestamp", Timestamp.valueOf(product.getCreated() != null ? product.getCreated() : LocalDateTime.now()));
         params.put("_name", product.getProductName());
-        params.put("_quicklook_image", null);
+        params.put("_quicklook_image", product.getQuickLookPath());
         try {
             params.put("_footprint", new GeometryAdapter().unmarshal(product.getFootprint()));
         } catch (Exception e) {
@@ -289,7 +289,7 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
     protected String selectQuery() {
         return "SELECT id, site_id, processor_id, name, full_path, " +
                 "created_timestamp, inserted_timestamp, is_archived, archived_timestamp," +
-                "satellite_id, product_type_id, geog, tiles, orbit_type_id, downloader_history_id FROM product ";
+                "satellite_id, product_type_id, geog, tiles, orbit_type_id, quicklook_image, downloader_history_id FROM product ";
     }
 
     @Override
@@ -345,7 +345,8 @@ public class ProductRepository extends NonMappedRepository<HighLevelProduct> {
                     product.setTiles((String[]) array.getArray());
                 }
                 product.setOrbitType(new OrbitTypeConverter().convertToEntityAttribute(resultSet.getInt(14)));
-                int value = resultSet.getInt(15);
+                product.setQuickLookPath(resultSet.getString(15));
+                int value = resultSet.getInt(16);
                 if (value > 0) {
                     product.setDownloadProductId(value);
                 }
