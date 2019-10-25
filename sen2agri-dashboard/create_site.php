@@ -43,7 +43,7 @@ function getUploadFileDescriptorArray() {
 		$descr = new UploadFileDescriptor();
 		$descr->id = "Lpis";
 		$descr->descr = "Declarations";
-		$descr->dbUploadDirKey = "processor.lpis.path";
+		$descr->dbUploadDirKey = "processor.lpis.upload_path";
 		$descr->uploadRelPath = "";
 		$descr->expectedUploadFileExt = ".zip";
 		$descr->fileExt = "shp";
@@ -84,8 +84,8 @@ function getUploadFileDescriptorArray() {
 		$descr = new UploadFileDescriptor();
 		$descr->id = "lut";
 		$descr->descr = "LUT data";
-		$descr->dbUploadDirKey = "processor.lpis.path";
-		$descr->uploadRelPath = "LUT";
+		$descr->dbUploadDirKey = "processor.lpis.lut_upload_path";
+		$descr->uploadRelPath = "";
 		$descr->expectedUploadFileExt = ".csv";
 		$descr->fileExt = "csv";
 		$descr->addParams = '[
@@ -963,7 +963,7 @@ if (isset($_REQUEST["upload_file"]) && isset($_REQUEST["site_shortname"])) {
 				}
 				
 				//removeTempDir($uploadTargetDir, $uploadRelPath);
-				die('{"upload_response" : {"message" : "' . $uploadDescr->id . ' file successfuly uploaded!", "id" : "' . $uploadDescr->id . '", "upload_target_dir" : "' . $uploadTargetDir . '"}}');
+				die('{"upload_response" : {"message" : "' . $uploadDescr->id . ' file successfuly uploaded!", "id" : "' . $uploadDescr->id . '", "upload_target_dir" : "' . $uploadTargetDir . '", "upload_relevant_file_path" : "' . basename($polygons_file) . '"}}');
 			}
 		} else {
 			$errMsg = $upload ['message'];
@@ -1059,33 +1059,6 @@ if ($startImportSet == 1){
 	}
 	die('all_import_done_response->' . $restResult);
 }
-
-
-
-//				importFormStr = importFormStr +
-//									'<input type="hidden" name="l4bcfg_start_import" value="L4BCfg Start Import">' +
-//									'<input type="hidden" name="l4bCfgFile" value="' + encodeURIComponent(l4bCfgStatus.fileName) + '">';
-//            }
-//
-//   			var l4cCfgStatus = uploadStatus("L4cCfg");
-//			if ((l4cCfgStatus.uploaded > 0) && (l4cCfgStatus.failed == 0)) {
-//                formStrCreated = 1;
-//				importFormStr = importFormStr +
-//									'<input type="hidden" name="l4bcfg_start_import" value="L4CCfg Start Import">' +
-//                                    '<input type="hidden" name="L4cCfgpractices" value="'  + encodeURIComponent($("#postUploadCmdParamL4cCfgpractices" ).val()) + '">' +
-//                                    '<input type="hidden" name="L4CCfgCountry" value="'  + encodeURIComponent($("#postUploadCmdParamL4cCfgcountry" ).val()) + '">' +
-//									'<input type="hidden" name="l4cCfgFile" value="' + encodeURIComponent(l4cCfgStatus.fileName) + '">';
-//            }
-//            var practicesArray = ["CC", "FL", "NFC", "NA"];
-//            for (var i = 0; i<practicesArray.length; i++) {
-//                var practiceName = practicesArray[i];
-//                var practiceStatus = uploadStatus("L4c" + practiceName + "Practices");
-//                if ((practiceStatus.uploaded > 0) && (practiceStatus.failed == 0)) {
-//                    formStrCreated = 1;
-//                    importFormStr = importFormStr +
-//                                        '<input type="hidden" name=s4c_l4c_"' + practiceName + '_start_import" value="L4C ' + practiceName + ' Practice Start Import">' +
-//                                        '<input type="hidden" name="l4c' + practiceName + 'PracticesFile" value="' + encodeURIComponent(practiceStatus.fileName) + '">';
-
 
 // processing edit site
 if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site') {
@@ -1835,7 +1808,11 @@ $(document).ready( function() {
 		var status = { "uploaded": 0, "failed": 0, "total": 0, "fileName": "" };
 		$.each(uploaders, function (idx, up) {
 			if (id == up.id) {
-				status = { "uploaded": up.uploader.total.uploaded, "failed": up.uploader.total.failed, "total": up.uploader.files.length, "fileName": up.uploader.files.length > 0 ? up.uploader.files[0].name : "" };
+                var fileName = (typeof up.uploader.settings.multipart_params.upload_relevant_file_path == "undefined") ? 
+                                       (up.uploader.files.length > 0 ? fileName : "") : 
+                                       up.uploader.settings.multipart_params.upload_relevant_file_path;
+				status = { "uploaded": up.uploader.total.uploaded, "failed": up.uploader.total.failed, "total": up.uploader.files.length, 
+                           "fileName": fileName };
 				return false;
 			}
 		});
@@ -2602,6 +2579,10 @@ function createUploader(id, fileExt) {
 				// Called when file has finished uploading and if the upload was a success by checking also the result
 				if (!checkAndHandleErrorMsg(up, file, info, false)) {
 					onFileUploadEventStatus("site" + id + "DataAccHref", "Upload finished successfully!");
+					var n = info.response.indexOf("{\"upload_response\" : {");
+					var jsonStr = info.response.substring(n);
+					var jsonObj = JSON.parse(jsonStr);
+                    up.settings.multipart_params.upload_relevant_file_path   = jsonObj.upload_response.upload_relevant_file_path;                    
 					$("#succ_up_files").val(addKeyValToJsonArr($("#succ_up_files").val(), id, file.name));
 				}
 			},
