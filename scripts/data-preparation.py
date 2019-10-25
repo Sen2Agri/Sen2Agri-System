@@ -1404,7 +1404,7 @@ def main():
         help="configuration file location",
     )
     parser.add_argument("-s", "--site-id", type=int, help="site ID to filter by")
-    parser.add_argument("--year", help="year")
+    parser.add_argument("--year", help="year", type=int, default=date.today().year)
     parser.add_argument("--lpis", help="LPIS dataset")
     parser.add_argument("--lut", help="LUT dataset")
     parser.add_argument("--export", help="export dataset", action="store_true")
@@ -1439,9 +1439,7 @@ def main():
     logging.basicConfig(level=level)
 
     config = Config(args)
-    year = args.year or date.today().year
-
-    data_preparation = DataPreparation(config, year)
+    data_preparation = DataPreparation(config, args.year)
 
     if args.lut is not None:
         data_preparation.prepare_lut(args.lut)
