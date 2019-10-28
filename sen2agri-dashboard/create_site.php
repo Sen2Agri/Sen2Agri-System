@@ -997,7 +997,7 @@ foreach ($arrStartImportTokens as $startImportToken) {
 if ($startImportSet == 1){
     $globalRestResult = '';
 	if (isset($_REQUEST['lpis_start_import']) && $_REQUEST['lpis_start_import'] == 'LPIS Start Import') {
-        $lpisUrl = ConfigParams::$REST_SERVICES_URL . "/import/lpis?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+        $lpisUrl = ConfigParams::$REST_SERVICES_URL . "/auxdata/import/lpis?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
         // add Lpis parameters
         if (isset($_REQUEST['lpis_on']) && $_REQUEST['lpis_on'] == "1") {
             $lpisUrl .= "&mode="           . $_REQUEST['mode'];
@@ -1018,7 +1018,7 @@ if ($startImportSet == 1){
         $globalRestResult = $restResult;
     }
     if (isset($_REQUEST['l4bcfg_start_import']) && $_REQUEST['l4bcfg_start_import'] == 'L4bCfg Start Import'){
-        $l4bCfgUrl = ConfigParams::$REST_SERVICES_URL . "/import/l4bcfg?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+        $l4bCfgUrl = ConfigParams::$REST_SERVICES_URL . "/auxdata/import/l4bcfg?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
         $l4bCfgUrl .= "&l4bCfgFile="       . $_REQUEST['l4bCfgFile'];
         error_log($l4bCfgUrl, 0);
         //CallRestAPI($method, $url, $data = false)
@@ -1027,7 +1027,7 @@ if ($startImportSet == 1){
     }
     
     if (isset($_REQUEST['l4ccfg_start_import']) && $_REQUEST['l4ccfg_start_import'] == 'L4cCfg Start Import'){
-        $l4cCfgUrl = ConfigParams::$REST_SERVICES_URL . "/import/l4ccfg?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+        $l4cCfgUrl = ConfigParams::$REST_SERVICES_URL . "/auxdata/import/l4ccfg?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
         $l4cCfgUrl .= "&practices="       . $_REQUEST['l4cCfgpractices'];
         $l4cCfgUrl .= "&country="       . $_REQUEST['l4cCfgCountry'];
         $l4cCfgUrl .= "&l4cCfgFile="    . $_REQUEST['l4cCfgFile'];
@@ -1041,7 +1041,7 @@ if ($startImportSet == 1){
     foreach ($arrPractices as $practice) {
         $lcPractice = strtolower ($practice);
         if (isset($_REQUEST[$lcPractice . '_start_import']) && $_REQUEST[$lcPractice . '_start_import'] == $practice . ' Start Import') {
-            $practiceCfgUrl = ConfigParams::$REST_SERVICES_URL . "/import/l4cpractice?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
+            $practiceCfgUrl = ConfigParams::$REST_SERVICES_URL . "/auxdata/import/l4cpractice?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
             $practiceCfgUrl .= "&practice="        . $practice;
             $practiceCfgUrl .= "&practiceFile="    . $_REQUEST["l4c" . $practice . "PracticesFile"];
             error_log($practiceCfgUrl, 0);
