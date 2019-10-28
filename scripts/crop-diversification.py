@@ -50,7 +50,7 @@ def main():
         for row in lut_in:
             if (row.get('eaa') or row.get('EAA')) == '1':
                 eaa_codes.add(str(row['ctnumdiv']))
-            if (row.get('eaa') or row.get('AL')) == '1':
+            if (row.get('al') or row.get('AL')) == '1':
                 tal_codes.add(str(row['ctnumdiv']))
             if (row.get('pgrass') or row.get('PGrass')) == '1':
                 permGrass_codes.add(str(row['ctnumdiv']))
