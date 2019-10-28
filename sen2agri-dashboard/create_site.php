@@ -2535,7 +2535,7 @@ function createUploader(id, fileExt) {
 		browse_button : 'pickfiles'  + id,
 		container: document.getElementById('container' + id),
 		url : "/create_site.php",
-		chunk_size : '10mb',
+		chunk_size : '7mb',
 		filters : {
 			mime_types: [
 				//{title : "Image files", extensions : "jpg,gif,png"},
