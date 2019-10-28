@@ -23,6 +23,7 @@ public class Processor {
     private String name;
     private String description;
     private String shortName;
+    private String label;
 
     public short getId() { return id; }
     public void setId(short id) { this.id = id; }
@@ -35,4 +36,7 @@ public class Processor {
 
     public String getShortName() { return shortName; }
     public void setShortName(String shortName) { this.shortName = shortName; }
+
+    public String getLabel() { return label; }
+    public void setLabel(String label) { this.label = label; }
 }

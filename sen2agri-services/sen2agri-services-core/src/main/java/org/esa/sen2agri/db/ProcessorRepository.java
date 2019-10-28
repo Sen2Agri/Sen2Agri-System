@@ -19,6 +19,7 @@ package org.esa.sen2agri.db;
 
 import org.esa.sen2agri.entities.Processor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,4 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public interface ProcessorRepository extends PagingAndSortingRepository<Processor, Integer> {
 
     Processor findByShortName(String shortName);
+
+    @Query(value = "SELECT MAX(id) + 1 FROM product", nativeQuery = true)
+    int getNextProcessorId();
 }

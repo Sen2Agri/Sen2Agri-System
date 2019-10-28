@@ -156,6 +156,9 @@
             <basic name="shortName">
                 <column name="short_name" nullable="false" column-definition="character varying NOT NULL"/>
             </basic>
+            <basic name="label">
+                <column name="label" nullable="true" column-definition="character varying"/>
+            </basic>
         </attributes>
     </entity>
 

@@ -403,6 +403,13 @@ public class PersistenceManager {
         return processorRepository.findByShortName(shortName);
     }
 
+    public Processor saveProcessor(Processor processor) {
+        if (processor.getId() == 0) {
+            processor.setId((short) processorRepository.getNextProcessorId());
+        }
+        return processorRepository.save(processor);
+    }
+
     public List<Season> getEnabledSeasons(Short siteId) {
         if (siteId == null) {
             return seasonRepository.getEnabledSeasons();
