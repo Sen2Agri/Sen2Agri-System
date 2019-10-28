@@ -538,7 +538,7 @@ add constraint {} unique(ori_crop);"""
                     ori_crop_type = "int"
                     query = SQL(
                         "alter table {} alter column ori_crop type int;"
-                    ).format(lpis_table_id)
+                    ).format(lpis_table_staging_id)
                     logging.debug(query.as_string(conn))
                     cursor.execute(query)
 
