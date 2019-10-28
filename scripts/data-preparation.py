@@ -184,6 +184,22 @@ def get_column_concat_sql(cols):
     return SQL(" || '-' || ").join(idents)
 
 
+def table_exists(conn, schema, name):
+    with conn.cursor() as cursor:
+        query = SQL(
+            """
+select exists (
+    select *
+    from pg_class
+    inner join pg_namespace on pg_namespace.oid = pg_class.relnamespace
+    where pg_class.relname = %s
+      and pg_namespace.nspname = %s
+);"""
+        )
+        cursor.execute(query, (name, schema))
+        return cursor.fetchone()[0]
+
+
 def index_exists(conn, name):
     with conn.cursor() as cursor:
         query = SQL(
@@ -831,6 +847,14 @@ where is_new;"""
         self.find_duplicates(srid, tile_counts, total)
 
     def export_lpis(self):
+        with self.get_connection() as conn:
+            if not table_exists(conn, "public", self.lpis_table):
+                logging.info("LPIS table does not exist, skipping export")
+                return
+            if not table_exists(conn, "public", self.lut_table):
+                logging.info("LUT table does not exist, skipping export")
+                return
+
         try:
             os.makedirs(self.lpis_path)
         except OSError:
