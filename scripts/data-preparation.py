@@ -215,6 +215,10 @@ select exists (
         return cursor.fetchone()[0]
 
 
+def column_exists(conn, schema, table, column):
+    return get_column_type(conn, schema, table, column) is not None
+
+
 def add_table_columns(conn, schema, table, columns):
     with conn.cursor() as cursor:
         query = SQL("alter table {}\n").format(Identifier(table))
@@ -528,6 +532,11 @@ add constraint {} unique(ori_crop);"""
                 print("Initializing")
                 lpis_table_id = Identifier(self.lpis_table)
                 lpis_table_staging_id = Identifier(self.lpis_table_staging)
+
+                for col in ["ori_id", "ori_hold", "ori_crop"]:
+                    if column_exists(conn, "public", self.lpis_table_staging, col):
+                        logging.error("`{}` is not an allowed LPIS column name")
+                        sys.exit(1)
 
                 ori_crop_type = get_column_type(
                     conn, "public", self.lpis_table_staging, crop_code_col
