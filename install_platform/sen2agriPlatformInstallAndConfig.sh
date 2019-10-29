@@ -490,6 +490,10 @@ function install_RPMs()
    ##install gdal 2.3 from the local repository
    yum -y install ../rpm_binaries/gdal-local-*.centos7.x86_64.rpm
 
+   # Some GDAL Python tools will pick the wrong GDAL version, but
+   # we don't need them
+   rm -f /usr/local/bin/gdal_edit.py
+
    ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-*.rpm
 
@@ -532,13 +536,13 @@ function install_additional_packages()
         /opt/snap/bin/snap --nosplash --nogui --modules --update-all
         rm -f ./esa-snap_sentinel_unix_6_0.sh /tmp/esa-snap_sentinel_unix_6_0.sh
         if [ ! -h /usr/local/bin/gpt ]; then sudo ln -s /opt/snap/bin/gpt /usr/local/bin/gpt;fi
-        
+
         cp -f ${GPT_CONFIG_FILE} /opt/snap/bin/
-        
+
         # Install R-devel
         yum install -y R-devel
         echo 'install.packages(c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily"), repos = c(CRAN = "https://cran.rstudio.com"))' | Rscript -
-        
+
         # Install Miniconda and the environment for the execution of processors
         SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
         cp "${SCRIPTPATH}/../tools/miniconda/Miniconda3-latest-Linux-x86_64.sh" "/mnt/archive/"
@@ -550,10 +554,10 @@ function install_additional_packages()
         sudo su -l sen2agri-service -c bash -c "conda config --set report_errors false"
         sudo su -l sen2agri-service -c bash -c "conda env create --file=/mnt/archive/sen4cap_conda.yml"
         sudo su -l sen2agri-service -c bash -c "conda info --envs"
-        
+
         rm "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh"
         rm "/mnt/archive/sen4cap_conda.yml"
-        
+
     fi
 }
 
