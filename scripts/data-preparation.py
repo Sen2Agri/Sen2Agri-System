@@ -16,6 +16,7 @@ import psycopg2
 from psycopg2.sql import SQL, Literal, Identifier
 import psycopg2.extras
 import psycopg2.extensions
+import shutil
 import subprocess
 import sys
 
@@ -39,6 +40,13 @@ def try_rm_file(f):
         return True
     except OSError:
         return False
+
+
+def try_mkdir(p):
+    try:
+        os.makedirs(p)
+    except OSError:
+        pass
 
 
 class Config(object):
@@ -365,7 +373,7 @@ inner join shape_tiles_s2 on shape_tiles_s2.tile_id = site_tiles.tile_id;"""
 class DataPreparation(object):
     DB_UPDATE_BATCH_SIZE = 1000
 
-    def __init__(self, config, year):
+    def __init__(self, config, year, working_path):
         self.config = config
         self.year = year
         self.pool = multiprocessing.dummy.Pool()
@@ -384,7 +392,10 @@ class DataPreparation(object):
         lpis_path = lpis_path.replace("{year}", str(year))
         lpis_path = lpis_path.replace("{site}", site_name)
 
+        if not working_path:
+            working_path = lpis_path
         self.lpis_path = lpis_path
+        self.working_path = working_path
 
     def get_connection(self):
         return psycopg2.connect(
@@ -864,10 +875,8 @@ where is_new;"""
                 logging.info("LUT table does not exist, skipping export")
                 return
 
-        try:
-            os.makedirs(self.lpis_path)
-        except OSError:
-            pass
+        try_mkdir(self.lpis_path)
+        try_mkdir(self.working_path)
 
         commands = []
         class_counts = []
@@ -967,14 +976,14 @@ and not is_deleted;"""
             output = os.path.join(self.lpis_path, output)
 
             counts = "counts_{}.csv".format(tile.tile_id)
-            counts = os.path.join(self.lpis_path, counts)
+            counts = os.path.join(self.working_path, counts)
             class_counts.append(counts)
 
             output_20m = "{}_{}_S1.tif".format(base, tile.tile_id)
             output_20m = os.path.join(self.lpis_path, output_20m)
 
             counts_20m = "counts_{}_20m.csv".format(tile.tile_id)
-            counts_20m = os.path.join(self.lpis_path, counts_20m)
+            counts_20m = os.path.join(self.working_path, counts_20m)
             class_counts_20m.append(counts_20m)
 
             compute_class_counts = ComputeClassCountsCommand(output, counts)
@@ -1009,10 +1018,10 @@ and not is_deleted;"""
         print("Merging pixel counts")
         commands = []
         counts = "counts.csv"
-        counts = os.path.join(self.lpis_path, counts)
+        counts = os.path.join(self.working_path, counts)
 
         counts_20m = "counts_20m.csv"
-        counts_20m = os.path.join(self.lpis_path, counts_20m)
+        counts_20m = os.path.join(self.working_path, counts_20m)
 
         merge_class_counts = MergeClassCountsCommand(class_counts, counts)
         commands.append((merge_class_counts, 5))
@@ -1167,7 +1176,10 @@ values(%s, %s, %s, %s, %s, %s, %s);"""
                 csv = os.path.join(self.lpis_path, csv)
 
                 gpkg = "{}.gpkg".format(self.lpis_table)
+                gpkg_working = os.path.join(self.working_path, gpkg)
                 gpkg = os.path.join(self.lpis_path, gpkg)
+
+                try_rm_file(gpkg_working)
 
                 sql = SQL(
                     """
@@ -1191,7 +1203,7 @@ where not is_deleted"""
                 command += ["-a_srs", "EPSG:{}".format(srid)]
                 command += ["-fieldTypeToString", "DateTime"]
                 command += ["-sql", sql]
-                command += [gpkg]
+                command += [gpkg_working]
                 command += [self.get_ogr_connection_string()]
                 commands.append((command, 12))
 
@@ -1254,6 +1266,10 @@ where not is_deleted"""
         sys.stdout.flush()
 
         res.get()
+
+        if self.working_path != self.lpis_path:
+            print("Moving exported table")
+            shutil.copy2(gpkg_working, gpkg)
 
     def get_tile_parcel_counts(self, srid):
         print("Counting parcels")
@@ -1469,6 +1485,7 @@ def main():
         choices=["update", "replace", "incremental"],
     )
     parser.add_argument("-d", "--debug", help="debug mode", action="store_true")
+    parser.add_argument("--working-path", help="working path")
     parser.add_argument("--parcel-id-offset", help="offset for parcel renumbering", type=int, default=0)
     parser.add_argument("--holding-id-offset", help="offset for holding renumbering", type=int, default=0)
 
@@ -1489,7 +1506,7 @@ def main():
     logging.basicConfig(level=level)
 
     config = Config(args)
-    data_preparation = DataPreparation(config, args.year)
+    data_preparation = DataPreparation(config, args.year, args.working_path)
 
     if args.lut is not None:
         data_preparation.prepare_lut(args.lut)
