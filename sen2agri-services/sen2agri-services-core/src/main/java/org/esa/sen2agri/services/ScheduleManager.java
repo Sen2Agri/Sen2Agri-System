@@ -17,7 +17,7 @@ package org.esa.sen2agri.services;
 
 import org.esa.sen2agri.commons.Commands;
 import org.esa.sen2agri.commons.Config;
-import org.esa.sen2agri.commons.Topics;
+import org.esa.sen2agri.commons.ProcessingTopic;
 import org.esa.sen2agri.db.ConfigurationKeys;
 import org.esa.sen2agri.db.PersistenceManager;
 import org.esa.sen2agri.entities.DataSourceConfiguration;
@@ -114,7 +114,7 @@ public class ScheduleManager  extends Notifiable {
                logger.severe(e.getMessage());
             }
         }
-        subscribe(Topics.COMMAND);
+        subscribe(ProcessingTopic.COMMAND.value());
     }
 
     @PreDestroy

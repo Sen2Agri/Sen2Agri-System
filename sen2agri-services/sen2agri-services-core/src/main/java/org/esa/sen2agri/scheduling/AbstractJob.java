@@ -16,7 +16,7 @@
 package org.esa.sen2agri.scheduling;
 
 import org.esa.sen2agri.commons.Config;
-import org.esa.sen2agri.commons.Topics;
+import org.esa.sen2agri.commons.ProcessingTopic;
 import org.esa.sen2agri.db.PersistenceManager;
 import org.esa.sen2agri.services.DownloadService;
 import org.quartz.JobDataMap;
@@ -44,7 +44,7 @@ public abstract class AbstractJob extends Notifiable implements Job {
     public AbstractJob() {
         persistenceManager = Config.getPersistenceManager();
         downloadService = Config.getDownloadService();
-        subscribe(Topics.COMMAND);
+        subscribe(ProcessingTopic.COMMAND.value());
     }
 
     @Override

@@ -72,7 +72,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
     public DownloadServiceImpl() {
         querySiteDataSources = new HashMap<>();
         dwnSiteDataSources = new HashMap<>();
-        Messaging.subscribe(this, DataSourceTopics.PRODUCT_PROGRESS);
+        Messaging.subscribe(this, DataSourceTopic.PRODUCT_PROGRESS.value());
     }
 
     @Override
@@ -534,7 +534,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
     private void sendCommand(String name, String job, int siteId, Integer satelliteId) {
         Message message = new Message();
         message.setUser(SystemPrincipal.instance().getName());
-        message.setTopic(Topics.COMMAND);
+        message.setTopic(ProcessingTopic.COMMAND.value());
         message.setTimestamp(Instant.now().toEpochMilli());
         message.setMessage(name);
         message.addItem("job", job);
@@ -542,7 +542,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
         if (satelliteId != null) {
             message.addItem("satelliteId", String.valueOf(satelliteId.intValue()));
         }
-        Messaging.send(SystemPrincipal.instance(), Topics.COMMAND, message);
+        Messaging.send(SystemPrincipal.instance(), ProcessingTopic.COMMAND.value(), message);
     }
 
     private Tuple<Site, Satellite> getProductInfo(String productName) {

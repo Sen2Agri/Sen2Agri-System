@@ -19,7 +19,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.esa.sen2agri.commons.Commands;
 import org.esa.sen2agri.commons.Config;
 import org.esa.sen2agri.commons.Constants;
-import org.esa.sen2agri.commons.Topics;
+import org.esa.sen2agri.commons.ProcessingTopic;
 import org.esa.sen2agri.db.ConfigurationKeys;
 import org.esa.sen2agri.entities.*;
 import org.esa.sen2agri.entities.enums.OrbitType;
@@ -348,7 +348,7 @@ public class LookupJob extends DownloadJob {
                                                                           tiles, path, downloadConfiguration);
                                                  long seconds = Duration.between(startTime, Instant.now()).getSeconds();
                                                  if (downloadConfiguration.getFetchMode() == FetchMode.SYMLINK && seconds > 10) {
-                                                     sendNotification(Topics.PROCESSING_ATTENTION,
+                                                     sendNotification(ProcessingTopic.PROCESSING_ATTENTION.value(),
                                                                       String.format("Lookup site \"%s\"", site.getName()),
                                                                       String.format("Symlink creation took %d seconds", seconds));
                                                  }
@@ -358,7 +358,7 @@ public class LookupJob extends DownloadJob {
         } catch (Throwable e) {
             final String message = ExceptionUtils.getStackTrace(e);
             logger.severe(message);
-            sendNotification(Topics.PROCESSING_ATTENTION,
+            sendNotification(ProcessingTopic.PROCESSING_ATTENTION.value(),
                              String.format("Lookup site \"%s\"", site.getName()),
                              message);
         }/* finally {

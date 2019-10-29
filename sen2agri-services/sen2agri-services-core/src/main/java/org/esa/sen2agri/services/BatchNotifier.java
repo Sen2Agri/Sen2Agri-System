@@ -17,7 +17,7 @@
 package org.esa.sen2agri.services;
 
 import org.esa.sen2agri.commons.Config;
-import org.esa.sen2agri.commons.Topics;
+import org.esa.sen2agri.commons.ProcessingTopic;
 import org.esa.sen2agri.db.ConfigurationKeys;
 import org.springframework.stereotype.Component;
 import ro.cs.tao.messaging.Message;
@@ -54,8 +54,9 @@ public class BatchNotifier extends NotifiableComponent {
     @Override
     protected String[] topics() {
         return new String[] {
-                Topics.PROCESSING_COMPLETED, Topics.PROCESSING_WARNING,
-                Topics.PROCESSING_ERROR, Topics.PROCESSING_ATTENTION}; }
+                ProcessingTopic.PROCESSING_COMPLETED.value(), ProcessingTopic.PROCESSING_WARNING.value(),
+                ProcessingTopic.PROCESSING_ERROR.value(), ProcessingTopic.PROCESSING_ATTENTION.value()};
+    }
 
     @Override
     protected void onMessageReceived(Message message) {
@@ -65,7 +66,7 @@ public class BatchNotifier extends NotifiableComponent {
                 sendMail("Notification Summary", getLastMessages());
                 initTimer();
             } else {
-                if (Topics.PROCESSING_ATTENTION.equals(message.getTopic())) {
+                if (ProcessingTopic.PROCESSING_ATTENTION.isParentOf(message.getTopic())) {
                     sendMail("Attention Needed", new ArrayList<Message>() {{ add(message); }});
                 }
             }
