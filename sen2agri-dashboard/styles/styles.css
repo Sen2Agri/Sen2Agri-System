@@ -1039,6 +1039,7 @@ input[name='pwd'] + .glyphicon {
 /*-------------- monitoring progress bar ---*/
 td.td_progress>div.progress{
 	background-image: linear-gradient(to bottom,#989595 0,#c0bfbf 100%);
+	margin:0;
 }
 
 td.td_progress>div.progress > div.progress-bar-zero {

@@ -139,13 +139,12 @@ function select_option() {
 					<table class="table table-striped" style="text-align: left">
 						<thead>
 							<tr>
-								<th>Site</th>
-								<th>File</th>
-								<th>File Type</th>
+								<th>Files</th>
+								<th>Current Operation</th>
 								<th>Progress</th>
 							</tr>
 						</thead>
-						<tbody id="refresh_downloading_file">
+						<tbody id="refresh_processing">
 						</tbody>
 					</table>
 				</div>
@@ -258,26 +257,23 @@ function select_option() {
 			});
 		}
 
-	function currentLpisGsaaFiles(){
+	function currentLpisGsaaFiles() {
 		var site_id = $('select[name=site_select] option:selected').val();
 		$.ajax({
-			type:'get',
-			url:'getHistoryDownloads.php',
-			data:{action:'lpisGsaaDownloads',site_id:site_id},
-			success:function(response){
-				$("#refresh_downloading_file").html(response);
+			type: 'get',
+			url : 'getHistoryLpisProcessing.php',
+			data: { action:'lpisGsaaDownloads', site_id:site_id },
+			success: function (response) {
+				$("#refresh_processing").html(response);
 				// Schedule the next request
 				clearTimeout(timer4);
-				timer4 = setTimeout(siteInfoCurrent, 20000);
-
-				},
+				timer4 = setTimeout(currentLpisGsaaFiles, 20000);
+			},
 			error: function (responseData, textStatus, errorThrown) {
 				console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 			}
-
-			});
-
-		}
+		});
+	}
 
 	$( document ).ready(function() {
 		estimatedDownloads();
