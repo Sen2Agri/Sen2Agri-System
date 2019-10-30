@@ -557,8 +557,8 @@ add constraint {} unique(ori_crop);"""
                 elif ori_crop_type == "numeric":
                     ori_crop_type = "int"
                     query = SQL(
-                        "alter table {} alter column ori_crop type int;"
-                    ).format(lpis_table_staging_id)
+                        "alter table {} alter column {} type int;"
+                    ).format(lpis_table_staging_id, Identifier(crop_code_col))
                     logging.debug(query.as_string(conn))
                     cursor.execute(query)
 
