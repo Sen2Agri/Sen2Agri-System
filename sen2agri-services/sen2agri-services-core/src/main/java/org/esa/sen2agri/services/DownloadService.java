@@ -15,7 +15,7 @@
  */
 package org.esa.sen2agri.services;
 
-import org.esa.sen2agri.commons.TaskProgress;
+import org.esa.sen2agri.commons.DownloadProgress;
 import org.esa.sen2agri.entities.DataSourceConfiguration;
 import org.esa.sen2agri.web.beans.Query;
 import ro.cs.tao.datasource.ProductStatusListener;
@@ -64,7 +64,7 @@ public interface DownloadService {
      * If the <code>siteId</code> parameter value is 0, it returns information about all the downloads in progress.
      * @param siteId    The site identifier
      */
-    List<TaskProgress> getDownloadsInProgress(short siteId);
+    List<DownloadProgress> getDownloadsInProgress(short siteId);
     /**
      * Stops the downloads and marks the downloader disabled for the specific site.
      * If the <code>siteId</code> parameter value is 0, it stops all the downloads and marks the downloader as

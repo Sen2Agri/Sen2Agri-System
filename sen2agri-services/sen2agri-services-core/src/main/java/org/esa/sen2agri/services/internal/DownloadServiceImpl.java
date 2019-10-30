@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 @Service("downloadService")
 public class DownloadServiceImpl extends Notifiable implements DownloadService {
 
-    private static final Map<String, TaskProgress> downloadsInProgress = Collections.synchronizedMap(new LinkedHashMap<>());
+    private static final Map<String, DownloadProgress> downloadsInProgress = Collections.synchronizedMap(new LinkedHashMap<>());
     //private static final Map<String, Key<Site, Satellite>> infoCache = Collections.synchronizedMap(new HashMap<>());
     private static final Map<Short, Long> estimatedProductCount = Collections.synchronizedMap(new HashMap<>());
     private final Map<Tuple<Short, Satellite>, List<DataSourceComponent>> querySiteDataSources;
@@ -275,8 +275,8 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
     }
 
     @Override
-    public List<TaskProgress> getDownloadsInProgress(short siteId) {
-        List<TaskProgress> tasks = new ArrayList<>();
+    public List<DownloadProgress> getDownloadsInProgress(short siteId) {
+        List<DownloadProgress> tasks = new ArrayList<>();
         if (siteId > 0) {
             dwnSiteDataSources.entrySet().stream()
                     .filter(e -> siteId == e.getKey().getKeyOne())
@@ -485,7 +485,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                 satellite = productInfo.getKeyTwo();
             }
             downloadsInProgress.put(taskName,
-                                    new TaskProgress(taskName, site, satellite, 0));
+                                    new DownloadProgress(taskName, site, satellite, 0));
         } else if (data instanceof ActivityEndMessage) {
             downloadsInProgress.remove(((ActivityEndMessage) data).getTaskName());
         } else if (data instanceof SubActivityStartMessage) {
@@ -497,19 +497,19 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                     satellite = productInfo.getKeyTwo();
                 }
                 downloadsInProgress.put(taskName,
-                                        new TaskProgress(taskName, site, satellite, mainProgress));
+                                        new DownloadProgress(taskName, site, satellite, mainProgress));
             }
         } else if (data instanceof SubActivityEndMessage) {
             final String mainTask = ((SubActivityEndMessage) data).getTaskName();
-            final TaskProgress taskProgress = downloadsInProgress.get(mainTask);
-            if (taskProgress != null) {
-                double mainProgress = taskProgress.getProgress();
+            final DownloadProgress downloadProgress = downloadsInProgress.get(mainTask);
+            if (downloadProgress != null) {
+                double mainProgress = downloadProgress.getProgress();
                 if ((productInfo = getProductInfo(mainTask)) != null) {
                     site = productInfo.getKeyOne();
                     satellite = productInfo.getKeyTwo();
                 }
                 downloadsInProgress.put(mainTask,
-                                        new TaskProgress(mainTask, site, satellite, mainProgress));
+                                        new DownloadProgress(mainTask, site, satellite, mainProgress));
             }
         } else if (data instanceof SubActivityProgressMessage) {
             SubActivityProgressMessage casted = (SubActivityProgressMessage) data;
@@ -518,7 +518,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                 site = productInfo.getKeyOne();
                 satellite = productInfo.getKeyTwo();
             }
-            downloadsInProgress.put(mainTask, new TaskProgress(mainTask, site, satellite, casted.getTaskProgress()));
+            downloadsInProgress.put(mainTask, new DownloadProgress(mainTask, site, satellite, casted.getTaskProgress()));
         } else if (data instanceof ActivityProgressMessage) {
             ActivityProgressMessage casted = (ActivityProgressMessage) data;
             final String mainTask = casted.getTaskName();
@@ -526,7 +526,7 @@ public class DownloadServiceImpl extends Notifiable implements DownloadService {
                 site = productInfo.getKeyOne();
                 satellite = productInfo.getKeyTwo();
             }
-            downloadsInProgress.put(mainTask, new TaskProgress(mainTask, site, satellite, casted.getProgress()));
+            downloadsInProgress.put(mainTask, new DownloadProgress(mainTask, site, satellite, casted.getProgress()));
         }
 
     }

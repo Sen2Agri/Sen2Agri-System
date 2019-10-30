@@ -15,7 +15,7 @@
  */
 package org.esa.sen2agri.web;
 
-import org.esa.sen2agri.commons.TaskProgress;
+import org.esa.sen2agri.commons.DownloadProgress;
 import org.esa.sen2agri.entities.enums.Satellite;
 import org.esa.sen2agri.services.DownloadService;
 import org.esa.sen2agri.services.ScheduleManager;
@@ -52,8 +52,8 @@ public class DownloadController extends ControllerBase {
      * Returns information about all the downloads in progress.
      */
     @RequestMapping(value = "/", method = RequestMethod.GET, produces = "application/json")
-    public ResponseEntity<List<TaskProgress>> getInProgress() {
-        List<TaskProgress> tasks = downloadService.getDownloadsInProgress((short) 0);
+    public ResponseEntity<List<DownloadProgress>> getInProgress() {
+        List<DownloadProgress> tasks = downloadService.getDownloadsInProgress((short) 0);
         if (tasks == null || tasks.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.OK);
         }
@@ -65,8 +65,8 @@ public class DownloadController extends ControllerBase {
      * @param siteId    The site identifier
      */
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = "application/json")
-    public ResponseEntity<List<TaskProgress>> getInProgress(@PathVariable("id") short siteId) {
-        List<TaskProgress> tasks = downloadService.getDownloadsInProgress(siteId);
+    public ResponseEntity<List<DownloadProgress>> getInProgress(@PathVariable("id") short siteId) {
+        List<DownloadProgress> tasks = downloadService.getDownloadsInProgress(siteId);
         if (tasks == null || tasks.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.OK);
         }
