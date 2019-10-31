@@ -102,8 +102,8 @@ function getUploadFileDescriptorArray() {
 		$descr->descr = "L4B configuration";
 		$descr->dbUploadDirKey = "processor.s4c_l4b.cfg_upload_dir";
 		$descr->uploadRelPath = "";
-		$descr->expectedUploadFileExt = ".ini";
-		$descr->fileExt = "ini";
+		$descr->expectedUploadFileExt = ".cfg";
+		$descr->fileExt = "cfg";
 		$descr->addParams = '[
 						{"id":"year",
 						 "label":"Year:",
@@ -113,7 +113,8 @@ function getUploadFileDescriptorArray() {
    						{"id":"mowingStartDate",
 						 "label":"Grassland mowing start date:",
 						 "type":"text",
-						 "required":0
+						 "required":0,
+                         "tooltip":"If not set, the start of the season will be considered"
 						}
 					]';
 		$uploadFileDescriptorArray[] = $descr;
