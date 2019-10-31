@@ -178,7 +178,7 @@ def main():
     with psycopg2.connect(host=config.host, dbname=config.dbname, user=config.user, password=config.password) as conn:
         site_id = getSiteId(conn, config.site_short_name)
         copyConfigFile(config, conn, site_id, args.input_file)
-        if config.mowing_start_date:
+        if hasattr(config, 'mowing_start_date') and config.mowing_start_date:
             setConfigValue(conn, site_id, 'processor.s4c_l4b.start_date', config.mowing_start_date)
         
 if __name__ == "__main__":
