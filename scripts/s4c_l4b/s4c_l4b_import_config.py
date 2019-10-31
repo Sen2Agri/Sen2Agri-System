@@ -42,6 +42,8 @@ class Config(object):
 
         self.site_short_name = args.site_short_name
         self.year = args.year
+        if args.mowing_start_date:
+            self.mowing_start_date = args.mowing_start_date
 
 def run_command(args, env=None):
     args = list(map(str, args))
@@ -168,6 +170,7 @@ def main():
     parser.add_argument('-s', '--site-short-name', required=True, help="Site short name for which the file was uploaded")
     parser.add_argument('-y', '--year', type=int, required=True, help="The year")
     parser.add_argument('-i', '--input-file', required=True, help="The uploaded config file")
+    parser.add_argument('-d', '--mowing-start-date', required=False, help="The mowing start date")
     args = parser.parse_args()
 
     config = Config(args)
@@ -175,6 +178,8 @@ def main():
     with psycopg2.connect(host=config.host, dbname=config.dbname, user=config.user, password=config.password) as conn:
         site_id = getSiteId(conn, config.site_short_name)
         copyConfigFile(config, conn, site_id, args.input_file)
+        if config.mowing_start_date:
+            setConfigValue(conn, site_id, 'processor.s4c_l4b.start_date', config.mowing_start_date)
         
 if __name__ == "__main__":
     main()
