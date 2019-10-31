@@ -46,7 +46,7 @@ function select_option() {
 			<div class="row">
 				<div class="col-md-2">
 					<div class="form-group form-group-sm">
-						<select class="form-control" name="site_select" onchange="siteInfo(); siteInfoCurrent(); siteJobs(1); estimatedDownloads()">
+						<select class="form-control" name="site_select">
 							<?php select_option();?>
 						</select>
 					</div>
@@ -141,7 +141,7 @@ function select_option() {
 							<tr>
 								<th>Files</th>
 								<th>Current Operation</th>
-								<th>Progress</th>
+								<th style="width:30%">Progress</th>
 							</tr>
 						</thead>
 						<tbody id="refresh_processing">
@@ -254,15 +254,15 @@ function select_option() {
 				console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 			}
 
-			});
-		}
+		});
+	}
 
 	function currentLpisGsaaFiles() {
 		var site_id = $('select[name=site_select] option:selected').val();
 		$.ajax({
 			type: 'get',
 			url : 'getHistoryLpisProcessing.php',
-			data: { action:'lpisGsaaDownloads', site_id:site_id },
+			data: {'siteID_selected' : site_id},
 			success: function (response) {
 				$("#refresh_processing").html(response);
 				// Schedule the next request
@@ -274,7 +274,17 @@ function select_option() {
 			}
 		});
 	}
-
+	
+	$("select[name='site_select']").on("change", function (e) {
+		estimatedDownloads();
+		siteInfo();
+		siteInfoCurrent();
+		siteJobs(1);
+		<?php if(!ConfigParams::isSen2Agri()){?>
+		currentLpisGsaaFiles();
+		<?php }?>
+	})
+	
 	$( document ).ready(function() {
 		estimatedDownloads();
 		siteInfo();

@@ -472,6 +472,8 @@ class DataPreparation(object):
                 "-nln",
                 self.lut_table,
                 "-overwrite",
+                "-oo",
+                "AUTODETECT_TYPE=YES",
             )
             run_command(cmd)
 
@@ -1324,7 +1326,7 @@ and exists (
     and ST_Intersects(t.wkb_geometry, tile.geom)
     and ST_Intersects(t.wkb_geometry, lpis.wkb_geometry)
     having sum(ST_Area(ST_Intersection(t.wkb_geometry, lpis.wkb_geometry))) / nullif(lpis."Area_meters", 0) > 0.1
-    )
+)
 and ST_Intersects(lpis.wkb_geometry, tile.geom);"""
                 )
                 query = query.format(
