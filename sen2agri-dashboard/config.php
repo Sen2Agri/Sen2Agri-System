@@ -17,7 +17,7 @@ function getParameters($current_processor_name, $adv){
     $sql = "SELECT cm.*,reverse(split_part(reverse(cm.key),'.',1)) as param_name, cf.value as param_value
             FROM config_metadata cm
             INNER JOIN config_category cfc ON cm.config_category_id = cfc.id
-            LEFT JOIN config cf ON cf.key = cm.key
+            LEFT JOIN config cf ON lower(cf.key) = lower(cm.key) AND EXISTS (SELECT id FROM site WHERE id = cf.site_id)
             WHERE cfc.id IN (3,4,5,6,18,19,20,21) AND cm.Key ilike 'processor.{$current_processor_name}.%' AND is_site_visible=true 
             AND is_advanced='".$adv."' 
             ORDER BY cfc.display_order";
