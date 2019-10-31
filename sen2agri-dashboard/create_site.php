@@ -102,13 +102,18 @@ function getUploadFileDescriptorArray() {
 		$descr->descr = "L4B configuration";
 		$descr->dbUploadDirKey = "processor.s4c_l4b.cfg_upload_dir";
 		$descr->uploadRelPath = "";
-		$descr->expectedUploadFileExt = ".cfg";
-		$descr->fileExt = "cfg";
+		$descr->expectedUploadFileExt = ".ini";
+		$descr->fileExt = "ini";
 		$descr->addParams = '[
 						{"id":"year",
 						 "label":"Year:",
 						 "type":"text",
 						 "required":1
+						},
+   						{"id":"mowingStartDate",
+						 "label":"Grassland mowing start date:",
+						 "type":"text",
+						 "required":0
 						}
 					]';
 		$uploadFileDescriptorArray[] = $descr;
@@ -1020,6 +1025,9 @@ if ($startImportSet == 1){
     if (isset($_REQUEST['l4bcfg_start_import']) && $_REQUEST['l4bcfg_start_import'] == 'L4bCfg Start Import'){
         $l4bCfgUrl = ConfigParams::$REST_SERVICES_URL . "/auxdata/import/l4bcfg?siteId=" . $_REQUEST['importSiteId'] . "&year=" . $_REQUEST['importYear'];
         $l4bCfgUrl .= "&l4bCfgFile="       . $_REQUEST['l4bCfgFile'];
+        if (isset($_REQUEST['mowingStartDate']) && !empty($_REQUEST['mowingStartDate'])) {
+            $l4bCfgUrl .= "&mowingStartDate="  . $_REQUEST['mowingStartDate'];
+        }
         error_log($l4bCfgUrl, 0);
         //CallRestAPI($method, $url, $data = false)
         $restResult = CallRestAPI("GET", $l4bCfgUrl);
@@ -1874,7 +1882,8 @@ $(document).ready( function() {
 			if ((l4bCfgStatus.uploaded > 0) && (l4bCfgStatus.failed == 0)) {
                 formStrCreated = 1;
 				importFormStr = importFormStr +
-									'<input type="hidden" name="l4bcfg_start_import" value="L4cCfg Start Import">' +
+									'<input type="hidden" name="l4bcfg_start_import" value="L4bCfg Start Import">' +
+                                    '<input type="hidden" name="mowingStartDate" value="'  + encodeURIComponent($("#postUploadCmdParamL4bCfgmowingStartDate" ).val()) + '">' +
 									'<input type="hidden" name="l4bCfgFile" value="' + encodeURIComponent(l4bCfgStatus.fileName) + '">';
             }
 
