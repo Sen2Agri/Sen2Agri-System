@@ -541,7 +541,13 @@ function install_additional_packages()
 
         # Install R-devel
         yum install -y R-devel
-        echo 'install.packages(c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily"), repos = c(CRAN = "https://cran.rstudio.com"))' | Rscript -
+        Rscript - <<- EOF
+        packages <- c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily")
+        diff <- setdiff(packages, rownames(installed.packages()))
+        if (length(diff) > 0) {
+            install.packages(diff, repos = c(CRAN = "https://cran.rstudio.com"))
+        }
+EOF
 
         # Install Miniconda and the environment for the execution of processors
         SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
