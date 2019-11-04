@@ -22,48 +22,52 @@ function install_sen2agri_services()
     fi
 
     # Check if directory does not exists or is empty
-    if [ ! -d "/usr/share/sen2agri/sen2agri-services" ] || [ ! "$(ls -A /usr/share/sen2agri/sen2agri-services)" ] ; then
+    if [ ! -d "${TARGET_SERVICES_DIR}" ] || [ ! "$(ls -A ${TARGET_SERVICES_DIR})" ] ; then
         if [ -f ../sen2agri-services/${SERVICES_ARCHIVE} ]; then
-            echo "Extracting into /usr/share/sen2agri/sen2agri-services from archive $zipArchive ..."
+            echo "Extracting into ${TARGET_SERVICES_DIR} from archive $zipArchive ..."
             
-            mkdir -p /usr/share/sen2agri/sen2agri-services && unzip ${zipArchive} -d /usr/share/sen2agri/sen2agri-services
+            mkdir -p ${TARGET_SERVICES_DIR} && unzip ${zipArchive} -d ${TARGET_SERVICES_DIR}
             if [ $? -ne 0 ]; then
-                echo "Unable to unpack the sen2agri-services into/usr/share/sen2agri/sen2agri-services"
+                echo "Unable to unpack the sen2agri-services into ${TARGET_SERVICES_DIR}"
                 echo "Exiting now"
                 exit 1
             fi
             # convert any possible CRLF into LF
-            tr -d '\r' < /usr/share/sen2agri/sen2agri-services/bin/start.sh > /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp && cp -f /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp /usr/share/sen2agri/sen2agri-services/bin/start.sh && rm /usr/share/sen2agri/sen2agri-services/bin/start.sh.tmp 
+            tr -d '\r' < ${TARGET_SERVICES_DIR}/bin/start.sh > ${TARGET_SERVICES_DIR}/bin/start.sh.tmp && cp -f ${TARGET_SERVICES_DIR}/bin/start.sh.tmp ${TARGET_SERVICES_DIR}/bin/start.sh && rm ${TARGET_SERVICES_DIR}/bin/start.sh.tmp 
             # ensure the execution flag
-            chmod a+x /usr/share/sen2agri/sen2agri-services/bin/start.sh
+            chmod a+x ${TARGET_SERVICES_DIR}/bin/start.sh
         else
             echo "No sen2agri-services zip archive provided in ../sen2agri-services"
             echo "Exiting now"
             exit 1
         fi
     else
-        echo "sen2agri-services already exist in /usr/share/sen2agri/sen2agri-services"
-        if [ -d "/usr/share/sen2agri/sen2agri-services/bin" ] && [ -d "/usr/share/sen2agri/sen2agri-services/config" ] ; then 
+        echo "sen2agri-services already exist in ${TARGET_SERVICES_DIR}"
+        if [ -d "${TARGET_SERVICES_DIR}/bin" ] && [ -d "${TARGET_SERVICES_DIR}/config" ] ; then 
             if [ -f ../sen2agri-services/${SERVICES_ARCHIVE} ]; then
-                echo "Updating /usr/share/sen2agri/sen2agri-services/lib folder ..."
-                mkdir -p /usr/share/sen2agri/sen2agri-services/lib && rm -f /usr/share/sen2agri/sen2agri-services/lib/*.jar && unzip -o ${zipArchive} 'lib/*' -d /usr/share/sen2agri/sen2agri-services
-                echo "Updating /usr/share/sen2agri/sen2agri-services/modules folder ..."
-                mkdir -p /usr/share/sen2agri/sen2agri-services/modules && rm -f /usr/share/sen2agri/sen2agri-services/modules/*.jar && unzip -o ${zipArchive} 'modules/*' -d /usr/share/sen2agri/sen2agri-services
-                mkdir -p /usr/share/sen2agri/sen2agri-services/scripts
+                echo "Updating ${TARGET_SERVICES_DIR}/lib folder ..."
+                mkdir -p ${TARGET_SERVICES_DIR}/lib && rm -f ${TARGET_SERVICES_DIR}/lib/*.jar && unzip -o ${zipArchive} 'lib/*' -d ${TARGET_SERVICES_DIR}
+                echo "Updating ${TARGET_SERVICES_DIR}/modules folder ..."
+                mkdir -p ${TARGET_SERVICES_DIR}/modules && rm -f ${TARGET_SERVICES_DIR}/modules/*.jar && unzip -o ${zipArchive} 'modules/*' -d ${TARGET_SERVICES_DIR}
                 
-                if [ -f /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties ] ; then 
-                    mv /usr/share/sen2agri/sen2agri-services/config/sen2agri-services.properties /usr/share/sen2agri/sen2agri-services/config/services.properties
+                echo "Updating ${TARGET_SERVICES_DIR}/static folder ..."
+                mkdir -p ${TARGET_SERVICES_DIR}/static && rm -fR ${TARGET_SERVICES_DIR}/static/* && unzip -o ${zipArchive} 'static/*' -d ${TARGET_SERVICES_DIR}
+                
+                mkdir -p ${TARGET_SERVICES_DIR}/scripts
+                
+                if [ -f ${TARGET_SERVICES_DIR}/config/sen2agri-services.properties ] ; then 
+                    mv ${TARGET_SERVICES_DIR}/config/sen2agri-services.properties ${TARGET_SERVICES_DIR}/config/services.properties
                 fi
-                if [ -f /usr/share/sen2agri/sen2agri-services/config/application.properties ] ; then 
-                    cp -f /usr/share/sen2agri/sen2agri-services/config/application.properties /usr/share/sen2agri/sen2agri-services/config/application.properties.bkp
+                if [ -f ${TARGET_SERVICES_DIR}/config/application.properties ] ; then 
+                    cp -f ${TARGET_SERVICES_DIR}/config/application.properties ${TARGET_SERVICES_DIR}/config/application.properties.bkp
                 fi
                 # update the application.properties file even if some user changes might be lost
-                unzip -o ${zipArchive} 'config/application.properties' -d /usr/share/sen2agri/sen2agri-services/
+                unzip -o ${zipArchive} 'config/application.properties' -d ${TARGET_SERVICES_DIR}/
             else
                 echo "No archive sen2agri-services-YYY.zip was found in the installation package. sen2agri-services will not be updated!!!"
             fi
         else 
-            echo "ERROR: no bin or config folder were found in the folder /usr/share/sen2agri/sen2agri-services/. No update will be made!!!"
+            echo "ERROR: no bin or config folder were found in the folder ${TARGET_SERVICES_DIR}/. No update will be made!!!"
         fi
         HAS_S2AGRI_SERVICES=true
     fi
@@ -90,21 +94,21 @@ function saveOldDownloadCredentials()
 function updateDownloadCredentials()
 {
     if [ "$HAS_S2AGRI_SERVICES" = false ] ; then
-        sed -i '/SciHubDataSource.username=/c\SciHubDataSource.username='"$SCIHUB_USER" /usr/share/sen2agri/sen2agri-services/config/services.properties
-        sed -i '/SciHubDataSource.password=/c\SciHubDataSource.password='"$SCIHUB_PASS" /usr/share/sen2agri/sen2agri-services/config/services.properties
-        sed -i '/USGSDataSource.username=/c\USGSDataSource.username='"$USGS_USER" /usr/share/sen2agri/sen2agri-services/config/services.properties
-        sed -i '/USGSDataSource.password=/c\USGSDataSource.password='"$USGS_PASS" /usr/share/sen2agri/sen2agri-services/config/services.properties
+        sed -i '/SciHubDataSource.username=/c\SciHubDataSource.username='"$SCIHUB_USER" ${TARGET_SERVICES_DIR}/config/services.properties
+        sed -i '/SciHubDataSource.password=/c\SciHubDataSource.password='"$SCIHUB_PASS" ${TARGET_SERVICES_DIR}/config/services.properties
+        sed -i '/USGSDataSource.username=/c\USGSDataSource.username='"$USGS_USER" ${TARGET_SERVICES_DIR}/config/services.properties
+        sed -i '/USGSDataSource.password=/c\USGSDataSource.password='"$USGS_PASS" ${TARGET_SERVICES_DIR}/config/services.properties
     fi
 }
 
 function enableSciHubDwnDS()
 {
     echo "Disabling Amazon datasource ..."
-    sed -i '/SciHubDataSource.Sentinel2.scope=1/c\SciHubDataSource.Sentinel2.scope=3' /usr/share/sen2agri/sen2agri-services/config/services.properties
-    sed -i '/AWSDataSource.Sentinel2.enabled=true/c\AWSDataSource.Sentinel2.enabled=false' /usr/share/sen2agri/sen2agri-services/config/services.properties
+    sed -i '/SciHubDataSource.Sentinel2.scope=1/c\SciHubDataSource.Sentinel2.scope=3' ${TARGET_SERVICES_DIR}/config/services.properties
+    sed -i '/AWSDataSource.Sentinel2.enabled=true/c\AWSDataSource.Sentinel2.enabled=false' ${TARGET_SERVICES_DIR}/config/services.properties
     
-    sed -i 's/AWSDataSource.Sentinel2.local_archive_path=/SciHubDataSource.Sentinel2.local_archive_path=/g' /usr/share/sen2agri/sen2agri-services/config/services.properties
-    sed -i 's/AWSDataSource.Sentinel2.fetch_mode=/SciHubDataSource.Sentinel2.fetch_mode=/g' /usr/share/sen2agri/sen2agri-services/config/services.properties
+    sed -i 's/AWSDataSource.Sentinel2.local_archive_path=/SciHubDataSource.Sentinel2.local_archive_path=/g' ${TARGET_SERVICES_DIR}/config/services.properties
+    sed -i 's/AWSDataSource.Sentinel2.fetch_mode=/SciHubDataSource.Sentinel2.fetch_mode=/g' ${TARGET_SERVICES_DIR}/config/services.properties
     
     sudo -u postgres psql $DB_NAME -c "update datasource set scope = 3 where satellite_id = 1 and name = 'Scientific Data Hub';"
     sudo -u postgres psql $DB_NAME -c "update datasource set enabled = 'false' where satellite_id = 1 and name = 'Amazon Web Services';"
@@ -120,7 +124,7 @@ function updateWebRestPort()
     sed -i -e "s|static \$SERVICES_URL = \x27http:\/\/localhost:8080\/dashboard|static \$SERVICES_URL = \x27http:\/\/localhost:8082\/dashboard|g" /var/www/html/ConfigParams.php
     sed -i -e "s|static \$SERVICES_URL = \x27http:\/\/localhost:8081\/dashboard|static \$SERVICES_URL = \x27http:\/\/localhost:8082\/dashboard|g" /var/www/html/ConfigParams.php
     
-    REST_SERVER_PORT=$(sed -n 's/^server.port =//p' /usr/share/sen2agri/sen2agri-services/config/services.properties)
+    REST_SERVER_PORT=$(sed -n 's/^server.port =//p' ${TARGET_SERVICES_DIR}/config/services.properties)
     # Strip leading space.
     REST_SERVER_PORT="${REST_SERVER_PORT## }"
     # Strip trailing space.
@@ -161,16 +165,23 @@ yum -y install python-dateutil
 yum -y update postgis2_94 geos
 yum -y install ../rpm_binaries/*.rpm
 
-install_sen2agri_services
-
-ldconfig
-
 DB_NAME=$(get_install_config_property "DB_NAME")
 if [ -z "$DB_NAME" ]; then
     DB_NAME="sen2agri"
 fi
 
 echo "$DB_NAME"
+
+TARGET_SERVICES_DIR="/usr/share/sen2agri/sen2agri-services"
+if [ "$DB_NAME" != "sen2agri" ] ; then 
+    if [ -d "/usr/share/sen2agri/${DB_NAME}-services" ] ; then
+        TARGET_SERVICES_DIR="/usr/share/sen2agri/${DB_NAME}-services"    
+    fi
+fi
+
+install_sen2agri_services
+
+ldconfig
 
 if [ "$DB_NAME" == "sen2agri" ] ; then 
     cat migrations/migration-1.3-1.3.1.sql | su -l postgres -c "psql $DB_NAME"
@@ -231,6 +242,7 @@ else
     
     sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b"
     # sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b -p /mnt/archive/sen4cap_miniconda/miniconda3/"
+    # sudo -u sen2agri-service bash -c 'echo ". /mnt/archive/sen4cap_miniconda/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
     sudo -u sen2agri-service bash -c 'echo ". /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
     sudo su -l sen2agri-service -c bash -c "conda config --set report_errors false"
     sudo su -l sen2agri-service -c bash -c "conda env create --file=/mnt/archive/sen4cap_conda.yml"

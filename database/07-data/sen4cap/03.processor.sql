@@ -26,12 +26,7 @@ VALUES
 INSERT INTO processor
 (id, name, short_name, label)
 VALUES
-(7, 'L2 SAR Amplitude', 'l2-amp', 'L2A S1 &mdash; L2 SAR AMP Pre-Processor');
-
-INSERT INTO processor
-(id, name, short_name, label)
-VALUES
-(8, 'L2 SAR Coherence', 'l2-cohe', 'L2A S1 &mdash; L2 SAR COHE Pre-Processor');
+(7, 'L2-S1 Pre-Processor', 'l2-s1', 'L2 S1 &mdash; SAR Pre-Processor');
 
 INSERT INTO processor
 (id, name, short_name, label)

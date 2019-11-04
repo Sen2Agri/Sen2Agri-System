@@ -232,7 +232,7 @@ def maccs_launcher(demmaccs_context):
     if suffix_log_name is not None:
         tile_log_filename = "demmaccs_{}_{}.log".format(tile_id, suffix_log_name)
     working_dir = os.path.join(demmaccs_context.base_working_dir, tile_id)
-    maccs_working_dir = "{}/maccs_{}".format(demmaccs_context.output[:len(demmaccs_context.output) - 1] if demmaccs_context.output.endswith("/") else demmaccs_context.output, tile_id)
+    maccs_working_dir = "{}/maccs_{}".format(demmaccs_context.base_working_dir[:len(demmaccs_context.base_working_dir) - 1] if demmaccs_context.base_working_dir.endswith("/") else demmaccs_context.base_working_dir, tile_id)
     if not create_recursive_dirs(working_dir):
         log(demmaccs_context.output, "Tile failure: Could not create the working directory {}".format(working_dir), tile_log_filename)
         return ""

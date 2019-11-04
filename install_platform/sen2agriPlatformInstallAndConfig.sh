@@ -570,24 +570,25 @@ EOF
 
 function maccs_or_maja()
 {
-    while [[ $answer != '1' ]] && [[ $answer != '2' ]]
-    do
-	read -n1 -p "What L1C processor should be used? (1 for MACCS / 2 for MAJA): " -r answer
-	printf "\n"
-	case $answer in
-	    1)
-		echo "MACCS will be used as L1C processor"
-		l1c_processor=$L1C_PROCESSOR_MACCS
- 		;;
-	    2)
-		echo "MAJA will be used as L1C processor"
-		l1c_processor=$L1C_PROCESSOR_MAJA
-		;;
-	    *)
-		echo "Unknown answer"
-		;;
-	esac
-    done
+#    while [[ $answer != '1' ]] && [[ $answer != '2' ]]
+#    do	
+#	read -n1 -p "What L1C processor should be used? (1 for MACCS / 2 for MAJA): " -r answer
+#	printf "\n"
+#	case $answer in
+#	    1)
+#		echo "MACCS will be used as L1C processor"
+#		l1c_processor=$L1C_PROCESSOR_MACCS
+# 		;;
+#	    2)
+#		echo "MAJA will be used as L1C processor"
+#		l1c_processor=$L1C_PROCESSOR_MAJA
+#		;;
+#	    *)
+#		echo "Unknown answer"
+#		;;
+#	esac
+#    done
+    l1c_processor=$L1C_PROCESSOR_MAJA
     case $l1c_processor in
     $L1C_PROCESSOR_MACCS)
 	l1c_processor_name="MACCS"

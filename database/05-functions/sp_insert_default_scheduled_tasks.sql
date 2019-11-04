@@ -143,7 +143,7 @@ begin
     end if;
 
 
-    if _processor_id is not null and _processor_id not in (2, 3, 5, 6) then
+    if _processor_id is not null and (_processor_id not in (2, 3, 5, 6) and _processor_name not in ('s4c_l4a', 's4c_l4b', 's4c_l4c')) then
         raise exception 'No default jobs defined for processor id %', _processor_id;
     end if;
 

@@ -146,6 +146,10 @@ INSERT INTO config_metadata VALUES ('processor.s4c_l4a.min-node-size', 'Minimum 
 INSERT INTO config_metadata VALUES ('processor.s4c_l4b.input_amp', 'The list of AMP products', 'select', FALSE, 19, TRUE, 'Available AMP input files', '{"name":"inputFiles_AMP[]","product_type_id":10}');
 INSERT INTO config_metadata VALUES ('processor.s4c_l4b.input_cohe', 'The list of COHE products', 'select', FALSE, 19, TRUE, 'Available COHE input files', '{"name":"inputFiles_COHE[]","product_type_id":11}');
 INSERT INTO config_metadata VALUES ('processor.s4c_l4b.input_ndvi', 'The list of NDVI products', 'select', FALSE, 19, TRUE, 'Available NDVI input files', '{"name":"inputFiles_NDVI[]","product_type_id":3}');
+
+INSERT INTO config_metadata VALUES ('processor.s4c_l4b.start_date', 'Start date for the mowing detection', 'string', FALSE, 19, TRUE, 'Start date for the mowing detection');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4b.end_date', 'End date for the mowing detection', 'string', FALSE, 19, TRUE, 'End date for the mowing detection');
+
 INSERT INTO config_metadata VALUES ('processor.s4c_l4c.input_amp', 'The list of AMP products', 'select', FALSE, 20, TRUE, 'Available AMP input files', '{"name":"inputFiles_AMP[]","product_type_id":10}');
 INSERT INTO config_metadata VALUES ('processor.s4c_l4c.input_cohe', 'The list of COHE products', 'select', FALSE, 20, TRUE, 'Available COHE input files', '{"name":"inputFiles_COHE[]","product_type_id":11}');
 INSERT INTO config_metadata VALUES ('processor.s4c_l4c.input_ndvi', 'The list of NDVI products', 'select', FALSE, 20, TRUE, 'Available NDVI input files', '{"name":"inputFiles_NDVI[]","product_type_id":3}');
