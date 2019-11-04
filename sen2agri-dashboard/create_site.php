@@ -1964,8 +1964,12 @@ $(document).ready( function() {
 		$("#upload_msgs").val("");
 		$("#err_up_files").val("");
 		
-		// Start upload
-		startUpload();
+		// Only start upload if at least one file has been selected
+		if ($("#div_uploadfiles #accordion .panel.uploading").length > 0) {
+			startUpload();
+		} else {
+			alert("Please select at least one file to upload.");
+		}
 	});
 	
 	// display OK/NOK message after the form has been posted
