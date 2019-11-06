@@ -31,4 +31,4 @@ VALUES
 INSERT INTO processor
 (id, name, short_name, label)
 VALUES
-(9, 'LPIS/GSAA', 'lpis', 'LPIS / GSAA Processor');
+(8, 'LPIS/GSAA', 'lpis', 'LPIS / GSAA Processor');
