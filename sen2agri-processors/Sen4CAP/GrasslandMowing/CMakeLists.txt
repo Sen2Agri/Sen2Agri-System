@@ -1,4 +1,4 @@
-install(FILES   src_ini/S4C_L4B_Default_Config.ini
+install(FILES   src_ini/S4C_L4B_Default_Config.cfg
                 src_ini/S1_orbit_list.ini
                 src_ini/S2_granule.ini
         DESTINATION usr/share/sen2agri/S4C_L4B_GrasslandMowing/Bin/src_ini/
