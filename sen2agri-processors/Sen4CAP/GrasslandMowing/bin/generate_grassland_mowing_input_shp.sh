@@ -9,6 +9,7 @@ conda_user="sen2agri-service"
 script_path="generate_grassland_mowing_input_shp.py"
 config_file="/etc/sen2agri/sen2agri.conf"
 filter_ctnum=""
+filter_ids_table=""
 force=0
 
 
@@ -50,6 +51,11 @@ case $key in
     ;;
     -f|--filter-ctnum)
     filter_ctnum="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    -t|--filter-ids-table)
+    filter_ids_table="$2"
     shift # past argument
     shift # past value
     ;;
@@ -106,6 +112,10 @@ fi
 if [ -z ${filter_ctnum} ] ; then
     echo "No filter-ctnum provided!"
 fi 
+if [ -z ${filter_ids_table} ] ; then
+    echo "No filter-ids-table provided!"
+fi 
+
 
 echo "$USER"
 echo "${conda_user}"
@@ -134,7 +144,12 @@ if [ ! -z "${filter_ctnum}" ] ; then
     FILTER_CT_NUM_OPT="--filter-ctnum ${filter_ctnum}" 
 fi
 
-PY_CMD="python ${script_path} ${CFG_FILE} --site-id ${site_id} --path ${path} --year ${year} ${FILTER_CT_NUM_OPT} ${FORCE_OPT}"
+FILTER_IDS_TABLE_OPT=""
+if [ ! -z "${filter_ids_table}" ] ; then
+    FILTER_IDS_TABLE_OPT="--filter-ids-table ${filter_ids_table}" 
+fi
+
+PY_CMD="python ${script_path} ${CFG_FILE} --site-id ${site_id} --path ${path} --year ${year} ${FILTER_CT_NUM_OPT} ${FILTER_IDS_TABLE_OPT} ${FORCE_OPT}"
 
 CMD="${CONDA_CMD} && ${PY_CMD}"
 CMD="${CMD}${CMD_TERM}"
