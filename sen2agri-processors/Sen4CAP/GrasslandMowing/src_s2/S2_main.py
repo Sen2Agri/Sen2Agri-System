@@ -862,6 +862,7 @@ def get_s2_products(config, conn, site_id, prds_list):
 
         products = []
         for (dt, tiles, full_path) in results:
+            # print ("Handling product : {} with tiles {} ...".format(full_path, tiles))
             tilesPath = os.path.join(full_path, "TILES")
             try:
                 tilesDirs = os.listdir(tilesPath)
@@ -869,19 +870,22 @@ def get_s2_products(config, conn, site_id, prds_list):
                 print("Product {} found in DB but not on disk".format(full_path))
                 continue       
                 
-            for tile in tiles :                
+            for tile in tiles :   
+                # print ("Handling tile {} for product : {} ...".format(tile, full_path))
+                # print ("TILE DIRS: {} ...".format(tilesDirs))
                 tilePaths = fnmatch.filter(tilesDirs, "S2AGRI_L3B_A*_T{}".format(tile))
                 if len(tilePaths) == 1:
                     subPath = tilePaths[0]
                     fullTilePath = os.path.join(tilesPath, subPath)
                     tileImgDataPath = os.path.join(fullTilePath, "IMG_DATA")
                     try:
-                        tilesDirs = os.listdir(tileImgDataPath)
+                        tileDirFiles = os.listdir(tileImgDataPath)
                     except:
                         print("Expected L3B product structure found but the path {} does not exists".format(tileImgDataPath))
                         continue
-                    prdFiles = fnmatch.filter(tilesDirs, "S2AGRI_L3B_S*_A*_T{}.TIF".format(tile))
+                    prdFiles = fnmatch.filter(tileDirFiles, "S2AGRI_L3B_S*_A*_T{}.TIF".format(tile))
                     for prdFile in prdFiles:
+                        # print ("Using product tif: {} ...".format(os.path.join(tileImgDataPath, prdFile)))
                         products.append(NdviProduct(dt, tile, os.path.join(tileImgDataPath, prdFile)))
                 
                 
