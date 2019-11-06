@@ -132,7 +132,7 @@ def getCountry(conn, site_id):
     return getSiteConfigKey(conn, 'processor.s4c_l4c.country', site_id)  
 
 def import_agricultural_practices(config, conn, pg_path, file, site_id):
-    table_name = "pd_ap_staging_practices_{}_{}".format(site_id, practice.lower())
+    table_name = "pd_ap_staging_practices_{}_{}".format(site_id, config.practice.lower())
     drop_table(conn, table_name)
     command = get_import_export_table_command(config.ogr2ogr_path, pg_path, file, "-nln", table_name, "-gt", 100000, "-lco", "UNLOGGED=YES")
     run_command(command)

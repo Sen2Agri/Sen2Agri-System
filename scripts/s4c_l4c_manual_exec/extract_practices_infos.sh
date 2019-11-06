@@ -384,6 +384,7 @@ case "$COUNTRY" in
 
             NA_HSTART="${YEAR}-05-01"
             NA_HEND="${YEAR}-12-15"
+            NA_ADD_FILES="${INSITU_ROOT}/RO_CatchCrops_${YEAR}.shp ${INSITU_ROOT}/catch_crops_sprout_rising_remove_duplicate.csv"
         fi
         ;;
     *)

@@ -208,6 +208,7 @@ def main():
     parser.add_argument('-b', '--start-date', help="The begining of the interval to be considered ")
     parser.add_argument('-e', '--end-date', help="The end of the interval to be considered ")
     parser.add_argument('-t', '--product-type', help="The end of the interval to be considered ")
+    parser.add_argument('-s', '--sort', type=int, default=1, help="Sorts the input files")
     
     args = parser.parse_args()
 
@@ -235,6 +236,7 @@ def main():
     command += ["otbcli", "AgricPractMergeDataExtractionFiles", "./sen2agri-processors-build/"]
     command += ["-csvcompact", args.csvcompact]
     command += ["-outformat", args.out_file_type]
+    command += ["-sort", args.sort]
     command += ["-out", args.output_file]
     command += ["-il"] + listFilePaths
     

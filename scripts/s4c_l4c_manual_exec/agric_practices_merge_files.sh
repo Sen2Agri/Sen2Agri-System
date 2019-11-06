@@ -75,14 +75,18 @@ OUTPUTS_ROOT="/mnt/archive/agric_practices/Outputs/${COUNTRY}/"
 OUT_REL_PATH="${PRD_TYPE}_SHP"
 OUT_FILE_NAME="${COUNTRY}_${YEAR}_${PRD_TYPE}_Extracted_Data.csv"
 
+SORT_INPUT_FILES="--sort 1"
 case "${COUNTRY}" in
     NLD)
+        SORT_INPUT_FILES="--sort 0"
         ;;
     CZE)
+        SORT_INPUT_FILES="--sort 0"
         ;;
     LTU)
         ;;
     ESP)
+        SORT_INPUT_FILES="--sort 0"
         ;;
     ITA)
         ;;
@@ -118,7 +122,7 @@ fi
 INPUT_PATH="${OUTPUTS_ROOT}${OUT_REL_PATH}"
 OUTPUT_FILE_PATH="${OUTPUTS_ROOT}/${OUTPUT_LEVEL1}/${OUT_SUBFOLDER}/${OUT_FILE_NAME}"
 
-echo "Executing: ./agric_practices_merge_files.py --input-dir $INPUT_PATH --output-file $OUTPUT_FILE_PATH $CSV_COMPACT"
+echo "Executing: ./agric_practices_merge_files.py --input-dir $INPUT_PATH --output-file $OUTPUT_FILE_PATH $CSV_COMPACT $SORT_INPUT_FILES"
 
-./agric_practices_merge_files.py --input-dir $INPUT_PATH --output-file $OUTPUT_FILE_PATH $CSV_COMPACT
+./agric_practices_merge_files.py --input-dir $INPUT_PATH --output-file $OUTPUT_FILE_PATH $CSV_COMPACT $SORT_INPUT_FILES
 
