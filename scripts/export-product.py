@@ -53,6 +53,7 @@ class Config(object):
         self.password = parser.get("Database", "Password")
 
         self.ogr2ogr_path = args.ogr2ogr_path
+        self.filter = args.filter
 
 
 def get_product_info(conn, product_id):
@@ -104,8 +105,23 @@ def get_srid(conn, lpis_table):
         return srid
 
 
-def export_crop_type(config, conn, pg_path, product_id, lpis_table, lut_table, gpkg_path, csv_path, lut_path):
+def export_crop_type(
+    config,
+    conn,
+    pg_path,
+    product_id,
+    lpis_table,
+    lut_table,
+    gpkg_path,
+    csv_path,
+    lut_path,
+):
     srid = get_srid(conn, lpis_table)
+
+    if config.filter:
+        filter = "and " + config.filter
+    else:
+        filter = ""
 
     query = SQL(
         """
@@ -118,13 +134,25 @@ def export_crop_type(config, conn, pg_path, product_id, lpis_table, lut_table, g
             ct."CT_conf_2"
         from {} lpis
         left outer join product_details_l4a ct on (ct."NewID", ct.product_id) = (lpis."NewID", {})
-        where not is_deleted
+        where not is_deleted {}
         """
-    ).format(Identifier(lpis_table), Literal(product_id))
+    ).format(Identifier(lpis_table), Literal(product_id), SQL(filter))
     query = query.as_string(conn)
 
     name = os.path.splitext(os.path.basename(gpkg_path))[0]
-    command = get_export_table_command(config.ogr2ogr_path, gpkg_path, pg_path, "-nln", name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
+    command = get_export_table_command(
+        config.ogr2ogr_path,
+        gpkg_path,
+        pg_path,
+        "-nln",
+        name,
+        "-sql",
+        query,
+        "-a_srs",
+        "EPSG:" + str(srid),
+        "-gt",
+        100000,
+    )
     run_command(command)
 
     query = SQL(
@@ -148,22 +176,35 @@ def export_crop_type(config, conn, pg_path, product_id, lpis_table, lut_table, g
         from {} lpis
         inner join {} lut using (ori_crop)
         left outer join product_details_l4a on (product_details_l4a."NewID", product_details_l4a.product_id) = (lpis."NewID", {})
-        where not is_deleted
+        where not is_deleted {}
         """
-    ).format(Identifier(lpis_table), Identifier(lut_table), Literal(product_id))
+    ).format(
+        Identifier(lpis_table), Identifier(lut_table), Literal(product_id), SQL(filter)
+    )
     query = query.as_string(conn)
 
-    command = get_export_table_command(config.ogr2ogr_path, csv_path, pg_path, "-sql", query, "-gt", 100000)
+    command = get_export_table_command(
+        config.ogr2ogr_path, csv_path, pg_path, "-sql", query, "-gt", 100000
+    )
     run_command(command)
 
-    command = get_export_table_command(config.ogr2ogr_path, lut_path, pg_path, lut_table, "-gt", 100000)
+    command = get_export_table_command(
+        config.ogr2ogr_path, lut_path, pg_path, lut_table, "-gt", 100000
+    )
     run_command(command)
 
     return [gpkg_path, csv_path, lut_path]
 
 
-def export_agricultural_practices(config, conn, pg_path, product_id, lpis_table, lut_table, path):
+def export_agricultural_practices(
+    config, conn, pg_path, product_id, lpis_table, lut_table, path
+):
     srid = get_srid(conn, lpis_table)
+
+    if config.filter:
+        filter = "and " + config.filter
+    else:
+        filter = ""
 
     practices = []
     with conn.cursor() as cursor:
@@ -226,9 +267,15 @@ def export_agricultural_practices(config, conn, pg_path, product_id, lpis_table,
             inner join {} lpis on lpis."NewID" = ap."NewID"
             inner join {} lut using (ori_crop)
             where (ap.product_id, ap.practice_id) = ({}, {})
-              and not is_deleted
+              and not is_deleted {}
             """
-        ).format(Identifier(lpis_table), Identifier(lut_table), Literal(product_id), Literal(practice_id))
+        ).format(
+            Identifier(lpis_table),
+            Identifier(lut_table),
+            Literal(product_id),
+            Literal(practice_id),
+            SQL(filter),
+        )
         query = query.as_string(conn)
 
         practice_name = get_practice_name(practice_id)
@@ -242,31 +289,60 @@ def export_agricultural_practices(config, conn, pg_path, product_id, lpis_table,
         file = os.path.join(dir, name)
         outputs.append(file)
         table_name = os.path.splitext(name)[0].lower()
-        command = get_export_table_command(config.ogr2ogr_path, file, pg_path, "-nln", table_name, "-sql", query, "-a_srs", "EPSG:" + str(srid), "-gt", 100000)
+        command = get_export_table_command(
+            config.ogr2ogr_path,
+            file,
+            pg_path,
+            "-nln",
+            table_name,
+            "-sql",
+            query,
+            "-a_srs",
+            "EPSG:" + str(srid),
+            "-gt",
+            100000,
+        )
         run_command(command)
     return outputs
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Exports product contents from the database")
-    parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
-    parser.add_argument('-p', '--product-id', type=int, help="product id")
-    parser.add_argument('-w', '--working-path', help="working path")
-    parser.add_argument('-g', '--ogr2ogr-path', default='ogr2ogr', help="The path to ogr2ogr")
-    parser.add_argument('output', help="output path")
+    parser = argparse.ArgumentParser(
+        description="Exports product contents from the database"
+    )
+    parser.add_argument(
+        "-c",
+        "--config-file",
+        default="/etc/sen2agri/sen2agri.conf",
+        help="configuration file location",
+    )
+    parser.add_argument("-p", "--product-id", type=int, help="product id")
+    parser.add_argument("-w", "--working-path", help="working path")
+    parser.add_argument(
+        "-g", "--ogr2ogr-path", default="ogr2ogr", help="The path to ogr2ogr"
+    )
+    parser.add_argument("--filter", help="additional SQL filter")
+    parser.add_argument("output", help="output path")
 
     args = parser.parse_args()
 
     config = Config(args)
 
-    pg_path = 'PG:dbname={} host={} port={} user={} password={}'.format(config.dbname, config.host,
-                                                                        config.port, config.user, config.password)
+    pg_path = "PG:dbname={} host={} port={} user={} password={}".format(
+        config.dbname, config.host, config.port, config.user, config.password
+    )
 
     if args.working_path:
         output = os.path.join(args.working_path, os.path.basename(args.output))
     else:
         output = args.output
-    with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
+    with psycopg2.connect(
+        host=config.host,
+        port=config.port,
+        dbname=config.dbname,
+        user=config.user,
+        password=config.password,
+    ) as conn:
         r = get_product_info(conn, args.product_id)
         if r is None:
             print("Invalid product id {}".format(args.product_id))
@@ -279,9 +355,21 @@ def main():
         if product_type == PRODUCT_TYPE_CROP_TYPE:
             csv_path = os.path.splitext(output)[0] + ".csv"
             lut_path = os.path.splitext(output)[0] + "_LUT.csv"
-            outputs = export_crop_type(config, conn, pg_path, args.product_id, lpis_table, lut_table, output, csv_path, lut_path)
+            outputs = export_crop_type(
+                config,
+                conn,
+                pg_path,
+                args.product_id,
+                lpis_table,
+                lut_table,
+                output,
+                csv_path,
+                lut_path,
+            )
         elif product_type == PRODUCT_TYPE_AGRICULTURAL_PRACTICES:
-            outputs = export_agricultural_practices(config, conn, pg_path, args.product_id, lpis_table, lut_table, output)
+            outputs = export_agricultural_practices(
+                config, conn, pg_path, args.product_id, lpis_table, lut_table, output
+            )
         else:
             print("Unknown product type {}".format(product_type))
             return 1
