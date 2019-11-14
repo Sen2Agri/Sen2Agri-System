@@ -1,5 +1,5 @@
 create table product_details_l4c(
-    product_id int not null references product(id),
+    product_id int not null references product(id) on delete cascade,
     "NewID" int not null,
     practice_id int not null references agricultural_practice(id),
     orig_id text not null,
