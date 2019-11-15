@@ -188,7 +188,7 @@ protected:
     typename MetadataHelper<PixelType, MasksPixelType>::ImageReaderType::Pointer CreateReader(const std::string &imgPath) {
        typename MetadataHelper<PixelType, MasksPixelType>::ImageReaderType::Pointer reader =
                MetadataHelper<PixelType, MasksPixelType>::ImageReaderType::New();
-       reader->SetFileName(imgPath);
+       reader->SetFileName(imgPath + "?skipgeom=true");
        reader->UpdateOutputInformation();
        this->m_readers.push_back(reader);
        return reader;
