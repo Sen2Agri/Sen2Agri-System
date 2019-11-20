@@ -200,7 +200,10 @@ def import_agricultural_practices(config, conn, pg_path, product_id, path):
                         s1_pix,
                         s1_gaps,
                         h_s1_gaps,
-                        p_s1_gaps
+                        p_s1_gaps,
+                        h_w_s1_gaps,
+                        h_quality,
+                        c_quality
                     )
                     select
                         {},
@@ -236,7 +239,10 @@ def import_agricultural_practices(config, conn, pg_path, product_id, path):
                         s1pix,
                         s1gaps,
                         h_s1gaps,
-                        p_s1gaps
+                        p_s1gaps,
+                        h_w_s1gaps,
+                        h_quality,
+                        c_quality                        
                     from {}
                     """
             ).format(Literal(product_id), Literal(practice_id), Identifier(table_name))
