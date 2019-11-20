@@ -154,7 +154,9 @@ def get_tile_hdr(tile, path):
                         ok = True
                         break
                 if not ok:
-                    print("No {} raster found for tile {} in {}".format(pat, tile, path))
+                    print(
+                        "No {} raster found for tile {} in {}".format(pat, tile, path)
+                    )
                     return None
         return hdr
 
@@ -301,7 +303,9 @@ def process_optical(config, conn, pool, satellite_id):
         end_date_filter = Literal(config.season_end)
         site_filter = Literal(config.site_id)
 
-        query = query.format(satellite_filter, start_date_filter, end_date_filter, site_filter)
+        query = query.format(
+            satellite_filter, start_date_filter, end_date_filter, site_filter
+        )
         print(query.as_string(conn))
         cursor.execute(query)
 
@@ -324,9 +328,13 @@ def process_optical(config, conn, pool, satellite_id):
             products.sort(key=lambda product: product.date)
 
             for product in products:
-                if (first_date is None or product.date < first_date) and product.date >= config.season_start:
+                if (
+                    first_date is None or product.date < first_date
+                ) and product.date >= config.season_start:
                     first_date = product.date
-                if (last_date is None or product.date > last_date) and product.date <= config.season_end:
+                if (
+                    last_date is None or product.date > last_date
+                ) and product.date <= config.season_end:
                     last_date = product.date
 
         start_date = first_date
@@ -337,10 +345,23 @@ def process_optical(config, conn, pool, satellite_id):
         ref_map = get_lpis_map(config.lpis_path, 10)
         work = []
         for tile, products in tiles.items():
-            filtered_products = [product for product in products if product.date >= start_date and product.date <= last_date]
+            filtered_products = [
+                product
+                for product in products
+                if product.date >= start_date and product.date <= last_date
+            ]
             tile_ref = ref_map.get(tile)
             if tile_ref is not None:
-                work.append((config.path, satellite_id, tile, filtered_products, tile_ref, dates_file))
+                work.append(
+                    (
+                        config.path,
+                        satellite_id,
+                        tile,
+                        filtered_products,
+                        tile_ref,
+                        dates_file,
+                    )
+                )
 
         pool.map(lambda g: extract_optical_features(*g), work)
 
@@ -377,7 +398,9 @@ def process_optical(config, conn, pool, satellite_id):
 
 
 class RadarGroup(object):
-    def __init__(self, year, month, week, tile_id, orbit_type_id, polarization, product_type):
+    def __init__(
+        self, year, month, week, tile_id, orbit_type_id, polarization, product_type
+    ):
         self.year = year
         self.month = month
         self.week = week
@@ -408,12 +431,27 @@ class RadarGroup(object):
         return hash(self.__key())
 
     def __key(self):
-        return (self.year, self.week, self.tile_id, self.orbit_type_id, self.polarization, self.product_type)
+        return (
+            self.year,
+            self.week,
+            self.tile_id,
+            self.orbit_type_id,
+            self.polarization,
+            self.product_type,
+        )
 
     def format(self, site_id):
         orbit_type = get_orbit_type(self.orbit_type_id)
         product_type = get_product_type(self.product_type)
-        return "SEN4CAP_L2A_PRD_S{}_W{:04}{:02}_T{}_{}_{}_{}.tif".format(site_id, self.year, self.week, self.tile_id, orbit_type, self.polarization, product_type)
+        return "SEN4CAP_L2A_PRD_S{}_W{:04}{:02}_T{}_{}_{}_{}.tif".format(
+            site_id,
+            self.year,
+            self.week,
+            self.tile_id,
+            orbit_type,
+            self.polarization,
+            product_type,
+        )
 
 
 class BackscatterWeeklyRatioGroup(object):
@@ -449,7 +487,9 @@ class BackscatterWeeklyRatioGroup(object):
 
     def format(self, site_id):
         orbit_type = get_orbit_type(self.orbit_type_id)
-        return "SEN4CAP_L2A_PRD_S{}_W{:04}{:02}_T{}_{}_RATIO_BCK".format(site_id, self.year, self.week, self.tile_id, orbit_type)
+        return "SEN4CAP_L2A_PRD_S{}_W{:04}{:02}_T{}_{}_RATIO_BCK".format(
+            site_id, self.year, self.week, self.tile_id, orbit_type
+        )
 
 
 class BackscatterBiMonthlyGroup(object):
@@ -482,11 +522,19 @@ class BackscatterBiMonthlyGroup(object):
         return hash(self.__key())
 
     def __key(self):
-        return (self.year, self.month, self.tile_id, self.orbit_type_id, self.polarization)
+        return (
+            self.year,
+            self.month,
+            self.tile_id,
+            self.orbit_type_id,
+            self.polarization,
+        )
 
     def format(self, site_id):
         orbit_type = get_orbit_type(self.orbit_type_id)
-        return "SEN4CAP_L2A_PRD_S{}_M{:04}{:02}_T{}_{}_{}_BCK.tif".format(site_id, self.year, self.month, self.tile_id, orbit_type, self.polarization)
+        return "SEN4CAP_L2A_PRD_S{}_M{:04}{:02}_T{}_{}_{}_BCK.tif".format(
+            site_id, self.year, self.month, self.tile_id, orbit_type, self.polarization
+        )
 
 
 class BackscatterRatioBiMonthlyGroup(object):
@@ -522,7 +570,9 @@ class BackscatterRatioBiMonthlyGroup(object):
 
     def format(self, site_id):
         orbit_type = get_orbit_type(self.orbit_type_id)
-        return "SEN4CAP_L2A_PRD_S{}_M{:04}{:02}_T{}_{}_RATIO_BCK.tif".format(site_id, self.year, self.month, self.tile_id, orbit_type)
+        return "SEN4CAP_L2A_PRD_S{}_M{:04}{:02}_T{}_{}_RATIO_BCK.tif".format(
+            site_id, self.year, self.month, self.tile_id, orbit_type
+        )
 
 
 class BackscatterPair(object):
@@ -569,7 +619,9 @@ class CoherenceMonthlyGroup(object):
         return (self.year, self.month, self.tile_id, self.polarization)
 
     def format(self, site_id):
-        return "SEN4CAP_L2A_PRD_S{}_M{:04}{:02}_T{}_{}_COHE.tif".format(site_id, self.year, self.month, self.tile_id, self.polarization)
+        return "SEN4CAP_L2A_PRD_S{}_M{:04}{:02}_T{}_{}_COHE.tif".format(
+            site_id, self.year, self.month, self.tile_id, self.polarization
+        )
 
 
 class CoherenceSeasonGroup(object):
@@ -602,7 +654,9 @@ class CoherenceSeasonGroup(object):
         return (self.tile_id, self.polarization)
 
     def format(self, site_id):
-        return "SEN4CAP_L2A_PRD_S{}_S_T{}_{}_COHE.tif".format(site_id, self.tile_id, self.polarization)
+        return "SEN4CAP_L2A_PRD_S{}_S_T{}_{}_COHE.tif".format(
+            site_id, self.tile_id, self.polarization
+        )
 
 
 def get_tile_footprints(conn, site_id):
@@ -664,7 +718,9 @@ def get_radar_products(config, conn, site_id):
         site_id_filter = Literal(site_id)
         start_date_filter = Literal(config.season_start)
         end_date_filter = Literal(config.season_end)
-        query = query.format(site_id_filter, site_id_filter, start_date_filter, end_date_filter)
+        query = query.format(
+            site_id_filter, site_id_filter, start_date_filter, end_date_filter
+        )
         print(query.as_string(conn))
         cursor.execute(query)
 
@@ -672,8 +728,24 @@ def get_radar_products(config, conn, site_id):
         conn.commit()
 
         products = []
-        for (dt, tile_id, orbit_type_id, polarization, radar_product_type, full_path) in results:
-            products.append(RadarProduct(dt, tile_id, orbit_type_id, polarization, radar_product_type, full_path))
+        for (
+            dt,
+            tile_id,
+            orbit_type_id,
+            polarization,
+            radar_product_type,
+            full_path,
+        ) in results:
+            products.append(
+                RadarProduct(
+                    dt,
+                    tile_id,
+                    orbit_type_id,
+                    polarization,
+                    radar_product_type,
+                    full_path,
+                )
+            )
 
         return products
 
@@ -687,6 +759,10 @@ def get_otb_extended_filename_with_tiling(file):
     output_extended += "&streaming:sizemode=height"
     output_extended += "&streaming:sizevalue=1024"
     return output_extended
+
+
+def get_otb_extended_filename_skipgeom(file):
+    return file + "?skipgeom=true"
 
 
 def get_statistics_file_names(input):
@@ -705,7 +781,7 @@ def get_statistics_invocation(input, ref):
 
     command = []
     command += ["otbcli", "ClassStatistics"]
-    command += ["-in", input]
+    command += ["-in", get_otb_extended_filename_skipgeom(input)]
     command += ["-ref", ref]
     command += ["-bv", 0]
     command += ["-outmean", mean]
@@ -716,7 +792,20 @@ def get_statistics_invocation(input, ref):
 
 
 class WeeklyComposite(object):
-    def __init__(self, output, temp, tile_ref, xmin, xmax, ymin, ymax, tile_epsg_code, tile_srs, tile_extent, inputs):
+    def __init__(
+        self,
+        output,
+        temp,
+        tile_ref,
+        xmin,
+        xmax,
+        ymin,
+        ymax,
+        tile_epsg_code,
+        tile_srs,
+        tile_extent,
+        inputs,
+    ):
         self.output = output
         self.temp = temp
         self.tile_ref = tile_ref
@@ -737,7 +826,9 @@ class WeeklyComposite(object):
 
         if os.path.exists(self.output):
             return
+
         self.inputs = filter(os.path.exists, self.inputs)
+        inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
 
         command = []
         command += ["otbcli", "Composite"]
@@ -749,7 +840,7 @@ class WeeklyComposite(object):
         command += ["-outputs.lry", self.ymin]
         command += ["-outputs.spacingx", 20]
         command += ["-outputs.spacingy", -20]
-        command += ["-il"] + self.inputs
+        command += ["-il"] + inputs
         command += ["-bv", 0]
         command += ["-opt.gridspacing", 240]
         run_command(command, env)
@@ -799,8 +890,8 @@ class WeeklyRatioStatistics(object):
 
         command = []
         command += ["otbcli", "ClassStatisticsRatio"]
-        command += ["-in.vv", self.vv]
-        command += ["-in.vh", self.vh]
+        command += ["-in.vv", get_otb_extended_filename_skipgeom(self.vv)]
+        command += ["-in.vh", get_otb_extended_filename_skipgeom(self.vh)]
         command += ["-ref", self.tile_ref]
         command += ["-bv", 0]
         command += ["-outmean", mean]
@@ -826,13 +917,14 @@ class BackscatterMonthlyComposite(object):
         if os.path.exists(self.output):
             return
         self.inputs = filter(os.path.exists, self.inputs)
+        inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
 
         command = []
         command += ["otbcli", "BackscatterTemporalFeatures"]
         command += ["-progress", "false"]
         command += ["-out", self.output_extended]
         command += ["-mode", self.mode]
-        command += ["-il"] + self.inputs
+        command += ["-il"] + inputs
         run_command(command, env)
 
         command = []
@@ -860,13 +952,15 @@ class CoherenceMonthlyComposite(object):
 
         if os.path.exists(self.output):
             return
+
         self.inputs = filter(os.path.exists, self.inputs)
+        inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
 
         command = []
         command += ["otbcli", "CoherenceMonthlyFeatures"]
         command += ["-progress", "false"]
         command += ["-out", self.output_extended]
-        command += ["-il"] + self.inputs
+        command += ["-il"] + inputs
         run_command(command, env)
 
         command = []
@@ -894,13 +988,15 @@ class CoherenceSeasonComposite(object):
 
         if os.path.exists(self.output):
             return
+
         self.inputs = filter(os.path.exists, self.inputs)
+        inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
 
         command = []
         command += ["otbcli", "StandardDeviation"]
         command += ["-progress", "false"]
         command += ["-out", self.output_extended]
-        command += ["-il"] + self.inputs
+        command += ["-il"] + inputs
         run_command(command, env)
 
         command = []
@@ -969,7 +1065,15 @@ def process_radar(config, conn, pool):
         if input_srs is None:
             input_srs = get_projection(product.path)
 
-        group = RadarGroup(product.year, product.month, product.week, product.tile_id, product.orbit_type_id, product.polarization, product.product_type)
+        group = RadarGroup(
+            product.year,
+            product.month,
+            product.week,
+            product.tile_id,
+            product.orbit_type_id,
+            product.polarization,
+            product.product_type,
+        )
         groups[group].append(product)
 
     wgs84_srs = osr.SpatialReference()
@@ -1017,23 +1121,45 @@ def process_radar(config, conn, pool):
 
         epsg_code = tiles[group.tile_id][1]
         (xmin, xmax, ymin, ymax) = tiles_input_srs[group.tile_id].GetEnvelope()
-        composite = WeeklyComposite(output, temp, tile_ref, xmin, xmax, ymin, ymax, epsg_code, tile_srs, tile_extent, hdrs)
+        composite = WeeklyComposite(
+            output,
+            temp,
+            tile_ref,
+            xmin,
+            xmax,
+            ymin,
+            ymax,
+            epsg_code,
+            tile_srs,
+            tile_extent,
+            hdrs,
+        )
         weekly_composites.append(composite)
 
         if group.product_type == PRODUCT_TYPE_ID_BCK:
             month = group.month
             backscatter_group_month = int((month - 1) / 2) * 2 + 1
 
-            backscatter_group = BackscatterBiMonthlyGroup(group.year, backscatter_group_month, group.tile_id, group.orbit_type_id, group.polarization)
+            backscatter_group = BackscatterBiMonthlyGroup(
+                group.year,
+                backscatter_group_month,
+                group.tile_id,
+                group.orbit_type_id,
+                group.polarization,
+            )
             backscatter_groups[backscatter_group].append(output)
 
-            ratio_group = BackscatterRatioBiMonthlyGroup(group.year, backscatter_group_month, group.tile_id, group.orbit_type_id)
+            ratio_group = BackscatterRatioBiMonthlyGroup(
+                group.year, backscatter_group_month, group.tile_id, group.orbit_type_id
+            )
             if group.polarization == POLARIZATION_VV:
                 backscatter_ratio_bi_monthly_groups[ratio_group].vv.append(output)
             elif group.polarization == POLARIZATION_VH:
                 backscatter_ratio_bi_monthly_groups[ratio_group].vh.append(output)
 
-            ratio_group = BackscatterWeeklyRatioGroup(group.year, group.week, group.tile_id, group.orbit_type_id)
+            ratio_group = BackscatterWeeklyRatioGroup(
+                group.year, group.week, group.tile_id, group.orbit_type_id
+            )
             if group.polarization == POLARIZATION_VV:
                 backscatter_ratio_weekly_groups[ratio_group].vv = output
             elif group.polarization == POLARIZATION_VH:
@@ -1041,10 +1167,14 @@ def process_radar(config, conn, pool):
         elif group.product_type == PRODUCT_TYPE_ID_COHE:
             month = group.month
 
-            coherence_monthly_group = CoherenceMonthlyGroup(group.year, month, group.tile_id, group.polarization)
+            coherence_monthly_group = CoherenceMonthlyGroup(
+                group.year, month, group.tile_id, group.polarization
+            )
             coherence_monthly_groups[coherence_monthly_group].append(output)
 
-            coherence_season_group = CoherenceSeasonGroup(group.tile_id, group.polarization)
+            coherence_season_group = CoherenceSeasonGroup(
+                group.tile_id, group.polarization
+            )
             coherence_season_groups[coherence_season_group].append(output)
 
     pool.map(lambda c: c.run(), weekly_composites)
@@ -1059,11 +1189,15 @@ def process_radar(config, conn, pool):
         output = os.path.join(config.path, group.format(config.site_id))
         output_extended = get_otb_extended_filename_with_tiling(output)
 
-        composite = BackscatterMonthlyComposite(tile_ref, output, output_extended, "simple", products)
+        composite = BackscatterMonthlyComposite(
+            tile_ref, output, output_extended, "simple", products
+        )
         backscatter_composites.append(composite)
 
     backscater_ratio_statistics = []
-    backscatter_ratio_weekly_groups = sorted(list(backscatter_ratio_weekly_groups.items()))
+    backscatter_ratio_weekly_groups = sorted(
+        list(backscatter_ratio_weekly_groups.items())
+    )
     for (group, pair) in backscatter_ratio_weekly_groups:
         tile_ref = ref_map.get(group.tile_id)
         if tile_ref is None:
@@ -1077,7 +1211,9 @@ def process_radar(config, conn, pool):
         statistics = WeeklyRatioStatistics(output, pair.vv, pair.vh, tile_ref)
         backscater_ratio_statistics.append(statistics)
 
-    backscatter_ratio_bi_monthly_groups = sorted(list(backscatter_ratio_bi_monthly_groups.items()))
+    backscatter_ratio_bi_monthly_groups = sorted(
+        list(backscatter_ratio_bi_monthly_groups.items())
+    )
     for (group, pair) in backscatter_ratio_bi_monthly_groups:
         tile_ref = ref_map.get(group.tile_id)
         if tile_ref is None:
@@ -1093,7 +1229,9 @@ def process_radar(config, conn, pool):
         for (vv, vh) in zip(pair.vv, pair.vh):
             products += [vv, vh]
 
-        composite = BackscatterMonthlyComposite(tile_ref, output, output_extended, "ratio", products)
+        composite = BackscatterMonthlyComposite(
+            tile_ref, output, output_extended, "ratio", products
+        )
         backscatter_composites.append(composite)
 
     coherence_monthly_composites = []
@@ -1106,7 +1244,9 @@ def process_radar(config, conn, pool):
         output = os.path.join(config.path, group.format(config.site_id))
         output_extended = get_otb_extended_filename_with_tiling(output)
 
-        composite = CoherenceMonthlyComposite(tile_ref, output, output_extended, products)
+        composite = CoherenceMonthlyComposite(
+            tile_ref, output, output_extended, products
+        )
         coherence_monthly_composites.append(composite)
 
     coherence_season_composites = []
@@ -1119,7 +1259,9 @@ def process_radar(config, conn, pool):
         output = os.path.join(config.path, group.format(config.site_id))
         output_extended = get_otb_extended_filename_with_tiling(output)
 
-        composite = CoherenceSeasonComposite(tile_ref, output, output_extended, products)
+        composite = CoherenceSeasonComposite(
+            tile_ref, output, output_extended, products
+        )
         coherence_season_composites.append(composite)
 
     pool.map(lambda c: c.run(), backscatter_composites)
@@ -1136,7 +1278,19 @@ def generate_headers(date_file, headers_mean, headers_dev):
             dt = epoch_days_to_date(days)
             dates.append(dt)
 
-    bands = ["b3", "b4", "b8", "b11", "b5", "b6", "b7", "b8a", "ndvi", "ndwi", "brightness"]
+    bands = [
+        "b3",
+        "b4",
+        "b8",
+        "b11",
+        "b5",
+        "b6",
+        "b7",
+        "b8a",
+        "ndvi",
+        "ndwi",
+        "brightness",
+    ]
 
     with open(headers_mean, "w") as file:
         file.write("NewID")
@@ -1159,25 +1313,38 @@ def generate_headers(date_file, headers_mean, headers_dev):
 
 def main():
     parser = argparse.ArgumentParser(description="Crop type processor")
-    parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
-    parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
-    parser.add_argument('-m', '--mode', required=True, choices=['optical', 'sar'], help="mode")
-    parser.add_argument('--season-start', help="season start date")
-    parser.add_argument('--season-end', help="season end date")
-    parser.add_argument('-p', '--path', default='.', help="working path")
-    parser.add_argument('--lpis-path', help="path to the rasterized LPIS")
-    parser.add_argument('--tiles', default=None, nargs="+", help="tile filter")
+    parser.add_argument(
+        "-c",
+        "--config-file",
+        default="/etc/sen2agri/sen2agri.conf",
+        help="configuration file location",
+    )
+    parser.add_argument("-s", "--site-id", type=int, help="site ID to filter by")
+    parser.add_argument(
+        "-m", "--mode", required=True, choices=["optical", "sar"], help="mode"
+    )
+    parser.add_argument("--season-start", help="season start date")
+    parser.add_argument("--season-end", help="season end date")
+    parser.add_argument("-p", "--path", default=".", help="working path")
+    parser.add_argument("--lpis-path", help="path to the rasterized LPIS")
+    parser.add_argument("--tiles", default=None, nargs="+", help="tile filter")
     args = parser.parse_args()
 
     config = Config(args)
     cpu_count = multiprocessing.cpu_count()
-    if config.mode == 'optical':
+    if config.mode == "optical":
         pool = multiprocessing.dummy.Pool(cpu_count / 2)
     else:
         pool = multiprocessing.dummy.Pool(cpu_count)
 
-    with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
-        if config.mode == 'optical':
+    with psycopg2.connect(
+        host=config.host,
+        port=config.port,
+        dbname=config.dbname,
+        user=config.user,
+        password=config.password,
+    ) as conn:
+        if config.mode == "optical":
             process_optical(config, conn, pool, SATELLITE_ID_SENTINEL2)
         else:
             process_radar(config, conn, pool)
