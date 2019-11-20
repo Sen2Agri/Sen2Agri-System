@@ -12,6 +12,7 @@ ERR_IO = 1
 ERR_BAD_GEOMETRY = 2
 ERR_OVERLAPPING_GEOMETRY = 3
 ERR_COMPLEX_GEOMETRY = 4
+ERR_BAD_FILE = 5
 
 
 def get_geometry_size(geom):
@@ -22,13 +23,12 @@ def get_geometry_size(geom):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Checks the validity of vector data.")
+    parser = argparse.ArgumentParser(description="Checks the validity of vector data.")
     parser.add_argument(
-        '-b', '--bounds', help="display input bounds", action='store_true')
-    parser.add_argument(
-        '-f', '--fix', help="try to fix dataset", action='store_true')
-    parser.add_argument('input', help="the input data source")
+        "-b", "--bounds", help="display input bounds", action="store_true"
+    )
+    parser.add_argument("-f", "--fix", help="try to fix dataset", action="store_true")
+    parser.add_argument("input", help="the input data source")
 
     args = parser.parse_args()
 
@@ -52,7 +52,12 @@ def main():
 
     spatialRef = osr.SpatialReference()
     spatialRef.ImportFromEPSG(4326)
-    transform = osr.CoordinateTransformation(layer.GetSpatialRef(), spatialRef)
+    layer_srs = layer.GetSpatialRef()
+    if not layer_srs:
+        print("Input has no spatial reference (projection)")
+        return ERR_BAD_FILE
+
+    transform = osr.CoordinateTransformation(layer_srs, spatialRef)
 
     if args.bounds and featureCount != 1:
         union = ogr.Geometry(ogr.wkbMultiPolygon)
@@ -124,10 +129,16 @@ def main():
                     intersection = g0.Intersection(g1)
                 else:
                     intersection = None
-                if intersection is not None and not intersection.IsEmpty() and intersection.Area() > 0:
+                if (
+                    intersection is not None
+                    and not intersection.IsEmpty()
+                    and intersection.Area() > 0
+                ):
                     if code_field_idx is not None:
-                        c0, c1 = f0.GetField(
-                            code_field_idx), f1.GetField(code_field_idx)
+                        c0, c1 = (
+                            f0.GetField(code_field_idx),
+                            f1.GetField(code_field_idx),
+                        )
                     else:
                         c0, c1 = None, None
 
@@ -139,7 +150,8 @@ def main():
                                 continue
 
                             print(
-                                "Overlapping features: ID={} and ID={}".format(i0, i1))
+                                "Overlapping features: ID={} and ID={}".format(i0, i1)
+                            )
                         else:
                             print("Overlapping features: {} and {}".format(g0, g1))
 
@@ -172,5 +184,5 @@ def main():
     return status
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
