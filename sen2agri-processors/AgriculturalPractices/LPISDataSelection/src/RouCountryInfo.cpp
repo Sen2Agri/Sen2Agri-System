@@ -121,6 +121,7 @@ int RouCountryInfo::HandleCCFeature(OGRFeature &ogrFeat, int fileIdx) {
         return false;
     }
     const std::string &gsaaId = GetGSAAUniqueId(ogrFeat);
+    std::cout << gsaaId << std::endl;
     m_ccGsaaIdsMap[gsaaId] = {"NA", "NA"};
     return true;
 }

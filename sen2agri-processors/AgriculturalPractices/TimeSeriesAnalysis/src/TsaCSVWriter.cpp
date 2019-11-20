@@ -18,6 +18,8 @@
 #include <boost/filesystem.hpp>
 
 TsaCSVWriter::TsaCSVWriter() {
+    m_IndexPossibleVals = {{"STRONG", 1}, {"MODERATE", 1}, {"WEAK", 1}, {"POOR", 1}};
+    m_HWeekInvalidVals = {{"NA", 1}, {"NA1", 1}, {"NO-HARVEST", 1}};
 }
 
 std::string TsaCSVWriter::BuildResultsCsvFileName(const std::string &practiceName, const std::string &countryCode,
@@ -42,47 +44,52 @@ bool TsaCSVWriter::WriteCSVHeader(const std::string &outDir, const std::string &
     // # create result csv file for harvest and EFA practice evaluation
     m_OutFileStream << "FIELD_ID;ORIG_ID;COUNTRY;YEAR;MAIN_CROP;VEG_START;H_START;H_END;"
                "PRACTICE;P_TYPE;P_START;P_END;L_WEEK;M1;M2;M3;M4;M5;H_WEEK;H_W_START;H_W_END;H_W_S1;M6;M7;M8;M9;M10;C_INDEX;"
-               "S1PIX;S1GAPS;H_S1GAPS;P_S1GAPS\n";
+               "S1PIX;S1GAPS;H_S1GAPS;P_S1GAPS;H_W_S1GAPS;H_QUALITY;C_QUALITY\n";
 
     return true;
 }
 
-void TsaCSVWriter::WriteHarvestInfoToCsv(const FieldInfoType &fieldInfo, const HarvestInfoType &harvestInfo,
-                                         const HarvestInfoType &efaHarvestInfo) {
+void TsaCSVWriter::WriteHarvestInfoToCsv(const FieldInfoType &fieldInfo, const HarvestEvaluationInfoType &harvestEvalInfo,
+                                         const HarvestEvaluationInfoType &efaHarvestEvalInfo) {
     //"FIELD_ID;COUNTRY;YEAR;MAIN_CROP
     m_OutFileStream << fieldInfo.fieldSeqId << ";" << fieldInfo.fieldId << ";" << fieldInfo.countryCode << ";" << ValueToString(fieldInfo.year) << ";" << fieldInfo.mainCrop << ";" <<
                // VEG_START;H_START;H_END;"
                TimeToString(fieldInfo.ttVegStartTime) << ";" << TimeToString(fieldInfo.ttHarvestStartTime) << ";" << TimeToString(fieldInfo.ttHarvestEndTime) << ";" <<
                // "PRACTICE;P_TYPE;P_START;P_END;
-               fieldInfo.practiceName << ";" << fieldInfo.practiceType << ";" << TimeToString(efaHarvestInfo.evaluation.ttPracticeStartTime) << ";" <<
-               TimeToString(efaHarvestInfo.evaluation.ttPracticeEndTime) << ";" <<
-               TimeToString(harvestInfo.evaluation.ttLWeekStartTime) << ";" <<
+               fieldInfo.practiceName << ";" << fieldInfo.practiceType << ";" << TimeToString(efaHarvestEvalInfo.ttPracticeStartTime) << ";" <<
+               TimeToString(efaHarvestEvalInfo.ttPracticeEndTime) << ";" <<
+               // L_WEEK
+               TimeToString(harvestEvalInfo.ttLWeekStartTime) << ";" <<
                // M1;M2;
-               ValueToString(harvestInfo.evaluation.ndviPresence, true) << ";" << ValueToString(harvestInfo.evaluation.candidateOptical, true) << ";" <<
+               ValueToString(harvestEvalInfo.ndviPresence, true) << ";" << ValueToString(harvestEvalInfo.candidateOptical, true) << ";" <<
                // M3;M4;
-               ValueToString(harvestInfo.evaluation.candidateAmplitude, true) << ";" << ValueToString(harvestInfo.evaluation.amplitudePresence, true) << ";" <<
+               ValueToString(harvestEvalInfo.candidateAmplitude, true) << ";" << ValueToString(harvestEvalInfo.amplitudePresence, true) << ";" <<
                // M5;
-               ValueToString(harvestInfo.evaluation.candidateCoherence, true) << ";" <<
+               ValueToString(harvestEvalInfo.candidateCoherence, true) << ";" <<
                //H_WEEK;
-               TranslateHWeekNrDate(ValueToString(harvestInfo.evaluation.harvestConfirmWeek)) << ";" <<
+               TranslateHWeekNrDate(ValueToString(harvestEvalInfo.harvestConfirmWeek)) << ";" <<
                // H_W_START;
-               TranslateHWeekNrDate(TimeToString(harvestInfo.evaluation.ttHarvestConfirmWeekStart)) << ";" <<
+               TranslateHWeekNrDate(TimeToString(harvestEvalInfo.ttHarvestConfirmWeekStart)) << ";" <<
                // H_W_END;
-               TranslateHWeekNrDate(TimeToString((IsNA(harvestInfo.evaluation.ttHarvestConfirmWeekStart) || harvestInfo.evaluation.ttHarvestConfirmWeekStart == 0) ?
-                               harvestInfo.evaluation.ttHarvestConfirmWeekStart :
-                               harvestInfo.evaluation.ttHarvestConfirmWeekStart + (6 * SEC_IN_DAY))) << ";" <<
+               TranslateHWeekNrDate(TimeToString((IsNA(harvestEvalInfo.ttHarvestConfirmWeekStart) || harvestEvalInfo.ttHarvestConfirmWeekStart == 0) ?
+                               harvestEvalInfo.ttHarvestConfirmWeekStart :
+                               harvestEvalInfo.ttHarvestConfirmWeekStart + (6 * SEC_IN_DAY))) << ";" <<
                // H_W_S1;
-               TranslateHWeekNrDate(TimeToString(harvestInfo.evaluation.ttS1HarvestWeekStart)) << ";" <<
+               TranslateHWeekNrDate(TimeToString(harvestEvalInfo.ttS1HarvestWeekStart)) << ";" <<
                // M6;M7;
-               ValueToString(efaHarvestInfo.evaluation.ndviPresence, true) << ";" << ValueToString(efaHarvestInfo.evaluation.ndviGrowth, true) << ";" <<
+               ValueToString(efaHarvestEvalInfo.ndviPresence, true) << ";" << ValueToString(efaHarvestEvalInfo.ndviGrowth, true) << ";" <<
                // M8;M9;
-               ValueToString(efaHarvestInfo.evaluation.ndviNoLoss, true) << ";" << ValueToString(efaHarvestInfo.evaluation.ampNoLoss, true) << ";" <<
+               ValueToString(efaHarvestEvalInfo.ndviNoLoss, true) << ";" << ValueToString(efaHarvestEvalInfo.ampNoLoss, true) << ";" <<
                //M10;C_INDEX;
-               ValueToString(efaHarvestInfo.evaluation.cohNoLoss, true) << ";" << efaHarvestInfo.evaluation.efaIndex << ";" <<
+               ValueToString(efaHarvestEvalInfo.cohNoLoss, true) << ";" << efaHarvestEvalInfo.efaIndex << ";" <<
                // S1PIX;S1GAPS
                fieldInfo.s1PixValue << ";" << ValueToString(fieldInfo.gapsInfos) <<  ";" <<
                // H_S1GAPS;P_S1GAPS
-               ValueToString(fieldInfo.hS1GapsInfos) <<  ";"  << ValueToString(fieldInfo.pS1GapsInfos) << "\n";
+               ValueToString(fieldInfo.hS1GapsInfos) <<  ";"  << ValueToString(fieldInfo.pS1GapsInfos) << ";" <<
+               GetHWS1Gaps(fieldInfo, harvestEvalInfo, efaHarvestEvalInfo) << ";" <<
+               GetHQuality(fieldInfo, harvestEvalInfo, efaHarvestEvalInfo) << ";" <<
+               GetCQuality(fieldInfo, harvestEvalInfo, efaHarvestEvalInfo) <<
+              "\n";
     m_OutFileStream.flush();
 }
 
@@ -100,5 +107,35 @@ std::string TsaCSVWriter::TranslateHWeekNrDate(const std::string &strHDate) {
     return strHDate;
 }
 
+std::string TsaCSVWriter::GetHWS1Gaps(const FieldInfoType &fieldInfo, const HarvestEvaluationInfoType &harvestEvalInfo,
+                                         const HarvestEvaluationInfoType &efaHarvestEvalInfo) {
+    if (!IsNA(harvestEvalInfo.harvestConfirmWeek) && harvestEvalInfo.harvestConfirmWeek > 0) {
+        return ValueToString(fieldInfo.h_W_S1GapsInfos);
+    }
+    return ValueToString(harvestEvalInfo.harvestConfirmWeek);
+}
 
+std::string TsaCSVWriter::GetHQuality(const FieldInfoType &fieldInfo, const HarvestEvaluationInfoType &harvestEvalInfo,
+                                         const HarvestEvaluationInfoType &efaHarvestEvalInfo) {
+    const std::string &s1HwStart = TimeToString(harvestEvalInfo.ttS1HarvestWeekStart);
+    if (m_HWeekInvalidVals.find(s1HwStart) == m_HWeekInvalidVals.end()) {
+        if (!IsNA(harvestEvalInfo.harvestConfirmWeek) && harvestEvalInfo.harvestConfirmWeek > 0) {
+            if (fieldInfo.h_W_S1GapsInfos >= 2) {
+                return "1";
+            }
+        }
+    }
+    return "";
+}
+
+std::string TsaCSVWriter::GetCQuality(const FieldInfoType &fieldInfo, const HarvestEvaluationInfoType &harvestEvalInfo,
+                                         const HarvestEvaluationInfoType &efaHarvestEvalInfo) {
+
+//    if (m_IndexPossibleVals.find(efaHarvestInfo.efaIndex) != m_IndexPossibleVals.end()) {
+    if (fieldInfo.pS1GapsInfos >= 2) {
+        return "1";
+    }
+//    }
+    return "";
+}
 

@@ -51,26 +51,26 @@ void TsaPlotsWriter::ClosePlotsFile() {
     m_OutPlotsIdxFileStream.close();
 }
 
-void TsaPlotsWriter::WritePlotEntry(const FieldInfoType &fieldInfos, const HarvestInfoType &harvestInfo,
-                                    const HarvestInfoType &efaHarvestInfo, bool hasEfaInfos) {
+void TsaPlotsWriter::WritePlotEntry(const FieldInfoType &fieldInfos, const HarvestEvaluationInfoType &harvestEvalInfo,
+                                    const HarvestEvaluationInfoType &efaHarvestEvalInfo, bool hasEfaInfos) {
     if (!m_bPlotOutputGraph) {
         return;
     }
 
     std::stringstream ss;
-    time_t ttPractStart = (hasEfaInfos ? efaHarvestInfo.evaluation.ttPracticeStartTime :
-                                        harvestInfo.evaluation.ttPracticeStartTime);
-    time_t ttPractEnd = (hasEfaInfos ? efaHarvestInfo.evaluation.ttPracticeEndTime :
-                                      harvestInfo.evaluation.ttPracticeEndTime);
+    time_t ttPractStart = (hasEfaInfos ? efaHarvestEvalInfo.ttPracticeStartTime :
+                                        harvestEvalInfo.ttPracticeStartTime);
+    time_t ttPractEnd = (hasEfaInfos ? efaHarvestEvalInfo.ttPracticeEndTime :
+                                      harvestEvalInfo.ttPracticeEndTime);
 
     ss << " <fid id=\"" << fieldInfos.fieldSeqId.c_str() << "\" orig_id=\"" << fieldInfos.fieldId.c_str() << "\">\n";
     ss << " <practice start=\"" << TimeToString(ttPractStart).c_str() <<
                            "\" end=\"" << TimeToString(ttPractEnd).c_str() <<
                            "\"/>\n";
-    ss << " <harvest start=\"" << TimeToString(harvestInfo.evaluation.ttHarvestConfirmWeekStart).c_str() <<
-                          "\" end=\"" << TimeToString((IsNA(harvestInfo.evaluation.ttHarvestConfirmWeekStart) || harvestInfo.evaluation.ttHarvestConfirmWeekStart == 0) ?
-                                        harvestInfo.evaluation.ttHarvestConfirmWeekStart :
-                                        harvestInfo.evaluation.ttHarvestConfirmWeekStart + (6 * SEC_IN_DAY)).c_str() <<
+    ss << " <harvest start=\"" << TimeToString(harvestEvalInfo.ttHarvestConfirmWeekStart).c_str() <<
+                          "\" end=\"" << TimeToString((IsNA(harvestEvalInfo.ttHarvestConfirmWeekStart) || harvestEvalInfo.ttHarvestConfirmWeekStart == 0) ?
+                                        harvestEvalInfo.ttHarvestConfirmWeekStart :
+                                        harvestEvalInfo.ttHarvestConfirmWeekStart + (6 * SEC_IN_DAY)).c_str() <<
                             "\"/>\n";
 
     ss << "  <ndvis>\n";

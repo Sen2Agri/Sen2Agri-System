@@ -162,7 +162,7 @@ StatisticsInfosXmlReader::StatisticsInfosXmlReader()
 {
 }
 
-void StatisticsInfosXmlReader::Initialize(const std::string &source, const std::vector<std::string> &filters, int year)
+void StatisticsInfosXmlReader::Initialize(const std::string &source, const std::vector<std::string> &, int year)
 {
     m_strSource = source;
     m_year = year;

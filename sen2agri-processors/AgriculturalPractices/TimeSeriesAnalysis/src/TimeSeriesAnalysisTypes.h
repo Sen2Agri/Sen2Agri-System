@@ -183,6 +183,7 @@ typedef struct FieldInfoType {
         coheVVMaxValue = NOT_AVAILABLE;
         gapsInfos = NOT_AVAILABLE;
         hS1GapsInfos = NOT_AVAILABLE;
+        h_W_S1GapsInfos = NOT_AVAILABLE;
         pS1GapsInfos = NOT_AVAILABLE;
     }
     std::string fieldId;
@@ -193,6 +194,7 @@ typedef struct FieldInfoType {
     std::string s1PixValue;
     int gapsInfos;
     int hS1GapsInfos;
+    int h_W_S1GapsInfos;
     int pS1GapsInfos;
 
     int year;                                   // TODO: Check that it is extracted from the YEAR field of the shape
@@ -228,8 +230,8 @@ typedef struct FieldInfoType {
 
 } FieldInfoType;
 
-typedef struct HarvestEvaluationType {
-    HarvestEvaluationType(int NAInitVal = NOT_AVAILABLE) {
+typedef struct HarvestEvaluationInfoType {
+    HarvestEvaluationInfoType(int NAInitVal = NOT_AVAILABLE) {
         int naInitVal = NAInitVal;
         fieldId = NA_STR;
         year = NOT_AVAILABLE;
@@ -293,18 +295,7 @@ typedef struct HarvestEvaluationType {
     double ampNoLoss;               // M9
     double cohNoLoss;               // M10
 
-} HarvestEvaluationType;
-
-typedef struct HarvestInfoType {
-    HarvestInfoType(int NAInitVal = NOT_AVAILABLE) :
-        evaluation(NAInitVal)
-    {
-        harvestConfirmed = NAInitVal;
-    }
-    time_t harvestConfirmed;
-    HarvestEvaluationType evaluation;
-
-} HarvestInfoType;
+} HarvestEvaluationInfoType;
 
 typedef struct {
     time_t ttDate;

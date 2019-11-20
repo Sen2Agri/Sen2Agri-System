@@ -46,6 +46,7 @@
 #define NITROGEN_FIXING_CROP_VAL        "NFC"
 
 #define MIN_REQUIRED_COHE_VALUES        26
+#define SEC_IN_5_WEEKS                  3024000 // 5 weeks * 7 days * seconds in day
 
 // TODO : re-analyse the usage of dates (start of week or exact date)
 
@@ -629,7 +630,7 @@ private:
 //            return false;
 //        }
 
-//        if (feature.GetFieldSeqId() != "1080071") {
+//        if (feature.GetFieldSeqId() != "10018") {
 //            return false;
 //        }
 
@@ -730,13 +731,14 @@ private:
         if (!bOK) {
             fieldInfos.gapsInfos = harvestStatusInitVal;
             fieldInfos.hS1GapsInfos = harvestStatusInitVal;
+            fieldInfos.h_W_S1GapsInfos = harvestStatusInitVal;
             fieldInfos.pS1GapsInfos = harvestStatusInitVal;
 
             // in case an error occurred, write in the end the parcel but with invalid infos
-            HarvestInfoType harvestInfos(harvestStatusInitVal);
+            HarvestEvaluationInfoType harvestEvalInfos(harvestStatusInitVal);
 
-            harvestInfos.evaluation.Initialize(fieldInfos);
-            m_csvWriter.WriteHarvestInfoToCsv(fieldInfos, harvestInfos, harvestInfos);
+            harvestEvalInfos.Initialize(fieldInfos);
+            m_csvWriter.WriteHarvestInfoToCsv(fieldInfos, harvestEvalInfos, harvestEvalInfos);
         }
 
         return bOK;
@@ -1061,9 +1063,6 @@ private:
             return false;
         }
 
-        // update the gaps information
-        UpdateGapsInformation(allMergedValues, fieldInfos);
-
         // ### TIME SERIES ANALYSIS FOR HARVEST ###
         CheckVegetationStart(fieldInfos, allMergedValues);
 
@@ -1078,41 +1077,44 @@ private:
         m_debugPrinter.PrintMergedValues(allMergedValues, ampThrValue);
         // DEBUG
 
-        HarvestInfoType harvestInfos;
+        HarvestEvaluationInfoType harvestInfos;
         HarvestEvaluation(fieldInfos, allMergedValues, harvestInfos);
+
+        // update the gaps information
+        UpdateGapsInformation(allMergedValues, fieldInfos, harvestInfos);
 
 //      DEBUG
         m_debugPrinter.PrintHarvestEvaluation(fieldInfos, harvestInfos);
 //      DEBUG
 
-        HarvestInfoType efaHarvestInfos;
+        HarvestEvaluationInfoType efaHarvestEvalInfos;
         bool hasEfaInfos = false;
         // ### TIME SERIES ANALYSIS FOR EFA PRACTICES ###
         if (fieldInfos.practiceName != NA_STR && fieldInfos.ttPracticeStartTime != 0) {
             if (fieldInfos.practiceName.find(m_CatchCropVal) != std::string::npos) {
-                CatchCropPracticeAnalysis(fieldInfos, allMergedValues, harvestInfos, efaHarvestInfos);
+                CatchCropPracticeAnalysis(fieldInfos, allMergedValues, harvestInfos, efaHarvestEvalInfos);
             } else if (fieldInfos.practiceName == m_FallowLandVal) {
-                FallowLandPracticeAnalysis(fieldInfos, allMergedValues, harvestInfos, efaHarvestInfos);
+                FallowLandPracticeAnalysis(fieldInfos, allMergedValues, harvestInfos, efaHarvestEvalInfos);
             } else if (fieldInfos.practiceName == m_NitrogenFixingCropVal) {
-                NitrogenFixingCropPracticeAnalysis(fieldInfos, allMergedValues, harvestInfos, efaHarvestInfos);
+                NitrogenFixingCropPracticeAnalysis(fieldInfos, allMergedValues, harvestInfos, efaHarvestEvalInfos);
             } else {
                 otbAppLogWARNING("Practice name " << fieldInfos.practiceName << " not supported!");
             }
             time_t ttMaxCohDate = GetMaxCohDate(fieldInfos, allMergedValues);
-            if (efaHarvestInfos.evaluation.ttPracticeEndTime > ttMaxCohDate) {
-                efaHarvestInfos.evaluation.efaIndex = NR_STR;
+            if (efaHarvestEvalInfos.ttPracticeEndTime > ttMaxCohDate) {
+                efaHarvestEvalInfos.efaIndex = NR_STR;
             }
             hasEfaInfos = true;
         }
 
         // write infos to be generated as plots
-        m_plotsWriter.WritePlotEntry(fieldInfos, harvestInfos, efaHarvestInfos, hasEfaInfos);
+        m_plotsWriter.WritePlotEntry(fieldInfos, harvestInfos, efaHarvestEvalInfos, hasEfaInfos);
 
         // Write the continuous field infos into the file
         m_contFileWriter.WriteContinousToCsv(fieldInfos, allMergedValues);
 
         // write the harvest information to the final file
-        m_csvWriter.WriteHarvestInfoToCsv(fieldInfos, harvestInfos, efaHarvestInfos);
+        m_csvWriter.WriteHarvestInfoToCsv(fieldInfos, harvestInfos, efaHarvestEvalInfos);
 
         return true;
     }
@@ -1764,29 +1766,36 @@ private:
     }
 
     bool HarvestEvaluation(const FieldInfoType &fieldInfos, std::vector<MergedAllValInfosType> &retAllMergedValues,
-                           HarvestInfoType &harvestInfos) {
+                           HarvestEvaluationInfoType &harvestEvalInfos) {
         // TODO: This can be done using a flag in a structure encapsulating also retAllMergedValues
         //      in order to avoid this iteration (can be done in an iteration previously made)
-        harvestInfos.harvestConfirmed = NOT_AVAILABLE;
-        harvestInfos.evaluation.Initialize(fieldInfos);
+        harvestEvalInfos.Initialize(fieldInfos);
         // Update the L_Week time
-        harvestInfos.evaluation.ttLWeekStartTime = retAllMergedValues[retAllMergedValues.size() - 1].ttDate;
+        harvestEvalInfos.ttLWeekStartTime = retAllMergedValues[retAllMergedValues.size() - 1].ttDate;
+
+        unsigned int nSeqIdNo = std::atoi(fieldInfos.fieldSeqId.c_str());
+        const std::string &prevHWeekStartStr = m_prevPrdReader.GetHWeekStartForFieldId(nSeqIdNo);
+        time_t ttprevHWeekStart = 0;
+        if (prevHWeekStartStr.size() > 0) {
+            ttprevHWeekStart = GetTimeFromString(prevHWeekStartStr);
+        }
 
         if (!HasValidNdviValues(retAllMergedValues, m_OpticalThrVegCycle, true)) {
-            harvestInfos.evaluation.ndviPresence = false;               // M1
-            harvestInfos.evaluation.candidateOptical = NR;           // M2
-            harvestInfos.evaluation.candidateAmplitude = NR;         // M3
-            harvestInfos.evaluation.amplitudePresence = NR;          // M4
-            harvestInfos.evaluation.candidateCoherence = NR;         // M5
-            harvestInfos.evaluation.harvestConfirmWeek = NR;
-            harvestInfos.evaluation.ttS1HarvestWeekStart = NR;
-            harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
+            harvestEvalInfos.ndviPresence = false;               // M1
+            harvestEvalInfos.candidateOptical = NR;           // M2
+            harvestEvalInfos.candidateAmplitude = NR;         // M3
+            harvestEvalInfos.amplitudePresence = NR;          // M4
+            harvestEvalInfos.candidateCoherence = NR;         // M5
+            harvestEvalInfos.harvestConfirmWeek = (ttprevHWeekStart != 0 ? GetWeekFromDate(ttprevHWeekStart) : NR);
+            harvestEvalInfos.ttHarvestConfirmWeekStart = (ttprevHWeekStart != 0 ? ttprevHWeekStart : NR);
+            harvestEvalInfos.ttS1HarvestWeekStart = NR;
             return false;
         }
 
         int idxFirstHarvest = -1;
         int idxFirstS1Harvest = -1;
         bool harvestS1;
+        time_t harvestConfirmWeekStart = NOT_AVAILABLE;
         for(size_t i = 0; i<retAllMergedValues.size(); i++) {
             harvestS1 = ((retAllMergedValues[i].ndviPresence == true) && (retAllMergedValues[i].candidateAmplitude == true) &&
                          (retAllMergedValues[i].amplitudePresence == true) && (retAllMergedValues[i].candidateCoherence == true) &&
@@ -1801,36 +1810,30 @@ private:
             // save the first == week of harvest
             if (retAllMergedValues[i].harvest && idxFirstHarvest == -1) {
                 idxFirstHarvest = i;
-                harvestInfos.harvestConfirmed = retAllMergedValues[i].ttDate;
+                harvestConfirmWeekStart = retAllMergedValues[i].ttDate;
             }
         }
 
         // update the harvestConfirmed with the value from the previous file, if present and different
-        unsigned int nSeqIdNo = std::atoi(fieldInfos.fieldSeqId.c_str());
-        const std::string &prevHWeekStart = m_prevPrdReader.GetHWeekStartForFieldId(nSeqIdNo);
-        time_t harvestConfirmWeekStart = harvestInfos.harvestConfirmed;
-        if (prevHWeekStart.size() > 0) {
-            time_t ttTime = GetTimeFromString(prevHWeekStart);
-            if ((ttTime != 0)/* && (IsNA(harvestInfos.harvestConfirmed) || harvestInfos.harvestConfirmed > ttTime)*/) {
-                harvestConfirmWeekStart = ttTime;
-            }
+        if (ttprevHWeekStart != 0) {
+            harvestConfirmWeekStart = ttprevHWeekStart;
         }
 
         int lastAvailableIdx = retAllMergedValues.size() - 1;
-        harvestInfos.evaluation.ndviPresence = retAllMergedValues[lastAvailableIdx].ndviPresence;               // M1
-        harvestInfos.evaluation.candidateOptical = retAllMergedValues[lastAvailableIdx].candidateOptical;       // M2
-        harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[lastAvailableIdx].candidateAmplitude;   // M3
-        harvestInfos.evaluation.amplitudePresence = retAllMergedValues[lastAvailableIdx].amplitudePresence;     // M4
-        harvestInfos.evaluation.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;   // M5
+        harvestEvalInfos.ndviPresence = retAllMergedValues[lastAvailableIdx].ndviPresence;               // M1
+        harvestEvalInfos.candidateOptical = retAllMergedValues[lastAvailableIdx].candidateOptical;       // M2
+        harvestEvalInfos.candidateAmplitude = retAllMergedValues[lastAvailableIdx].candidateAmplitude;   // M3
+        harvestEvalInfos.amplitudePresence = retAllMergedValues[lastAvailableIdx].amplitudePresence;     // M4
+        harvestEvalInfos.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;   // M5
 
         // "HARVESTED CONDITIONS NOT DETECTED"
         if (IsNA(harvestConfirmWeekStart)) {
             // report results from last available week
-            harvestInfos.evaluation.harvestConfirmWeek = NR;
-            harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
+            harvestEvalInfos.harvestConfirmWeek = NR;
+            harvestEvalInfos.ttHarvestConfirmWeekStart = NR;
         } else {
-            harvestInfos.evaluation.harvestConfirmWeek = GetWeekFromDate(harvestConfirmWeekStart);
-            harvestInfos.evaluation.ttHarvestConfirmWeekStart = harvestConfirmWeekStart;
+            harvestEvalInfos.harvestConfirmWeek = GetWeekFromDate(harvestConfirmWeekStart);
+            harvestEvalInfos.ttHarvestConfirmWeekStart = harvestConfirmWeekStart;
         }
 
         // OLD IMPLEMENTATION
@@ -1838,27 +1841,27 @@ private:
 //        if (IsNA(harvestConfirmWeekStart) || idxFirstHarvest == -1) {
 //            // report results from last available week
 //            int lastAvailableIdx = retAllMergedValues.size() - 1;
-//            harvestInfos.evaluation.ndviPresence = retAllMergedValues[lastAvailableIdx].ndviPresence;               // M1
-//            harvestInfos.evaluation.candidateOptical = retAllMergedValues[lastAvailableIdx].candidateOptical;       // M2
-//            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[lastAvailableIdx].candidateAmplitude;   // M3
-//            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[lastAvailableIdx].amplitudePresence;     // M4
-//            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;   // M5
-//            harvestInfos.evaluation.harvestConfirmWeek = NR;
-//            harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
+//            harvestInfos.ndviPresence = retAllMergedValues[lastAvailableIdx].ndviPresence;               // M1
+//            harvestInfos.candidateOptical = retAllMergedValues[lastAvailableIdx].candidateOptical;       // M2
+//            harvestInfos.candidateAmplitude = retAllMergedValues[lastAvailableIdx].candidateAmplitude;   // M3
+//            harvestInfos.amplitudePresence = retAllMergedValues[lastAvailableIdx].amplitudePresence;     // M4
+//            harvestInfos.candidateCoherence = retAllMergedValues[lastAvailableIdx].candidateCoherence;   // M5
+//            harvestInfos.harvestConfirmWeek = NR;
+//            harvestInfos.ttHarvestConfirmWeekStart = NR;
 //        } else {
-//            harvestInfos.evaluation.ndviPresence = retAllMergedValues[idxFirstHarvest].ndviPresence;                // M1
-//            harvestInfos.evaluation.candidateOptical = retAllMergedValues[idxFirstHarvest].candidateOptical;        // M2
-//            harvestInfos.evaluation.candidateAmplitude = retAllMergedValues[idxFirstHarvest].candidateAmplitude;    // M3
-//            harvestInfos.evaluation.amplitudePresence = retAllMergedValues[idxFirstHarvest].amplitudePresence;      // M4
-//            harvestInfos.evaluation.candidateCoherence = retAllMergedValues[idxFirstHarvest].candidateCoherence;    // M5
-//            harvestInfos.evaluation.harvestConfirmWeek = GetWeekFromDate(harvestConfirmWeekStart);
-//            harvestInfos.evaluation.ttHarvestConfirmWeekStart = harvestConfirmWeekStart;
+//            harvestInfos.ndviPresence = retAllMergedValues[idxFirstHarvest].ndviPresence;                // M1
+//            harvestInfos.candidateOptical = retAllMergedValues[idxFirstHarvest].candidateOptical;        // M2
+//            harvestInfos.candidateAmplitude = retAllMergedValues[idxFirstHarvest].candidateAmplitude;    // M3
+//            harvestInfos.amplitudePresence = retAllMergedValues[idxFirstHarvest].amplitudePresence;      // M4
+//            harvestInfos.candidateCoherence = retAllMergedValues[idxFirstHarvest].candidateCoherence;    // M5
+//            harvestInfos.harvestConfirmWeek = GetWeekFromDate(harvestConfirmWeekStart);
+//            harvestInfos.ttHarvestConfirmWeekStart = harvestConfirmWeekStart;
 //        }
 
         if (idxFirstS1Harvest != -1) {
-            harvestInfos.evaluation.ttS1HarvestWeekStart = retAllMergedValues[idxFirstS1Harvest].ttDate;
+            harvestEvalInfos.ttS1HarvestWeekStart = retAllMergedValues[idxFirstS1Harvest].ttDate;
         } else {
-            harvestInfos.evaluation.ttS1HarvestWeekStart = NR;
+            harvestEvalInfos.ttS1HarvestWeekStart = NR;
         }
 
         return true;
@@ -1866,7 +1869,7 @@ private:
 
     //  TIME SERIES ANALYSIS FOR EFA PRACTICES
     bool CatchCropPracticeAnalysis(const FieldInfoType &fieldInfos, std::vector<MergedAllValInfosType> &retAllMergedValues,
-                                        const HarvestInfoType &harvestInfos, HarvestInfoType &ccHarvestInfos) {
+                                        const HarvestEvaluationInfoType &harvestEvalInfos, HarvestEvaluationInfoType &ccHarvestEvalInfos) {
         time_t ttDateA;     // last possible start of catch-crop period
         time_t ttDateB;     // last possible end of catch-crop period
         time_t ttDateC;
@@ -1876,16 +1879,16 @@ private:
         //time_t weekB;
         time_t catchStart;
 
-        ccHarvestInfos = harvestInfos;
+        ccHarvestEvalInfos = harvestEvalInfos;
 
-        if (harvestInfos.evaluation.ttPracticeEndTime == 0) {
+        if (harvestEvalInfos.ttPracticeEndTime == 0) {
             // # last possible start of catch-crop period
-            ttDateA = harvestInfos.evaluation.ttPracticeStartTime;
+            ttDateA = harvestEvalInfos.ttPracticeStartTime;
             // # last possible end of catch-crop period
             ttDateB = ttDateA + (m_CatchPeriod - 1) * SEC_IN_DAY;
-            weekA = FloorDateToWeekStart(harvestInfos.evaluation.ttPracticeStartTime);
+            weekA = FloorDateToWeekStart(harvestEvalInfos.ttPracticeStartTime);
             //weekB = FloorDateToWeekStart(ttDateB);
-            if (IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
+            if (IsNA(harvestEvalInfos.harvestConfirmWeek)) {
                  // harvest is "NR", set the start of catch-crop period to the last possible start of
                 // catch-crop period (to select the NDVI values)
                 catchStart = ttDateA;
@@ -1907,7 +1910,7 @@ private:
                 if (lastValidHarvestIdx != -1) {
                     catchStart = retAllMergedValues[lastValidHarvestIdx].ttDate;
                 } else {
-                    catchStart = harvestInfos.evaluation.ttHarvestConfirmWeekStart;
+                    catchStart = harvestEvalInfos.ttHarvestConfirmWeekStart;
                 }
             }
             // set the start of the catch-crop (first possible date)
@@ -1949,8 +1952,8 @@ private:
                 double efaChange = (efaMax - efaMin) * m_CatchProportion;                  // compute ndvi buffer
                 if( efaChange <10 ) { efaChange = 10; }
                 // Date from which the $candidate.efa (potential bare-land conditions) are relevant to compute
-                if (!IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
-                    ttDateD = harvestInfos.evaluation.ttHarvestConfirmWeekStart;
+                if (!IsNA(harvestEvalInfos.harvestConfirmWeek)) {
+                    ttDateD = harvestEvalInfos.ttHarvestConfirmWeekStart;
                 } else {
                     // get first day of the posible harvest weeks
                     for (size_t i = 0; i<retAllMergedValues.size(); i++) {
@@ -2032,14 +2035,14 @@ private:
                 }
             }
             // set the first day of the catch-crop period
-            ccHarvestInfos.evaluation.ttPracticeStartTime = catchStart;
+            ccHarvestEvalInfos.ttPracticeStartTime = catchStart;
             // set the last day of the catch-crop period
-            ccHarvestInfos.evaluation.ttPracticeEndTime = catchStart + ((m_CatchPeriod - 1) * SEC_IN_DAY);
+            ccHarvestEvalInfos.ttPracticeEndTime = catchStart + ((m_CatchPeriod - 1) * SEC_IN_DAY);
         }
 
         // ### EFA practice period ###
-        ttDateA = ccHarvestInfos.evaluation.ttPracticeStartTime;
-        ttDateB = ccHarvestInfos.evaluation.ttPracticeEndTime;
+        ttDateA = ccHarvestEvalInfos.ttPracticeStartTime;
+        ttDateB = ccHarvestEvalInfos.ttPracticeEndTime;
         weekA = FloorDateToWeekStart(ttDateA);
         //weekB = FloorDateToWeekStart(ttDateB);
 
@@ -2055,12 +2058,12 @@ private:
         // ### BEFORE end of EFA practice period ###
         if (!efaPeriodStarted) {
             // EFA practice is not evaluated before the end of the EFA practice period - return "NR" evaluation
-            ccHarvestInfos.evaluation.efaIndex = "NR";
-            ccHarvestInfos.evaluation.ndviPresence = NR;                        // M6
-            ccHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
-            ccHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
-            ccHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
-            ccHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
+            ccHarvestEvalInfos.efaIndex = "NR";
+            ccHarvestEvalInfos.ndviPresence = NR;                        // M6
+            ccHarvestEvalInfos.ndviGrowth = NR;                          // M7
+            ccHarvestEvalInfos.ndviNoLoss = NR;                          // M8
+            ccHarvestEvalInfos.ampNoLoss = NR;                           // M9
+            ccHarvestEvalInfos.cohNoLoss = NR;                           // M10
             return true;
         }
 
@@ -2069,7 +2072,7 @@ private:
         // is catch-crop grown in/under the main crop on the parcel
         bool catchInMaincrop = ((fieldInfos.practiceType == m_CatchMain) ||
                 (fieldInfos.practiceType == m_CatchCropIsMain));
-        time_t ttVegSeasonStart = FloorDateToWeekStart(ccHarvestInfos.evaluation.ttVegStartTime);
+        time_t ttVegSeasonStart = FloorDateToWeekStart(ccHarvestEvalInfos.ttVegStartTime);
 
 //      DEBUG
 //        std::cout << TimeToString(ttVegSeasonStart) << std::endl;
@@ -2086,19 +2089,16 @@ private:
         }
         if (!vegSeasonStatus) {
             // # no evidence of the main crop vegetation in the vegetation season - evaluation of catch-crop is not relevant - return "NR"
-            ccHarvestInfos.evaluation.efaIndex = "NR";
-            ccHarvestInfos.evaluation.ndviPresence = NR;                        // M6
-            ccHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
-            ccHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
-            ccHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
-            ccHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
+            ccHarvestEvalInfos.efaIndex = "NR";
+            ccHarvestEvalInfos.ndviPresence = NR;                        // M6
+            ccHarvestEvalInfos.ndviGrowth = NR;                          // M7
+            ccHarvestEvalInfos.ndviNoLoss = NR;                          // M8
+            ccHarvestEvalInfos.ampNoLoss = NR;                           // M9
+            ccHarvestEvalInfos.cohNoLoss = NR;                           // M10
             return true;
 
-        } else if (IsNA(ccHarvestInfos.evaluation.harvestConfirmWeek)) {
-            if (catchInMaincrop) {
-                // harvest was not detected but catch-crop was sown in/under the main crop - evaluate
-                ccHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
-            } else {
+        } else if (IsNA(ccHarvestEvalInfos.harvestConfirmWeek)) {
+            if (!catchInMaincrop) {
                 bool found = false;
                 for (size_t i = 0; i<retAllMergedValues.size(); i++) {
                     if (retAllMergedValues[i].ttDate >= ttVegSeasonStart && retAllMergedValues[i].ttDate <= weekA) {
@@ -2108,38 +2108,38 @@ private:
                         }
                     }
                 }
-                if (found) {
-                    // harvest was not detected but there is "drop" in NDVI before the catch-crop period - evaluate
-                    ccHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
-                } else {
-                    ccHarvestInfos.evaluation.efaIndex = "POOR";
-                    ccHarvestInfos.evaluation.ndviPresence = NR;                        // M6
-                    ccHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
-                    ccHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
-                    ccHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
-                    ccHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
+                if (!found) {
+                    ccHarvestEvalInfos.efaIndex = "POOR";
+                    ccHarvestEvalInfos.ndviPresence = NR;                        // M6
+                    ccHarvestEvalInfos.ndviGrowth = NR;                          // M7
+                    ccHarvestEvalInfos.ndviNoLoss = NR;                          // M8
+                    ccHarvestEvalInfos.ampNoLoss = NR;                           // M9
+                    ccHarvestEvalInfos.cohNoLoss = NR;                           // M10
                     return true;
-                }
-            }
+                } //else {
+                    // harvest was not detected but there is "drop" in NDVI before the catch-crop period - evaluate
+                // }
+            } //else {
+                // harvest was not detected but catch-crop was sown in/under the main crop - evaluate
+            // }
         } else {
-            ccHarvestInfos.harvestConfirmed = ccHarvestInfos.evaluation.ttHarvestConfirmWeekStart;
-            if (ccHarvestInfos.harvestConfirmed > weekA && !catchInMaincrop) {
-                ccHarvestInfos.evaluation.efaIndex = "POOR";
-                ccHarvestInfos.evaluation.ndviPresence = NR;                        // M6
-                ccHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
-                ccHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
-                ccHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
-                ccHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
+            if (ccHarvestEvalInfos.ttHarvestConfirmWeekStart > weekA && !catchInMaincrop) {
+                ccHarvestEvalInfos.efaIndex = "POOR";
+                ccHarvestEvalInfos.ndviPresence = NR;                        // M6
+                ccHarvestEvalInfos.ndviGrowth = NR;                          // M7
+                ccHarvestEvalInfos.ndviNoLoss = NR;                          // M8
+                ccHarvestEvalInfos.ampNoLoss = NR;                           // M9
+                ccHarvestEvalInfos.cohNoLoss = NR;                           // M10
                 return true;
             }
         }
 
-        return CCEfaMarkersExtraction(ttDateA, ttDateB, weekA, fieldInfos, ccHarvestInfos);
+        return CCEfaMarkersExtraction(ttDateA, ttDateB, weekA, fieldInfos, ccHarvestEvalInfos);
     }
 
     bool CCEfaMarkersExtraction(time_t ttDateA, time_t ttDateB, time_t weekA,
                              const FieldInfoType &fieldInfos,
-                             HarvestInfoType &ccHarvestInfos) {
+                             HarvestEvaluationInfoType &ccHarvestEvalInfos) {
         // get efa markers for the defined catch-crop period
         std::vector<EfaMarkersInfoType> efaMarkers;
         ExtractEfaMarkers(ttDateA, ttDateB, fieldInfos, efaMarkers);
@@ -2263,44 +2263,44 @@ private:
         // # no NDVI values in the catch-crop perid - evaluation is based only on SAR markers (M9,M10)
         if (IsNA(efaNdvi)) {
             if (efaNotCompliant == 0) {
-                ccHarvestInfos.evaluation.efaIndex = "MODERATE";
+                ccHarvestEvalInfos.efaIndex = "MODERATE";
             } else {
-                ccHarvestInfos.evaluation.efaIndex = "WEAK";
+                ccHarvestEvalInfos.efaIndex = "WEAK";
             }
         } else {
             switch (efaNotCompliant) {
                 case 0:
-                    ccHarvestInfos.evaluation.efaIndex = "STRONG";
+                    ccHarvestEvalInfos.efaIndex = "STRONG";
                     break;
                 case 1:
-                    ccHarvestInfos.evaluation.efaIndex = "MODERATE";
+                    ccHarvestEvalInfos.efaIndex = "MODERATE";
                     break;
                 case 2:
-                    ccHarvestInfos.evaluation.efaIndex = "WEAK";
+                    ccHarvestEvalInfos.efaIndex = "WEAK";
                     break;
                 default:
-                    ccHarvestInfos.evaluation.efaIndex = "POOR";
+                    ccHarvestEvalInfos.efaIndex = "POOR";
                     break;
             }
         }
-        ccHarvestInfos.evaluation.ndviPresence = efa.ndviPresence;
-        ccHarvestInfos.evaluation.ndviGrowth = efa.ndviGrowth;
-        ccHarvestInfos.evaluation.ndviNoLoss = efa.ndviNoLoss;
-        ccHarvestInfos.evaluation.ampNoLoss = efa.ampNoLoss;
-        ccHarvestInfos.evaluation.cohNoLoss = efa.cohNoLoss;
+        ccHarvestEvalInfos.ndviPresence = efa.ndviPresence;
+        ccHarvestEvalInfos.ndviGrowth = efa.ndviGrowth;
+        ccHarvestEvalInfos.ndviNoLoss = efa.ndviNoLoss;
+        ccHarvestEvalInfos.ampNoLoss = efa.ampNoLoss;
+        ccHarvestEvalInfos.cohNoLoss = efa.cohNoLoss;
 
         return true;
     }
 
     bool FallowLandPracticeAnalysis(const FieldInfoType &fieldInfos, std::vector<MergedAllValInfosType> &retAllMergedValues,
-                                        HarvestInfoType &harvestInfos, HarvestInfoType &flHarvestInfos) {
-        flHarvestInfos = harvestInfos;
+                                        HarvestEvaluationInfoType &harvestInfos, HarvestEvaluationInfoType &flHarvestEvalInfos) {
+        flHarvestEvalInfos = harvestInfos;
 
-        flHarvestInfos.evaluation.ndviPresence = NR;                        // M6
-        flHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
-        flHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
-        flHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
-        flHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
+        flHarvestEvalInfos.ndviPresence = NR;                        // M6
+        flHarvestEvalInfos.ndviGrowth = NR;                          // M7
+        flHarvestEvalInfos.ndviNoLoss = NR;                          // M8
+        flHarvestEvalInfos.ampNoLoss = NR;                           // M9
+        flHarvestEvalInfos.cohNoLoss = NR;                           // M10
 
         time_t ttDateA = fieldInfos.ttPracticeStartTime;     // last possible start of catch-crop period
         time_t ttDateB = fieldInfos.ttPracticeEndTime;     // last possible end of catch-crop period
@@ -2314,7 +2314,7 @@ private:
         // ### BEFORE end of EFA practice period ###
         if (!efaPeriodStarted) {
             // # EFA practice is not evaluated before the end of the EFA practice period - return "NR" evaluation
-            flHarvestInfos.evaluation.efaIndex = "NR";
+            flHarvestEvalInfos.efaIndex = "NR";
             return true;
         }
 
@@ -2325,7 +2325,7 @@ private:
 
         // ### MARKER 6 - efa.presence.ndvi ###
         // # if there is evidence of vegetation (NDVI>efa.ndvi.thr) in the EFA practice period - M6 is TRUE
-        flHarvestInfos.evaluation.ndviPresence = IsNdviPresence(efaMarkers);
+        flHarvestEvalInfos.ndviPresence = IsNdviPresence(efaMarkers);
 
         if (fieldInfos.countryCode == "LTU") {
             // for Lithuania there is a special case
@@ -2349,61 +2349,60 @@ private:
             }
             if (fieldInfos.practiceType == "PDJ") {
                 if (!efaCoh) {
-                    flHarvestInfos.evaluation.efaIndex = "STRONG";
+                    flHarvestEvalInfos.efaIndex = "STRONG";
                     // # harvest is not evaluated for the confirmed black fallow as it is not expected
-                    harvestInfos.evaluation.harvestConfirmWeek = NR;
-                    harvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
-                    flHarvestInfos.evaluation.harvestConfirmWeek = NR;
-                    flHarvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
+                    harvestInfos.harvestConfirmWeek = NR;
+                    harvestInfos.ttHarvestConfirmWeekStart = NR;
+                    flHarvestEvalInfos.harvestConfirmWeek = NR;
+                    flHarvestEvalInfos.ttHarvestConfirmWeekStart = NR;
                 } else {
                     // # if there is no-loss of coherence in all the 9 subsequent
                     // weeks (if M10 is TRUE) - return WEAK evaluation for the black fallow practice
-                    flHarvestInfos.evaluation.efaIndex = "WEAK";
+                    flHarvestEvalInfos.efaIndex = "WEAK";
 
                     // NOTE: Code Just for testing in the R code.
-                    //flHarvestInfos.evaluation.ttPracticeStartTime = ttCohStableWeek;
-                    //flHarvestInfos.evaluation.ttPracticeEndTime = ttCohStableWeek + 62 * SEC_IN_DAY;
+                    //flHarvestInfos.ttPracticeStartTime = ttCohStableWeek;
+                    //flHarvestInfos.ttPracticeEndTime = ttCohStableWeek + 62 * SEC_IN_DAY;
                 }
                 // M6 is not used - return "NR"
-                flHarvestInfos.evaluation.ndviPresence = NR;
+                flHarvestEvalInfos.ndviPresence = NR;
             } else if (fieldInfos.practiceType == "PDZ") {
                 // ### GREEN-FALLOW EVALUATION ###
                 if (!efaCoh) {
                     // # for the green fallow practice no-loss of coherence in at least 9 subsequent weeks is expected
                     // # if there is a loss in all the 9 subsequent weeks (if M10 is FALSE) - return WEAK evaluation
                     // # in such case harvest is not evaluated
-                    flHarvestInfos.evaluation.efaIndex = "WEAK";
-                    //flHarvestInfos.evaluation.harvestConfirmWeek = NR;
-                    //flHarvestInfos.evaluation.ttHarvestConfirmWeekStart = NR;
-                } else if (flHarvestInfos.evaluation.ndviPresence == false) {
+                    flHarvestEvalInfos.efaIndex = "WEAK";
+                    //flHarvestInfos.harvestConfirmWeek = NR;
+                    //flHarvestInfos.ttHarvestConfirmWeekStart = NR;
+                } else if (flHarvestEvalInfos.ndviPresence == false) {
                     // # if there is no evidence of vegetation in NDVI - return WEAK evaluation for the green fallow practice
                     // # green fallow shall be inserted to soil up to the end of the efa period - harvest shall be detected
                     // # if harvest is not detected - return WEAK evaluation
-                    flHarvestInfos.evaluation.efaIndex = "WEAK";
-                } else if (IsNA(flHarvestInfos.evaluation.harvestConfirmWeek)) {
-                    flHarvestInfos.evaluation.efaIndex = "MODERATE";
+                    flHarvestEvalInfos.efaIndex = "WEAK";
+                } else if (IsNA(flHarvestEvalInfos.harvestConfirmWeek)) {
+                    flHarvestEvalInfos.efaIndex = "MODERATE";
                 } else {
                     // # if harvest is detected
                     // # set the first day of the harvest week
-                    flHarvestInfos.harvestConfirmed = flHarvestInfos.evaluation.ttHarvestConfirmWeekStart;
-                    if (flHarvestInfos.harvestConfirmed <= (weekB - 62 * SEC_IN_DAY)) {
+                    if (flHarvestEvalInfos.ttHarvestConfirmWeekStart <= (weekB - 62 * SEC_IN_DAY)) {
                         // # too early - return MODERATE evaluation
-                        flHarvestInfos.evaluation.efaIndex = "MODERATE";
-                    } else if (flHarvestInfos.harvestConfirmed <= (weekB + 7 * SEC_IN_DAY)) {
+                        flHarvestEvalInfos.efaIndex = "MODERATE";
+                    } else if (flHarvestEvalInfos.ttHarvestConfirmWeekStart <= (weekB + 7 * SEC_IN_DAY)) {
                         // # before the end of the efa period - return STRONG evaluation
-                        flHarvestInfos.evaluation.efaIndex = "STRONG";
+                        flHarvestEvalInfos.efaIndex = "STRONG";
                     } else {
                         // # too late - return WEAK evaluation
-                        flHarvestInfos.evaluation.efaIndex = "MODERATE";
+                        flHarvestEvalInfos.efaIndex = "MODERATE";
                     }
                 }
 
                 // # if there is no NDVI value in the whole EFA practice period - return "NA" for the M6
                 if (AllNdviMeanAreNA(efaMarkers)) {
-                    flHarvestInfos.evaluation.ndviPresence = NOT_AVAILABLE;
+                    flHarvestEvalInfos.ndviPresence = NOT_AVAILABLE;
                 }
             }
-            flHarvestInfos.evaluation.cohNoLoss = efaCoh;                       // M10
+            flHarvestEvalInfos.cohNoLoss = efaCoh;                       // M10
         } else {
             if (fieldInfos.countryCode == "CZE") {
                 time_t ttDateC = GetTimeFromString(m_flMarkersStartDateStr);
@@ -2411,24 +2410,22 @@ private:
                 time_t weekC = FloorDateToWeekStart(ttDateC);
                 time_t weekD = FloorDateToWeekStart(ttDateD);
 
-                if (!flHarvestInfos.evaluation.ndviPresence) {
+                if (!flHarvestEvalInfos.ndviPresence) {
                     // # no evidence of GREEN FALLOW vegetation in the EFA practice period - return POOR evaluation
-                    flHarvestInfos.evaluation.efaIndex = "POOR";
+                    flHarvestEvalInfos.efaIndex = "POOR";
                     return true;
 
-                } else if (IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
-                    // # vegetation is present, harvest was not detected - FALLOW is considered ok - evaluate
-                    // TODO: see how harvestConfirmWeek is initialized - NOT_AVAILABLE or 0 ?
-                    flHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
-                } else {
+                } else if (!IsNA(harvestInfos.harvestConfirmWeek)) {
                     // # set the first day of the harvest week - evaluate
-                    time_t harvestConfirmed = harvestInfos.evaluation.ttHarvestConfirmWeekStart;
+                    time_t harvestConfirmed = harvestInfos.ttHarvestConfirmWeekStart;
                     if (harvestConfirmed > weekA && harvestConfirmed <= weekB) {
                         // # harvest was detected within the fallow period - FALLOW is considered not ok - return WEAK evaluation
-                        flHarvestInfos.evaluation.efaIndex = "WEAK";
+                        flHarvestEvalInfos.efaIndex = "WEAK";
                         return true;
                     }
-                }
+                } // else {
+                        // # vegetation is present, harvest was not detected - FALLOW is considered ok - evaluate
+                  // }
 
                 // ### MARKER 8 - efa.noloss.ndvi ###
                 // # mowing or mulching is required between "2017-06-01" and "2017-08-31" - efa.noloss.ndvi shall be FALSE in this period
@@ -2454,11 +2451,11 @@ private:
                         }
                     }
                 }
-                flHarvestInfos.evaluation.ndviNoLoss = !ndviNoLossFalseFound; // M8
-                if (!flHarvestInfos.evaluation.ndviNoLoss) {
-                    flHarvestInfos.evaluation.efaIndex = "STRONG";
+                flHarvestEvalInfos.ndviNoLoss = !ndviNoLossFalseFound; // M8
+                if (!flHarvestEvalInfos.ndviNoLoss) {
+                    flHarvestEvalInfos.efaIndex = "STRONG";
                 } else {
-                    flHarvestInfos.evaluation.efaIndex = "MODERATE";
+                    flHarvestEvalInfos.efaIndex = "MODERATE";
                 }
             } else {
                 // ITA or ESP
@@ -2467,25 +2464,24 @@ private:
                     time_t ttDateC = GetTimeFromString(m_flMarkersStartDateStr);
                     weekC = FloorDateToWeekStart(ttDateC);
                 }
-                if (!flHarvestInfos.evaluation.ndviPresence) {
+                if (!flHarvestEvalInfos.ndviPresence) {
                     // # no evidence of vegetation in the whole vegetation season (==black fallow) - return STRONG evaluation
-                    flHarvestInfos.evaluation.efaIndex = "STRONG";
-                } else if (IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
-                    flHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
-                    flHarvestInfos.evaluation.efaIndex = "MODERATE";
+                    flHarvestEvalInfos.efaIndex = "STRONG";
+                } else if (IsNA(harvestInfos.harvestConfirmWeek)) {
+                    flHarvestEvalInfos.efaIndex = "MODERATE";
                 } else {
                     // # set the first day of the harvest week - evaluate
-                    time_t harvestConfirmed = harvestInfos.evaluation.ttHarvestConfirmWeekStart;
+                    time_t harvestConfirmed = harvestInfos.ttHarvestConfirmWeekStart;
                     if (harvestConfirmed > weekA && harvestConfirmed <= weekC) {
                         // # harvest was detected within the fallow period - FALLOW is considered not ok - return WEAK evaluation
-                        flHarvestInfos.evaluation.efaIndex = "WEAK";
+                        flHarvestEvalInfos.efaIndex = "WEAK";
                     } else {
-                        flHarvestInfos.evaluation.efaIndex = "MODERATE";
+                        flHarvestEvalInfos.efaIndex = "MODERATE";
                     }
                 }
                 // # if there is no NDVI value in the whole EFA practice period - return "NA" for the M6
                 if (AllNdviMeanAreNA(efaMarkers)) {
-                    flHarvestInfos.evaluation.ndviPresence = NOT_AVAILABLE;
+                    flHarvestEvalInfos.ndviPresence = NOT_AVAILABLE;
                 }
             }
         }
@@ -2493,14 +2489,14 @@ private:
     }
 
     bool NitrogenFixingCropPracticeAnalysis(const FieldInfoType &fieldInfos, std::vector<MergedAllValInfosType> &retAllMergedValues,
-                                        const HarvestInfoType &harvestInfos, HarvestInfoType &ncHarvestInfos) {
-        ncHarvestInfos = harvestInfos;
+                                        const HarvestEvaluationInfoType &harvestInfos, HarvestEvaluationInfoType &ncHarvestEvalInfos) {
+        ncHarvestEvalInfos = harvestInfos;
 
-        ncHarvestInfos.evaluation.ndviPresence = NR;                        // M6
-        ncHarvestInfos.evaluation.ndviGrowth = NR;                          // M7
-        ncHarvestInfos.evaluation.ndviNoLoss = NR;                          // M8
-        ncHarvestInfos.evaluation.ampNoLoss = NR;                           // M9
-        ncHarvestInfos.evaluation.cohNoLoss = NR;                           // M10
+        ncHarvestEvalInfos.ndviPresence = NR;                        // M6
+        ncHarvestEvalInfos.ndviGrowth = NR;                          // M7
+        ncHarvestEvalInfos.ndviNoLoss = NR;                          // M8
+        ncHarvestEvalInfos.ampNoLoss = NR;                           // M9
+        ncHarvestEvalInfos.cohNoLoss = NR;                           // M10
 
         time_t ttDateA = fieldInfos.ttPracticeStartTime;     // last possible start of catch-crop period
         time_t ttDateB = fieldInfos.ttPracticeEndTime;     // last possible end of catch-crop period
@@ -2514,73 +2510,70 @@ private:
         // ### BEFORE end of EFA practice period ###
         if (!efaPeriodStarted) {
             // # EFA practice is not evaluated before the end of the EFA practice period - return "NR" evaluation
-            ncHarvestInfos.evaluation.efaIndex = "NR";
+            ncHarvestEvalInfos.efaIndex = "NR";
             return true;
         }
 
         // ### EFA PRACTICE EVALUATION ###
         // get efa markers for the defined catch-crop period
         time_t vegSeasonStart = (fieldInfos.countryCode == "CZE" ?
-                    FloorDateToWeekStart(harvestInfos.evaluation.ttVegStartTime):
+                    FloorDateToWeekStart(harvestInfos.ttVegStartTime):
                     ttDateA);
         std::vector<EfaMarkersInfoType> efaMarkers;
         ExtractEfaMarkers(vegSeasonStart, ttDateB, fieldInfos, efaMarkers);
 
         // ### MARKER 6 - efa.presence.ndvi ###
         // # if there is evidence of vegetation (NDVI>efa.ndvi.thr) in the vegetation season - M6 is TRUE
-        ncHarvestInfos.evaluation.ndviPresence = IsNdviPresence(efaMarkers);
+        ncHarvestEvalInfos.ndviPresence = IsNdviPresence(efaMarkers);
 
         if (fieldInfos.countryCode != "CZE") {
-            if (!ncHarvestInfos.evaluation.ndviPresence) {
+            if (!ncHarvestEvalInfos.ndviPresence) {
                 // # no evidence of vegetation in the whole vegetation season - no evidence of NFC - return WEAK evaluation
                 if (fieldInfos.countryCode == "ESP") {
-                    ncHarvestInfos.evaluation.efaIndex = "POOR";
+                    ncHarvestEvalInfos.efaIndex = "POOR";
                 } else {
-                    ncHarvestInfos.evaluation.efaIndex = "WEAK";
+                    ncHarvestEvalInfos.efaIndex = "WEAK";
                 }
-            } else if(IsNA(ncHarvestInfos.evaluation.harvestConfirmWeek)) {
+            } else if(IsNA(ncHarvestEvalInfos.harvestConfirmWeek)) {
                 // vegetation is present, harvest was not detected - NFC is considered ok - return MODERATE evaluation
-                ncHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
-                ncHarvestInfos.evaluation.efaIndex = "MODERATE";
+                ncHarvestEvalInfos.efaIndex = "MODERATE";
             } else {
                 // # set the first day of the harvest week
-                ncHarvestInfos.harvestConfirmed = harvestInfos.evaluation.ttHarvestConfirmWeekStart;
                 //# vegetation is present, harvest was detected - NFC is considered ok - return STRONG evaluation
                 if ((fieldInfos.countryCode == "ROU") &&
-                        (ncHarvestInfos.harvestConfirmed > weekA &&
-                        ncHarvestInfos.harvestConfirmed < weekB)) {
-                    ncHarvestInfos.evaluation.efaIndex = "WEAK";
+                        (harvestInfos.ttHarvestConfirmWeekStart > weekA &&
+                        harvestInfos.ttHarvestConfirmWeekStart < weekB)) {
+                    ncHarvestEvalInfos.efaIndex = "WEAK";
                 } else {
-                    ncHarvestInfos.evaluation.efaIndex = "STRONG";
+                    ncHarvestEvalInfos.efaIndex = "STRONG";
                 }
             }
             // # if there is no NDVI value in the EFA practice period - M6 is NA
             if (AllNdviMeanAreNA(efaMarkers)) {
-                ncHarvestInfos.evaluation.ndviPresence = NOT_AVAILABLE;
+                ncHarvestEvalInfos.ndviPresence = NOT_AVAILABLE;
             }
             if (fieldInfos.countryCode == "ROU") {
-                if (IsNA(ncHarvestInfos.evaluation.ndviPresence)) {
-                    ncHarvestInfos.evaluation.efaIndex = "NR";
+                if (IsNA(ncHarvestEvalInfos.ndviPresence)) {
+                    ncHarvestEvalInfos.efaIndex = "NR";
                 }
             }
         } else {
-            if (!ncHarvestInfos.evaluation.ndviPresence) {
+            if (!ncHarvestEvalInfos.ndviPresence) {
                 // # no evidence of the NFC vegetation in the vegetation season - return POOR evaluation
-                ncHarvestInfos.evaluation.efaIndex = "POOR";
+                ncHarvestEvalInfos.efaIndex = "POOR";
                 return true;
 
-            } else if (IsNA(harvestInfos.evaluation.harvestConfirmWeek)) {
-                // # vegetation is present, harvest was not detected - NFC is considered ok - evaluate
-                ncHarvestInfos.harvestConfirmed = NOT_AVAILABLE;
-            } else {
+            } else if (!IsNA(harvestInfos.harvestConfirmWeek)) {
                 // # set the first day of the harvest week - evaluate
-                time_t harvestConfirmed = harvestInfos.evaluation.ttHarvestConfirmWeekStart;
+                time_t harvestConfirmed = harvestInfos.ttHarvestConfirmWeekStart;
                 if (harvestConfirmed > weekA && harvestConfirmed <= weekB) {
                     // # harvest detected within the efa practice period - NFC is considered not ok - return WEAK evaluation
-                    ncHarvestInfos.evaluation.efaIndex = "WEAK";
+                    ncHarvestEvalInfos.efaIndex = "WEAK";
                     return true;
                 }
-            }
+            } //else {
+                // # vegetation is present, harvest was not detected - NFC is considered ok - evaluate
+            // }
 
             // ### MARKER 6 - efa.presence.ndvi ###
             std::vector<EfaMarkersInfoType> efaMarkers2;
@@ -2588,11 +2581,11 @@ private:
             ExtractEfaMarkers(ttDateA, ttDateB, fieldInfos, efaMarkers2);
 
             // #  if there is evidence of vegetation (NDVI>efa.ndvi.thr) in the EFA practice period - M6 is TRUE
-            ncHarvestInfos.evaluation.ndviPresence = IsNdviPresence(efaMarkers2);
-            if (ncHarvestInfos.evaluation.ndviPresence) {
-                ncHarvestInfos.evaluation.efaIndex = "STRONG";
+            ncHarvestEvalInfos.ndviPresence = IsNdviPresence(efaMarkers2);
+            if (ncHarvestEvalInfos.ndviPresence) {
+                ncHarvestEvalInfos.efaIndex = "STRONG";
             } else {
-                ncHarvestInfos.evaluation.efaIndex = "MODERATE";
+                ncHarvestEvalInfos.efaIndex = "MODERATE";
             }
         }
         return true;
@@ -2958,7 +2951,7 @@ private:
     }
 
     void UpdateGapsInformation(time_t startTime, time_t endTime,
-                               time_t ttPrevDate, time_t ttCurDate, int &sumVal) {
+                               time_t ttPrevDate, time_t ttCurDate, int &sumVal, bool countAll = false) {
         // Check for gaps between harvest start and harvest end interval
         if (ttCurDate <= startTime || ttPrevDate >= endTime) {
             return;
@@ -2972,16 +2965,31 @@ private:
             }
             int diffInDays = (ttCurDate - ttPrevDate) / SEC_IN_DAY;
             if (diffInDays > 7) {
-                sumVal += (diffInDays / 7) - 1;
+                sumVal += ((diffInDays / 7) - (countAll ? 0 : 1));
             }
         }
     }
 
-    void UpdateGapsInformation(const std::vector<MergedAllValInfosType> &values, FieldInfoType &fieldInfos) {
+    void UpdateGapsInformation(const std::vector<MergedAllValInfosType> &values, FieldInfoType &fieldInfos, const HarvestEvaluationInfoType &harvestEvalInfos) {
         int sum = 0;
         int sumHGaps = 0;
         int sumPGaps = 0;
         int diffInDays;
+        bool bComputeHWS1GapsVal = false;
+        int sumHWS1Gaps = 0;
+        time_t ttPractConfWeekOffset = 0;
+
+        const std::string & prevHWS1GapsVal = m_prevPrdReader.GetHWS1GapsInfosForFieldId(std::atoi(fieldInfos.fieldSeqId.c_str()));
+        int nPrevHWS1GapsVal = std::atoi(prevHWS1GapsVal.c_str());
+        if (prevHWS1GapsVal.length() > 0 && nPrevHWS1GapsVal > 0) {
+            fieldInfos.h_W_S1GapsInfos = nPrevHWS1GapsVal;
+        } else {
+            if (!IsNA(harvestEvalInfos.harvestConfirmWeek)) {
+                bComputeHWS1GapsVal = true;
+                ttPractConfWeekOffset = harvestEvalInfos.ttHarvestConfirmWeekStart - SEC_IN_5_WEEKS;
+            }
+        }
+
 
         // according to ISO calendar, the first week of the year is the one that contains 4th of January
         time_t ttFirstWeekStart = GetTimeFromString(std::to_string(fieldInfos.year).append("-01-01"));
@@ -3008,11 +3016,20 @@ private:
                 // Check for gaps between practice start and harvest end interval
                 UpdateGapsInformation(fieldInfos.ttPracticeStartWeekFloorTime, fieldInfos.ttPracticeEndWeekFloorTime,
                                       ttPrevDate, ttCurDate, sumPGaps);
+
+                // Check for gaps in the preceding 5 weeks before the harvestConfirmWeek
+                if (bComputeHWS1GapsVal) {
+                    UpdateGapsInformation(ttPractConfWeekOffset, harvestEvalInfos.ttHarvestConfirmWeekStart,
+                                          ttPrevDate, ttCurDate, sumHWS1Gaps, true);
+                }
             }
         }
         fieldInfos.gapsInfos = sum;
         fieldInfos.hS1GapsInfos = sumHGaps;
         fieldInfos.pS1GapsInfos = sumPGaps;
+        if (bComputeHWS1GapsVal) {
+            fieldInfos.h_W_S1GapsInfos = sumHWS1Gaps;
+        }
     }
 
     double ComputeOpticalThresholdBuffer(int nVegWeeksCnt, double maxMeanNdviDropVal, double OpticalThresholdValue) {

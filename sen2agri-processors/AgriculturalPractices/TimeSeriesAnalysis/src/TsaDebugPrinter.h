@@ -17,7 +17,7 @@ public:
     void PrintNdviGroupedMeanValues(const std::vector<GroupedMeanValInfosType> &values);
     void PrintCoherenceInfos(const FieldInfoType &fieldInfos);
     void PrintCoherenceGroupedMeanValues(const std::vector<GroupedMeanValInfosType> &values);
-    void PrintHarvestEvaluation(const FieldInfoType &fieldInfo, HarvestInfoType &harvestInfo);
+    void PrintHarvestEvaluation(const FieldInfoType &fieldInfo, HarvestEvaluationInfoType &harvestInfo);
     void PrintEfaMarkers(const std::vector<MergedAllValInfosType> &allMergedValues,
                          const std::vector<EfaMarkersInfoType> &efaMarkers);
 

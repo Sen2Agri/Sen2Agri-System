@@ -196,7 +196,7 @@ void TsaDebugPrinter::PrintCoherenceGroupedMeanValues(const std::vector<GroupedM
     }
 }
 
-void TsaDebugPrinter::PrintHarvestEvaluation(const FieldInfoType &fieldInfo, HarvestInfoType &harvestInfo) {
+void TsaDebugPrinter::PrintHarvestEvaluation(const FieldInfoType &fieldInfo, HarvestEvaluationInfoType &harvestEvalInfo) {
     if (!m_bDebugMode) {
         return;
     }
@@ -214,21 +214,21 @@ void TsaDebugPrinter::PrintHarvestEvaluation(const FieldInfoType &fieldInfo, Har
     std::cout << fieldInfo.practiceName << " " << fieldInfo.practiceType << " " << TimeToString(fieldInfo.ttPracticeStartTime) << " " <<
                  TimeToString(fieldInfo.ttPracticeEndTime) << " " <<
                 // M1;M2;
-                ValueToString(harvestInfo.evaluation.ndviPresence, true) << " " << ValueToString(harvestInfo.evaluation.candidateOptical, true) << " " <<
+                ValueToString(harvestEvalInfo.ndviPresence, true) << " " << ValueToString(harvestEvalInfo.candidateOptical, true) << " " <<
                 // M3;M4;
-                ValueToString(harvestInfo.evaluation.candidateAmplitude, true) << " " << ValueToString(harvestInfo.evaluation.amplitudePresence, true) << " " <<
+                ValueToString(harvestEvalInfo.candidateAmplitude, true) << " " << ValueToString(harvestEvalInfo.amplitudePresence, true) << " " <<
                 // M5;H_WEEK;
-                ValueToString(harvestInfo.evaluation.candidateCoherence, true) << " " << ValueToString(harvestInfo.evaluation.harvestConfirmWeek) << " "
+                ValueToString(harvestEvalInfo.candidateCoherence, true) << " " << ValueToString(harvestEvalInfo.harvestConfirmWeek) << " "
               << std::endl;
 
     std::cout << "M10 C_INDEX" << std::endl;
 
     //                     // M6;M7;
-    //                     efaHarvestInfo.evaluation.ndviPresence << ";" << efaHarvestInfo.evaluation.ndviGrowth << ";" <<
+    //                     efaHarvestInfo.ndviPresence << ";" << efaHarvestInfo.ndviGrowth << ";" <<
     //                     // M8;M9;
-    //                     efaHarvestInfo.evaluation.ndviNoLoss << ";" << efaHarvestInfo.evaluation.ampNoLoss << ";" <<
+    //                     efaHarvestInfo.ndviNoLoss << ";" << efaHarvestInfo.ampNoLoss << ";" <<
     //                      //M10;C_INDEX
-    //                     efaHarvestInfo.evaluation.cohNoLoss << ";" << efaHarvestInfo.evaluation.efaIndex
+    //                     efaHarvestInfo.cohNoLoss << ";" << efaHarvestInfo.efaIndex
 
 }
 
