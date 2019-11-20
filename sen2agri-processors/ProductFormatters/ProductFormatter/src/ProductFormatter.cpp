@@ -1888,6 +1888,14 @@ private:
 
   }
 
+  std::string GetFileNameFromBoostPath(boost::filesystem::path filePath) {
+#ifdef _WIN32
+                return ConvertFromUtf16ToUtf8(filePath.c_str());
+#else
+                return filePath.c_str();
+#endif
+  }
+
   void TransferGenericVectorFiles(const std::vector<std::string> &files)
   {
       for(const auto &file: files) {
@@ -1895,26 +1903,64 @@ private:
           if (boost::filesystem::is_directory(filePath)) {
               for(const boost::filesystem::directory_entry& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(filePath), {})) {
                 //std::cout << entry.path(). << "\n";
-#ifdef _WIN32
-                std::string fileName = ConvertFromUtf16ToUtf8(entry.path().filename().c_str());
-#else
-                std::string fileName = entry.path().filename().c_str();
-#endif
-                CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + fileName, entry.path().string());
-
+                  if (boost::filesystem::is_directory(entry.path())) {
+                      const std::string &dirName = GetFileNameFromBoostPath(entry.path().filename());
+                      otbAppLogINFO("Copying the content of the folder " << dirName)
+                      CopyDir(entry.path(), m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + dirName);
+                  } else {
+                      const std::string &fileName = GetFileNameFromBoostPath(entry.path().filename());
+                      CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + fileName, entry.path().string());
+                  }
               }
           } else {
-#ifdef _WIN32
-              std::string fileName = ConvertFromUtf16ToUtf8(filePath.filename().c_str());
-#else
-              std::string fileName = filePath.filename().c_str();
-#endif
+              const std::string &fileName = GetFileNameFromBoostPath(filePath.filename());
               CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + VECTOR_FOLDER_NAME + "/" + fileName, file);
           }
       }
   }
 
-
+  bool CopyDir(boost::filesystem::path const & source, boost::filesystem::path const & destination) {
+      namespace fs = boost::filesystem;
+      try {
+          // Check whether the function call is valid
+          if(!fs::exists(source) || !fs::is_directory(source)) {
+              otbAppLogWARNING(<< "Source directory " << source.string() << " does not exist or is not a directory.");
+              return false;
+          }
+          if(fs::exists(destination)) {
+              otbAppLogWARNING (<< "Destination directory " << destination.string() << " already exists.");
+              return false;
+          }
+          // Create the destination directory
+          if(!fs::create_directory(destination)) {
+              otbAppLogWARNING( << "Unable to create destination directory" << destination.string());
+              return false;
+          }
+      }
+      catch(fs::filesystem_error const & e) {
+          otbAppLogWARNING( << e.what());
+          return false;
+      }
+      // Iterate through the source directory
+      for(fs::directory_iterator file(source); file != fs::directory_iterator(); ++file) {
+          try {
+              fs::path current(file->path());
+              if(fs::is_directory(current)) {
+                  // Found directory: Recursion
+                  if(!CopyDir(current, destination / current.filename())) {
+                      return false;
+                  }
+              } else {
+                  // Found file: Copy
+                  fs::copy_file(current, destination / current.filename());
+              }
+          }
+          catch(fs::filesystem_error const & e) {
+              otbAppLogWARNING(<< e.what());
+          }
+      }
+      return true;
+  }
 
    void CopyFile(const std::string &strDest, const std::string &strSrc)
    {
