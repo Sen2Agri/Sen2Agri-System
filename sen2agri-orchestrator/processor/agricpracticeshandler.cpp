@@ -168,6 +168,7 @@ void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QStringList ndviFiles, ampFiles, coheFiles;
     ExtractProductFiles(jobCfg, ndviFiles, ampFiles, coheFiles);
 
+    // Check if the input products are valid for the current mode and operation
     if (!ValidateProductsForOperation(jobCfg, ndviFiles, ampFiles, coheFiles)) {
         return;
     }
@@ -185,6 +186,14 @@ void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     if (jobCfg.siteCfg.year.size() == 0) {
         jobCfg.siteCfg.year = QString::number(ProcessorHandlerHelper::GuessYear(jobCfg.seasonStartDate, jobCfg.seasonEndDate));
     }
+
+    QString errMsg;
+    if (!CheckExecutionPreconditions(jobCfg.pCtx, jobCfg.parameters, jobCfg.configParameters, jobCfg.siteId,
+                                     jobCfg.siteShortName, jobCfg.siteCfg.year, errMsg)) {
+        jobCfg.pCtx->MarkJobFailed(jobCfg.event.jobId);
+        throw std::runtime_error(errMsg.toStdString());
+    }
+
     jobCfg.siteCfg.practices = GetPracticeTableFiles(jobCfg.parameters, jobCfg.configParameters, jobCfg.siteShortName, jobCfg.siteCfg.year);
 
     if (!GetL4CConfigForSiteId(jobCfg)) {
@@ -307,6 +316,7 @@ ProcessorJobDefinitionParams AgricPracticesHandler::GetProcessingDefinitionImpl(
         return params;
     }
 
+
     ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString(L4C_AP_CFG_PREFIX),
                                                                            siteId, requestOverrideCfgValues);
     std::map<QString, QString> configParams;
@@ -320,8 +330,8 @@ ProcessorJobDefinitionParams AgricPracticesHandler::GetProcessingDefinitionImpl(
     QString errMsg;
 
     int year = ProcessorHandlerHelper::GuessYear(seasonStartDate, seasonEndDate);
-    if (!CheckExecutionPreconditions(parameters, configParams, siteShortName, QString::number(year), errMsg)) {
-        Logger::error(errMsg);
+    if (!CheckExecutionPreconditions(&ctx, parameters, configParams, siteId, siteShortName, QString::number(year), errMsg)) {
+        Logger::error("Scheduled job execution: " + errMsg);
         return params;
     }
 
@@ -398,14 +408,9 @@ bool AgricPracticesHandler::LoadL4CConfigFile(AgricPracticesJobCfg &jobCfg,
                                                const QString &siteCfgFilePath)
 {
     AgricPracticesSiteCfg &cfg = jobCfg.siteCfg;
-    QString errMsg;
-    if (!CheckExecutionPreconditions(jobCfg.parameters, jobCfg.configParameters, jobCfg.siteShortName, cfg.year, errMsg)) {
-        throw std::runtime_error(errMsg.toStdString());
-    }
-
     if (!GetLpisProductFiles(jobCfg)) {
         jobCfg.pCtx->MarkJobFailed(jobCfg.event.jobId);
-        throw std::runtime_error(QStringLiteral("Cannot get the LPIS product files for site %1.").
+        throw std::runtime_error(QStringLiteral("Agric Practices: Cannot get the LPIS product files for site %1.").
                                  arg(QString::number(jobCfg.siteId)).toStdString());
     }
 
@@ -442,7 +447,8 @@ void AgricPracticesHandler::ExtractProductFiles(AgricPracticesJobCfg &jobCfg,
     QDateTime prdMaxDate;
 
     ndviFiles.append(ExtractNdviFiles(jobCfg, prdMinDate, prdMaxDate));
-    bool bHasCustomDataExtr = (!jobCfg.isScheduledJob && IsOperationEnabled(jobCfg.execOper, dataExtraction));
+    bool bHasCustomDataExtr = (!jobCfg.isScheduledJob && IsOperationEnabled(jobCfg.execOper, dataExtraction)  &&
+                               jobCfg.execOper != dataExtraction);
     if (bHasCustomDataExtr && (ndviFiles.size() == 0)) {
         jobCfg.pCtx->MarkJobFailed(jobCfg.event.jobId);
         throw std::runtime_error(
@@ -514,7 +520,7 @@ bool AgricPracticesHandler::ValidateProductsForOperation(const AgricPracticesJob
             jobCfg.pCtx->MarkJobFinished(jobCfg.event.jobId);
             Logger::info(QStringLiteral("Scheduled job for data extraction with id %1 for site %2 marked as done as "
                                         "no products are available for now to process").
-                         arg(jobCfg.event.jobId).arg(jobCfg.event.siteId));
+                         arg(jobCfg.event.jobId).arg(jobCfg.siteShortName));
             return false;
         } else {
             jobCfg.pCtx->MarkJobFailed(jobCfg.event.jobId);
@@ -861,12 +867,6 @@ void AgricPracticesHandler::HandleProductAvailableImpl(EventProcessingContext &c
     QJsonObject parameters;
     auto configParameters = ctx.GetConfigurationParameters(L4C_AP_CFG_PREFIX, prd.siteId);
     const QString &siteShortName = ctx.GetSiteShortName(prd.siteId);
-    QString errMsg;
-    if (!CheckExecutionPreconditions(parameters, configParameters, siteShortName,
-                                     QString::number(prd.created.date().year()),
-                                     errMsg)) {
-        return;
-    }
 
     // Check that the product type is NDVI, AMP or COHE
     const QString &prdTypeShortName = GetShortNameForProductType(prd.productTypeId);
@@ -876,6 +876,15 @@ void AgricPracticesHandler::HandleProductAvailableImpl(EventProcessingContext &c
         return;
     }
 
+    QString errMsg;
+    if (!CheckExecutionPreconditions(&ctx, parameters, configParameters, prd.siteId, siteShortName,
+                                     QString::number(prd.created.date().year()),
+                                     errMsg)) {
+        Logger::info(QStringLiteral("Agric_practices - HandleProductAvailable - Cannot trigger data extraction job "
+                     "for product %1 and siteid = %2. The error was: %3").arg(prd.fullPath).arg(QString::number((int)prd.siteId))
+                     .arg(errMsg));
+        return;
+    }
 
     // check if the NRT data extraction is configured for the site
     bool nrtDataExtrEnabled = ProcessorHandlerHelper::GetBoolConfigValue(parameters, configParameters, "nrt_data_extr_enabled", L4C_AP_CFG_PREFIX);
@@ -895,6 +904,8 @@ void AgricPracticesHandler::HandleProductAvailableImpl(EventProcessingContext &c
         processorParamsObj["execution_operation"] = "DataExtraction";
         newJob.parametersJson = jsonToString(processorParamsObj);
         ctx.SubmitJob(newJob);
+        Logger::info(QStringLiteral("Agric_practices - HandleProductAvailable - Submitted data extraction trigger job "
+                                    "for product %1 and siteid = %2").arg(prd.fullPath).arg(QString::number((int)prd.siteId)));
     }
 }
 
@@ -917,22 +928,27 @@ bool AgricPracticesHandler::GetPrevL4CProduct(const AgricPracticesJobCfg &jobCfg
     return false;
 }
 
-bool AgricPracticesHandler::GetLpisProductFiles(AgricPracticesJobCfg &jobCfg) {
-
-    jobCfg.siteCfg.ndviIdsGeomShapePath = "";
-    jobCfg.siteCfg.ampCoheIdsGeomShapePath = "";
-    jobCfg.siteCfg.fullDeclsFilePath = "";
+ProductList AgricPracticesHandler::GetLpisProduct(ExecutionContextBase *pCtx, int siteId) {
     // We take it the last LPIS product for this site.
     QDate  startDate, endDate;
     startDate.setDate(1970, 1, 1);
     QDateTime startDateTime(startDate);
     endDate.setDate(2050, 12, 31);
     QDateTime endDateTime(endDate);
-    const ProductList &lpisPrds = jobCfg.pCtx->GetProducts(jobCfg.siteId, (int)ProductType::S4CLPISProductTypeId, startDateTime, endDateTime);
+    return pCtx->GetProducts(siteId, (int)ProductType::S4CLPISProductTypeId, startDateTime, endDateTime);
+}
+
+bool AgricPracticesHandler::GetLpisProductFiles(AgricPracticesJobCfg &jobCfg) {
+
+    jobCfg.siteCfg.ndviIdsGeomShapePath = "";
+    jobCfg.siteCfg.ampCoheIdsGeomShapePath = "";
+    jobCfg.siteCfg.fullDeclsFilePath = "";
+    // We take it the last LPIS product for this site.
+    const ProductList &lpisPrds = GetLpisProduct(jobCfg.pCtx, jobCfg.siteId);
     if (lpisPrds.size() == 0) {
         jobCfg.pCtx->MarkJobFailed(jobCfg.event.jobId);
         throw std::runtime_error(QStringLiteral("No LPIS product found in database for the agricultural practices execution for site %1.").
-                                 arg(QString::number(jobCfg.siteId)).toStdString());
+                                 arg(jobCfg.siteShortName).toStdString());
     }
 
     // If the year is >= 2019, then use LAEA for AMP and COHE and no matter which other for NDVI
@@ -959,7 +975,7 @@ bool AgricPracticesHandler::GetLpisProductFiles(AgricPracticesJobCfg &jobCfg) {
 
     Logger::info(QStringLiteral("Agricultural Practices Scheduled using for site %1 LPIS from = %2, with files: NDVI = %3, "
                                 "AMP_COHE = %4, DECLS = %5 (expected %6)").
-                 arg(jobCfg.event.siteId).arg(prdLpisPath).arg(jobCfg.siteCfg.ndviIdsGeomShapePath)
+                 arg(jobCfg.siteShortName).arg(prdLpisPath).arg(jobCfg.siteCfg.ndviIdsGeomShapePath)
                  .arg(jobCfg.siteCfg.ampCoheIdsGeomShapePath).arg(jobCfg.siteCfg.fullDeclsFilePath)
                  .arg(allFieldsName));
 
@@ -1016,8 +1032,8 @@ int AgricPracticesHandler::UpdateJobSubmittedParamsFromSchedReq(AgricPracticesJo
         jobCfg.prdMinDate = startDate;
         jobCfg.prdMaxDate = endDate;
 
-        Logger::info(QStringLiteral("Agricultural Practices Scheduled job received for siteId = %1, startDate=%2, endDate=%3").
-                     arg(jobCfg.event.siteId).arg(startDate.toString("yyyyMMdd")).arg(endDate.toString("yyyyMMdd")));
+        Logger::info(QStringLiteral("Agricultural Practices Scheduled job received for site name = %1, startDate=%2, endDate=%3").
+                     arg(jobCfg.siteShortName).arg(startDate.toString("yyyyMMdd")).arg(endDate.toString("yyyyMMdd")));
 
         QStringList ndviProcessedFiles, ampProcessedFiles, coheProcessedFiles;
         const QStringList &ndviMissingPrdsList = ExtractMissingDataExtractionProducts(jobCfg, ProductType::L3BProductTypeId,
@@ -1038,9 +1054,9 @@ int AgricPracticesHandler::UpdateJobSubmittedParamsFromSchedReq(AgricPracticesJo
         const QJsonArray &ndviInputProductsArr = ProductListToJSonArray(ndviFilteredPrdsList);
         const QJsonArray &ampInputProductsArr = ProductListToJSonArray(ampFilteredPrdsList);
         const QJsonArray &coheInputProductsArr = ProductListToJSonArray(coheFilteredPrdsList);
-        Logger::info(QStringLiteral("Agricultural Practices Scheduled job : Updating input products for jobId = %1, siteId = %2 with a "
+        Logger::info(QStringLiteral("Agricultural Practices Scheduled job : Updating input products for jobId = %1, site name = %2 with a "
                                     "number of %3 NDVI products, %4 AMP products and %5 COHE products").
-                     arg(jobCfg.event.jobId).arg(jobCfg.siteId).arg(ndviInputProductsArr.size()).
+                     arg(jobCfg.event.jobId).arg(jobCfg.siteShortName).arg(ndviInputProductsArr.size()).
                      arg(ampInputProductsArr.size()).arg(coheInputProductsArr.size()));
 
         if (ndviInputProductsArr.size() > 0) {
@@ -1241,14 +1257,21 @@ QMap<QString, QString> AgricPracticesHandler::GetPracticeTableFiles(const QJsonO
     return retMap;
 }
 
-bool AgricPracticesHandler::CheckExecutionPreconditions(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
-                                                        const QString &siteShortName, const QString &year, QString &errMsg) {
+bool AgricPracticesHandler::CheckExecutionPreconditions(ExecutionContextBase *pCtx, const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                        int siteId, const QString &siteShortName, const QString &year, QString &errMsg) {
     errMsg = "";
+    // We take it the last LPIS product for this site.
+    const ProductList &lpisPrds = GetLpisProduct(pCtx, siteId);
+    if (lpisPrds.size() == 0) {
+        errMsg = QStringLiteral("ERROR Agric Practices: No LPIS product found for site %1.").
+                                 arg(siteShortName);
+        return false;
+    }
     const QMap<QString, QString> &retMap = GetPracticeTableFiles(parameters, configParameters, siteShortName, year);
     for(const QString & practice : retMap.keys()) {
         // if it is not NA and a file does not exist, then return false
         // We allow the NA to have no files as this is activated by default in the system
-        if (retMap.value(practice).size() == 0 && practice != "NA") {
+        if (retMap.value(practice).size() == 0) {
             errMsg = QStringLiteral("Error checking S4C_L4C preconditions for site %1. "
                                     "The practice %2 does not have a configured practices file for year %3!.")
                     .arg(siteShortName).arg(practice).arg(year);
@@ -1276,7 +1299,7 @@ bool AgricPracticesHandler::GetSiteConfigForSiteId2(AgricPracticesJobCfg &jobCfg
 
     if (!GetLpisProductFiles(jobCfg)) {
         Logger::error(QStringLiteral("Cannot get the LPIS product files for site %1.")
-                      .arg(QString::number(jobCfg.siteId)));
+                      .arg(jobCfg.siteShortName));
         return false;
     }
 

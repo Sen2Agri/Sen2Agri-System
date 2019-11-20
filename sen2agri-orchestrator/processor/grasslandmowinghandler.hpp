@@ -81,7 +81,9 @@ private:
     QString GetProcessorDirValue(grassland_mowing::GrasslandMowingExecConfig &cfg, const QString &key, const QString &defVal);
     QString GetL4BConfigFilePath(grassland_mowing::GrasslandMowingExecConfig &jobCfg);
     int GuessYear(const QDateTime &startDateTime, const QDateTime &endDateTime);
-    bool LoadConfigFileAdditionalValues(grassland_mowing::GrasslandMowingExecConfig &cfg);
+    bool LoadConfigFileAdditionalValues(grassland_mowing::GrasslandMowingExecConfig &cfg, QString &err);
+    QString GetStringValue(const QSettings &settings, const QString &key);
+    QString GetOutputDataDir(grassland_mowing::GrasslandMowingExecConfig &cfg, TaskToSubmit&task, const QString &outDataDirName);
 };
 
 #endif // GRASSLANDMOWINGHANDLER_HPP

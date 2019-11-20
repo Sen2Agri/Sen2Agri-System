@@ -4,15 +4,12 @@
 #include <vector>
 #include <QFileInfo>
 
-#include "persistencemanager.hpp"
-#include "model.hpp"
+#include "executioncontextbase.hpp"
 
 #include "tasktosubmit.hpp"
 
-class EventProcessingContext
+class EventProcessingContext : public ExecutionContextBase
 {
-    PersistenceManagerDBProvider &persistenceManager;
-
 public:
     EventProcessingContext(PersistenceManagerDBProvider &persistenceManager);
 
@@ -37,12 +34,6 @@ public:
 
     StepConsoleOutputList GetTaskConsoleOutputs(int taskId);
 
-    QString GetProcessorShortName(int processorId);
-    QString GetSiteShortName(int siteId);
-    QString GetSiteName(int siteId);
-
-    SeasonList GetSiteSeasons(int siteId);
-
     UnprocessedEventList GetNewEvents();
     void MarkEventProcessingStarted(int eventId);
     void MarkEventProcessingComplete(int eventId);
@@ -50,7 +41,6 @@ public:
     int InsertProduct(const NewProduct &product);
 
     Product GetProduct(int productId);
-    ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
     ProductList GetProductsForTile(int siteId, const QString &tileId, ProductType productType, int tileSatelliteId, int targetSatelliteId);
     TileList GetSiteTiles(int siteId, int satelliteId);
     TileList GetIntersectingTiles(Satellite satellite, const QString &tileId);

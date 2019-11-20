@@ -436,7 +436,7 @@ void LaiRetrievalHandlerL3BNew::HandleJobSubmittedImpl(EventProcessingContext &c
     // no products available from the scheduling ... just mark job as done
     if (ret == 0) {
         ctx.MarkJobFinished(event.jobId);
-        Logger::info(QStringLiteral("Scheduled job with id %1 for site %2 marked as done as no products are available for now to process").
+        Logger::info(QStringLiteral("L3B Scheduled job with id %1 for site %2 marked as done as no products are available for now to process").
                      arg(event.jobId).arg(event.siteId));
         return;
     }

@@ -7,7 +7,7 @@
 #include "eventprocessingcontext.hpp"
 
 EventProcessingContext::EventProcessingContext(PersistenceManagerDBProvider &persistenceManager)
-    : persistenceManager(persistenceManager)
+    : ExecutionContextBase(persistenceManager)
 {
 }
 
@@ -202,11 +202,6 @@ Product EventProcessingContext::GetProduct(int productId)
     return persistenceManager.GetProduct(productId);
 }
 
-ProductList EventProcessingContext::GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate)
-{
-    return persistenceManager.GetProducts(siteId, productTypeId, startDate, endDate);
-}
-
 ProductList EventProcessingContext::GetProductsForTile(int siteId, const QString &tileId, ProductType productType,
                                                        int tileSatelliteId, int targetSatelliteId)
 {
@@ -280,24 +275,4 @@ QStringList EventProcessingContext::findProductFiles(int siteId, const QString &
         absPath = product.fullPath;
     }
     return findProductFiles(absPath);
-}
-
-QString EventProcessingContext::GetProcessorShortName(int processorId)
-{
-    return persistenceManager.GetProcessorShortName(processorId);
-}
-
-QString EventProcessingContext::GetSiteShortName(int siteId)
-{
-    return persistenceManager.GetSiteShortName(siteId);
-}
-
-QString EventProcessingContext::GetSiteName(int siteId)
-{
-    return persistenceManager.GetSiteName(siteId);
-}
-
-SeasonList EventProcessingContext::GetSiteSeasons(int siteId)
-{
-    return persistenceManager.GetSiteSeasons(siteId);
 }

@@ -1,15 +1,8 @@
 #include "schedulingcontext.h"
 
 SchedulingContext::SchedulingContext(PersistenceManagerDBProvider &persistenceManager)
-    :persistenceManager(persistenceManager)
+    :ExecutionContextBase(persistenceManager)
 {
-}
-
-ProductList SchedulingContext::GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate)
-{
-    //QDateTime startDateTime = QDateTime::fromString(startDate, "yyyyMMdd");
-    //QDateTime endDateTime = QDateTime::fromString(endDate, "yyyyMMdd");
-    return persistenceManager.GetProducts(siteId, productTypeId, startDate, endDate);
 }
 
 ProductList SchedulingContext::GetProductsByInsertedTime(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate)
@@ -57,23 +50,4 @@ std::map<QString, QString> SchedulingContext::GetConfigurationParameterValues(co
 
     return result;
 
-}
-
-QString SchedulingContext::GetProcessorShortName(int processorId)
-{
-    return persistenceManager.GetProcessorShortName(processorId);
-}
-
-QString SchedulingContext::GetSiteShortName(int siteId) {
-    return persistenceManager.GetSiteShortName(siteId);
-}
-
-QString SchedulingContext::GetSiteName(int siteId)
-{
-    return persistenceManager.GetSiteName(siteId);
-}
-
-SeasonList SchedulingContext::GetSiteSeasons(int siteId)
-{
-    return persistenceManager.GetSiteSeasons(siteId);
 }

@@ -13,6 +13,7 @@ using namespace grassland_mowing;
 
 #define DEFAULT_SHP_GEN_PATH "/mnt/archive/grassland_mowing_files/{site}/{year}/InputShp/SEN4CAP_L4B_GeneratedInputShp.shp"
 #define L4B_GM_DEF_CFG_DIR   "/mnt/archive/grassland_mowing_files/{site}/{year}/config/"
+#define DEFAULT_WORKING_DIR_PATH "/mnt/archive/grassland_mowing_files/{site}/{year}/working_dir"
 
 void GrasslandMowingHandler::CreateTasks(GrasslandMowingExecConfig &cfg,
                                          QList<TaskToSubmit> &outAllTasksList)
@@ -23,13 +24,15 @@ void GrasslandMowingHandler::CreateTasks(GrasslandMowingExecConfig &cfg,
     curTaskIdx++;
 
     QList<int> prdFormatterParentTasks;
-    if (cfg.inputPrdsType & L2_S1) {
-        prdFormatterParentTasks.append(curTaskIdx++);
-        outAllTasksList.append(TaskToSubmit{ "s4c-grassland-mowing", {outAllTasksList[0]} });
-    }
     if (cfg.inputPrdsType & L3B) {
         prdFormatterParentTasks.append(curTaskIdx++);
         outAllTasksList.append(TaskToSubmit{ "s4c-grassland-mowing", {outAllTasksList[0]} });
+    }
+    if (cfg.inputPrdsType & L2_S1) {
+        // if we have also the S2, then put this task to be executed after the previous one
+        prdFormatterParentTasks.append(curTaskIdx++);
+        outAllTasksList.append(TaskToSubmit{ "s4c-grassland-mowing",
+                         {((cfg.inputPrdsType & L3B) ? outAllTasksList[1] : outAllTasksList[0])} });
     }
 
     int productFormatterIdx = curTaskIdx++;
@@ -48,7 +51,7 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
 
     TaskToSubmit &genInputShpTask = allTasksList[curTaskIdx++];
     QString inputShpLocation;
-    if (IsScheduledJobRequest(cfg.parameters)) {
+    if (cfg.isScheduled) {
         inputShpLocation = GetProcessorDirValue(cfg, "gen_input_shp_path", DEFAULT_SHP_GEN_PATH);
         // create folder for the file if it doesn't exist
         QDir().mkpath(QFileInfo(inputShpLocation).absolutePath());
@@ -58,37 +61,60 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
     const QStringList &inShpGenArgs = GetInputShpGeneratorArgs(cfg, inputShpLocation);
     steps.append(genInputShpTask.CreateStep("MowingInputShpGenerator", inShpGenArgs));
 
-    if (cfg.inputPrdsType & L2_S1) {
-        TaskToSubmit &s1MowingDetectionTask = allTasksList[curTaskIdx++];
-        const QString &s1MowingDetectionOutFile = s1MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S1_MowingDetection.shp");
-        const QString &s1OutDir = s1MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S1_OutputData");
-        const QStringList &s1MowingDetectionArgs = GetMowingDetectionArgs(cfg, L2_S1, inputShpLocation,
-                                                                          s1OutDir, s1MowingDetectionOutFile);
-        steps.append(s1MowingDetectionTask.CreateStep("S1MowingDetection", s1MowingDetectionArgs));
-
-        productFormatterFiles += s1MowingDetectionOutFile;
-        // add also the dbf, prj and shx files
-        productFormatterFiles += s1MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S1_MowingDetection.dbf");
-        productFormatterFiles += s1MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S1_MowingDetection.prj");
-        productFormatterFiles += s1MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S1_MowingDetection.shx");
-    }
+    // It is assumed that the product formatter task it is the last one in the list
+    TaskToSubmit &productFormatterTask = allTasksList[allTasksList.size()-1];
 
     if (cfg.inputPrdsType & L3B) {
+        QString outShpFileName = ((cfg.inputPrdsType & L3B) ?
+                                      "SEN4CAP_L4B_S1_S2_MowingDetection" :
+                                      "SEN4CAP_L4B_S2_MowingDetection");
         TaskToSubmit &s2MowingDetectionTask = allTasksList[curTaskIdx++];
-        const QString &s2MowingDetectionOutFile = s2MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S2_MowingDetection.shp");
-        const QString &s2OutDir = s2MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S2_OutputData");
+        const QString &s2MowingDetectionOutFile = productFormatterTask.GetFilePath(outShpFileName + ".shp");
+        const QString &s2OutDir = GetOutputDataDir(cfg, s2MowingDetectionTask, "SEN4CAP_L4B_S2_OutputData");
         const QStringList &s2MowingDetectionArgs = GetMowingDetectionArgs(cfg, L3B, inputShpLocation,
                                                                           s2OutDir, s2MowingDetectionOutFile);
         steps.append(s2MowingDetectionTask.CreateStep("S2MowingDetection", s2MowingDetectionArgs));
 
         productFormatterFiles += s2MowingDetectionOutFile;
         // add also the dbf, prj and shx files
-        productFormatterFiles += s2MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S2_MowingDetection.dbf");
-        productFormatterFiles += s2MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S2_MowingDetection.prj");
-        productFormatterFiles += s2MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S2_MowingDetection.shx");
+        productFormatterFiles += productFormatterTask.GetFilePath(outShpFileName + ".dbf");
+        productFormatterFiles += productFormatterTask.GetFilePath(outShpFileName + ".prj");
+        productFormatterFiles += productFormatterTask.GetFilePath(outShpFileName + ".shx");
+        // Add also the intermediate files
+        // TODO: see if this path should be better configured in database as
+        // the script might use it to detect if vrt and other files were already generated
+        // by a previous execution
+        if (!cfg.isScheduled) {
+            productFormatterFiles += s2MowingDetectionTask.GetFilePath("");
+        }
     }
 
-    TaskToSubmit &productFormatterTask = allTasksList[curTaskIdx++];
+    if (cfg.inputPrdsType & L2_S1) {
+        QString outShpFileName = ((cfg.inputPrdsType & L3B) ?
+                                      "SEN4CAP_L4B_S1_S2_MowingDetection" :
+                                      "SEN4CAP_L4B_S1_MowingDetection");
+        TaskToSubmit &s1MowingDetectionTask = allTasksList[curTaskIdx++];
+        const QString &s1MowingDetectionOutFile = productFormatterTask.GetFilePath(outShpFileName + ".shp");
+        const QString &s1OutDir = GetOutputDataDir(cfg, s1MowingDetectionTask, "SEN4CAP_L4B_S1_OutputData");
+        const QStringList &s1MowingDetectionArgs = GetMowingDetectionArgs(cfg, L2_S1, inputShpLocation,
+                                                                          s1OutDir, s1MowingDetectionOutFile);
+        steps.append(s1MowingDetectionTask.CreateStep("S1MowingDetection", s1MowingDetectionArgs));
+
+        productFormatterFiles += s1MowingDetectionOutFile;
+        // add also the dbf, prj and shx files
+        productFormatterFiles += s1MowingDetectionTask.GetFilePath(outShpFileName + ".dbf");
+        productFormatterFiles += s1MowingDetectionTask.GetFilePath(outShpFileName + ".prj");
+        productFormatterFiles += s1MowingDetectionTask.GetFilePath(outShpFileName + ".shx");
+
+        // Add also the intermediate files
+        // TODO: see if this path should be better configured in database as
+        // the script might use it to detect if vrt and other files were already generated
+        // by a previous execution
+        if (!cfg.isScheduled) {
+            productFormatterFiles += s1MowingDetectionTask.GetFilePath("");
+        }
+    }
+
     const QStringList &productFormatterArgs = GetProductFormatterArgs(productFormatterTask, cfg, productFormatterFiles);
     steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
 }
@@ -100,20 +126,20 @@ bool GrasslandMowingHandler::CheckInputParameters(GrasslandMowingExecConfig &cfg
             ProcessorHandlerHelper::GetParameterValueAsString(cfg.parameters, "end_date", strEndDate) &&
             cfg.parameters.contains("input_products") && cfg.parameters["input_products"].toArray().size() == 0) {
             cfg.isScheduled = true;
-            cfg.startDate = QDateTime::fromString(strStartDate, "yyyyMMdd");
-            cfg.endDate = QDateTime::fromString(strEndDate, "yyyyMMdd");
+            cfg.startDate = ProcessorHandlerHelper::GetDateTimeFromString(strStartDate);
+            cfg.endDate = ProcessorHandlerHelper::GetDateTimeFromString(strEndDate);
 
             QString strSeasonStartDate, strSeasonEndDate;
             ProcessorHandlerHelper::GetParameterValueAsString(cfg.parameters, "season_start_date", strSeasonStartDate);
             ProcessorHandlerHelper::GetParameterValueAsString(cfg.parameters, "season_end_date", strSeasonEndDate);
-            cfg.seasonStartDate = QDateTime::fromString(strSeasonStartDate, "yyyyMMdd");
-            cfg.seasonEndDate = QDateTime::fromString(strSeasonEndDate, "yyyyMMdd");
+            cfg.seasonStartDate = ProcessorHandlerHelper::GetDateTimeFromString(strSeasonStartDate);
+            cfg.seasonEndDate = ProcessorHandlerHelper::GetDateTimeFromString(strSeasonEndDate);
 
             QString startDateOverride;
             bool found = ProcessorHandlerHelper::GetParameterValueAsString(
                         cfg.parameters, "mowing-start-date", startDateOverride);
             if (found && startDateOverride.size() > 0) {
-                cfg.startDate = QDateTime::fromString(startDateOverride, "yyyyMMdd");
+                cfg.startDate = ProcessorHandlerHelper::GetDateTimeFromString(startDateOverride);
             }
         } else {
             err = "Invalid scheduled request. Start date, end date or request structure are invalid!";
@@ -121,13 +147,27 @@ bool GrasslandMowingHandler::CheckInputParameters(GrasslandMowingExecConfig &cfg
         }
     } else {
         cfg.isScheduled = false;
+        const QString &startDateStr = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
+                                                                                   "start_date", L4B_GM_CFG_PREFIX);
+        const QString &endDateStr = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
+                                                                                   "end_date", L4B_GM_CFG_PREFIX);
+        cfg.startDate = ProcessorHandlerHelper::GetDateTimeFromString(startDateStr);
+        cfg.endDate = ProcessorHandlerHelper::GetDateTimeFromString(endDateStr);
+
         // Custom request
         const QJsonArray &arrPrdsL3B = S4CUtils::GetInputProducts(cfg.parameters, ProductType::L3BProductTypeId);
         const QJsonArray &arrPrdsAmp = S4CUtils::GetInputProducts(cfg.parameters, ProductType::S4CS1L2AmpProductTypeId);
         const QJsonArray &arrPrdsCohe = S4CUtils::GetInputProducts(cfg.parameters, ProductType::S4CS1L2CoheProductTypeId);
-        UpdatePrdInfos(cfg, arrPrdsL3B, cfg.l3bPrds, cfg.startDate, cfg.endDate);
-        UpdatePrdInfos(cfg, arrPrdsAmp, cfg.s1Prds, cfg.startDate, cfg.endDate);
-        UpdatePrdInfos(cfg, arrPrdsCohe, cfg.s1Prds, cfg.startDate, cfg.endDate);
+        QDateTime startDate, endDate;
+        UpdatePrdInfos(cfg, arrPrdsL3B, cfg.l3bPrds, startDate, endDate);
+        UpdatePrdInfos(cfg, arrPrdsAmp, cfg.s1Prds, startDate, endDate);
+        UpdatePrdInfos(cfg, arrPrdsCohe, cfg.s1Prds, startDate, endDate);
+        if (!cfg.startDate.isValid()) {
+            cfg.startDate = startDate;
+        }
+        if (!cfg.endDate.isValid()) {
+            cfg.endDate = endDate;
+        }
 
         // if we have no l3b products then we set the inputPrdsType in the configuration
         // to S1 type in order to avoid creation of L3B mowing detection task and steps
@@ -146,7 +186,7 @@ bool GrasslandMowingHandler::CheckInputParameters(GrasslandMowingExecConfig &cfg
         }
     }
     cfg.year = ProcessorHandlerHelper::GuessYear(cfg.startDate, cfg.endDate);
-    return LoadConfigFileAdditionalValues(cfg);
+    return LoadConfigFileAdditionalValues(cfg, err);
 }
 
 void GrasslandMowingHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -248,6 +288,11 @@ ProcessorJobDefinitionParams GrasslandMowingHandler::GetProcessingDefinitionImpl
     }
 
     ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString(L4B_GM_CFG_PREFIX), siteId, requestOverrideCfgValues);
+    std::map<QString, QString> configParams;
+    for (const auto &p : mapCfg) {
+        configParams.emplace(p.key, p.value);
+    }
+
     // we might have an offset in days from starting the downloading products to start the S4C_L4B production
     int startSeasonOffset = mapCfg["processor.s4c_l4b.start_season_offset"].value.toInt();
     seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
@@ -255,6 +300,13 @@ ProcessorJobDefinitionParams GrasslandMowingHandler::GetProcessingDefinitionImpl
     // Get the start and end date for the production
     QDateTime endDate = qScheduledDate;
     QDateTime startDate = seasonStartDate;
+    QJsonObject parameters;
+    const QString &startDateStr = ProcessorHandlerHelper::GetStringConfigValue(parameters, configParams,
+                                                                               "start_date", L4B_GM_CFG_PREFIX);
+    QDateTime tempDt = ProcessorHandlerHelper::GetDateTimeFromString(startDateStr);
+    if (tempDt.isValid()) {
+        startDate = tempDt;
+    }
 
     params.jsonParameters.append("{ \"scheduled_job\": \"1\", \"start_date\": \"" + startDate.toString("yyyyMMdd") + "\", " +
                                  "\"end_date\": \"" + endDate.toString("yyyyMMdd") + "\", " +
@@ -415,9 +467,9 @@ QString GrasslandMowingHandler::GetL4BConfigFilePath(GrasslandMowingExecConfig &
     QString strCfgPath;
     const QString &strCfgDir = GetProcessorDirValue(jobCfg, "cfg_dir", L4B_GM_DEF_CFG_DIR);
     QDir directory(strCfgDir);
-    QString preferedCfgFileName = "S4C_L4B_Config_" + QString::number(jobCfg.year) + ".ini";
+    QString preferedCfgFileName = "S4C_L4B_Config_" + QString::number(jobCfg.year) + ".cfg";
     if (directory.exists()) {
-        const QStringList &dirFiles = directory.entryList(QStringList() <<"*.ini",QDir::Files);
+        const QStringList &dirFiles = directory.entryList(QStringList() <<"*.cfg",QDir::Files);
         foreach(const QString &fileName, dirFiles) {
             if (strCfgPath.size() == 0) {
                 // get the first available file
@@ -442,21 +494,48 @@ QString GrasslandMowingHandler::GetL4BConfigFilePath(GrasslandMowingExecConfig &
     return strCfgPath;
 }
 
-bool GrasslandMowingHandler::LoadConfigFileAdditionalValues(GrasslandMowingExecConfig &cfg)
+bool GrasslandMowingHandler::LoadConfigFileAdditionalValues(GrasslandMowingExecConfig &cfg, QString &err)
 {
     const QString &cfgFile = GetL4BConfigFilePath(cfg);
     if (cfgFile == "") {
+        err = "Cannot get L4B configuration file for site with short name " + cfg.siteShortName;
         return false;
     }
 
+    Logger::info(QStringLiteral("S4C_L4B: Loading settings from file %1 ").arg(cfgFile));
     QSettings settings(cfgFile, QSettings::IniFormat);
-    QString cmnSectionKey("GENERAL/");
 
-    cfg.ctNumFilter = settings.value( cmnSectionKey + "CTNUM_FILTER").toString();
+    QString cmnSectionKey("GENERAL_CONFIG/");
+    cfg.ctNumFilter = GetStringValue(settings, cmnSectionKey + "CTNUM_FILTER");
 
     return true;
 }
 
+QString GrasslandMowingHandler::GetStringValue(const QSettings &settings, const QString &key)
+{
+    QVariant value = settings.value(key);
+    QString string;
+    if (value.type() == QVariant::StringList) {
+      string = value.toStringList().join(",");
+    } else {
+      string = value.toString();
+    }
+    return string;
+}
+
+QString GrasslandMowingHandler::GetOutputDataDir(GrasslandMowingExecConfig &cfg, TaskToSubmit&task, const QString &outDataDirName) {
+    if (cfg.isScheduled) {
+        const QString &workingDirStr = GetProcessorDirValue(cfg, "working_dir", DEFAULT_WORKING_DIR_PATH);
+        QDir directory(workingDirStr);
+        const QString &strOutDataPath = directory.filePath(outDataDirName);
+        QDir dir2(strOutDataPath);
+        // create folder for the file if it doesn't exist
+        dir2.mkpath(".");
+        return strOutDataPath;
+    } else {
+        return task.GetFilePath(outDataDirName);
+    }
+}
 
 // ###################### GrasslandMowingExecConfig functions ############################
 InputProductsType GrasslandMowingExecConfig::GetInputProductsType(const QString &str)

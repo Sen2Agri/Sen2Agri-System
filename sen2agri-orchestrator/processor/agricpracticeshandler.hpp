@@ -169,6 +169,7 @@ private:
     QString GetTsaExpectedPractice(const QString &practice);
     bool IsOperationEnabled(AgricPractOperation oper, AgricPractOperation expected);
     bool GetPrevL4CProduct(const AgricPracticesJobCfg &jobCfg,  const QDateTime &seasonStart, const QDateTime &curDate, QString &prevL4cProd);
+    ProductList GetLpisProduct(ExecutionContextBase *pCtx, int siteId);
     bool GetLpisProductFiles(AgricPracticesJobCfg &jobCfg);
     //QStringList GetAdditionalFilesAsList(const QString &files, const AgricPracticesSiteCfg &cfg);
 
@@ -189,8 +190,8 @@ private:
     QMap<QString, QString> GetPracticeTableFiles(const QJsonObject &parameters,
                                                  const std::map<QString, QString> &configParameters,
                                                  const QString &siteShortName, const QString &year);
-    bool CheckExecutionPreconditions(const QJsonObject &parameters,
-                                        const std::map<QString, QString> &configParameters,
+    bool CheckExecutionPreconditions(ExecutionContextBase *pCtx, const QJsonObject &parameters,
+                                        const std::map<QString, QString> &configParameters, int siteId,
                                         const QString &siteShortName, const QString &year, QString &errMsg);
     QString GetDataExtractionTaskName(const AgricPracticesJobCfg &jobCfg, const QString &taskName);
 };

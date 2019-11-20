@@ -27,6 +27,7 @@ SOURCES += main.cpp \
     orchestrator.cpp \
     orchestratorworker.cpp \
     eventprocessingcontext.cpp \
+    executioncontextbase.cpp \
     processorhandler.cpp \
     processor/croptypehandler.cpp \
     processor/cropmaskhandler.cpp \
@@ -50,6 +51,7 @@ HEADERS += \
     pch.hpp \
     orchestrator.hpp \
     orchestratorworker.hpp \
+    executioncontextbase.hpp \
     eventprocessingcontext.hpp \
     processorhandler.hpp \
     processor/croptypehandler.hpp \

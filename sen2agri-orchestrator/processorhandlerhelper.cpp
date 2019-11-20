@@ -1083,8 +1083,16 @@ int ProcessorHandlerHelper::GuessYear(const QDateTime &startDateTime, const QDat
     return startDiff > endDiff ? startYear : endYear;
 }
 
+QDateTime ProcessorHandlerHelper::GetDateTimeFromString(const QString &strTime) {
+    QDateTime date = QDateTime::fromString(strTime, "yyyyMMdd");
+    if (!date.isValid()) {
+        date = QDateTime::fromString(strTime, "yyyy-MM-dd");
+    }
+    return date;
+}
+
 QDateTime ProcessorHandlerHelper::GetLocalDateTime(const QString &strTime) {
-    QDateTime dateTime = QDateTime::fromString(strTime, "yyyyMMdd");
+    QDateTime dateTime = GetDateTimeFromString(strTime);
     dateTime.setTimeSpec(Qt::UTC); // mark the timestamp as UTC (but don't convert it)
     dateTime = dateTime.toLocalTime();
     if (dateTime.isDaylightTime()) {
