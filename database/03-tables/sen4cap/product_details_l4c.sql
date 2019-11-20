@@ -33,5 +33,8 @@ create table product_details_l4c(
     s1_gaps text not null,
     h_s1_gaps text not null,
     p_s1_gaps text not null,
+    h_w_s1_gaps text,
+    h_quality text,
+    h_quality text,    
     constraint product_details_l4c_pkey primary key(product_id, "NewID")
 );
