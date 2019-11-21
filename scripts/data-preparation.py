@@ -1476,9 +1476,10 @@ def main():
     parser.add_argument("--lpis", help="LPIS dataset")
     parser.add_argument("--lut", help="LUT dataset")
     parser.add_argument("--export", help="export dataset", action="store_true")
-    parser.add_argument("--parcel-id-cols", nargs="+", help="parcel id columns")
-    parser.add_argument("--holding-id-cols", nargs="+", help="holding id columns")
-    parser.add_argument("--crop-code-col", help="crop code column")
+    required_args = parser.add_argument_group("required named arguments")
+    required_args.add_argument("--parcel-id-cols", nargs="+", required=True, help="parcel id columns")
+    required_args.add_argument("--holding-id-cols", nargs="+", required=True, help="holding id columns")
+    required_args.add_argument("--crop-code-col", required=True, help="crop code column")
     parser.add_argument(
         "-m",
         "--mode",
