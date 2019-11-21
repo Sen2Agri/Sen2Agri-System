@@ -1533,6 +1533,17 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 											</div>
 										</div>
 									</div>
+									<div class="row">
+										<div class="col-md-1" style="width: 10%;padding-right: 0px;">
+											<div class="form-group form-group-sm">
+												<input class="chkS1" id="chkS1Edit" type="checkbox" name="chkS1Edit" value="S1" checked="checked" disabled>
+												<label  for="chkS1Edit">S1</label>
+											</div>
+										</div>
+										<div class="col-md-9" >
+											<div style="border:1px solid #cccccc;background-color:#eeeeee;width:105%;height:1.6em"></div>
+										</div>
+									</div>
 							  	</div>
 							</div>
 							<div class="row">
@@ -2343,6 +2354,12 @@ function formEditSite(id, name, short_name, site_enabled, existingUploadedFiles,
 		dataType: "html",
 		success: function(data) {
 			$("#site-seasons").html(data);
+			if ($("#seasons>tbody>tr:not([data-id=0])").length == 0) {
+				$("#edit_enabled").bootstrapSwitch('state', false);
+				$("#edit_enabled").bootstrapSwitch('disabled', true);
+			} else {
+				$("#edit_enabled").bootstrapSwitch('disabled', false);
+			}
 		},
 		error: function (responseData, textStatus, errorThrown) {
 			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);

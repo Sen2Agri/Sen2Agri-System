@@ -290,6 +290,9 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 								$(parent).attr("data-id", new_season_id);
 								$(parent).data("id", new_season_id);
 								replace_add_table_line();
+								
+								// enable site when at least one season has been added
+								$("#edit_enabled").bootstrapSwitch('disabled', false);
 							}
 							
 							$("#server-response").html("");
@@ -320,6 +323,11 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 								$(parent).remove();
 								$("#server-response").html("");
 								refreshDialogPosition();
+								// disable site when no seasons
+								if ($("#seasons>tbody>tr:not([data-id=0])").length == 0) {
+									$("#edit_enabled").bootstrapSwitch('state', false);
+									$("#edit_enabled").bootstrapSwitch('disabled', true);
+								}
 							} else {
 								$("#server-response").html(data);
 							}
