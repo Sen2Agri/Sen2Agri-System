@@ -1,26 +1,9 @@
-# ![logo](http://www.esa-sen2agri.org/wp-content/uploads/2017/03/sen2agri-logo-small.png) Sentinel-2 For Agriculture System
+# ![logo](http://esa-sen4cap.org/sites/default/files/sen4cap_logo_m.png) Sen4CAP - Sentinels for Common Agriculture Policy
 
-The Sentinel-2 for Agriculture system is designed to automatically generate key products for agriculture monitoring, based on Sentinel-2 and Landsat-8 data (cloud-free surface reflectance composite, dynamic cropland mask, cultivated crop type map and vegetation indicators describing the vegetative development of crops). The system has been developped by the Sen2Agri consortium. It was developed through the Sentinel-2 for Agriculture project, which has been funded by the European Space Agency  in the frame of the  [DUE program](http://due.esrin.esa.int/).
+The Sentinels for Common Agricultural Policy - Sen4CAP project aims at providing to the European and national stakeholders of the CAP validated algorithms, products, workflows and best practices for agriculture monitoring relevant for the management of the CAP. The project will pay particular attention to provide evidence how Sentinel derived information can support the modernization and simplification of the CAP in the post 2020 timeframe.
 
-<img src="http://www.esa.int/esalogo/images/downloads/Logo_Solid/Office_presentation/08_logo_solid_dark_blue.bmp" alt="ESA" width="100"/> <img src="http://www.esa-sen2agri.org/wp-content/uploads/logos/Logo-UCL.jpg" alt="UCL" width="100"/> <img src="http://www.esa-sen2agri.org/wp-content/uploads/logos/Logo-Cesbio.jpg" alt="CESBIO" width="100"/> <img src="http://www.esa-sen2agri.org/wp-content/uploads/logos/Logo-CS.jpg" alt="CS SI" width="100"/> <img src="http://www.esa-sen2agri.org/wp-content/uploads/logos/Logo-CS-Ro.jpg" alt="CS Romania" width="100"/>
-
-## Binaries Packages
-
-You can download the binaries of the system for CentOS-7 [here](http://www.esa-sen2agri.org/resources/software). 
-
-## Documentation
-
-You can find also more informations about ths system [here](http://www.esa-sen2agri.org/resources/technical-documents).
-
-## Join the community
-
-If you need help, want to share our experience or report issue, you can use the [forum](http://www.esa-sen2agri.org/forum/). If you want support and informations about the project, please register to the website. 
-
-## Contributing
-
-We are strongly interessted by new contributions. If you are interested, please submit a pull request to this repository. 
+See http://esa-sen4cap.org/ for more details.
 
 ## License
 
-Please see the LICENCE.txt file and the licence directory for legal issues on the use of the software.
-
+Please see the [LICENCE.txt](LICENSE.txt) file and the licence directory for legal issues on the use of the software.

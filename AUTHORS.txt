@@ -1,23 +1,19 @@
-Sentinel-2 for Agriculture system has been developped by:
+Sen4Cap system has been developped by:
 =========================================================
 
-Marcela ARIAS (Université Toulouse III  Paul Sabatier)
-Lucian BARBULESCU (CS Romania)
-Nicolas BELLEMANS (Université catholique de Louvain)
-Sophie BONTEMPS (Université catholique de Louvain)
-Aurélien BRICIER (CS systémes d'information)
+Corrado AVOLIO (e-GEOS S.p.A.)
+Nicolas BELLEMANS (Universit� catholique de Louvain)
+Sophie BONTEMPS (Universit� catholique de Louvain)
 Cosmin CARA (CS Romania)
-Gérard DEDIEU (Université Toulouse III  Paul Sabatier)
-Pierre DEFOURNY (Université catholique de Louvain)
+Pierre DEFOURNY (Universit� catholique de Louvain)
 Alex GROSU (CS Romania)
-Olivier HAGOLLE (Université Toulouse III  Paul Sabatier)
-Jordi INGLADA (Université Toulouse III  Paul Sabatier)
-Alexia MONDOT (CS systémes d'information)
-David MORIN (Université Toulouse III  Paul Sabatier)
-Laurențiu NICOLA (CS Romania)
-Mickael SAVINAUD (CS systémes d'information)
-Guadalupe SEPULCRE SANTO (Université catholique de Louvain)
+Neha HUNKA (GISAT s.r.o.)
+Lubos KUCERA (GISAT s.r.o.)
+Philippe MALCORPS (Universit� catholique de Louvain)
+Laurentiu NICOLA (CS Romania)
+Jana SLACIKOVA (GISAT s.r.o.)
 Nicu STANCIOI (CS Romania)
-Benjamin TARDY (Université Toulouse III  Paul Sabatier)
 Cosmin UDROIU (CS Romania)
-Silvia VALERO (Université Toulouse III  Paul Sabatier)
+Massimo ZAVAGLI (e-GEOS S.p.A.)
+
+

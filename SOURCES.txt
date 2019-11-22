@@ -1,16 +1,19 @@
-Sentinel-2 for Agriculture system is designed to automatically generate 
-key products for agriculture monitoring, based on Sentinel-2 and 
-Landsat-8 data (cloud-free surface reflectance composite, dynamic cropland 
-mask, cultivated crop type map and vegetation indicators describing the 
-vegetative development of crops).
+<SEN4CAP system is designed to automatically generate four 
+key products for agriculture monitoring, based on Sentinel-1 and Sentinel-2 
+and which are relevant for the Common Agricultural Policy: biophysical indicators
+describing the vegetative development of crops, cultivated crop type maps, 
+grassland mowing detection product, agricultural practices monitoring product. 
+It was developed by the Sen4CAP project, which has been funded by the European 
+Space Agency (EOEP-5 programme)>
 
-Copyright (C) <2014-2017>  
+Copyright (C) <2019>  
 	<Université catholique de Louvain, Belgique
-	Université Toulouse III  Paul Sabatier, France
-	CS systèmes d'information, France
-	CS ROMANIA SA, Romania>
-	
-This program (Sentinel-2 for Agriculture system) is free software: 
+	CS ROMANIA SA, Romania
+	e-GEOS S.p.A.
+	GISAT s.r.o. 
+	Sinergise Ltd.>
+
+This program (Sen4CAP system) is free software: 
 you can redistribute it and/or modify it under the terms of the 
 GNU General Public License as published by the Free Software Foundation, 
 either version 3 of the License, or (at your option) any later version.
