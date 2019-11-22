@@ -167,7 +167,7 @@ public:
 protected:
     virtual bool LoadAndCheckMetadata(const std::string &file);
     virtual bool BandAvailableForResolution(const std::string &bandName, int nRes);
-    virtual std::string GetMaccsImageExtension() { return ".TIF"; }
+    virtual std::string GetRasterFileExtension() { return ".TIF"; }
 
     virtual std::string getCloudFileName(int res);
     virtual std::string getWaterFileName(int res);

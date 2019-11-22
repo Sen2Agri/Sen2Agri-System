@@ -18,6 +18,7 @@
 #include "MAJAMetadataHelper.h"
 #include "MACCSS2MetadataHelper.h"
 #include "MACCSL8MetadataHelper.h"
+#include "SEN2CORMetadataHelper.h"
 
 template <typename PixelType, typename MasksPixelType>
 std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> METADATA_HELPER_FACTORY_EXPORT MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName)
@@ -39,6 +40,10 @@ std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> METADATA_HELPER_FACTO
     std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> maccsL8MetadataHelper(new MACCSL8MetadataHelper<PixelType, MasksPixelType>);
     if (maccsL8MetadataHelper->LoadMetadataFile(metadataFileName))
         return maccsL8MetadataHelper;
+
+    std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> sen2corMetadataHelper(new SEN2CORMetadataHelper<PixelType, MasksPixelType>);
+    if (sen2corMetadataHelper->LoadMetadataFile(metadataFileName))
+        return sen2corMetadataHelper;
 
     itkExceptionMacro("Unable to read metadata from " << metadataFileName);
 

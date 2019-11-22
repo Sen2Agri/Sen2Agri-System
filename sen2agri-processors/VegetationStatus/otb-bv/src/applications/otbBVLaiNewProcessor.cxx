@@ -302,22 +302,6 @@ private:
         return resampler->GetOutput();
     }
 
-
-    /**
-     * Extracts the (sub)set of resolutions for the bands configured in the LAI configuration file
-     */
-    std::vector<int> getResolutionsForConfiguredBands(const LAIBandsConfigInfos &infos,
-                                                      const std::unique_ptr<MetadataHelper<short>> &pHelper) {
-        std::vector<int> retRes;
-        for(const std::string &bandName: infos.bandsNames) {
-            int res = pHelper->GetResolutionForBand(bandName);
-            if(std::find(retRes.begin(), retRes.end(), res) == retRes.end()) {
-                retRes.push_back(res);
-            }
-        }
-        return retRes;
-    }
-
     /**
      * Handles the creation of the features output (if configured) by adding the configured
      * bands and the NDVI and RVI if configured in LAI bands configuration file

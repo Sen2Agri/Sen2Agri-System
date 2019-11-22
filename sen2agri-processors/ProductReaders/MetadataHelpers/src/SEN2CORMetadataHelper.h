@@ -19,32 +19,32 @@
 #include "MetadataHelper.h"
 #include <vector>
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
+#include "../../MACCSMetadata/include/SEN2CORMetadataReader.hpp"
 #include "ResamplingBandExtractor.h"
 #include "itkNaryFunctorImageFilter.h"
+#include "itkUnaryFunctorImageFilter.h"
 
-typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
+typedef itk::SEN2CORMetadataReader                                   SEN2CORMetadataReaderType;
 
-#if 0
-class SEN2CORMetadataHelper : public MetadataHelper
+template <typename PixelType, typename MasksPixelType>
+class SEN2CORMetadataHelper : public MetadataHelper<PixelType, MasksPixelType>
 {
     template< class TInput, class TOutput>
-    class NaryMaskHandlerFunctor
+    class Sen2CorMaskHandlerFunctor
     {
     public:
-        NaryMaskHandlerFunctor(){}
+        Sen2CorMaskHandlerFunctor(){}
         void Initialize(MasksFlagType nMaskFlags, bool binarizeResult) { m_MaskFlags = nMaskFlags; m_bBinarizeResult = binarizeResult;}
-        NaryMaskHandlerFunctor& operator =(const NaryMaskHandlerFunctor& copy) {
+        Sen2CorMaskHandlerFunctor& operator =(const Sen2CorMaskHandlerFunctor& copy) {
             m_MaskFlags=copy.m_MaskFlags;
             m_bBinarizeResult = copy.m_bBinarizeResult;
             return *this;
         }
-        bool operator!=( const NaryMaskHandlerFunctor & a) const { return (this->m_MaskFlags != a.m_MaskFlags) || (this->m_bBinarizeResult != a.m_bBinarizeResult) ;}
-        bool operator==( const NaryMaskHandlerFunctor & a ) const { return !(*this != a); }
+        bool operator!=( const Sen2CorMaskHandlerFunctor & a) const { return (this->m_MaskFlags != a.m_MaskFlags) || (this->m_bBinarizeResult != a.m_bBinarizeResult) ;}
+        bool operator==( const Sen2CorMaskHandlerFunctor & a ) const { return !(*this != a); }
 
-        // The expected order in the array would be : Cloud, Saturation, Valid, (Water or Snow)
-        TOutput operator()( const std::vector< TInput > & B) {
-            TOutput res = computeOutput(B);
+        TOutput operator()( const TInput & B) {
+            TOutput res = GetSingleBandMask(B);
             if (m_bBinarizeResult) {
                 // return 0 if LAND and 1 otherwise
                 return (res != IMG_FLG_LAND);
@@ -52,118 +52,37 @@ class SEN2CORMetadataHelper : public MetadataHelper
             return res;
         }
 
-        TOutput computeOutput( const std::vector< TInput > & B) {
-            // The order is MSK_CLOUD, MSK_SAT, MSK_VALID, (MSK_SNOW/MSK_WATTER)
-            switch (B.size())
-            {
-            case 1:
-                if(((m_MaskFlags & MSK_VALID) != 0) && ((B[0] & 0x01) != 0)) return IMG_FLG_NO_DATA;
-                if(((m_MaskFlags & MSK_CLOUD) != 0) && (B[0] != 0)) return IMG_FLG_CLOUD;
-                if(((m_MaskFlags & MSK_SAT) != 0) && (B[0] != 0)) return IMG_FLG_SATURATION;
-                if(((m_MaskFlags & MSK_WATER) != 0) && ((B[0] & 0x01) != 0)) return IMG_FLG_WATER;
-                if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[0] & 0x20) != 0)) return IMG_FLG_SNOW;
-                break;
-            case 2:
-                if((m_MaskFlags & MSK_CLOUD) != 0) {
-                    if((m_MaskFlags & MSK_SAT) != 0) {
-                        if(B[0] != 0) return IMG_FLG_CLOUD;
-                        if(B[1] != 0) return IMG_FLG_SATURATION;
-                    } else {
-                        if((m_MaskFlags & MSK_VALID) != 0) {
-                            // Normally, we should start with the check of the validity as if the validity is no data, then
-                            // there is no use to check the others. Also, we could get false cloud even if validity is not good
-                            if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
-                            if(B[0] != 0) return IMG_FLG_CLOUD;
-                        } else {
-                            if(B[0] != 0) return IMG_FLG_CLOUD;
-                            // we have water or snow
-                            if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x20) != 0)) return IMG_FLG_SNOW;
-                        }
-                    }
-                } else {
-                    // we have no cloud mask but we might have one of the others
-                    if((m_MaskFlags & MSK_SAT) != 0) {
-                        if((m_MaskFlags & MSK_VALID) != 0) {
-                            // Normally, we should start with the check of the validity as if the validity is no data, then
-                            // there is no use to check the others. Also, we could get false saturation even if validity is not good
-                            if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
-                            if(B[0] != 0) return IMG_FLG_SATURATION;
-                        } else {
-                            if(B[0] != 0) return IMG_FLG_SATURATION;
-                            // we have water or snow
-                            if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x20) != 0)) return IMG_FLG_SNOW;
-                        }
-                    } else {
-                        // In this case we have certainly MSK_VALID on first position
-                        if((B[0] & 0x01) != 0) return IMG_FLG_NO_DATA;
-                        // we have water or snow
-                        if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x20) != 0)) return IMG_FLG_SNOW;
-                    }
-                }
-                break;
-            case 3:
-                // TODO: Normally, we should start with the check of the validity as if the validity is no data, then
-                // there is no use to check the others. Also, we could get false cloud even if validity is not good
-                if((m_MaskFlags & MSK_CLOUD) != 0) {
-                    if(B[0] != 0) return IMG_FLG_CLOUD;
+        bool IsCloud(TInput val) {
+            // cloud medium, high probability but also cloud shadows
+            return ((val == 8) || (val == 9) || (val == 3));
+        }
+        bool IsNoData(TInput val) {
+            return (val == 0);
+        }
+        bool IsSaturation(TInput val) {
+            return (val == 1);
+        }
+        bool IsWater(TInput val) {
+            return (val == 6);
+        }
+        bool IsSnow(TInput val) {
+            return (val == 11);
+        }
 
-                    if((m_MaskFlags & MSK_SAT) != 0) {
-                        if(B[1] != 0) return IMG_FLG_SATURATION;
+        TOutput GetSingleBandMask(const TInput & B) {
+            if(((m_MaskFlags & MSK_VALID) != 0) && IsNoData(B)) return IMG_FLG_NO_DATA;
+            // check bit 2 of MG2 (cloud_mask_all_cloud, result of a “logical OR” for all the cloud masks) and
+            // and bit 4 of MG2 (logical OR between CM7 and CM8): shadow masks of clouds)
+            if(((m_MaskFlags & MSK_CLOUD) != 0) && IsCloud(B)) return IMG_FLG_CLOUD;
+            // check MG2 mask bit 1
+            if(((m_MaskFlags & MSK_WATER) != 0) && IsWater(B)) return IMG_FLG_WATER;
+            // check MG2 mask bit 3
+            if(((m_MaskFlags & MSK_SNOW) != 0) && IsSnow(B)) return IMG_FLG_SNOW;
+            // saturation - here is not quite correct as we have the saturation distinct for each band but we do
+            // not have an API for making the distinction so we  consider it globally
+            if(((m_MaskFlags & MSK_SAT) != 0) && IsSaturation(B)) return IMG_FLG_SATURATION;
 
-                        // the third one is one of these
-                        if(((m_MaskFlags & MSK_VALID) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_NO_DATA;
-                        if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
-                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
-
-                    } else {
-                        if((m_MaskFlags & MSK_VALID) != 0) {
-                            if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
-                            if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
-                        } else {
-                            // we have both water AND snow
-                            if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
-                        }
-                    }
-                } else {
-                    if((m_MaskFlags & MSK_SAT) != 0) {
-                        if(B[0] != 0) return IMG_FLG_SATURATION;
-                        if((m_MaskFlags & MSK_VALID) != 0) {
-                            if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
-                            if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
-                        } else {
-                            // we have both water AND snow
-                            if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
-                        }
-                    } else {
-                        // if we do not have cloud and saturation, we have all others
-                        if(((m_MaskFlags & MSK_VALID) != 0) && ((B[0] & 0x01) != 0)) return IMG_FLG_NO_DATA;
-                        if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
-
-                    }
-                    // if we do not have cloud, we have all others
-                    if(((m_MaskFlags & MSK_VALID) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_NO_DATA;
-                    if(((m_MaskFlags & MSK_SAT) != 0) && (B[0] != 0)) return IMG_FLG_SATURATION;
-                    if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
-                    if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
-                }
-                break;
-            case 4:
-                // in this case we have certainly all images
-                if(((m_MaskFlags & MSK_VALID) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_NO_DATA;
-                if(((m_MaskFlags & MSK_CLOUD) != 0) && (B[0] != 0)) return IMG_FLG_CLOUD;
-                if(((m_MaskFlags & MSK_SAT) != 0) && (B[1] != 0)) return IMG_FLG_SATURATION;
-                if(((m_MaskFlags & MSK_WATER) != 0) && ((B[3] & 0x01) != 0)) return IMG_FLG_WATER;
-                if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[3] & 0x20) != 0)) return IMG_FLG_SNOW;
-                break;
-            }
+            // default
             return IMG_FLG_LAND;
         }
 
@@ -172,84 +91,85 @@ class SEN2CORMetadataHelper : public MetadataHelper
         bool m_bBinarizeResult;
     };
 
+
 public:
-    typedef NaryMaskHandlerFunctor<MetadataHelper::SingleBandShortImageType::PixelType,
-                                        MetadataHelper::SingleBandShortImageType::PixelType>    NaryMaskHandlerFunctorType;
-    typedef itk::NaryFunctorImageFilter< MetadataHelper::SingleBandShortImageType,
-                                        MetadataHelper::SingleBandShortImageType,
-                                        NaryMaskHandlerFunctorType>                             NaryFunctorImageFilterType;
+    typedef Sen2CorMaskHandlerFunctor<typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType::PixelType,
+                                        typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType::PixelType>    Sen2CorMaskHandlerFunctorType;
+    typedef itk::NaryFunctorImageFilter< typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType,
+                                        typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType,
+                                        Sen2CorMaskHandlerFunctorType>                             Sen2CorNaryFunctorImageFilterType;
+
+    typedef itk::UnaryFunctorImageFilter< typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType,
+                                        typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType,
+                                        Sen2CorMaskHandlerFunctorType>                             Sen2CorUnaryFunctorImageFilterType;
 
     SEN2CORMetadataHelper();
 
-    const char * GetNameOfClass() { return "S2MetadataHelper"; }
+    const char * GetNameOfClass() { return "SEN2CORMetadataHelper"; }
 
-    virtual VectorImageType::Pointer GetImage(const std::vector<int> &bandIdxs, int outRes = -1);
-    virtual VectorImageType::Pointer GetImage(const std::vector<int> &bandIdxs,
-                                                   std::vector<int> &retRelBandIdxs, int outRes = -1);
+    virtual typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer GetImage(const std::vector<std::string> &bandNames,
+                                                                                                  int outRes = -1);
+    virtual typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer GetImage(const std::vector<std::string> &bandNames,
+                                                   std::vector<int> *pRetRelBandIdxs, int outRes = -1);
+    virtual typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer GetImageList(const std::vector<std::string> &bandNames,
+                                                typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer outImgList, int outRes = -1);
 
-    virtual std::string GetBandName(unsigned int nBandIdx, bool bRelativeIdx=true);
-    virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx, int res = 10);
+    virtual std::vector<std::string> GetBandNamesForResolution(int);
+    virtual std::vector<std::string> GetAllBandNames();
+    virtual std::vector<std::string> GetPhysicalBandNames();
+    virtual int GetResolutionForBand(const std::string &bandName);
+
+    virtual typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult, int resolution);
+
+    virtual std::string GetAotImageFileName(int res);
     virtual float GetAotQuantificationValue(int res);
-    virtual float GetAotNoDataValue();
-    virtual int GetAotBandIndex();
-    virtual int GetResolutionForAbsoluteBandIndex(int nAbsBandIdx);
-    virtual int GetBandsNoForResolution(int nRes) {return (m_missionType == S2) ? ((nRes == 10) ? 4 : 6) : m_nBandsNoForCurRes; }
+    virtual float GetAotNoDataValue(int res);
+    virtual int GetAotBandIndex(int res);
 
 protected:
-    virtual bool DoLoadMetadata();
+    virtual bool DoLoadMetadata(const std::string& file);
 
-    void UpdateValuesForLandsat();
-    void UpdateValuesForSentinel();
+    std::string DeriveFileNameFromImageFileName(const std::string& replacement);
+    int GetRelativeBandIdx(const std::string &bandName);
 
-    std::string getImageFileName();
-    std::string getAotFileName();
-    std::string getCloudFileName();
-    std::string getWaterFileName();
-    std::string getSnowFileName();
-    std::string getQualityFileName();
+    std::string GetSCLFileName(int res);
 
-    std::string getMACCSImageFileName(const std::vector<CommonFileInformation>& imageFiles,
-                                      const std::string& ending);
-    std::string getMACCSImageFileName(const std::vector<CommonAnnexInformation>& maskFiles,
-                                      const std::string& ending);
-    bool getMACCSImageFileName(const CommonFileInformation& fileInfo,
-                                      const std::string& ending, std::string& retStr);
-    std::string getMACCSImageHdrName(const std::vector<CommonAnnexInformation>& maskFiles,
-                                     const std::string& ending);
-    std::string getMACCSImageHdrName(const std::vector<CommonFileInformation>& imageFiles,
-                                                          const std::string& ending);
-    bool getMACCSImageHdrName(const CommonFileInformation& fileInfo,
-                              const std::string& ending, std::string &retStr);
-    void ReadSpecificMACCSImgHdrFile();
-    void ReadSpecificMACCSAotHdrFile();
-    void ReadSpecificMACCSCldHdrFile();
-    void ReadSpecificMACCSMskHdrFile();
-    int getBandIndex(const std::vector<CommonBand>& bands, const std::string& name);
-    bool CheckFileExistence(std::string &fileName);
+    bool is_number(const std::string& s);
 
-    void InitializeS2Angles();
-    bool BandAvailableForCurrentResolution(unsigned int nBand);
-    const CommonResolution& GetMACCSResolutionInfo(int nResolution);
-    std::vector<CommonBand> GetAllMACCSBandsInfos();
-    //virtual std::unique_ptr<itk::LightObject> GetMetadata() { return m_metadata; }
+    virtual void InitializeS2Angles();
 
-    virtual MetadataHelper::SingleBandShortImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult);
-
-protected:
-    typedef enum {S2, LANDSAT} MissionType;
-    MissionType m_missionType;
     std::unique_ptr<MACCSFileMetadata> m_metadata;
-    std::unique_ptr<MACCSFileMetadata> m_specificAotMetadata;
-    std::unique_ptr<MACCSFileMetadata> m_specificImgMetadata;
-    std::unique_ptr<MACCSFileMetadata> m_specificCldMetadata;
-    std::unique_ptr<MACCSFileMetadata> m_specificMskMetadata;
+    bool m_bGranuleMetadataUpdated;
 
-    ResamplingBandExtractor<short> m_bandsExtractor;
+    Sen2CorMaskHandlerFunctorType m_maskHandlerFunctor;
+    typename Sen2CorUnaryFunctorImageFilterType::Pointer m_maskHandlerFilter;
 
-    NaryMaskHandlerFunctorType m_maskHandlerFunctor;
-    NaryFunctorImageFilterType::Pointer m_maskHandlerFilter;
+    float m_AotQuantifVal;
+    float m_AotNoDataVal;
+    std::vector<MACCSBandViewingAnglesGrid> m_bandViewingAngles;
+
+private:
+    std::string GetImageFileName(const std::string &bandName, int prefferedRes);
+    bool HasBandName(const std::vector<std::string> &bandNames, const std::string &bandName);
+    bool GetValidBandNames(const std::vector<std::string> &bandNames, std::vector<std::string> &validBandNames,
+                           std::vector<int> &relBandIndexes, int &outRes);
+
+    std::string GetSen2CorImageFileName(const std::vector<CommonFileInformation>& imageFiles,
+                                      const std::string& ending);
+    std::string GetSen2CorImageFileName(const std::vector<CommonAnnexInformation>& maskFiles,
+                                      const std::string& ending);
+    bool GetSen2CorImageFileName(const CommonFileInformation& fileInfo,
+                                      const std::string& ending, std::string& retStr);
+
+    virtual std::string GetRasterFileExtension() { return ".jp2"; }
+
+    bool CheckFileExistence(std::string &fileName);
+    std::string GetGranuleXmlPath(const std::unique_ptr<MACCSFileMetadata> &metadata);
+    void UpdateFromGranuleMetadata();
+    std::string NormalizeBandName(const std::string &bandName);
 
 };
-#endif
+
+#include "SEN2CORMetadataHelper.cpp"
 
 #endif // SEN2CORMETADATAHELPER_H

@@ -200,19 +200,19 @@ protected:
     virtual std::string getSnowFileName(int res) = 0;
     virtual std::string getQualityFileName(int res) = 0;
 
-    std::string getMACCSImageFileName(const std::vector<CommonFileInformation>& imageFiles,
+    std::string GetMACCSImageFileName(const std::vector<CommonFileInformation>& imageFiles,
                                       const std::string& ending);
-    std::string getMACCSImageFileName(const std::vector<CommonAnnexInformation>& maskFiles,
+    std::string GetMACCSImageFileName(const std::vector<CommonAnnexInformation>& maskFiles,
                                       const std::string& ending);
-    bool getMACCSImageFileName(const CommonFileInformation& fileInfo,
+    bool GetMACCSImageFileName(const CommonFileInformation& fileInfo,
                                       const std::string& ending, std::string& retStr);
-    std::string getMACCSImageHdrName(const std::vector<CommonAnnexInformation>& maskFiles,
+    std::string GetMACCSImageHdrName(const std::vector<CommonAnnexInformation>& maskFiles,
                                      const std::string& ending);
-    std::string getMACCSImageHdrName(const std::vector<CommonFileInformation>& imageFiles,
+    std::string GetMACCSImageHdrName(const std::vector<CommonFileInformation>& imageFiles,
                                                           const std::string& ending);
-    bool getMACCSImageHdrName(const CommonFileInformation& fileInfo,
+    bool GetMACCSImageHdrName(const CommonFileInformation& fileInfo,
                               const std::string& ending, std::string &retStr);
-    virtual std::string GetMaccsImageExtension() { return ".DBL.TIF"; }
+    virtual std::string GetRasterFileExtension() { return ".DBL.TIF"; }
 
     int getBandIndex(const std::vector<CommonBand>& bands, const std::string& name);
     bool CheckFileExistence(std::string &fileName);

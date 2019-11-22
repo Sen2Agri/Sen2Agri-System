@@ -264,9 +264,9 @@ template <typename PixelType, typename MasksPixelType>
 std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAotImageFileName(int res)
 {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
     }
 }
 
@@ -298,10 +298,10 @@ int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAotBandIndex(int res)
 //    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
 //    int nBandsNoForCurRes = ((res != 20) ? 4 : 6);
 //    if(res != 20) {
-//        fileName = this->getMACCSImageHdrName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
+//        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
 //        this->m_specificImgMetadata10M = maccsMetadataReader->ReadMetadata(fileName);
 //    } else {
-//        fileName = this->getMACCSImageHdrName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R2");
+//        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R2");
 //        this->m_specificImgMetadata20M = maccsMetadataReader->ReadMetadata(fileName);
 //    }
 //    const std::unique_ptr<MACCSFileMetadata> &specificImgMetadata = ((res != 20) ? this->m_specificImgMetadata10M : this->m_specificImgMetadata20M);
@@ -317,9 +317,9 @@ int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAotBandIndex(int res)
 //{
 //    std::string fileName;
 //    if(res != 20) {
-//        fileName = getMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
+//        fileName = GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
 //    } else {
-//        fileName = getMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
+//        fileName = GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
 //    }
 
 //    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
@@ -332,10 +332,10 @@ typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *MACCSS2MetadataHel
     std::string fileName;
     typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *pAotInfos;
     if(res != 20) {
-        fileName = this->getMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
+        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
         pAotInfos = &aotInfos10M;
     } else {
-        fileName = this->getMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
+        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
         pAotInfos = &aotInfos20M;
     }
     if (!pAotInfos->isInitialized) {
@@ -361,10 +361,10 @@ void MACCSS2MetadataHelper::ReadSpecificMACCSMskHdrFile(int res)
     std::string fileName;
     MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
     if(res != 20) {
-        fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
+        fileName = GetMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
         m_specificMskMetadata10M = maccsMetadataReader->ReadMetadata(fileName);
     } else {
-        fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R2");
+        fileName = GetMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R2");
         m_specificMskMetadata20M = maccsMetadataReader->ReadMetadata(fileName);
     }
 }
@@ -373,9 +373,9 @@ void MACCSS2MetadataHelper::ReadSpecificMACCSMskHdrFile(int res)
 template <typename PixelType, typename MasksPixelType>
 std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getImageFileName(int res) {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R2");
     }
 }
 
@@ -383,9 +383,9 @@ template <typename PixelType, typename MasksPixelType>
 std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getCloudFileName(int res)
 {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
     }
 }
 
@@ -393,9 +393,9 @@ template <typename PixelType, typename MasksPixelType>
 std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getWaterFileName(int res)
 {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MSK_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MSK_R2");
     }
 }
 
@@ -410,9 +410,9 @@ template <typename PixelType, typename MasksPixelType>
 std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getQualityFileName(int res)
 {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_QLT_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_QLT_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_QLT_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_QLT_R2");
     }
 }
 

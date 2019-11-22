@@ -517,20 +517,6 @@ private:
         return resampler->GetOutput();
     }
 
-    /**
-     * Extracts the (sub)set of resolutions for the bands configured in the LAI configuration file
-     */
-    std::vector<int> getResolutionsForConfiguredBands(const LAIBandsConfigInfos &infos, const std::unique_ptr<MetadataHelper<float>> &pHelper) {
-        std::vector<int> retRes;
-        for(const std::string &bandName: infos.bandsNames) {
-            int res = pHelper->GetResolutionForBand(bandName);
-            if(std::find(retRes.begin(), retRes.end(), res) == retRes.end()) {
-                retRes.push_back(res);
-            }
-        }
-        return retRes;
-    }
-
     template<typename ImageType>
     void WriteOutput(typename ImageType::Pointer inImg, const std::string &outImg, ImagePixelType imgPixelType) {
         inImg->UpdateOutputInformation();

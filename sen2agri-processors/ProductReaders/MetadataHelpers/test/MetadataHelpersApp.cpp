@@ -83,6 +83,26 @@ private:
     {
     }
 
+    typedef struct FidInfos {
+        time_t ttFileCreationTime;
+        std::string date;
+        std::string date2;
+        double meanVal;
+        double stdDevVal;
+    } FidInfosType;
+
+    typedef struct Fid {
+        std::string fid;
+        std::string name;
+        std::vector<FidInfosType> infos;
+        void Reset() {
+            fid.clear();
+            name.clear();
+            infos.clear();
+        }
+    } FidType;
+
+
     void DoExecute() override
     {
         const std::string &xmlFile = GetParameterAsString("xml");
@@ -96,10 +116,10 @@ private:
         //std::vector<int> bands = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 //        std::vector<std::string> bands = {"B1", "B2", "B4", "B5"};
 
-        const std::vector<std::string> &bandNames = {m_pHelper->GetGreenBandName(),
-                                                m_pHelper->GetRedBandName(),
-                                                m_pHelper->GetNirBandName(),
-                                                m_pHelper->GetSwirBandName()};
+        const std::vector<std::string> &bandNames = {m_pHelper->GetGreenBandName()};
+//                                                m_pHelper->GetRedBandName(),
+//                                                m_pHelper->GetNirBandName()};
+                                                //m_pHelper->GetSwirBandName()};
 
         SetParameterOutputImagePixelType("out", ImagePixelType_int16);
         MetadataHelper<short>::VectorImageType::Pointer img = m_pHelper->GetImage(bandNames);

@@ -38,6 +38,7 @@ std::unique_ptr<MACCSFileMetadata> SEN2COR_METADATA_READER_EXPORT SEN2CORMetadat
     if (metadata) {
         metadata->ProductPath = path;
     }
+
     return metadata;
 }
 
@@ -333,4 +334,5 @@ std::unique_ptr<MACCSFileMetadata> SEN2CORMetadataReader::ReadMetadataXml(const 
     }
     return nullptr;
 }
+
 }

@@ -95,8 +95,8 @@ typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer MAJAM
 
     // if we have several bands
     for (const std::string &bandName: validBandNames) {
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageReaderType::Pointer reader = this->CreateReader(GetImageFileName(bandName));
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::VectorImageType::Pointer img = reader->GetOutput();
+        typename MetadataHelper<PixelType, MasksPixelType>::ImageReaderType::Pointer reader = this->CreateReader(GetImageFileName(bandName));
+        typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer img = reader->GetOutput();
         img->UpdateOutputInformation();
         int curRes = img->GetSpacing()[0];
         // for MAJA we have only one band per reflectance raster
@@ -131,9 +131,9 @@ template <typename PixelType, typename MasksPixelType>
 std::string MAJAMetadataHelper<PixelType, MasksPixelType>::GetAotImageFileName(int res)
 {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_ATB_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_ATB_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_ATB_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_ATB_R2");
     }
 }
 
@@ -158,7 +158,7 @@ int MAJAMetadataHelper<PixelType, MasksPixelType>::GetAotBandIndex(int)
 
 template <typename PixelType, typename MasksPixelType>
 std::string MAJAMetadataHelper<PixelType, MasksPixelType>::GetImageFileName(const std::string &bandName) {
-    return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_" + bandName);
+    return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_" + bandName);
 }
 
 template <typename PixelType, typename MasksPixelType>
@@ -229,9 +229,9 @@ template <typename PixelType, typename MasksPixelType>
 std::string MAJAMetadataHelper<PixelType, MasksPixelType>::getCloudFileName(int res)
 {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLM_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLM_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLM_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLM_R2");
     }
 }
 
@@ -245,9 +245,9 @@ template <typename PixelType, typename MasksPixelType>
 std::string MAJAMetadataHelper<PixelType, MasksPixelType>::getSaturationFileName(int res)
 {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_SAT_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_SAT_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_SAT_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_SAT_R2");
     }
 }
 
@@ -255,9 +255,9 @@ template <typename PixelType, typename MasksPixelType>
 std::string MAJAMetadataHelper<PixelType, MasksPixelType>::getEdgeFileName(int res)
 {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_EDG_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_EDG_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_EDG_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_EDG_R2");
     }
 }
 
@@ -272,9 +272,9 @@ template <typename PixelType, typename MasksPixelType>
 std::string MAJAMetadataHelper<PixelType, MasksPixelType>::getQualityFileName(int res)
 {
     if(res != 20) {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MG2_R1");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MG2_R1");
     } else {
-        return this->getMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MG2_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MG2_R2");
     }
 }
 

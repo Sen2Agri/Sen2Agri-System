@@ -9,7 +9,7 @@ set(Sen2AgriProductReaders_HEADERS
     ../include/MetadataHelper.h
     Spot4MetadataHelper.h
     MAJAMetadataHelper.h
-#    SEN2CORMetadataHelper.h
+    SEN2CORMetadataHelper.h
     )
 
 set(Sen2AgriProductReaders_SOURCES

@@ -31,6 +31,11 @@ template<typename PixelType, typename MasksPixelType>
 MetadataHelper<PixelType, MasksPixelType>::MetadataHelper()
 {
     m_detailedAnglesGridSize = 0;
+    m_bHasGlobalMeanAngles = false;
+    m_bHasBandMeanAngles = false;
+    m_bHasDetailedAngles = false;
+    m_detailedAnglesGridSize = 0;
+    m_nTotalBandsNo = 0;
 }
 
 template<typename PixelType, typename MasksPixelType>

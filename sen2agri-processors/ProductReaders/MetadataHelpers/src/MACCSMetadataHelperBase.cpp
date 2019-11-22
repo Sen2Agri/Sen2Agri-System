@@ -66,11 +66,11 @@ bool MACCSMetadataHelperBase<PixelType, MasksPixelType>::DoLoadMetadata(const st
 
 // Return the path to a file for which the name end in the ending
 template <typename PixelType, typename MasksPixelType>
-std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::getMACCSImageFileName(const std::vector<CommonFileInformation>& imageFiles,
+std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::GetMACCSImageFileName(const std::vector<CommonFileInformation>& imageFiles,
                                                        const std::string& ending) {
     std::string retStr;
     for (const CommonFileInformation& fileInfo : imageFiles) {
-        if(getMACCSImageFileName(fileInfo, ending, retStr))
+        if(GetMACCSImageFileName(fileInfo, ending, retStr))
             return retStr;
     }
     return "";
@@ -78,24 +78,24 @@ std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::getMACCSImageFil
 
 // Return the path to a file for which the name end in the ending
 template <typename PixelType, typename MasksPixelType>
-std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::getMACCSImageFileName(const std::vector<CommonAnnexInformation>& maskFiles,
+std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::GetMACCSImageFileName(const std::vector<CommonAnnexInformation>& maskFiles,
                                                        const std::string& ending) {
     std::string retStr;
     for (const CommonAnnexInformation& fileInfo : maskFiles) {
-        if(getMACCSImageFileName(fileInfo.File, ending, retStr))
+        if(GetMACCSImageFileName(fileInfo.File, ending, retStr))
             return retStr;
     }
     return "";
 }
 
 template <typename PixelType, typename MasksPixelType>
-bool MACCSMetadataHelperBase<PixelType, MasksPixelType>::getMACCSImageFileName(const CommonFileInformation& fileInfo,
+bool MACCSMetadataHelperBase<PixelType, MasksPixelType>::GetMACCSImageFileName(const CommonFileInformation& fileInfo,
                                                        const std::string& ending, std::string& retStr) {
     if (fileInfo.LogicalName.length() >= ending.length() &&
             0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
         boost::filesystem::path rootFolder(this->m_DirName);
         // Get the extension of file (default for MACCS is ".DBL.TIF" and for MAJA is ".TIF")
-        const std::string &ext = this->GetMaccsImageExtension();
+        const std::string &ext = this->GetRasterFileExtension();
         retStr = (rootFolder / (fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ext)).string();
         if(!CheckFileExistence(retStr)) {
             itkWarningMacro("Cannot find the file (even with lowercase extension): " << retStr);
@@ -107,11 +107,11 @@ bool MACCSMetadataHelperBase<PixelType, MasksPixelType>::getMACCSImageFileName(c
 
 // Return the path to a file for which the name end in the ending
 template <typename PixelType, typename MasksPixelType>
-std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::getMACCSImageHdrName(const std::vector<CommonAnnexInformation>& maskFiles,
+std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::GetMACCSImageHdrName(const std::vector<CommonAnnexInformation>& maskFiles,
                                                       const std::string& ending) {
     std::string retStr;
     for (const CommonAnnexInformation& fileInfo : maskFiles) {
-        if(getMACCSImageHdrName(fileInfo.File, ending, retStr))
+        if(GetMACCSImageHdrName(fileInfo.File, ending, retStr))
             return retStr;
     }
     return "";
@@ -119,18 +119,18 @@ std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::getMACCSImageHdr
 
 // Return the path to a file for which the name end in the ending
 template <typename PixelType, typename MasksPixelType>
-std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::getMACCSImageHdrName(const std::vector<CommonFileInformation>& imageFiles,
+std::string MACCSMetadataHelperBase<PixelType, MasksPixelType>::GetMACCSImageHdrName(const std::vector<CommonFileInformation>& imageFiles,
                                                       const std::string& ending) {
     std::string retStr;
     for (const CommonFileInformation& fileInfo : imageFiles) {
-        if(getMACCSImageHdrName(fileInfo, ending, retStr))
+        if(GetMACCSImageHdrName(fileInfo, ending, retStr))
             return retStr;
     }
     return "";
 }
 
 template <typename PixelType, typename MasksPixelType>
-bool MACCSMetadataHelperBase<PixelType, MasksPixelType>::getMACCSImageHdrName(const CommonFileInformation& fileInfo,
+bool MACCSMetadataHelperBase<PixelType, MasksPixelType>::GetMACCSImageHdrName(const CommonFileInformation& fileInfo,
                                                       const std::string& ending, std::string &retStr) {
     if (fileInfo.LogicalName.length() >= ending.length() &&
             0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
