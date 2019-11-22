@@ -390,8 +390,6 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
                                                            const QString &outDataDir,
                                                            const QString &outFile)
 {
-    const QString &cfgFile = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
-                                                                          "default_config_path", L4B_GM_CFG_PREFIX);
     const QString keyScript = (prdType == L2_S1) ? "s1_py_script" : "s2_py_script";
     const QString &scriptToInvoke = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
                                                                                  keyScript, L4B_GM_CFG_PREFIX);
@@ -404,7 +402,7 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
     QStringList retArgs = {
                             "--script-path", scriptToInvoke,
                             "--site-id", QString::number(cfg.event.siteId),
-                            "--config-file", cfgFile,
+                            "--config-file", cfg.l4bCfgFile,
                             "--input-shape-file", inputShpLocation,
                             "--output-data-dir", outDataDir,
                             "--start-date", cfg.startDate.toString("yyyy-MM-dd"),
@@ -496,14 +494,14 @@ QString GrasslandMowingHandler::GetL4BConfigFilePath(GrasslandMowingExecConfig &
 
 bool GrasslandMowingHandler::LoadConfigFileAdditionalValues(GrasslandMowingExecConfig &cfg, QString &err)
 {
-    const QString &cfgFile = GetL4BConfigFilePath(cfg);
-    if (cfgFile == "") {
+    cfg.l4bCfgFile = GetL4BConfigFilePath(cfg);
+    if (cfg.l4bCfgFile == "") {
         err = "Cannot get L4B configuration file for site with short name " + cfg.siteShortName;
         return false;
     }
 
-    Logger::info(QStringLiteral("S4C_L4B: Loading settings from file %1 ").arg(cfgFile));
-    QSettings settings(cfgFile, QSettings::IniFormat);
+    Logger::info(QStringLiteral("S4C_L4B: Loading settings from file %1 ").arg(cfg.l4bCfgFile));
+    QSettings settings(cfg.l4bCfgFile, QSettings::IniFormat);
 
     QString cmnSectionKey("GENERAL_CONFIG/");
     cfg.ctNumFilter = GetStringValue(settings, cmnSectionKey + "CTNUM_FILTER");

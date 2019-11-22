@@ -347,8 +347,11 @@ bool ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(const QString &p
             if(bIsInterval && (i+1) < pieces.size()) {
                 const QDateTime tmpDate = QDateTime::fromString(pieces[i+1], timeFormat);
                 // Do not make assumption min is first - choose the min between them
-                if (tmpDate < minDate) {
+                if (tmpDate <= minDate) {
                     minDate = tmpDate;
+                }
+                if (tmpDate >= maxDate) {
+                    maxDate = tmpDate;
                 }
             }
             return true;
