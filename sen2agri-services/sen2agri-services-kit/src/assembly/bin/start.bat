@@ -1,1 +1,0 @@
-java -cp ../modules/*;../lib/*;../config/*;../plugins/* org.esa.sen2agri.ServicesStartup

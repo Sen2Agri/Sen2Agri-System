@@ -1,1 +1,0 @@
-Start-Class: org.esa.sen2agri.ServicesStartup
