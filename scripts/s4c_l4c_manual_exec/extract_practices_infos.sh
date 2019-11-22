@@ -44,8 +44,9 @@ fi
 
 COUNTRY="${COUNTRY_AND_REGION%%_*}"
 COUNTRY_REGION=""
-if [ "$1" != "$COUNTRY" ] ; then
-    COUNTRY_REGION="${1##*_}"
+if [ "${COUNTRY_AND_REGION}" != "$COUNTRY" ] ; then
+    COUNTRY_REGION="${COUNTRY_AND_REGION##*_}"
+    echo "Using country region = $COUNTRY_REGION for country ${COUNTRY}"
 fi    
 
 SHP_PATH=""
@@ -314,33 +315,26 @@ case "$COUNTRY" in
         fi
         ;;
     ITA)
-        if [ "$COUNTRY_REGION" == "FML" ] ; then
-            IN_SHP_NAME="ITA_FRIULI_MARCHE_LAZIO_${YEAR}_DeclSTD_quality_indic.shp"
-        elif [ "$COUNTRY_REGION" == "CP1" ] ; then
-            IN_SHP_NAME="ITA_CAMPANIA_PUGLIA_${YEAR}_DeclSTD_quality_indic_part1.shp"
-        elif [ "$COUNTRY_REGION" == "CP2" ]  ; then
-            IN_SHP_NAME="ITA_CAMPANIA_PUGLIA_${YEAR}_DeclSTD_quality_indic_part2.shp"
-        else
-            echo "Error executing practices infos for ITA. Unknown region ${COUNTRY_REGION}"
-            exit 1
-        fi    
-
+        IN_SHP_NAME="decl_ita_${YEAR}_${COUNTRY_REGION}_${YEAR}.csv"
         VEG_START="${YEAR}-01-01"
 
         NFC_VEG_START="${YEAR}-03-01"
-        NFC_HSTART="${YEAR}-04-02"
+        NFC_HSTART="${YEAR}-04-01"
         NFC_HEND="${YEAR}-08-31"
         NFC_PSTART="${YEAR}-03-01"
         NFC_PEND="${YEAR}-08-31"
+        NFC_ADD_FILES="${INSITU_ROOT}/Sen4CAP_L4A_ITA_LUT_CropCode_filled.csv"
 
         FL_HSTART="${YEAR}-01-01"
         FL_HEND="${YEAR}-09-30"
         FL_PSTART="${YEAR}-01-01"
         FL_PEND="${YEAR}-06-30"
+        FL_ADD_FILES="${INSITU_ROOT}/Sen4CAP_L4A_ITA_LUT_CropCode_filled.csv"
         
-        NA_VEG_START="${YEAR}-04-02"
-        NA_HSTART="${YEAR}-04-02"
+        NA_VEG_START="${YEAR}-04-01"
+        NA_HSTART="${YEAR}-04-15"
         NA_HEND="${YEAR}-12-15"
+        NA_ADD_FILES="${INSITU_ROOT}/Sen4CAP_L4A_ITA_LUT_CropCode_filled.csv"
         ;;
     ROU)
         if [ "${YEAR}" == "2018" ] ; then

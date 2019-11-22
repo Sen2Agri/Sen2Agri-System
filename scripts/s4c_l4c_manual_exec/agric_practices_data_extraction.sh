@@ -83,7 +83,8 @@ COUNTRY="${COUNTRY_AND_REGION%%_*}"
 COUNTRY_REGION=""
 if [ "${COUNTRY_AND_REGION}" != "$COUNTRY" ] ; then
 
-    COUNTRY_REGION="${1##*_}"
+    COUNTRY_REGION="${COUNTRY_AND_REGION##*_}"
+    echo "Using country region = $COUNTRY_REGION for country ${COUNTRY}"
 fi    
 
 SITE_ID=""
@@ -113,13 +114,21 @@ case "${PRODUCT_TYPE}" in
     NDVI)
         FILE_TYPE="NDVI"
         OUT_REL_PATH="NDVI_SHP"
-        INPUT_FILE_NAME="${YEAR}_prds_ndvi"
+        if [ -z $COUNTRY_REGION ] ; then 
+            INPUT_FILE_NAME="${YEAR}_prds_ndvi"
+        else 
+            INPUT_FILE_NAME="${YEAR}_prds_ndvi_$COUNTRY_REGION"
+        fi
         INSITU_BUFFER_SIZE="5m"
         ;;
     AMP)
         FILE_TYPE="AMP"
         OUT_REL_PATH="AMP_SHP"
-        INPUT_FILE_NAME="${YEAR}_prds_s1_amp"
+        if [ -z $COUNTRY_REGION ] ; then 
+            INPUT_FILE_NAME="${YEAR}_prds_s1_amp"
+        else 
+            INPUT_FILE_NAME="${YEAR}_prds_s1_amp_$COUNTRY_REGION"
+        fi
         if [ "$YEAR" == "2019" ] ; then
             PROJ_TYPE="LAEA"
         fi
@@ -127,7 +136,11 @@ case "${PRODUCT_TYPE}" in
     COHE)
         FILE_TYPE="COHE"
         OUT_REL_PATH="COHE_SHP"
-        INPUT_FILE_NAME="${YEAR}_prds_s1_cohe"
+        if [ -z $COUNTRY_REGION ] ; then 
+            INPUT_FILE_NAME="${YEAR}_prds_s1_cohe"
+        else 
+            INPUT_FILE_NAME="${YEAR}_prds_s1_cohe_$COUNTRY_REGION"
+        fi
         if [ "$YEAR" == "2019" ] ; then
             PROJ_TYPE="LAEA"
         fi
@@ -151,11 +164,12 @@ case "${COUNTRY}" in
         DEFAULT_PROJ="32629"
         ;;
     ITA)
-        if [ "$COUNTRY_REGION" == "FML" ] ; then
-            DEFAULT_PROJ="32632"
-        elif [ "$COUNTRY_REGION" == "CP1" ] || [ "$COUNTRY_REGION" == "CP2" ] ; then
-            DEFAULT_PROJ="32633"
-        fi    
+        DEFAULT_PROJ="32633"
+        # if [ "$COUNTRY_REGION" == "FML" ] ; then
+        #     DEFAULT_PROJ="32632"
+        # elif [ "$COUNTRY_REGION" == "CP1" ] || [ "$COUNTRY_REGION" == "CP2" ] ; then
+        #     DEFAULT_PROJ="32633"
+        # fi    
         ;;
     ROU)
         DEFAULT_PROJ="32635"
@@ -184,14 +198,16 @@ case "${COUNTRY}" in
         INSITU_FILE_NAME_PATTERN="decl_cyl_${YEAR}_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
         ;;
     ITA)
-        if [ "$COUNTRY_REGION" == "FML" ] ; then
-            INSITU_FILE_NAME_PATTERN="ITA_FRIULI_MARCHE_LAZIO_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
-        elif [ "$COUNTRY_REGION" == "CP1" ] || [ "$COUNTRY_REGION" == "CP2" ] ; then
-            INSITU_FILE_NAME_PATTERN="ITA_CAMPANIA_PUGLIA_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
-        else 
-            echo "Error executing data extraction for ITA. Unknown region ${COUNTRY_REGION}"
-            exit 1
-        fi    
+        INSITU_FILE_NAME_PATTERN="decl_ita_${YEAR}_${COUNTRY_REGION}_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        
+        # if [ "$COUNTRY_REGION" == "FML" ] ; then
+        #     INSITU_FILE_NAME_PATTERN="ITA_FRIULI_MARCHE_LAZIO_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        # elif [ "$COUNTRY_REGION" == "CP1" ] || [ "$COUNTRY_REGION" == "CP2" ] ; then
+        #     INSITU_FILE_NAME_PATTERN="ITA_CAMPANIA_PUGLIA_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"
+        # else 
+        #     echo "Error executing data extraction for ITA. Unknown region ${COUNTRY_REGION}"
+        #     exit 1
+        # fi    
         ;;
     ROU)
         INSITU_FILE_NAME_PATTERN="decl_rou_${YEAR}_${YEAR}_<PROJ>_buf_${INSITU_BUFFER_SIZE}"

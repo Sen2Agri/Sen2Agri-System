@@ -209,6 +209,7 @@ def main():
     parser.add_argument('-e', '--end-date', help="The end of the interval to be considered ")
     parser.add_argument('-t', '--product-type', help="The end of the interval to be considered ")
     parser.add_argument('-s', '--sort', type=int, default=1, help="Sorts the input files")
+    parser.add_argument('-f', '--in-file-regex', default="", help="Regex for filtering input files")
     
     args = parser.parse_args()
 
@@ -224,13 +225,25 @@ def main():
 #        productsNdvi = process_ndvi(config, conn)
 #        productsRadar = process_radar(config, conn)
 
+    if len (args.in_file_regex) > 0:
+        print ("Using regex for filtering: {}".format(args.in_file_regex))
+        in_file_regex = re.compile(args.in_file_regex)
+
     fileExt = ".{}".format(args.in_file_type)
     listFilePaths = []
     files = os.listdir(args.input_dir)
     for file in files:
         if fileExt in file:
+            addFile = True
+            if len (args.in_file_regex) > 0:
+                tmp = in_file_regex.findall(file)
+                if len(tmp) == 0:
+                    addFile = False
+                    print ("Ignoring file (no match): {}".format(file))
+            
             fullFilePath = os.path.join(args.input_dir, file)
-            listFilePaths.append(fullFilePath)
+            if addFile :
+                listFilePaths.append(fullFilePath)
     
     command = []
     command += ["otbcli", "AgricPractMergeDataExtractionFiles", "./sen2agri-processors-build/"]

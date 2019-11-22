@@ -3,6 +3,7 @@
 THREAD_SIZE_POOL=10
 SIMULATE_CMDS=0
 FORCE_REINIT=0
+USE_SEP_DIRS=1
 
 SCRIPTS_DIR="/mnt/archive/agric_practices/Inputs/exec_cmds/"
 LOG_FILES_DIR="/mnt/archive/agric_practices/Inputs/exec_cmds/"
@@ -33,9 +34,8 @@ function getProductId() {
 function getNdviProductFiles() {
     echo "Created timestamp is $1"
     MAX_DATE=$1
-    NDVI_PRDS_FILE="${PRD_LIST_FILES_DIR}/NDVI_ALL_${PROD_DATE}_Products.txt"
-    execute_command "sudo -u postgres psql sen4cap -c \"select full_path from product where site_id=${SITE_ID} and product_type_id = 3 and created_timestamp>='$YEAR-01-01' and created_timestamp<='${MAX_DATE}';\" > ${PRD_LIST_FILES_DIR}/NDVI_ALL_${PROD_DATE}_Products.txt"
-    NDVI_OUT_FILE="${PRD_LIST_FILES_DIR}/NDVI_ALL_${PROD_DATE}.txt"
+    
+    execute_command "sudo -u postgres psql sen4cap -c \"select full_path from product where site_id=${SITE_ID} and product_type_id = 3 and created_timestamp>='$YEAR-01-01' and created_timestamp<='${MAX_DATE}';\" > ${NDVI_PRDS_FILE}"
     # truncate or create file
     :> ${NDVI_OUT_FILE}
     while IFS= read -r line; do
@@ -157,7 +157,7 @@ if [ -z ${PREV_PRODUCT} ] ; then
     PREV_PRODUCT_OPTION=""
 else
     if [ "${PREV_PRODUCT}" == "TSA" ] ; then 
-        PREV_TSA_DIR_PATH="${OUTPUTS_DIR}/${COUNTRY}/TimeSeriesAnalysisResults_${PREV_PRD_DATE}"
+        PREV_TSA_DIR_PATH="${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/TimeSeriesAnalysisResults_${PREV_PRD_DATE}"
         if [ -d ${PREV_TSA_DIR_PATH} ] ; then
             PREV_PRODUCT_OPTION="-p ${PREV_TSA_DIR_PATH}"
         fi
@@ -204,12 +204,13 @@ fi
 
 COUNTRY="${COUNTRY_AND_REGION%%_*}"
 COUNTRY_REGION=""
-if [ "$1" != "$COUNTRY" ] ; then
+if [ "${COUNTRY_AND_REGION}" != "$COUNTRY" ] ; then
 
-    COUNTRY_REGION="${1##*_}"
+    COUNTRY_REGION="${COUNTRY_AND_REGION##*_}"
+    echo "Using country region = $COUNTRY_REGION for country ${COUNTRY}"
 fi   
 # Get the country as lower case
-COUNTRY_LC="${COUNTRY,,}"
+COUNTRY_LC="${COUNTRY_AND_REGION,,}"
 
 # Change dir location with the one from DB for this site
 SITE_ARCH_PATH="/mnt/archive/${COUNTRY_LC}_${YEAR}"
@@ -225,73 +226,118 @@ done;
 
 MAX_DATE="${PROD_DATE}T23:59:59"
 
+if [ "$USE_SEP_DIRS" == "1" ] ; then
+    LOG_FILES_DIR="/mnt/archive/agric_practices/Inputs/exec_cmds/${COUNTRY_AND_REGION}/logs"
+    # PRD_LIST_FILES_DIR="/mnt/archive/agric_practices/Inputs/exec_cmds/${COUNTRY_AND_REGION}"
+fi
+
+echo "Creating execution directories ..."
+execute_command "mkdir -p $OUTPUTS_DIR" $SIMULATE_CMDS
+execute_command "mkdir -p $LOG_FILES_DIR" $SIMULATE_CMDS
+execute_command "mkdir -p $PRD_LIST_FILES_DIR" $SIMULATE_CMDS
+
+
+
+if [ -z $COUNTRY_REGION ] ; then 
+    NDVI_PRDS_FILE="${PRD_LIST_FILES_DIR}/NDVI_ALL_${PROD_DATE}_Products.txt"
+    NDVI_OUT_FILE="${PRD_LIST_FILES_DIR}/NDVI_ALL_${PROD_DATE}.txt"
+    NDVI_OUT_PREV_FILE="${PRD_LIST_FILES_DIR}/NDVI_ALL_${PREV_PRD_DATE}.txt"    
+    NDVI_DIFF_FILE="${PRD_LIST_FILES_DIR}/diff_ndvi_${PROD_DATE}.txt"
+    NDVI_PROCESSING_FILE="${PRD_LIST_FILES_DIR}/${YEAR}_prds_ndvi.txt"
+    
+    S1_ALL_FILES="${PRD_LIST_FILES_DIR}/S1_all_$PROD_DATE.txt"
+    S1_PREV_ALL_FILES="${PRD_LIST_FILES_DIR}/S1_all_${PREV_PRD_DATE}.txt"
+    S1_ALL_DIFF_FILE="${PRD_LIST_FILES_DIR}/diff_S1_${PROD_DATE}.txt"
+    
+    S1_AMP_VH_PROCESSING_FILE="${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_VH.txt"
+    S1_AMP_VV_PROCESSING_FILE="${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_VV.txt"
+    S1_COHE_VV_PROCESSING_FILE="${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_cohe_VV.txt"
+    
+else 
+    NDVI_PRDS_FILE="${PRD_LIST_FILES_DIR}/NDVI_ALL_${PROD_DATE}_Products_${COUNTRY_REGION}.txt"
+    NDVI_OUT_FILE="${PRD_LIST_FILES_DIR}/NDVI_ALL_${PROD_DATE}_${COUNTRY_REGION}.txt"
+    NDVI_OUT_PREV_FILE="${PRD_LIST_FILES_DIR}/NDVI_ALL_${PREV_PRD_DATE}_${COUNTRY_REGION}.txt"    
+    NDVI_DIFF_FILE="${PRD_LIST_FILES_DIR}/diff_ndvi_${PROD_DATE}_${COUNTRY_REGION}.txt"
+    NDVI_PROCESSING_FILE="${PRD_LIST_FILES_DIR}/${YEAR}_prds_ndvi_${COUNTRY_REGION}.txt"
+    
+    S1_ALL_FILES="${PRD_LIST_FILES_DIR}/S1_all_$PROD_DATE_${COUNTRY_REGION}.txt"
+    S1_PREV_ALL_FILES="${PRD_LIST_FILES_DIR}/S1_all_${PREV_PRD_DATE}_${COUNTRY_REGION}.txt"
+    S1_ALL_DIFF_FILE="${PRD_LIST_FILES_DIR}/diff_S1_${PROD_DATE}_${COUNTRY_REGION}.txt"
+    
+    S1_AMP_VH_PROCESSING_FILE="${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_${COUNTRY_REGION}_VH.txt"
+    S1_AMP_VV_PROCESSING_FILE="${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_${COUNTRY_REGION}_VV.txt"
+    S1_COHE_VV_PROCESSING_FILE="${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_cohe_${COUNTRY_REGION}_VV.txt"
+fi
+
 getNdviProductFiles $MAX_DATE
 
-if [[ -f "${PRD_LIST_FILES_DIR}/NDVI_ALL_${PREV_PRD_DATE}.txt" && $FORCE_REINIT == 0 ]] ; then
-    execute_command "comm -2 -3 <(sort  ${PRD_LIST_FILES_DIR}/NDVI_ALL_${PROD_DATE}.txt) <(sort ${PRD_LIST_FILES_DIR}/NDVI_ALL_${PREV_PRD_DATE}.txt) > ${PRD_LIST_FILES_DIR}/diff_ndvi_${PROD_DATE}.txt"
+if [[ -f "${NDVI_OUT_PREV_FILE}" && $FORCE_REINIT == 0 ]] ; then
+    execute_command "comm -2 -3 <(sort  ${NDVI_OUT_FILE}) <(sort ${NDVI_OUT_PREV_FILE}) > ${NDVI_DIFF_FILE}"
 else
-    execute_command "cp -f ${PRD_LIST_FILES_DIR}/NDVI_ALL_${PROD_DATE}.txt ${PRD_LIST_FILES_DIR}/diff_ndvi_${PROD_DATE}.txt"
+    execute_command "cp -f ${NDVI_OUT_FILE} ${NDVI_DIFF_FILE}"
 fi
 
-execute_command "cp -f ${PRD_LIST_FILES_DIR}/diff_ndvi_${PROD_DATE}.txt ${PRD_LIST_FILES_DIR}/${YEAR}_prds_ndvi.txt"
+execute_command "cp -f ${NDVI_DIFF_FILE} ${NDVI_PROCESSING_FILE}"
 
-execute_command "sudo -u postgres psql sen4cap -c \"select full_path from product where site_id=${SITE_ID} and satellite_id=3 and created_timestamp>='$YEAR-01-01' and created_timestamp<='${MAX_DATE}';\" > ${PRD_LIST_FILES_DIR}/S1_all_$PROD_DATE.txt"
+execute_command "sudo -u postgres psql sen4cap -c \"select full_path from product where site_id=${SITE_ID} and satellite_id=3 and created_timestamp>='$YEAR-01-01' and created_timestamp<='${MAX_DATE}';\" > ${S1_ALL_FILES}"
 
 if [[ -f S1_all_${PREV_PRD_DATE}.txt && $FORCE_REINIT == 0 ]] ; then
-    execute_command "comm -2 -3 <(sort  ${PRD_LIST_FILES_DIR}/S1_all_${PROD_DATE}.txt) <(sort ${PRD_LIST_FILES_DIR}/S1_all_${PREV_PRD_DATE}.txt) > ${PRD_LIST_FILES_DIR}/diff_S1_${PROD_DATE}.txt"
+    execute_command "comm -2 -3 <(sort  ${S1_ALL_FILES}) <(sort ${S1_PREV_ALL_FILES}) > ${S1_ALL_DIFF_FILE}"
 else
-    execute_command "cp -f ${PRD_LIST_FILES_DIR}/S1_all_${PROD_DATE}.txt ${PRD_LIST_FILES_DIR}/diff_S1_${PROD_DATE}.txt"
+    execute_command "cp -f ${S1_ALL_FILES} ${S1_ALL_DIFF_FILE}"
 fi
 
-execute_command "cp -f ${PRD_LIST_FILES_DIR}/diff_S1_${PROD_DATE}.txt ${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_VH.txt"
-execute_command "cp -f ${PRD_LIST_FILES_DIR}/diff_S1_${PROD_DATE}.txt ${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_VV.txt"
-execute_command "cp -f ${PRD_LIST_FILES_DIR}/diff_S1_${PROD_DATE}.txt ${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_cohe_VV.txt"
+execute_command "cp -f ${S1_ALL_DIFF_FILE} ${S1_AMP_VH_PROCESSING_FILE}"
+execute_command "cp -f ${S1_ALL_DIFF_FILE} ${S1_AMP_VV_PROCESSING_FILE}"
+execute_command "cp -f ${S1_ALL_DIFF_FILE} ${S1_COHE_VV_PROCESSING_FILE}"
 
-sed -ni '/_AMP.tif/p' "${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_VH.txt"
-sed -ni '/_VH_/p' "${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_VH.txt"
+sed -ni '/_AMP.tif/p' "${S1_AMP_VH_PROCESSING_FILE}"
+sed -ni '/_VH_/p' "${S1_AMP_VH_PROCESSING_FILE}"
 
-sed -ni '/_AMP.tif/p' "${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_VV.txt"
-sed -ni '/_VV_/p' "${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_amp_VV.txt"
+sed -ni '/_AMP.tif/p' "${S1_AMP_VV_PROCESSING_FILE}"
+sed -ni '/_VV_/p' "${S1_AMP_VV_PROCESSING_FILE}"
 
-sed -ni '/_COHE.tif/p' "${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_cohe_VV.txt"
-sed -ni '/_VV_/p' "${PRD_LIST_FILES_DIR}/${YEAR}_prds_s1_cohe_VV.txt"
+sed -ni '/_COHE.tif/p' "${S1_COHE_VV_PROCESSING_FILE}"
+sed -ni '/_VV_/p' "${S1_COHE_VV_PROCESSING_FILE}"
 
 # before executing the data extraction, perform backup to the existing files
-if [[ -d ${OUTPUTS_DIR}/${COUNTRY}/DataExtractionResults/ && ! -d "${OUTPUTS_DIR}/${COUNTRY}/DataExtractionResults_${PREV_PRD_DATE}/" ]] ; then 
-    echo "Backing up the previous DataExtractionResults to ${OUTPUTS_DIR}/${COUNTRY}/DataExtractionResults_${PREV_PRD_DATE}/"
-    execute_command "mv ${OUTPUTS_DIR}/${COUNTRY}/DataExtractionResults/ ${OUTPUTS_DIR}/${COUNTRY}/DataExtractionResults_${PREV_PRD_DATE}/" $SIMULATE_CMDS
+if [[ -d ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/DataExtractionResults/ && ! -d "${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/DataExtractionResults_${PREV_PRD_DATE}/" ]] ; then 
+    echo "Backing up the previous DataExtractionResults to ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/DataExtractionResults_${PREV_PRD_DATE}/"
+    execute_command "mv ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/DataExtractionResults/ ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/DataExtractionResults_${PREV_PRD_DATE}/" $SIMULATE_CMDS
 fi
 
-if [[ -d ${OUTPUTS_DIR}/${COUNTRY}/TimeSeriesAnalysisResults/ && ! -d "${OUTPUTS_DIR}/${COUNTRY}/TimeSeriesAnalysisResults_${PREV_PRD_DATE}/" ]] ; then 
-    echo "Backing up the previous TimeSeriesAnalysisResults to ${OUTPUTS_DIR}/${COUNTRY}/TimeSeriesAnalysisResults_${PREV_PRD_DATE}/"
-    execute_command "mv ${OUTPUTS_DIR}/${COUNTRY}/TimeSeriesAnalysisResults/ ${OUTPUTS_DIR}/${COUNTRY}/TimeSeriesAnalysisResults_${PREV_PRD_DATE}/" $SIMULATE_CMDS
+if [[ -d ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/TimeSeriesAnalysisResults/ && ! -d "${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/TimeSeriesAnalysisResults_${PREV_PRD_DATE}/" ]] ; then 
+    echo "Backing up the previous TimeSeriesAnalysisResults to ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/TimeSeriesAnalysisResults_${PREV_PRD_DATE}/"
+    execute_command "mv ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/TimeSeriesAnalysisResults/ ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/TimeSeriesAnalysisResults_${PREV_PRD_DATE}/" $SIMULATE_CMDS
 fi 
     
-if [ ! -d ${OUTPUTS_DIR}/${COUNTRY}/Individual_Results_${PREV_PRD_DATE}/ ] ; then     
-    echo "Backing up the previous dirs into ${OUTPUTS_DIR}/${COUNTRY}/Individual_Results_${PREV_PRD_DATE}/"
-    execute_command "mkdir ${OUTPUTS_DIR}/${COUNTRY}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
+if [ ! -d ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/Individual_Results_${PREV_PRD_DATE}/ ] ; then     
+    echo "Backing up the previous dirs into ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/Individual_Results_${PREV_PRD_DATE}/"
+    execute_command "mkdir ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
     if [ $FORCE_REINIT == 0 ] ; then 
-        execute_command "cp -fR ${OUTPUTS_DIR}/${COUNTRY}/AMP_SHP ${OUTPUTS_DIR}/${COUNTRY}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
-        execute_command "cp -fR ${OUTPUTS_DIR}/${COUNTRY}/COHE_SHP ${OUTPUTS_DIR}/${COUNTRY}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
-        execute_command "cp -fR ${OUTPUTS_DIR}/${COUNTRY}/NDVI_SHP ${OUTPUTS_DIR}/${COUNTRY}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
+        execute_command "cp -fR ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/AMP_SHP ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
+        execute_command "cp -fR ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/COHE_SHP ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
+        execute_command "cp -fR ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/NDVI_SHP ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
     else
-        execute_command "mv ${OUTPUTS_DIR}/${COUNTRY}/AMP_SHP ${OUTPUTS_DIR}/${COUNTRY}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
-        execute_command "mv ${OUTPUTS_DIR}/${COUNTRY}/COHE_SHP ${OUTPUTS_DIR}/${COUNTRY}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
-        execute_command "mv ${OUTPUTS_DIR}/${COUNTRY}/NDVI_SHP ${OUTPUTS_DIR}/${COUNTRY}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
+        execute_command "mv ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/AMP_SHP ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
+        execute_command "mv ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/COHE_SHP ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
+        execute_command "mv ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/NDVI_SHP ${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/Individual_Results_${PREV_PRD_DATE}/" $SIMULATE_CMDS
     fi
 fi
 
-execute_command "${SCRIPTS_DIR}/agric_practices_data_extraction.sh --country ${COUNTRY} --prdtype AMP --polarisation VH --year ${YEAR} --prds_per_group 1 --threads_pool_size ${THREAD_SIZE_POOL} > ${LOG_FILES_DIR}/res_amp_vh_${PROD_DATE}.txt" $SIMULATE_CMDS
-execute_command "${SCRIPTS_DIR}/agric_practices_data_extraction.sh --country ${COUNTRY} --prdtype AMP --polarisation VV --year ${YEAR} --prds_per_group 1 --threads_pool_size ${THREAD_SIZE_POOL} > ${LOG_FILES_DIR}/res_amp_vv_${PROD_DATE}.txt" $SIMULATE_CMDS
-execute_command "${SCRIPTS_DIR}/agric_practices_data_extraction.sh --country ${COUNTRY} --prdtype COHE --polarisation VV --year ${YEAR} --prds_per_group 1 --threads_pool_size ${THREAD_SIZE_POOL} > ${LOG_FILES_DIR}/res_cohe_vv_${PROD_DATE}.txt" $SIMULATE_CMDS
-execute_command "${SCRIPTS_DIR}/agric_practices_data_extraction.sh --country ${COUNTRY} --prdtype NDVI --year ${YEAR} --prds_per_group 1 --threads_pool_size ${THREAD_SIZE_POOL} > ${LOG_FILES_DIR}/res_ndvi_${PROD_DATE}.txt" $SIMULATE_CMDS
+execute_command "${SCRIPTS_DIR}/agric_practices_data_extraction.sh --country ${COUNTRY_AND_REGION} --prdtype AMP --polarisation VH --year ${YEAR} --prds_per_group 1 --threads_pool_size ${THREAD_SIZE_POOL} > ${LOG_FILES_DIR}/res_amp_vh_${PROD_DATE}_${COUNTRY_AND_REGION}.txt" $SIMULATE_CMDS
+execute_command "${SCRIPTS_DIR}/agric_practices_data_extraction.sh --country ${COUNTRY_AND_REGION} --prdtype AMP --polarisation VV --year ${YEAR} --prds_per_group 1 --threads_pool_size ${THREAD_SIZE_POOL} > ${LOG_FILES_DIR}/res_amp_vv_${PROD_DATE}_${COUNTRY_AND_REGION}.txt" $SIMULATE_CMDS
+execute_command "${SCRIPTS_DIR}/agric_practices_data_extraction.sh --country ${COUNTRY_AND_REGION} --prdtype COHE --polarisation VV --year ${YEAR} --prds_per_group 1 --threads_pool_size ${THREAD_SIZE_POOL} > ${LOG_FILES_DIR}/res_cohe_vv_${PROD_DATE}_${COUNTRY_AND_REGION}.txt" $SIMULATE_CMDS
+execute_command "${SCRIPTS_DIR}/agric_practices_data_extraction.sh --country ${COUNTRY_AND_REGION} --prdtype NDVI --year ${YEAR} --prds_per_group 1 --threads_pool_size ${THREAD_SIZE_POOL} > ${LOG_FILES_DIR}/res_ndvi_${PROD_DATE}_${COUNTRY_AND_REGION}.txt" $SIMULATE_CMDS
 
-execute_command "${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY} -y ${YEAR} -p AMP --compact 1 ; ${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY} -y ${YEAR} -p AMP ; ${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY} -y ${YEAR} -p COHE --compact 1 ; ${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY} -y ${YEAR} -p COHE ; ${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY} -y ${YEAR} -p NDVI --compact 1 ; ${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY} -y ${YEAR} -p NDVI" $SIMULATE_CMDS
+execute_command "${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY_AND_REGION} -y ${YEAR} -p AMP ; ${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY_AND_REGION} -y ${YEAR} -p COHE ; ${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY_AND_REGION} -y ${YEAR} -p NDVI" $SIMULATE_CMDS
 
-if [ -z ${PREV_PRODUCT_OPTION} ] ; then 
-    execute_command "${SCRIPTS_DIR}/agric_practices_tsa.sh -c ${COUNTRY} -y ${YEAR}" $SIMULATE_CMDS
+execute_command "${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY_AND_REGION} -y ${YEAR} -p AMP --compact 0 ; ${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY_AND_REGION} -y ${YEAR} -p COHE --compact 0 ; ${SCRIPTS_DIR}/agric_practices_merge_files.sh -c ${COUNTRY_AND_REGION} -y ${YEAR} -p NDVI --compact 0" $SIMULATE_CMDS
+
+if [ -z "${PREV_PRODUCT_OPTION}" ] ; then 
+    execute_command "${SCRIPTS_DIR}/agric_practices_tsa.sh -c ${COUNTRY_AND_REGION} -y ${YEAR}" $SIMULATE_CMDS
 else
-    execute_command "${SCRIPTS_DIR}/agric_practices_tsa.sh -c ${COUNTRY} -y ${YEAR} ${PREV_PRODUCT_OPTION}" $SIMULATE_CMDS
+    execute_command "${SCRIPTS_DIR}/agric_practices_tsa.sh -c ${COUNTRY_AND_REGION} -y ${YEAR} ${PREV_PRODUCT_OPTION}" $SIMULATE_CMDS
 fi
 
 # Create the product in the database
@@ -302,7 +348,7 @@ VECTOR_DATA_DIR="${NEW_PRD_FULL_PATH}VECTOR_DATA/"
 if [ ! -d "${VECTOR_DATA_DIR}/SHP" ]; then
     execute_command "mkdir -p \"${VECTOR_DATA_DIR}/SHP\"" $SIMULATE_CMDS
 fi
-execute_command "cp \"${OUTPUTS_DIR}/${COUNTRY}/TimeSeriesAnalysisResults/\"* \"${VECTOR_DATA_DIR}\"" $SIMULATE_CMDS
+execute_command "cp \"${OUTPUTS_DIR}/${COUNTRY_AND_REGION}/TimeSeriesAnalysisResults/\"* \"${VECTOR_DATA_DIR}\"" $SIMULATE_CMDS
 
 # now insert the product in the database
 #Here we parse the date to get year, month and day
@@ -331,19 +377,19 @@ fi
 
 # execute the import 
 execute_command "/usr/bin/import-product-details.py -p $NEW_PRD_ID" $SIMULATE_CMDS
-execute_command "/usr/bin/export-product.py -p $NEW_PRD_ID ${VECTOR_DATA_DIR}/Sen4CAP_L4C_PRACTICE_${COUNTRY}_${YEAR}.gpkg" $SIMULATE_CMDS
+execute_command "/usr/bin/export-product.py -p $NEW_PRD_ID ${VECTOR_DATA_DIR}/Sen4CAP_L4C_PRACTICE_${COUNTRY_AND_REGION}_${YEAR}.gpkg" $SIMULATE_CMDS
 
-if [ -f ${VECTOR_DATA_DIR}/Sen4CAP_L4C_CatchCrop_${COUNTRY}_${YEAR}.gpkg ]; then
-    execute_command "ogr2ogr ${VECTOR_DATA_DIR}/Sen4CAP_L4C_CatchCrop_${COUNTRY}_${YEAR}.shp ${VECTOR_DATA_DIR}/Sen4CAP_L4C_CatchCrop_${COUNTRY}_${YEAR}.gpkg -lco ENCODING=UTF-8" $SIMULATE_CMDS
+if [ -f ${VECTOR_DATA_DIR}/Sen4CAP_L4C_CatchCrop_${COUNTRY_AND_REGION}_${YEAR}.gpkg ]; then
+    execute_command "ogr2ogr ${VECTOR_DATA_DIR}/Sen4CAP_L4C_CatchCrop_${COUNTRY_AND_REGION}_${YEAR}.shp ${VECTOR_DATA_DIR}/Sen4CAP_L4C_CatchCrop_${COUNTRY_AND_REGION}_${YEAR}.gpkg -lco ENCODING=UTF-8" $SIMULATE_CMDS
 fi    
-if [ -f ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NFC_${COUNTRY}_${YEAR}.gpkg ]; then
-    execute_command "ogr2ogr ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NFC_${COUNTRY}_${YEAR}.shp ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NFC_${COUNTRY}_${YEAR}.gpkg -lco ENCODING=UTF-8" $SIMULATE_CMDS
+if [ -f ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NFC_${COUNTRY_AND_REGION}_${YEAR}.gpkg ]; then
+    execute_command "ogr2ogr ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NFC_${COUNTRY_AND_REGION}_${YEAR}.shp ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NFC_${COUNTRY_AND_REGION}_${YEAR}.gpkg -lco ENCODING=UTF-8" $SIMULATE_CMDS
 fi
-if [ -f ${VECTOR_DATA_DIR}/Sen4CAP_L4C_Fallow_${COUNTRY}_${YEAR}.gpkg ]; then
-    execute_command "ogr2ogr ${VECTOR_DATA_DIR}/Sen4CAP_L4C_Fallow_${COUNTRY}_${YEAR}.shp ${VECTOR_DATA_DIR}/Sen4CAP_L4C_Fallow_${COUNTRY}_${YEAR}.gpkg -lco ENCODING=UTF-8" $SIMULATE_CMDS
+if [ -f ${VECTOR_DATA_DIR}/Sen4CAP_L4C_Fallow_${COUNTRY_AND_REGION}_${YEAR}.gpkg ]; then
+    execute_command "ogr2ogr ${VECTOR_DATA_DIR}/Sen4CAP_L4C_Fallow_${COUNTRY_AND_REGION}_${YEAR}.shp ${VECTOR_DATA_DIR}/Sen4CAP_L4C_Fallow_${COUNTRY_AND_REGION}_${YEAR}.gpkg -lco ENCODING=UTF-8" $SIMULATE_CMDS
 fi
-if [ -f ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NA_${COUNTRY}_${YEAR}.gpkg ]; then
-    execute_command "ogr2ogr ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NA_${COUNTRY}_${YEAR}.shp ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NA_${COUNTRY}_${YEAR}.gpkg -lco ENCODING=UTF-8" $SIMULATE_CMDS
+if [ -f ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NA_${COUNTRY_AND_REGION}_${YEAR}.gpkg ]; then
+    execute_command "ogr2ogr ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NA_${COUNTRY_AND_REGION}_${YEAR}.shp ${VECTOR_DATA_DIR}/Sen4CAP_L4C_NA_${COUNTRY_AND_REGION}_${YEAR}.gpkg -lco ENCODING=UTF-8" $SIMULATE_CMDS
 fi
 
 # Cleanup 
