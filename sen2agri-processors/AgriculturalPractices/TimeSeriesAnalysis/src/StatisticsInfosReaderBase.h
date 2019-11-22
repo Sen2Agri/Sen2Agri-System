@@ -54,7 +54,7 @@
 class StatisticsInfosReaderBase
 {
 public:
-    StatisticsInfosReaderBase() : m_minReqEntries(0), m_bUseDate2(true), m_bSwitchDates(true), m_year(0)
+    StatisticsInfosReaderBase() : m_minReqEntries(0), m_bUseDate2(true), m_bSwitchDates(true), m_year(0), m_bDebug(false)
     {
     }
 
@@ -69,6 +69,7 @@ public:
     inline void SetMinRequiredEntries(int min) { m_minReqEntries = min; }
     inline void SetUseDate2(int bUse) { m_bUseDate2 = bUse; }
     inline void SetSwitchDates(int bSwitch) { m_bSwitchDates = bSwitch; }
+    inline void SetDebugMode(bool bDebug)  { m_bDebug = bDebug; }
     inline virtual bool GetEntriesForField(const std::string &fieldId, std::vector<InputFileLineInfoType> &retVect)
     {
         std::map<std::string, std::vector<InputFileLineInfoType>> retMap;
@@ -97,6 +98,7 @@ protected:
     bool m_bUseDate2;
     bool m_bSwitchDates;
     int m_year;
+    bool m_bDebug;
 
     struct InputFileLineInfoComparator
     {

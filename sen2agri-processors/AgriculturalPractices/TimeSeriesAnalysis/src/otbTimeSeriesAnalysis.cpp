@@ -748,7 +748,6 @@ private:
     {
         std::map<std::string, std::vector<InputFileLineInfoType>> mapInfos;
         if (!m_pAmpReader->GetEntriesForField(fieldInfo.fieldSeqId, {"VV", "VH"}, mapInfos)) {
-        //if (!m_pAmpReader->GetEntriesForField(fieldInfo.fieldId, {"VV", "VH"}, mapInfos)) {
             otbAppLogWARNING("Cannot extract amplitude infos for the field " << fieldInfo.fieldId);
             return false;
         }
@@ -786,7 +785,9 @@ private:
         if (!m_bAllowGaps) {
             if (!CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.ampVVLines) ||
                 !CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.ampVHLines)) {
-                otbAppLogWARNING("No valid amplitude lines were found for the field id (gaps)" << fieldInfo.fieldId);
+                if (m_bVerbose) {
+                    otbAppLogWARNING("No valid amplitude lines were found for the field id (gaps)" << fieldInfo.fieldId);
+                }
                 return false;
             }
         }
@@ -797,33 +798,30 @@ private:
     bool ExtractCoherenceFilesInfos(FieldInfoType &fieldInfo)
     {
         std::map<std::string, std::vector<InputFileLineInfoType>> mapInfos;
-        //if (!m_pCoheReader->GetEntriesForField(fieldInfo.fieldId, /*{"VV", "VH"}*/{"VV"}, mapInfos)) {
         if (!m_pCoheReader->GetEntriesForField(fieldInfo.fieldSeqId, /*{"VV", "VH"}*/{"VV"}, mapInfos)) {
             otbAppLogWARNING("Cannot extract coherence infos for the field " << fieldInfo.fieldId);
             return false;
         }
         std::map<std::string, std::vector<InputFileLineInfoType>>::const_iterator itVV;
-        //std::map<std::string, std::vector<InputFileLineInfoType>>::const_iterator itVH;
         itVV = mapInfos.find("VV");
-        //itVH = mapInfos.find("VH");
-        if (itVV == mapInfos.end() /*|| itVH == mapInfos.end()*/ ||
-            itVV->second.size() == 0 /*|| itVH->second.size() == 0*/) {
-            otbAppLogWARNING("Didn't find entries for both VV and VH coherence files for the field " << fieldInfo.fieldId);
+        if (itVV == mapInfos.end() || itVV->second.size() == 0) {
+            if (m_bVerbose) {
+                otbAppLogWARNING("Didn't find any entry in coherence VV files for the field " << fieldInfo.fieldId);
+            }
             return false;
         }
 
-//        otbAppLogINFO("Coherence : Extracted a number of " << itVV->second.size() <<
-//                      " VV entries and a number of " << itVH->second.size() << " VH entries!");
         if (m_bVerbose) {
             otbAppLogINFO("Coherence : Extracted a number of VV entries of " << itVV->second.size());
         }
 
         const std::vector<InputFileLineInfoType> &uniqueEntries = FilterDuplicates(itVV->second);
         fieldInfo.coheVVLines.insert(fieldInfo.coheVVLines.end(), uniqueEntries.begin(), uniqueEntries.end());
-        //fieldInfo.coheVHLines.insert(fieldInfo.coheVHLines.end(), itVH->second.begin(), itVH->second.end());
 
-        if (fieldInfo.coheVVLines.size() <= MIN_REQUIRED_COHE_VALUES /*|| fieldInfo.coheVHLines.size() <= MIN_REQUIRED_COHE_VALUES*/) {
-            otbAppLogWARNING("No/empty/short coherence input text files the field id " << fieldInfo.fieldId);
+        if (fieldInfo.coheVVLines.size() <= MIN_REQUIRED_COHE_VALUES) {
+            if (m_bVerbose) {
+                otbAppLogWARNING("No/empty/short coherence input text files the field id " << fieldInfo.fieldId);
+            }
             return false;
         }
 
@@ -841,9 +839,10 @@ private:
         }
 
         if (!m_bAllowGaps) {
-            if (!CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.coheVVLines) /*||
-                !CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.coheVHLines)*/) {
-                otbAppLogWARNING("No valid coherence lines were found for the field id (gaps) " << fieldInfo.fieldId);
+            if (!CheckWeekGaps(fieldInfo.vegStartWeekNo, fieldInfo.coheVVLines)) {
+                if (m_bVerbose) {
+                    otbAppLogWARNING("No valid coherence lines were found for the field id (gaps) " << fieldInfo.fieldId);
+                }
                 return false;
             }
         }
@@ -870,8 +869,6 @@ private:
             return false;
         }
 
-        // TODO: this is an workaround to have the same results as 2017 prototype
-        // TODO: See why if sorting the initial inputs give different results
         std::vector<InputFileLineInfoType> lineInfos;
         lineInfos.insert(lineInfos.end(), inLineInfos.begin(), inLineInfos.end());
 
@@ -2460,7 +2457,7 @@ private:
             } else {
                 // ITA or ESP
                 time_t weekC = weekB;
-                if (fieldInfos.countryCode == "ITA") {
+                if (CheckCountryCode(fieldInfos.countryCode, "ITA")) {
                     time_t ttDateC = GetTimeFromString(m_flMarkersStartDateStr);
                     weekC = FloorDateToWeekStart(ttDateC);
                 }
@@ -2529,7 +2526,7 @@ private:
         if (fieldInfos.countryCode != "CZE") {
             if (!ncHarvestEvalInfos.ndviPresence) {
                 // # no evidence of vegetation in the whole vegetation season - no evidence of NFC - return WEAK evaluation
-                if (fieldInfos.countryCode == "ESP") {
+                if (fieldInfos.countryCode == "ESP" || CheckCountryCode(fieldInfos.countryCode, "ITA")) {
                     ncHarvestEvalInfos.efaIndex = "POOR";
                 } else {
                     ncHarvestEvalInfos.efaIndex = "WEAK";
@@ -3057,6 +3054,10 @@ private:
             ampThrBreak = m_AmpThrMinimum;
         }
         return ampThrBreak;
+    }
+
+    bool CheckCountryCode(const std::string &str, const std::string &countryCode) {
+        return boost::starts_with(str, countryCode);
     }
 
 private:

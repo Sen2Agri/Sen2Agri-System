@@ -195,7 +195,7 @@ bool StatisticsInfosSingleCsvReader::ExtractLinesFromStream(std::istream &inStre
             }
         }
     }
-    if (!hasValidValues) {
+    if (!hasValidValues && m_bDebug) {
         std::cout << "Error extracting data. Input files are short" << shortOrbits << std::endl;
     }
     return hasValidValues;
