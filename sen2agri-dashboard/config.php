@@ -49,7 +49,7 @@ if($isSen2Agri){
                 SELECT 'L4A w/o IN-SITU processor' as name, 'l4a_wo' as short_name FROM processor WHERE name ilike '%l4a%') as proc 
             ORDER BY name";
 }else{
-    $sql = "Select name, short_name FROM processor WHERE name not ilike '%l2%' ORDER BY name";
+    $sql = "Select name, short_name FROM processor WHERE name not ilike '%l2%' and name not ilike '%lpis%' ORDER BY name";
     }
 $res = pg_query($db, $sql) or die();
 $processors = pg_fetch_all($res);

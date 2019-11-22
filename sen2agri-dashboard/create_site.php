@@ -2565,7 +2565,7 @@ function createUploader(id, fileExt) {
 		max_files: 1,
 		browse_button : 'pickfiles'  + id,
 		container: document.getElementById('container' + id),
-		url : "/create_site.php",
+		url : "create_site.php",
 		chunk_size : '7mb',
 		filters : {
 			mime_types: [

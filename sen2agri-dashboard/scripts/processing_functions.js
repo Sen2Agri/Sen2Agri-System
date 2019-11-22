@@ -876,6 +876,9 @@ function filter_input_files(formId){
 		}
 
 	data.tiles= tilesL8Arr.concat(tilesS2Arr).concat(tilesS1Arr);
+    data.s1_tiles= tilesS1Arr;
+    data.s2_tiles= tilesS2Arr;
+    data.l8_tiles= tilesL8Arr;
 	
 	if(tilesS2NotValid=='' && tilesL8NotValid=='' && tilesS1NotValid.length==0){
 		//make available the button to reset the filter
@@ -1149,6 +1152,13 @@ function get_products(siteId, productsEl, formId, filter) {
 	var satS1Checked =  $("#"+formId+" input#"+formId+"_chkS1").is(':checked');
 	var satS2Checked =  $("#"+formId+" input#"+formId+"_chkS2").is(':checked');
 	var satL8Checked =  $("#"+formId+" input#"+formId+"_chkL8").is(':checked');
+    
+    if (productsEl[0].id.indexOf("ndvi") >= 0) {
+        data.tiles = data.s2_tiles;
+        data.tiles = (data.tiles != undefined ? data.tiles.concat(data.l8_tiles) : data.l8_tiles);
+    } else if (productsEl[0].id.indexOf("amp") >= 0 || productsEl[0].id.indexOf("cohe") >= 0) {
+        data.tiles = data.s1_tiles;
+    }
 	
 	if (data.tiles != undefined && data.tiles.length == 0 && (satS2Checked || satL8Checked || satS1Checked)) {
 		if (satS2Checked && satL8Checked && satS1Checked) {
