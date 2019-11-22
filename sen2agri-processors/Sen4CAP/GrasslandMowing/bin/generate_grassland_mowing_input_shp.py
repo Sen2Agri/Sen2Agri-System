@@ -118,6 +118,13 @@ def main():
         shp = args.path
         ctnumFilter = ""
        
+        if not os.path.exists(os.path.dirname(shp)):
+            try:
+                os.makedirs(os.path.dirname(shp))
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+       
         ctnums = []
         if args.filter_ctnum : 
             ctnums = list(map(int, args.filter_ctnum.split(',')))
@@ -128,11 +135,11 @@ def main():
                 sql = "select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {} where ctnum in ({})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums))
         else :
             if args.filter_ids_table :
-                sql = SQL('select "NewID", ori_hold as "Ori_hold", ori_id as "Ori_id", ori_crop as "Ori_crop", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {} and \"NewID\" in (select newid from {})')
-                sql = sql.format(Identifier(lpis_table), Identifier(lut_table), Identifier(args.filter_ids_table))
+                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} where \"NewID\" in (select newid from {})')
+                sql = sql.format(Identifier(lpis_table), Identifier(args.filter_ids_table))
             else :
-                sql = SQL('select "NewID", ori_hold as "Ori_hold", ori_id as "Ori_id", ori_crop as "Ori_crop", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {}')
-                sql = sql.format(Identifier(lpis_table), Identifier(lut_table))
+                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {}')
+                sql = sql.format(Identifier(lpis_table))
             sql = sql.as_string(conn)
 
         command = []

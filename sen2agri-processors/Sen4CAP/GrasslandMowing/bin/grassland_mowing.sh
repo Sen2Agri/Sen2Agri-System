@@ -168,7 +168,7 @@ else
 fi 
 
 if [ -z ${s4c_config_file} ] ; then
-    echo "No s4c-config-file provided!"
+    echo "The parameter s4c-config-file defining the database parameters was not provided!"
     echo "The default /etc/sen2agri/sen2agri.conf will be used"
     s4c_config_file="/etc/sen2agri/sen2agri.conf"
 fi 
