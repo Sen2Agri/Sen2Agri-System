@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 import argparse
+import multiprocessing.dummy
 import os
 import os.path
 import shutil
@@ -11,7 +12,6 @@ from psycopg2.sql import SQL, Literal, Identifier
 import psycopg2.extras
 import subprocess
 import sys
-
 
 try:
     from configparser import ConfigParser
@@ -109,6 +109,7 @@ def export_crop_type(
     config,
     conn,
     pg_path,
+    pool,
     product_id,
     lpis_table,
     lut_table,
@@ -116,6 +117,7 @@ def export_crop_type(
     csv_path,
     lut_path,
 ):
+    commands = []
     srid = get_srid(conn, lpis_table)
 
     if config.filter:
@@ -153,7 +155,7 @@ def export_crop_type(
         "-gt",
         100000,
     )
-    run_command(command)
+    commands.append(command)
 
     query = SQL(
         """
@@ -186,19 +188,22 @@ def export_crop_type(
     command = get_export_table_command(
         config.ogr2ogr_path, csv_path, pg_path, "-sql", query, "-gt", 100000
     )
-    run_command(command)
+    commands.append(command)
 
     command = get_export_table_command(
         config.ogr2ogr_path, lut_path, pg_path, lut_table, "-gt", 100000
     )
-    run_command(command)
+    commands.append(command)
+
+    pool.map(run_command, commands)
 
     return [gpkg_path, csv_path, lut_path]
 
 
 def export_agricultural_practices(
-    config, conn, pg_path, product_id, lpis_table, lut_table, path
+    config, conn, pg_path, pool, product_id, lpis_table, lut_table, path
 ):
+    commands = []
     srid = get_srid(conn, lpis_table)
 
     if config.filter:
@@ -305,7 +310,10 @@ def export_agricultural_practices(
             "-gt",
             100000,
         )
-        run_command(command)
+        commands.append(command)
+
+    pool.map(run_command, commands)
+
     return outputs
 
 
@@ -335,6 +343,8 @@ def main():
         config.dbname, config.host, config.port, config.user, config.password
     )
 
+    pool = multiprocessing.dummy.Pool()
+
     if args.working_path:
         output = os.path.join(args.working_path, os.path.basename(args.output))
     else:
@@ -362,6 +372,7 @@ def main():
                 config,
                 conn,
                 pg_path,
+                pool,
                 args.product_id,
                 lpis_table,
                 lut_table,
@@ -371,7 +382,14 @@ def main():
             )
         elif product_type == PRODUCT_TYPE_AGRICULTURAL_PRACTICES:
             outputs = export_agricultural_practices(
-                config, conn, pg_path, args.product_id, lpis_table, lut_table, output
+                config,
+                conn,
+                pg_path,
+                pool,
+                args.product_id,
+                lpis_table,
+                lut_table,
+                output,
             )
         else:
             print("Unknown product type {}".format(product_type))
