@@ -730,6 +730,64 @@ def get_s1_products(config, conn, site_id, prds_list):
 
         return products
 
+def getPathsAndOrbits(config_file, conn, site_id, input_products_list) :
+    products = get_s1_products(config_file, conn, site_id, input_products_list)
+    
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    
+    orbit_list_filter = None
+    orbit_type_list_filter = None
+    if config.has_option('GENERAL_CONFIG', 'orbit_list_filter') : 
+        orbit_list_filter = config['GENERAL_CONFIG']['orbit_list_filter']
+    if config.has_option('GENERAL_CONFIG', 'orbit_type_list_filter') : 
+        orbit_type_list_filter = config['GENERAL_CONFIG']['orbit_type_list_filter']
+        
+    if orbit_list_filter and orbit_type_list_filter :
+        orbit_list_filter = list(map(str.strip, orbit_list_filter.split(',')))
+        orbit_type_list_filter = list(map(str.strip, orbit_type_list_filter.split(',')))
+    
+    if orbit_list_filter : 
+        print("Filtering orbit_list :", orbit_list_filter)
+        print("Filtering orbit_type_list :", orbit_type_list_filter)
+    
+    orbit_list_tmp = []
+    orbit_type_list_tmp = []
+    data_x_detection = []
+    for product in products:
+        data_x_detection.append(product.path) 
+        if product.orbit_id not in orbit_list_tmp:
+            orbit_list_tmp.append(product.orbit_id)
+            if product.orbit_type_id == 1 : 
+                orbit_type_list_tmp.append("ASC")
+            else :
+                orbit_type_list_tmp.append("DESC")
+
+    print("orbit_list detected:", orbit_list_tmp)
+    print("orbit_type_list detected", orbit_type_list_tmp)
+
+    orbit_list = []
+    orbit_type_list = []
+    for i in range(len(orbit_list_tmp)):
+        orbit = orbit_list_tmp[i]
+        orbit_type = orbit_type_list_tmp[i]
+        add_orbit = True
+        if (orbit_list_filter and len(orbit_list_filter) > 0) :
+            found = False
+            for j in range(len(orbit_list_filter)):
+                if orbit_list_filter[j] == orbit and orbit_type_list_filter[j] == orbit_type:
+                    found = True
+                    break
+            if not found :
+                print("Orbit {} {} not found in the filtering orbits list. It will be filtered!".format(orbit, orbit_type))
+                add_orbit = False
+            
+        if add_orbit:
+            orbit_list.append(orbit)
+            orbit_type_list.append(orbit_type)
+
+    return data_x_detection, orbit_list, orbit_type_list
+
 def main() :
     parser = argparse.ArgumentParser(description="Executes grassland mowing S1 detection")
     parser.add_argument('-c', '--s4c-config-file', default='/etc/sen2agri/sen2agri.conf', help="Sen4CAP system configuration file location")
@@ -753,22 +811,9 @@ def main() :
     s4cConfig = S4CConfig(args)
     
     with psycopg2.connect(host=s4cConfig.host, dbname=s4cConfig.dbname, user=s4cConfig.user, password=s4cConfig.password) as conn:
-        products = get_s1_products(s4cConfig, conn, s4cConfig.site_id, args.input_products_list)
-        
-        orbit_list = []
-        orbit_type_list = []
-        data_x_detection = []
-        for product in products:
-            data_x_detection.append(product.path) 
-            if product.orbit_id not in orbit_list:
-                orbit_list.append(product.orbit_id)
-                if product.orbit_type_id == 1 : 
-                    orbit_type_list.append("ASC")
-                else :
-                    orbit_type_list.append("DESC")
-
-        print("orbit_list 1:", orbit_list)
-        print("orbit_type_list 1", orbit_type_list)
+        data_x_detection, orbit_list, orbit_type_list = getPathsAndOrbits(s4cConfig.config_file, conn, s4cConfig.site_id, args.input_products_list)
+        print("orbit_list to use:", orbit_list)
+        print("orbit_type_list to use", orbit_type_list)
         
         ret, _ = main_run(s4cConfig.config_file, s4cConfig.input_shape_file, data_x_detection, s4cConfig.output_data_dir, s4cConfig.new_acq_date, 
                        older_acq_date = s4cConfig.older_acq_date, orbit_list = orbit_list, orbit_type_list=orbit_type_list,

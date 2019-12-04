@@ -64,6 +64,12 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    --srid)
+    srid="$2"
+    shift # past argument
+    shift # past value
+    ;;
+    
     *)    # unknown option
     POSITIONAL+=("$1") # save it in an array for later
     shift # past argument
@@ -149,7 +155,12 @@ if [ ! -z "${filter_ids_table}" ] ; then
     FILTER_IDS_TABLE_OPT="--filter-ids-table ${filter_ids_table}" 
 fi
 
-PY_CMD="python ${script_path} ${CFG_FILE} --site-id ${site_id} --path ${path} --year ${year} ${FILTER_CT_NUM_OPT} ${FILTER_IDS_TABLE_OPT} ${FORCE_OPT}"
+SRID_OPT=""
+if [ ! -z "${srid}" ] ; then
+    SRID_OPT="--srid ${srid}" 
+fi
+
+PY_CMD="python ${script_path} ${CFG_FILE} --site-id ${site_id} --path ${path} --year ${year} ${FILTER_CT_NUM_OPT} ${FILTER_IDS_TABLE_OPT} ${FORCE_OPT} ${SRID_OPT}"
 
 CMD="${CONDA_CMD} && ${PY_CMD}"
 CMD="${CMD}${CMD_TERM}"

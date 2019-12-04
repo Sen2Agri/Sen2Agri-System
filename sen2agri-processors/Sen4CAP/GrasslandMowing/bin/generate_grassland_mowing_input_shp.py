@@ -99,6 +99,8 @@ def main():
     parser.add_argument('-f', '--filter-ctnum', default="", help="Filtering CTnum fields")
     parser.add_argument('--force', help="overwrite field", action='store_true')
     parser.add_argument('--filter-ids-table', help="A table name containing filter ids")
+    parser.add_argument('--srid', help="EPSG projection to be used for the output shapefile")
+    #parser.add_argument('--dynamic-srid', default=False, help="Compute dynamically the srid from the NDVI products")
     
     args = parser.parse_args()
 
@@ -130,15 +132,15 @@ def main():
             ctnums = list(map(int, args.filter_ctnum.split(',')))
         if len(ctnums) > 0 : 
             if args.filter_ids_table :
-                sql = "select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {} where ctnum in ({}) and \"NewID\" in (select newid from {})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums), args.filter_ids_table)
+                sql = "select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {} where ctnum in ({}) and \"NewID\" in (select newid from {})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums), args.filter_ids_table)
             else :
-                sql = "select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {} where ctnum in ({})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums))
+                sql = "select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {} where ctnum in ({})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums))
         else :
             if args.filter_ids_table :
-                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} where \"NewID\" in (select newid from {})')
+                sql = SQL('select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} where \"NewID\" in (select newid from {})')
                 sql = sql.format(Identifier(lpis_table), Identifier(args.filter_ids_table))
             else :
-                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {}')
+                sql = SQL('select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {}')
                 sql = sql.format(Identifier(lpis_table))
             sql = sql.as_string(conn)
 
@@ -147,7 +149,9 @@ def main():
         command += ["-sql", sql]
         command += [shp]
         command += [pg_path]
-        command += ["-lco", "ENCODING=UTF-8"]        
+        command += ["-lco", "ENCODING=UTF-8"]
+        if args.srid :
+            command += ["-t_srs", "EPSG:" + str(args.srid)]
         commands.append(command)
 
         print ("Starting executing the commands ...")
