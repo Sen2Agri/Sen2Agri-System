@@ -142,12 +142,24 @@ def get_reference_raster(product):
         if files:
             return files[0]
         else:
-            files = glob.glob(os.path.join(directory, "*PENTE*"))
+            directory = os.path.join(directory, "GRANULE")
+            # Check for Sen2Cor reference raster
+            for subdir in os.listdir(directory):
+                directory=os.path.join(directory, subdir)
+                if os.path.isdir(directory):
+                    directory = os.path.join(directory, "IMG_DATA")
+                    directory = os.path.join(directory, "R10m")
+                    break
+            files = glob.glob(os.path.join(directory, "*_B04_10m.jp2"))
             if files:
                 return files[0]
             else:
-                files = glob.glob(os.path.join(directory, "*"))
-                raise Exception("Unable to find a reference raster for MAJA or SPOT product", directory, files)
+                files = glob.glob(os.path.join(directory, "*PENTE*"))
+                if files:
+                    return files[0]
+                else:
+                    files = glob.glob(os.path.join(directory, "*"))
+                    raise Exception("Unable to find a reference raster for MAJA or SPOT product", directory, files)
     if extension == ".hdr":
         dir = os.path.join(directory, parts[0] + ".DBL.DIR")
         files = glob.glob(os.path.join(dir, "*_FRE_R1.DBL.TIF"))
@@ -178,25 +190,37 @@ class Mission(object):
 
 def get_tile_id(product):
     file = os.path.basename(product)
-    m = re.match("SPOT.+_([a-z0-9]+)\\.xml", file, re.IGNORECASE)
-    if m:
-        return (Mission.SPOT, m.group(1))
-
-    m = re.match(".+_L8_(\d{3})_(\d{3}).hdr", file, re.IGNORECASE)
-    if m:
-        return (Mission.LANDSAT, m.group(1) + m.group(2))
-    m = re.match("L8_.+_(\d{6})_\d{8}.HDR", file, re.IGNORECASE)
-    if m:
-        return (Mission.LANDSAT, m.group(1))
-
-    m = re.match(
-        "S2[a-z0-9]_[a-z0-9]+_[a-z0-9]+_[a-z0-9]+_([a-z0-9]+)_.+\\.HDR", file, re.IGNORECASE)
-    if m:
-        return (Mission.SENTINEL, m.group(1))
+    
+    # Check first for S2 and L8 MAJA format 
     m = re.match(
         "SENTINEL2[A-D]_.+_L2A_T([A-Z0-9]+)_.+_MTD_ALL\.xml", file, re.IGNORECASE)
     if m:
         return (Mission.SENTINEL, m.group(1))
+    m = re.match("L8_.+_(\d{6})_\d{8}.HDR", file, re.IGNORECASE)
+    if m:
+        return (Mission.LANDSAT, m.group(1))
+    
+    # Check for Sen2Cor S2 format 
+    if file.lower() == "MTD_MSIL2A.xml".lower():
+        directory = os.path.dirname(product)
+        dir_name = os.path.basename(directory)
+        m = re.match("S2[A-D]_.+_T([A-Z0-9]+)_.+", dir_name, re.IGNORECASE)
+        if m:
+            return (Mission.SENTINEL, m.group(1))
+    
+    # Check for MACCS format
+    m = re.match(
+        "S2[a-z0-9]_[a-z0-9]+_[a-z0-9]+_[a-z0-9]+_([a-z0-9]+)_.+\\.HDR", file, re.IGNORECASE)
+    if m:
+        return (Mission.SENTINEL, m.group(1))
+    m = re.match(".+_L8_(\d{3})_(\d{3}).hdr", file, re.IGNORECASE)
+    if m:
+        return (Mission.LANDSAT, m.group(1) + m.group(2))
+
+    # Check for SPOT format
+    m = re.match("SPOT.+_([a-z0-9]+)\\.xml", file, re.IGNORECASE)
+    if m:
+        return (Mission.SPOT, m.group(1))
 
     return None
 

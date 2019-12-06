@@ -35,6 +35,8 @@ for zip_name in *.zip; do
             mtd_file="${prd_dir}/*_MTD_ALL.xml"
             echo "Metadata file is : $mtd_file"
             target_dir=$(xmllint --xpath '//Muscate_Metadata_Document/Production_Informations/Processing_Jobs_List/Job/Products_List/Inputs_List/PRODUCT/PRODUCT_ID' ${mtd_file} | sed 's/<\/PRODUCT_ID>/\n/g' | sed 's/<PRODUCT_ID>//g' | grep _MSIL1C_)
+            echo "Extracted L1C product name: $target_dir"
+            target_dir=${target_dir/_MSIL1C_/_MSIL2A_}
             echo "Target dir is : $target_dir"
             TARGET_DIR_PATH="${INPUT_DIR_PATH}/${target_dir}"
             if [ -d "${TARGET_DIR_PATH}" ] ; then 
