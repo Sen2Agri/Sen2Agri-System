@@ -1384,15 +1384,19 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 										<input type="hidden" id="upload_msgs" name="upload_msgs" value=""/>
 									</div>
 								</div>
-								<div class="col-md-5">
-									<div class="form-group form-group-sm">
-										<label class="control-label" for="upload_year" style="width:100%">Configuration year:</label>
-										<input type="text" class="form-control" id="upload_year" name="upload_year" value="<?= $uploadYear ?>" style="width:100px;float:left;margin-right:10px">
-										<input type="submit" class="form-control add-edit-btn upload-btn left-btn" id="change_upload_year" name="change_upload_year" value="Change year" style="width:auto">
-										<input type="hidden" name="upload_msgs" id="upload_msgs" value=""/>
-									</div>
-								</div>
-							</div>
+                                <?php
+                                if (!ConfigParams::isSen2Agri()) {
+                                ?>
+                                    <div class="col-md-5">
+                                        <div class="form-group form-group-sm">
+                                            <label class="control-label" for="upload_year" style="width:100%">Configuration year:</label>
+                                            <input type="text" class="form-control" id="upload_year" name="upload_year" value="<?= $uploadYear ?>" style="width:100px;float:left;margin-right:10px">
+                                            <input type="submit" class="form-control add-edit-btn upload-btn left-btn" id="change_upload_year" name="change_upload_year" value="Change year" style="width:auto">
+                                            <input type="hidden" name="upload_msgs" id="upload_msgs" value=""/>
+                                        </div>
+                                    </div>
+                                <?php } ?>  
+                            </div>
 						</form>
 						<div class="container-fluid" style="font:14px Arial, Helvetica, sans-serif">
 							<div class="panel-group config" id="accordion">
@@ -1533,17 +1537,21 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 											</div>
 										</div>
 									</div>
-									<div class="row">
-										<div class="col-md-1" style="width: 10%;padding-right: 0px;">
-											<div class="form-group form-group-sm">
-												<input class="chkS1" id="chkS1Edit" type="checkbox" name="chkS1Edit" value="S1" checked="checked" disabled>
-												<label  for="chkS1Edit">S1</label>
-											</div>
-										</div>
-										<div class="col-md-9" >
-											<div style="border:1px solid #cccccc;background-color:#eeeeee;width:105%;height:1.6em"></div>
-										</div>
-									</div>
+                                    <?php
+                                    if (!ConfigParams::isSen2Agri()) {
+                                    ?>
+                                        <div class="row">
+                                            <div class="col-md-1" style="width: 10%;padding-right: 0px;">
+                                                <div class="form-group form-group-sm">
+                                                    <input class="chkS1" id="chkS1Edit" type="checkbox" name="chkS1Edit" value="S1" checked="checked" disabled>
+                                                    <label  for="chkS1Edit">S1</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-9" >
+                                                <div style="border:1px solid #cccccc;background-color:#eeeeee;width:105%;height:1.6em"></div>
+                                            </div>
+                                        </div>
+                                    <?php } ?>
 							  	</div>
 							</div>
 							<div class="row">
