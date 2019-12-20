@@ -779,6 +779,9 @@ def get_statistics_file_names(input):
 def get_statistics_invocation(input, ref):
     (mean, dev, count) = get_statistics_file_names(input)
 
+    if os.path.exists(mean) and os.path.exists(dev) and os.path.exists(count):
+        return None
+
     command = []
     command += ["otbcli", "ClassStatistics"]
     command += ["-in", get_otb_extended_filename_skipgeom(input)]
@@ -824,50 +827,49 @@ class WeeklyComposite(object):
         env["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(2)
         env["OTB_MAX_RAM_HINT"] = str(1024)
 
-        if os.path.exists(self.output):
-            return
+        if not os.path.exists(self.output):
+            self.inputs = filter(os.path.exists, self.inputs)
+            inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
 
-        self.inputs = filter(os.path.exists, self.inputs)
-        inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
+            command = []
+            command += ["otbcli", "Composite"]
+            command += ["-progress", "false"]
+            command += ["-out", self.temp]
+            command += ["-outputs.ulx", self.xmin]
+            command += ["-outputs.uly", self.ymax]
+            command += ["-outputs.lrx", self.xmax]
+            command += ["-outputs.lry", self.ymin]
+            command += ["-outputs.spacingx", 20]
+            command += ["-outputs.spacingy", -20]
+            command += ["-il"] + inputs
+            command += ["-bv", 0]
+            command += ["-opt.gridspacing", 240]
+            run_command(command, env)
 
-        command = []
-        command += ["otbcli", "Composite"]
-        command += ["-progress", "false"]
-        command += ["-out", self.temp]
-        command += ["-outputs.ulx", self.xmin]
-        command += ["-outputs.uly", self.ymax]
-        command += ["-outputs.lrx", self.xmax]
-        command += ["-outputs.lry", self.ymin]
-        command += ["-outputs.spacingx", 20]
-        command += ["-outputs.spacingy", -20]
-        command += ["-il"] + inputs
-        command += ["-bv", 0]
-        command += ["-opt.gridspacing", 240]
-        run_command(command, env)
+            (xmin, ymax) = self.tile_extent[0]
+            (xmax, ymin) = self.tile_extent[2]
 
-        (xmin, ymax) = self.tile_extent[0]
-        (xmax, ymin) = self.tile_extent[2]
+            command = []
+            command += ["gdalwarp", "-q"]
+            command += ["-r", "cubic"]
+            command += ["-t_srs", "EPSG:{}".format(self.tile_epsg_code)]
+            command += ["-tr", 20, 20]
+            command += ["-te", xmin, ymin, xmax, ymax]
+            command += [self.temp]
+            command += [self.output]
+            run_command(command)
 
-        command = []
-        command += ["gdalwarp", "-q"]
-        command += ["-r", "cubic"]
-        command += ["-t_srs", "EPSG:{}".format(self.tile_epsg_code)]
-        command += ["-tr", 20, 20]
-        command += ["-te", xmin, ymin, xmax, ymax]
-        command += [self.temp]
-        command += [self.output]
-        run_command(command)
+            os.remove(self.temp)
 
-        os.remove(self.temp)
-
-        command = []
-        command += ["optimize_gtiff.py"]
-        command += ["--no-data", 0]
-        command += [self.output]
-        run_command(command, env)
+            command = []
+            command += ["optimize_gtiff.py"]
+            command += ["--no-data", 0]
+            command += [self.output]
+            run_command(command, env)
 
         command = get_statistics_invocation(self.output, self.tile_ref)
-        run_command(command, env)
+        if command:
+            run_command(command, env)
 
 
 class WeeklyRatioStatistics(object):
@@ -914,27 +916,27 @@ class BackscatterMonthlyComposite(object):
         env["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(2)
         env["OTB_MAX_RAM_HINT"] = str(1024)
 
-        if os.path.exists(self.output):
-            return
-        self.inputs = filter(os.path.exists, self.inputs)
-        inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
+        if not os.path.exists(self.output):
+            self.inputs = filter(os.path.exists, self.inputs)
+            inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
 
-        command = []
-        command += ["otbcli", "BackscatterTemporalFeatures"]
-        command += ["-progress", "false"]
-        command += ["-out", self.output_extended]
-        command += ["-mode", self.mode]
-        command += ["-il"] + inputs
-        run_command(command, env)
+            command = []
+            command += ["otbcli", "BackscatterTemporalFeatures"]
+            command += ["-progress", "false"]
+            command += ["-out", self.output_extended]
+            command += ["-mode", self.mode]
+            command += ["-il"] + inputs
+            run_command(command, env)
 
-        command = []
-        command += ["optimize_gtiff.py"]
-        command += ["--no-data", 0]
-        command += [self.output]
-        run_command(command, env)
+            command = []
+            command += ["optimize_gtiff.py"]
+            command += ["--no-data", 0]
+            command += [self.output]
+            run_command(command, env)
 
         command = get_statistics_invocation(self.output, self.tile_ref)
-        run_command(command, env)
+        if command:
+            run_command(command, env)
 
 
 class CoherenceMonthlyComposite(object):
@@ -950,27 +952,26 @@ class CoherenceMonthlyComposite(object):
         env["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(2)
         env["OTB_MAX_RAM_HINT"] = str(1024)
 
-        if os.path.exists(self.output):
-            return
+        if not os.path.exists(self.output):
+            self.inputs = filter(os.path.exists, self.inputs)
+            inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
 
-        self.inputs = filter(os.path.exists, self.inputs)
-        inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
+            command = []
+            command += ["otbcli", "CoherenceMonthlyFeatures"]
+            command += ["-progress", "false"]
+            command += ["-out", self.output_extended]
+            command += ["-il"] + inputs
+            run_command(command, env)
 
-        command = []
-        command += ["otbcli", "CoherenceMonthlyFeatures"]
-        command += ["-progress", "false"]
-        command += ["-out", self.output_extended]
-        command += ["-il"] + inputs
-        run_command(command, env)
-
-        command = []
-        command += ["optimize_gtiff.py"]
-        command += ["--no-data", 0]
-        command += [self.output]
-        run_command(command, env)
+            command = []
+            command += ["optimize_gtiff.py"]
+            command += ["--no-data", 0]
+            command += [self.output]
+            run_command(command, env)
 
         command = get_statistics_invocation(self.output, self.tile_ref)
-        run_command(command, env)
+        if command:
+            run_command(command, env)
 
 
 class CoherenceSeasonComposite(object):
@@ -986,27 +987,26 @@ class CoherenceSeasonComposite(object):
         env["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(2)
         env["OTB_MAX_RAM_HINT"] = str(1024)
 
-        if os.path.exists(self.output):
-            return
+        if not os.path.exists(self.output):
+            self.inputs = filter(os.path.exists, self.inputs)
+            inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
 
-        self.inputs = filter(os.path.exists, self.inputs)
-        inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
+            command = []
+            command += ["otbcli", "StandardDeviation"]
+            command += ["-progress", "false"]
+            command += ["-out", self.output_extended]
+            command += ["-il"] + inputs
+            run_command(command, env)
 
-        command = []
-        command += ["otbcli", "StandardDeviation"]
-        command += ["-progress", "false"]
-        command += ["-out", self.output_extended]
-        command += ["-il"] + inputs
-        run_command(command, env)
-
-        command = []
-        command += ["optimize_gtiff.py"]
-        command += ["--no-data", 0]
-        command += [self.output]
-        run_command(command, env)
+            command = []
+            command += ["optimize_gtiff.py"]
+            command += ["--no-data", 0]
+            command += [self.output]
+            run_command(command, env)
 
         command = get_statistics_invocation(self.output, self.tile_ref)
-        run_command(command, env)
+        if command:
+            run_command(command, env)
 
 
 def get_projection(file):
