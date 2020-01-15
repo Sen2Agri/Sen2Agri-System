@@ -64,6 +64,7 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
     // It is assumed that the product formatter task it is the last one in the list
     TaskToSubmit &productFormatterTask = allTasksList[allTasksList.size()-1];
 
+    QString s1InputShpLocation = inputShpLocation;
     if (cfg.inputPrdsType & L3B) {
         QString outShpFileName = ((cfg.inputPrdsType & L3B) ?
                                       "SEN4CAP_L4B_S1_S2_MowingDetection" :
@@ -87,6 +88,8 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
         if (!cfg.isScheduled) {
             productFormatterFiles += s2MowingDetectionTask.GetFilePath("");
         }
+        // if both S2 and S1, set the input for the S1 as the output of S2
+        s1InputShpLocation = s2MowingDetectionOutFile;
     }
 
     if (cfg.inputPrdsType & L2_S1) {
