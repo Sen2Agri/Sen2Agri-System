@@ -10,6 +10,8 @@
 #include "LtuCountryInfo.h"
 #include "NlCountryInfo.h"
 #include "RouCountryInfo.h"
+#include "FraCountryInfo.h"
+#include "DefaultCountryInfo.h"
 
 #include <vector>
 #include <memory>
@@ -52,9 +54,15 @@ public:
             return espInfos;
         }
 
-        itkExceptionMacro("Practice reader not supported: " << name);
+        std::unique_ptr<CountryInfoBase> fraInfos(new FraCountryInfo);
+        if (fraInfos->GetName() == name) {
+            return fraInfos;
+        }
 
-        return NULL;
+        std::unique_ptr<CountryInfoBase> defaultInfos(new DefaultCountryInfo);
+        return defaultInfos;
+//        itkExceptionMacro("Practice reader not supported: " << name);
+//        return NULL;
     }
 };
 

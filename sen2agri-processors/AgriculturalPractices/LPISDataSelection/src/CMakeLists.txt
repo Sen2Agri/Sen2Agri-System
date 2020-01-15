@@ -29,6 +29,8 @@ otb_create_application(
                  LtuCountryInfo.h LtuCountryInfo.cpp
                  NlCountryInfo.h NlCountryInfo.cpp
                  RouCountryInfo.h RouCountryInfo.cpp
+                 FraCountryInfo.h FraCountryInfo.cpp
+                 DefaultCountryInfo.h DefaultCountryInfo.cpp
   LINK_LIBRARIES ${OTBExtensions} ${OTB_LIBRARIES} ${OTBCommon_LIBRARIES} ${OTBITK_LIBRARIES} MACCSMetadata ${Boost_LIBRARIES})
 
 #if(BUILD_TESTING)
