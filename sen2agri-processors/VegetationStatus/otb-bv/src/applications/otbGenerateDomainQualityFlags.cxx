@@ -352,7 +352,8 @@ private:
 
         // compute the domain limits for each band
         const std::string &missionName = pHelper->GetMissionName();
-        std::map<std::string, DomainLimits_Type> domLimits = (missionName.find("SENTINEL2") != std::string::npos) ?
+        std::map<std::string, DomainLimits_Type> domLimits = ((missionName.find("SENTINEL2") != std::string::npos) ||
+                                                              (missionName.find("Sentinel-2") != std::string::npos)) ?
                     S2_VALIDATION_LIMITS : L8_VALIDATION_LIMITS;
         std::vector<DomainLimits_Type> resDomLimits(m_laiCfg.bandsNames.size());
         MetadataHelper<float>::VectorImageType::Pointer img = pHelper->GetImage(m_laiCfg.bandsNames);

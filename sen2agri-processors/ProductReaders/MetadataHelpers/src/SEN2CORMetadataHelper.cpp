@@ -18,6 +18,7 @@
 #include "GlobalDefs.h"
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/system/error_code.hpp>
 
@@ -63,6 +64,9 @@ bool SEN2CORMetadataHelper<PixelType, MasksPixelType>::DoLoadMetadata(const std:
             this->m_ReflQuantifVal = std::stod(this->m_metadata->ProductInformation.ReflectanceQuantificationValue);
 
             this->m_Mission = this->m_metadata->Header.FixedHeader.Mission;
+            boost::algorithm::to_upper(this->m_Mission);
+            // we remove the - to have something similar to MAJA/MACCS like SENTINEL2A, etc.
+            boost::algorithm::erase_all(this->m_Mission, "-");
             // this->m_Instrument = this->m_metadata->Header.Instrument;
 
             // extract the acquisition date
@@ -181,8 +185,10 @@ std::vector<std::string> SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetBa
         if (curRes == res) {
             retVect.push_back(maccsBandResolution.BandName);
         }
-        if (curRes == 10 || curRes == 20) {
-            allBands.push_back(maccsBandResolution.BandName);
+        if (curRes == 10 || curRes == 20 || curRes == 60) {
+            if (std::find(allBands.begin(), allBands.end(), maccsBandResolution.BandName) == allBands.end()) {
+                allBands.push_back(maccsBandResolution.BandName);
+            }
         }
     }
     return retVect.size() > 0 ? retVect : allBands;
@@ -306,6 +312,49 @@ void SEN2CORMetadataHelper<PixelType, MasksPixelType>::InitializeS2Angles() {
 }
 
 template <typename PixelType, typename MasksPixelType>
+std::vector<MetadataHelperViewingAnglesGrid> SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetDetailedViewingAngles(int res)
+{
+    for(unsigned int i = 0; i<this->m_bandViewingAngles.size(); i++) {
+        MACCSBandViewingAnglesGrid maccsGrid = this->m_bandViewingAngles[i];
+        //Return only the angles of the bands for the current resolution
+        if(this->BandAvailableForResolution(maccsGrid.BandId, res)) {
+            MetadataHelperViewingAnglesGrid mhGrid;
+            mhGrid.BandId = maccsGrid.BandId;
+            //mhGrid.DetectorId = maccsGrid.DetectorId;
+            mhGrid.Angles.Azimuth.ColumnStep = maccsGrid.Angles.Azimuth.ColumnStep;
+            mhGrid.Angles.Azimuth.ColumnUnit = maccsGrid.Angles.Azimuth.ColumnUnit;
+            mhGrid.Angles.Azimuth.RowStep = maccsGrid.Angles.Azimuth.RowStep;
+            mhGrid.Angles.Azimuth.RowUnit = maccsGrid.Angles.Azimuth.RowUnit;
+            mhGrid.Angles.Azimuth.Values = maccsGrid.Angles.Azimuth.Values;
+
+            mhGrid.Angles.Zenith.ColumnStep = maccsGrid.Angles.Zenith.ColumnStep;
+            mhGrid.Angles.Zenith.ColumnUnit = maccsGrid.Angles.Zenith.ColumnUnit;
+            mhGrid.Angles.Zenith.RowStep = maccsGrid.Angles.Zenith.RowStep;
+            mhGrid.Angles.Zenith.RowUnit = maccsGrid.Angles.Zenith.RowUnit;
+            mhGrid.Angles.Zenith.Values = maccsGrid.Angles.Zenith.Values;
+
+            this->m_detailedViewingAngles.push_back(mhGrid);
+        }
+    }
+    return this->m_detailedViewingAngles;
+}
+
+template <typename PixelType, typename MasksPixelType>
+bool SEN2CORMetadataHelper<PixelType, MasksPixelType>::BandAvailableForResolution(const std::string &bandId, int nRes) {
+    // Sentinel 2
+    int nBand = std::atoi(bandId.c_str());
+    if(nBand < this->m_metadata->ProductInformation.BandResolutions.size()) {
+        const CommonBandResolution& maccsBandResolution = this->m_metadata->ProductInformation.BandResolutions[nBand];
+        int nBandRes = std::atoi(maccsBandResolution.Resolution.c_str());
+        if(nBandRes == nRes) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+template <typename PixelType, typename MasksPixelType>
 std::string SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetImageFileName(const std::string &bandName, int prefferedRes) {
     std::string suffix = ("_" + NormalizeBandName(bandName) + "_" + std::to_string(prefferedRes) + "m");
     const std::string &fileName = this->GetSen2CorImageFileName(this->m_metadata->ProductOrganization.ImageFiles, suffix);
@@ -337,23 +386,42 @@ std::string SEN2CORMetadataHelper<PixelType, MasksPixelType>::NormalizeBandName(
 }
 
 template <typename PixelType, typename MasksPixelType>
-bool SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetValidBandNames(const std::vector<std::string> &bandNames, std::vector<std::string> &validBandNames,
-                       std::vector<int> &relBandIndexes, int &outRes)
+bool SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetValidBandNames(const std::vector<std::string> &bandNames,
+                                                                         std::vector<std::string> &validBandNames,
+                                                                         std::vector<int> &relBandIndexes, int &outRes)
 {
     relBandIndexes.resize(bandNames.size());
     std::fill(relBandIndexes.begin(), relBandIndexes.end(), -1);
     int valdBandIdx = 0;
     int i = 0;
     std::map<int, int> resolutions;
-    bool bHasBandName;
+    bool bHasBandName, bHas10mBandName;
+    const std::vector<std::string> &bands10m = this->GetBandNamesForResolution(10);
+    const std::vector<std::string> &bands20m = this->GetBandNamesForResolution(20);
+    const std::vector<std::string> &bands60m = this->GetBandNamesForResolution(60);
     for(const std::string &bandName: bandNames) {
         bHasBandName = false;
-        if (this->HasBandName(this->GetBandNamesForResolution(10), bandName)) {
-            resolutions[10] = 10;
+        bHas10mBandName = false;
+        if (this->HasBandName(bands10m, bandName)) {
+            if (outRes == -1 || outRes == 10) {
+                resolutions[10] = 10;
+                bHasBandName = true;
+            }
+            bHas10mBandName = true;
+        }
+        // if the band is found for 20m but not found for 10m and the resolution is not 10m
+        if (!bHasBandName && (outRes == -1 || outRes == 10 || outRes == 20) && this->HasBandName(bands20m, bandName)) {
+            resolutions[20] = 20;
             bHasBandName = true;
         }
-        if (this->HasBandName(this->GetBandNamesForResolution(20), bandName)) {
-            resolutions[20] = 20;
+        // if the band was not found in all other resolutions, try to get it from 60m res (for ex. B01)
+        if (!bHasBandName && this->HasBandName(bands60m, bandName)) {
+            resolutions[60] = 60;
+            bHasBandName = true;
+        }
+        // This is because band B08 apears only in the 10m resolution and not in 20m and 60m resolutions
+        if (!bHasBandName && bHas10mBandName) {
+            resolutions[10] = 10;
             bHasBandName = true;
         }
         if (bHasBandName) {
@@ -387,28 +455,6 @@ bool SEN2CORMetadataHelper<PixelType, MasksPixelType>::HasBandName(const std::ve
 }
 
 template <typename PixelType, typename MasksPixelType>
-std::string SEN2CORMetadataHelper<PixelType, MasksPixelType>::DeriveFileNameFromImageFileName(const std::string& replacement)
-{
-    std::string fileName;
-/*
-    std::string orthoSurf = this->m_metadata->Files.OrthoSurfCorrPente;
-    if(orthoSurf.empty()) {
-        orthoSurf = this->m_metadata->Files.OrthoSurfCorrEnv;
-        if(!orthoSurf.empty()) {
-            int nPos = orthoSurf.find("ORTHO_SURF_CORR_ENV");
-            orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_ENV"), replacement);
-            fileName = orthoSurf;
-        }
-    } else {
-        int nPos = orthoSurf.find("ORTHO_SURF_CORR_PENTE");
-        orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_PENTE"), replacement);
-        fileName = orthoSurf;
-    }
-*/
-    return fileName;
-}
-
-template <typename PixelType, typename MasksPixelType>
 std::string SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetAotImageFileName(int res)
 {
     switch (res) {
@@ -439,7 +485,9 @@ typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType::Po
 
     // We use SCL file for all flags
     typename MetadataHelper<PixelType, MasksPixelType>::SingleBandMasksImageType::Pointer img;
-    img = this->m_maskFlagsBandsExtractor.ExtractResampledBand(GetSCLFileName(resolution), 1, Interpolator_NNeighbor);
+    // force resolution to 10 m if not specified
+    img = this->m_maskFlagsBandsExtractor.ExtractResampledBand(GetSCLFileName(resolution), 1, Interpolator_NNeighbor, -1,
+                                                               (resolution == -1 ? 10 : resolution));
 
     this->m_maskHandlerFunctor.Initialize(nMaskFlags, binarizeResult);
     this->m_maskHandlerFilter = Sen2CorUnaryFunctorImageFilterType::New();

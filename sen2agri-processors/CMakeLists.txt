@@ -74,6 +74,7 @@ install(FILES ../scripts/insert_l2a_product_to_db.py
               ../scripts/s4c_l4c/s4c_l4c_import_practice.py
               ../scripts/s4c_l4c/s4c_l4c_export_all_practices.py
               ../scripts/s4c_l4b/s4c_l4b_import_config.py
+              ../scripts/import_theia.sh
         DESTINATION usr/bin/
 	    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                     GROUP_READ GROUP_EXECUTE

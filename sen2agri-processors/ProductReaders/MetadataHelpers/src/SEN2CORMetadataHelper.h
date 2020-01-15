@@ -125,11 +125,12 @@ public:
     virtual float GetAotQuantificationValue(int res);
     virtual float GetAotNoDataValue(int res);
     virtual int GetAotBandIndex(int res);
+    virtual std::vector<MetadataHelperViewingAnglesGrid> GetDetailedViewingAngles(int res);
+    virtual bool BandAvailableForResolution(const std::string &bandId, int nRes);
 
 protected:
     virtual bool DoLoadMetadata(const std::string& file);
 
-    std::string DeriveFileNameFromImageFileName(const std::string& replacement);
     int GetRelativeBandIdx(const std::string &bandName);
 
     std::string GetSCLFileName(int res);

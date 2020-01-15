@@ -150,12 +150,13 @@ namespace otb
     }
 
     bool IsMatchingMission(const std::string &missionName, const std::string &missionRegex) {
-        if (missionName == missionRegex) {
+        const std::string &mission = boost::to_upper_copy<std::string>(missionName);
+        if (mission == missionRegex) {
             return true;
         }
         try {
             boost::regex re(missionRegex);
-            return boost::regex_match(missionName, re);
+            return boost::regex_match(mission, re);
         } catch (boost::regex_error& e) {
             std::cerr << "Invalid regular expression found in configuration file for " << missionRegex <<
                               ". The exception was \"" << e.what() << "\"";

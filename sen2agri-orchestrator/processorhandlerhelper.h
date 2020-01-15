@@ -32,6 +32,8 @@ public:
         QString extension;
         //Regext for the product name
         QString tileNameRegex;
+        // If set, this means that the regex is applied on parent dir name
+        bool regexOnParentFolder;
         // TODO: Not used for now
         int tileIdxInName;
     } L2MetaTileNameInfos;
@@ -92,7 +94,7 @@ public:
     static QMap<QString, QStringList> GroupHighLevelProductTiles(const QStringList &listAllProductFolders);
 
     //static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
-    static const L2MetaTileNameInfos &GetL2AProductTileNameInfos(const QString &metaFileName);
+    static const L2MetaTileNameInfos &GetL2AProductTileNameInfos(const QFileInfo &metaFileInfo);
     static SatelliteIdType GetL2ASatelliteFromTile(const QString &tileMetadataPath);
     static L2ProductType GetL2AProductTypeFromTile(const QString &tileMetadataPath);
     static QDateTime GetL2AProductDateFromPath(const QString &path);
@@ -133,8 +135,6 @@ public:
     static int GuessYear(const QDateTime &startDateTime, const QDateTime &endDateTime);
     static QDateTime GetDateTimeFromString(const QString &strTime);
     static QDateTime GetLocalDateTime(const QString &strTime);
-
-
 
 private:
     static QMap<QString, L2MetaTileNameInfos> m_mapSensorL2ATileMetaFileInfos;

@@ -42,6 +42,14 @@ public:
     typedef itk::SmartPointer<Self>       Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
 
+    typedef float                                                                   PixelType;
+    typedef otb::Image<PixelType, 2>                                                OutputImageType;
+    typedef otb::Wrapper::UInt16VectorImageType                                      ImageType;
+    typedef itk::UnaryFunctorImageFilter<ImageType,OutputImageType,
+                    NdviFunctor<
+                        ImageType::PixelType,
+                        OutputImageType::PixelType> > FilterType;
+
     /** Standard macro */
     itkNewMacro(Self);
 
@@ -71,7 +79,11 @@ private:
         SetParameterDescription("xml","The product metadata file");
 
         AddParameter(ParameterType_OutputImage, "out", "Out image");
+        MandatoryOff("out");
         AddParameter(ParameterType_OutputImage, "outmsk", "Out Masks image");
+        MandatoryOff("outmsk");
+        AddParameter(ParameterType_OutputImage, "outndvi", "Out NDVI image");
+        MandatoryOff("outndvi");
 
         AddRAMParameter();
 
@@ -109,27 +121,43 @@ private:
         std::cout << xmlFile << std::endl;
 
         auto factory = MetadataHelperFactory::New();
-        m_pHelper = factory->GetMetadataHelper<short>(xmlFile);
+        m_pHelper = factory->GetMetadataHelper<unsigned short>(xmlFile);
 
         PrintProductInformations();
 
         //std::vector<int> bands = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
 //        std::vector<std::string> bands = {"B1", "B2", "B4", "B5"};
 
-        const std::vector<std::string> &bandNames = {m_pHelper->GetGreenBandName()};
-//                                                m_pHelper->GetRedBandName(),
-//                                                m_pHelper->GetNirBandName()};
-                                                //m_pHelper->GetSwirBandName()};
+        const std::vector<std::string> &bandNames = {m_pHelper->GetGreenBandName(),
+                                                    m_pHelper->GetRedBandName(),
+                                                    m_pHelper->GetNirBandName(),
+                                                    m_pHelper->GetSwirBandName()};
 
-        SetParameterOutputImagePixelType("out", ImagePixelType_int16);
-        MetadataHelper<short>::VectorImageType::Pointer img = m_pHelper->GetImage(bandNames);
-        SetParameterOutputImage("out", (MetadataHelper<short>::VectorImageType*) img);
+        if (HasValue("out")) {
+            SetParameterOutputImagePixelType("out", ImagePixelType_uint16);
+            MetadataHelper<unsigned short>::VectorImageType::Pointer img = m_pHelper->GetImage(bandNames);
+            SetParameterOutputImage("out", (MetadataHelper<unsigned short>::VectorImageType*) img);
+        }
+        if (HasValue("outmsk")) {
+            SetParameterOutputImagePixelType("outmsk", ImagePixelType_uint8);
+            //MasksFlagType flgs = ALL;
+            MasksFlagType flgs = MSK_CLOUD;
+            MetadataHelper<unsigned short>::SingleBandMasksImageType::Pointer mskImg = m_pHelper->GetMasksImage(flgs, false);
+            SetParameterOutputImage("outmsk", (MetadataHelper<unsigned short>::SingleBandMasksImageType*) mskImg);
+        }
+        if (HasValue("outndvi")) {
 
-        SetParameterOutputImagePixelType("outmsk", ImagePixelType_uint8);
-        //MasksFlagType flgs = ALL;
-        MasksFlagType flgs = MSK_CLOUD;
-        MetadataHelper<short>::SingleBandImageType::Pointer mskImg = m_pHelper->GetMasksImage(flgs, false);
-        SetParameterOutputImage("outmsk", (MetadataHelper<short>::SingleBandImageType*) mskImg);
+            std::vector<int> resRelIdxs;
+            MetadataHelper<unsigned short>::VectorImageType::Pointer img = m_pHelper->GetImage(bandNames, &resRelIdxs);
+            img->UpdateOutputInformation();
+
+            m_ndviFunctor = FilterType::New();
+            m_ndviFunctor->GetFunctor().Initialize(resRelIdxs[1], resRelIdxs[2]);
+            m_ndviFunctor->SetInput(img);
+            m_ndviFunctor->UpdateOutputInformation();
+            SetParameterOutputImage("outndvi", m_ndviFunctor->GetOutput());
+        }
+
 
     }
 
@@ -350,7 +378,9 @@ private:
     }
 
     //MetadataHelper::VectorImageType::Pointer m_img;
-    std::unique_ptr<MetadataHelper<short>> m_pHelper;
+    std::unique_ptr<MetadataHelper<unsigned short>> m_pHelper;
+
+    FilterType::Pointer m_ndviFunctor;
 
 
 };

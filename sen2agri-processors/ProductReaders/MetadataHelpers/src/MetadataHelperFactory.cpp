@@ -25,10 +25,6 @@ std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> METADATA_HELPER_FACTO
 {
     // std::cout << "Getting metadata helper" << std::endl;
 
-    std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> spot4MetadataHelper(new Spot4MetadataHelper<PixelType, MasksPixelType>);
-    if (spot4MetadataHelper->LoadMetadataFile(metadataFileName))
-        return spot4MetadataHelper;
-
     std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> majaMetadataHelper(new MAJAMetadataHelper<PixelType, MasksPixelType>);
     if (majaMetadataHelper->LoadMetadataFile(metadataFileName))
         return majaMetadataHelper;
@@ -45,6 +41,10 @@ std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> METADATA_HELPER_FACTO
     if (sen2corMetadataHelper->LoadMetadataFile(metadataFileName))
         return sen2corMetadataHelper;
 
+    std::unique_ptr<MetadataHelper<PixelType, MasksPixelType>> spot4MetadataHelper(new Spot4MetadataHelper<PixelType, MasksPixelType>);
+    if (spot4MetadataHelper->LoadMetadataFile(metadataFileName))
+        return spot4MetadataHelper;
+
     itkExceptionMacro("Unable to read metadata from " << metadataFileName);
 
     return NULL;
@@ -54,7 +54,13 @@ template
 std::unique_ptr<MetadataHelper<short, short>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
 
 template
+std::unique_ptr<MetadataHelper<unsigned short, short>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
+
+template
 std::unique_ptr<MetadataHelper<short, uint8_t>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
+
+template
+std::unique_ptr<MetadataHelper<unsigned short, uint8_t>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
 
 template
 std::unique_ptr<MetadataHelper<float, short>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
@@ -67,4 +73,10 @@ template
 std::unique_ptr<MetadataHelper<int, short>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
 
 template
+std::unique_ptr<MetadataHelper<unsigned int, short>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
+
+template
 std::unique_ptr<MetadataHelper<int, uint8_t>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);
+
+template
+std::unique_ptr<MetadataHelper<unsigned int, uint8_t>> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName);

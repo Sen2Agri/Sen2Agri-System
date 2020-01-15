@@ -18,13 +18,14 @@
 //       not the name of the satellite as it appears inside the file metadata of product (that can be SENTINEL-2A, LANDSAT_8 etc.)
 /* static */
 QMap<QString, ProcessorHandlerHelper::L2MetaTileNameInfos> ProcessorHandlerHelper::m_mapSensorL2ATileMetaFileInfos =
-    {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 2, "hdr", R"(S2[A-D]_OPER_SSC_L2VALD_(\d{2}[A-Z]{3})_.*_(\d{8}).HDR)", 1}},
-     {"SENTINEL2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 1, "xml", R"(SENTINEL2[A-D]_(\d{8})-(\d{6})-(\d{3})_L2A_T(\d{2})([A-Za-z]{3})_.*_MTD_ALL\.xml)", -1}},
-     {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, 2, "hdr", R"(L8_.*_L8C_L2VALD_(\d{6})_(\d{8}).HDR)", 1}},
-     {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, 3, "xml", "", -1}}, //SPOT4_*_*_<DATE>_*_*.xml
-     {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, 3, "xml", "", -1}}, //SPOT5_*_*_<DATE>_*_*.xml
+    {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 2, "hdr", R"(S2[A-D]_OPER_SSC_L2VALD_(\d{2}[A-Z]{3})_.*_(\d{8}).HDR)", false, 1}},
+     {"SENTINEL2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 1, "xml", R"(SENTINEL2[A-D]_(\d{8})-(\d{6})-(\d{3})_L2A_T(\d{2})([A-Za-z]{3})_.*_MTD_ALL\.xml)", false, -1}},
+     {"MTD_MSIL2A", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 1, "xml", R"(S2[A-D]_MSIL2A_(\d{8})T\d{6}_.*T(\d{2}[A-Z]{3})_.*\.SAFE)", true, -1}},
+     {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, 2, "hdr", R"(L8_.*_L8C_L2VALD_(\d{6})_(\d{8}).HDR)", false, 1}},
+     {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, 3, "xml", "", false, -1}}, //SPOT4_*_*_<DATE>_*_*.xml
+     {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, 3, "xml", "", false, -1}}, //SPOT5_*_*_<DATE>_*_*.xml
      // this prefix is impossible to occur in the file name
-     {INVALID_FILE_SEQUENCE, {ProcessorHandlerHelper::L2_PRODUCT_TYPE_UNKNOWN, ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN, -1, INVALID_FILE_SEQUENCE, "", -1}}
+     {INVALID_FILE_SEQUENCE, {ProcessorHandlerHelper::L2_PRODUCT_TYPE_UNKNOWN, ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN, -1, INVALID_FILE_SEQUENCE, "", false, -1}}
 };
 
 QMap<QString, ProductType> ProcessorHandlerHelper::m_mapHighLevelProductTypeInfos = {
@@ -69,7 +70,7 @@ ProductType ProcessorHandlerHelper::GetProductTypeFromFileName(const QString &pa
                 return i.value();
             }
         } else {
-            const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(name);
+            const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(info);
             if(infos.productType != L2_PRODUCT_TYPE_UNKNOWN) {
                 return ProductType::L2AProductTypeId;
             }
@@ -92,7 +93,7 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &
     ProductType productType = GetProductTypeFromFileName(path, false);
     if(productType != ProductType::InvalidProductTypeId) {
         if(productType == ProductType::L2AProductTypeId) {
-            const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(fileNameWithoutExtension);
+            const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(info);
             satelliteId = infos.satelliteIdType;
             if(infos.productType == L2_PRODUCT_TYPE_S2) {
                 // TODO: Here we should do it generic and use the REGEX from the L2MetaTileNameInfos
@@ -626,8 +627,15 @@ QString ProcessorHandlerHelper::GetL2ATileMainImageFilePath(const QString &tileM
 }
 */
 
-const ProcessorHandlerHelper::L2MetaTileNameInfos &ProcessorHandlerHelper::GetL2AProductTileNameInfos(const QString &metaFileName) {
+const ProcessorHandlerHelper::L2MetaTileNameInfos &ProcessorHandlerHelper::GetL2AProductTileNameInfos(const QFileInfo &metaFileInfo) {
     QMap<QString, L2MetaTileNameInfos>::iterator i;
+    QString metaFileName;
+    if(metaFileInfo.isDir()) {
+        metaFileName = metaFileInfo.dir().dirName();
+    } else {
+        metaFileName = metaFileInfo.fileName();
+    }
+
     for (i = m_mapSensorL2ATileMetaFileInfos.begin(); i != m_mapSensorL2ATileMetaFileInfos.end(); ++i) {
         if(metaFileName.indexOf(i.key()) == 0) {
             return i.value();
@@ -638,30 +646,32 @@ const ProcessorHandlerHelper::L2MetaTileNameInfos &ProcessorHandlerHelper::GetL2
 
 ProcessorHandlerHelper::L2ProductType ProcessorHandlerHelper::GetL2AProductTypeFromTile(const QString &tileMetadataPath) {
     QFileInfo info(tileMetadataPath);
-    QString metaFile = info.fileName();
-
-    return GetL2AProductTileNameInfos(metaFile).productType;
+    return GetL2AProductTileNameInfos(info).productType;
 }
 
 ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::GetL2ASatelliteFromTile(const QString &tileMetadataPath) {
     QFileInfo info(tileMetadataPath);
-    QString metaFile = info.fileName();
-
-    return GetL2AProductTileNameInfos(metaFile).satelliteIdType;
+    return GetL2AProductTileNameInfos(info).satelliteIdType;
 }
 
 QDateTime ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path) {
     QFileInfo info(path);
+
+    const ProcessorHandlerHelper::L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(info);
+    int dateIdxInName = infos.dateIdxInName;
+    QString dateStr;
+
     QString name;
     if(info.isDir()) {
         name = info.dir().dirName();
     } else {
-        name = info.fileName();
+        // For Sen2Cor products, the relevant information are not in metadata file name but in the parent folder name
+        if (infos.regexOnParentFolder) {
+            name = info.absoluteDir().dirName();
+        } else {
+            name = info.fileName();
+        }
     }
-
-    const ProcessorHandlerHelper::L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(name);
-    int dateIdxInName = infos.dateIdxInName;
-    QString dateStr;
     if (infos.tileNameRegex.size() > 0 && dateIdxInName >= 0) {
         QRegularExpression rex(infos.tileNameRegex);
         QRegularExpression re(rex);
@@ -697,20 +707,22 @@ bool ProcessorHandlerHelper::IsValidL2AMetadataFileName(const QString &path) {
         ext = listComponents[listComponents.size()-1];
         fileNameNoExt = info.baseName();
     }
-    const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(fileName);
-
-    listComponents = fileNameNoExt.split("_");
+    const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(info);
 
     if((infos.productType != L2_PRODUCT_TYPE_UNKNOWN) && ext.compare(infos.extension, Qt::CaseInsensitive) != 0)  {
         return false;
     }
+
+    listComponents = fileNameNoExt.split("_");
     switch (infos.productType) {
         case L2_PRODUCT_TYPE_S2:
             // check if it is a S2 MACCS or MAJA format
-            if(listComponents.size() < 4 || ((listComponents[3] != "L2VALD" || listComponents[2] == "QCK") &&
-                                             (listComponents[6] != "MTD" || listComponents[7] != "ALL")))
-            {
-                return false;
+            if (fileNameNoExt != "MTD_MSIL2A") {
+                if(listComponents.size() < 4 || ((listComponents[3] != "L2VALD" || listComponents[2] == "QCK") &&
+                                                 (listComponents[6] != "MTD" || listComponents[7] != "ALL")))
+                {
+                    return false;
+                }
             }
             break;
         case L2_PRODUCT_TYPE_L8:
@@ -1103,3 +1115,4 @@ QDateTime ProcessorHandlerHelper::GetLocalDateTime(const QString &strTime) {
     }
     return dateTime;
 }
+
