@@ -45,7 +45,7 @@
 #define FALLOW_LAND_VAL                 "Fallow"
 #define NITROGEN_FIXING_CROP_VAL        "NFC"
 
-#define MIN_REQUIRED_COHE_VALUES        26
+#define MIN_REQUIRED_COHE_VALUES        15      // previous was 26
 #define SEC_IN_5_WEEKS                  3024000 // 5 weeks * 7 days * seconds in day
 
 // TODO : re-analyse the usage of dates (start of week or exact date)
