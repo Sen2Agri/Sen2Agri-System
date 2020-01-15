@@ -137,10 +137,10 @@ def main():
                 sql = "select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {} where ctnum in ({})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums))
         else :
             if args.filter_ids_table :
-                sql = SQL('select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} where \"NewID\" in (select newid from {})')
+                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} where \"NewID\" in (select newid from {})')
                 sql = sql.format(Identifier(lpis_table), Identifier(args.filter_ids_table))
             else :
-                sql = SQL('select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {}')
+                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {}')
                 sql = sql.format(Identifier(lpis_table))
             sql = sql.as_string(conn)
 
