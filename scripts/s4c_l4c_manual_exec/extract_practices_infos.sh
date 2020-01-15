@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function usage() {
-    echo "Usage: ./extract_practices_infos.sh -c <COUNTRY_CODE - (NLD|CZE|LTU|ESP|ITA|ROU)> -y <YEAR>"
+    echo "Usage: ./extract_practices_infos.sh -c <COUNTRY_CODE - (NLD|CZE|LTU|ESP|ITA|ROU|FRA)> -y <YEAR>"
     exit 1
 }
 
@@ -381,6 +381,19 @@ case "$COUNTRY" in
             NA_ADD_FILES="${INSITU_ROOT}/RO_CatchCrops_${YEAR}.shp ${INSITU_ROOT}/catch_crops_sprout_rising_remove_duplicate.csv"
         fi
         ;;
+    FRA)
+        IN_SHP_NAME="decl_${COUNTRY_REGION,,}_${YEAR}_${YEAR}.csv"
+        VEG_START="${YEAR}-05-01"
+        
+        CC_HSTART="2019-05-01"
+        CC_HEND="2019-11-10"
+        CC_PSTART="01:${YEAR}-08-20,14:${YEAR}-09-17,27:${YEAR}-08-20,50:${YEAR}-09-15,61:${YEAR}-08-20,76:${YEAR}-09-02"
+        CC_PEND="${YEAR}-11-12"
+
+        NA_HSTART="${YEAR}-05-01"
+        NA_HEND="${YEAR}-12-15"
+        ;;
+        
     *)
         echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU}"
         exit 1

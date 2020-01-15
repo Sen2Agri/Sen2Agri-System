@@ -100,6 +100,8 @@ case "${COUNTRY}" in
         ;;
     ROU)
         ;;
+    FRA)
+        ;;        
     *)
         echo $"Please provide a country code in {NLD|CZE|LTU|ESP|ITA|ROU}"
         exit 1

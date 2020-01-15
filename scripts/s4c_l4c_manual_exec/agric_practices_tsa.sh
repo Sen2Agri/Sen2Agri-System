@@ -394,6 +394,29 @@ case "$COUNTRY" in
         NA_AMPTHRBREAKDEN=4
         NA_AMPTHRVALDEN=3
         ;;
+    FRA)
+        CC_CATCHMAIN="CatchCrop_2" 
+        CC_CATCHPERIODSTART="${YEAR}-07-15"
+        
+        CC_NDVIUP=500
+        CC_AMPTHRMIN=0.2
+        CC_COHTHRBASE=0.1
+        CC_COHTHRABS=0.7
+        CC_EFAAMPTHR=0.03
+        CC_AMPTHRBREAKDEN=3
+        CC_AMPTHRVALDEN=3
+        
+        NA_NDVIUP=500
+        NA_AMPTHRMIN=0.2
+        NA_COHTHRBASE=0.1
+        NA_COHTHRABS=0.7
+        NA_AMPTHRBREAKDEN=3
+        NA_AMPTHRVALDEN=3
+        
+        # we do not have CC, FL and NFC
+        EXECUTE_FL=""
+        EXECUTE_NFC=""
+        ;;
     *)
         echo $"Usage: $0 {NLD|CZE|LTU|ESP|ITA|ROU}"
         exit 1
