@@ -646,7 +646,7 @@ class S4CConfig(object):
             self.season_end = parse_date(args.season_end)
             print("Season_end = ", args.season_end)            
 
-def get_s1_products(config, conn, site_id, prds_list):
+def get_s1_products(config, conn, prds_list):
     with conn.cursor() as cursor:
         if prds_list is None or len(prds_list) == 0 :
             query = SQL(
@@ -680,16 +680,20 @@ def get_s1_products(config, conn, site_id, prds_list):
                 """
             )
 
-            site_id_filter = Literal(site_id)
+            site_id_filter = Literal(config.site_id)
             start_date_filter = Literal(config.season_start)
             end_date_filter = Literal(config.season_end)
             query = query.format(site_id_filter, start_date_filter, end_date_filter)
             # print(query.as_string(conn))
         else :
-            if len (prds_list) > 1:
-                prdsSubstr = tuple(prds_list)
+            prds_names_list=[]
+            for prd in prds_list:
+                prds_names_list.append(os.path.splitext(os.path.basename(prd))[0])
+                
+            if len (prds_names_list) > 1:
+                prdsSubstr = tuple(prds_names_list)
             else :
-                prdsSubstr = "('{}')".format(prds_list[0])
+                prdsSubstr = "('{}')".format(prds_names_list[0])
         
             query= """with products as (
                     select product.site_id,
@@ -705,7 +709,7 @@ def get_s1_products(config, conn, site_id, prds_list):
                         substr(product.name, length(product.name) - strpos(reverse(product.name), '_') + 2) as radar_product_type,
                         product.orbit_id,
                         product.full_path
-                    from product where product.satellite_id = 3 and product.site_id = {} and product.full_path in {}
+                    from product where product.satellite_id = 3 and product.name in {}
                 )
                 select products.date,
                         products.name,
@@ -715,7 +719,7 @@ def get_s1_products(config, conn, site_id, prds_list):
                         products.full_path, 
                         products.orbit_id
                 from products
-                order by date;""".format(site_id, prdsSubstr)
+                order by date;""".format(prdsSubstr)
             #print(query)
         
         # execute the query
@@ -725,23 +729,39 @@ def get_s1_products(config, conn, site_id, prds_list):
         conn.commit()
 
         products = []
-        for (dt, name, orbit_type_id, polarization, radar_product_type, full_path, orbit_id) in results:
-            products.append(RadarProduct(dt, name, orbit_type_id, polarization, radar_product_type, full_path, orbit_id))
+        # We are performing this search to have a warning on not present products but also to have the same order of products as in the inputs
+        if prds_names_list and len(prds_names_list) > 0 :
+            for i in range(len(prds_names_list)):
+                prd_name = prds_names_list[i]
+                prd = prds_list[i]
+                prdAdded = False
+                for (dt, name, orbit_type_id, polarization, radar_product_type, full_path, orbit_id) in results:
+                    if os.path.splitext(os.path.basename(prd_name))[0] == name : 
+                        products.append(RadarProduct(dt, name, orbit_type_id, polarization, radar_product_type, os.path.normpath(prd), orbit_id))
+                        prdAdded = True
+                        break
+                if prdAdded == False :
+                    print ("Product {} was not found in the database!!!".format(prd))
+        else :
+            for (dt, name, orbit_type_id, polarization, radar_product_type, full_path, orbit_id) in results:
+                products.append(RadarProduct(dt, name, orbit_type_id, polarization, radar_product_type, full_path, orbit_id))
 
         return products
 
-def getPathsAndOrbits(config_file, conn, site_id, input_products_list) :
-    products = get_s1_products(config_file, conn, site_id, input_products_list)
+def getPathsAndOrbits(s4cConfig, conn, input_products_list) :
+    products = get_s1_products(s4cConfig, conn, input_products_list)
+    
+    print ("Config file is {}".format(s4cConfig.config_file))
     
     config = configparser.ConfigParser()
-    config.read(config_file)
+    config.read(s4cConfig.config_file)
     
     orbit_list_filter = None
     orbit_type_list_filter = None
-    if config.has_option('GENERAL_CONFIG', 'orbit_list_filter') : 
-        orbit_list_filter = config['GENERAL_CONFIG']['orbit_list_filter']
-    if config.has_option('GENERAL_CONFIG', 'orbit_type_list_filter') : 
-        orbit_type_list_filter = config['GENERAL_CONFIG']['orbit_type_list_filter']
+    if config.has_option('GENERAL_CONFIG', 's1_orbit_list_filter') : 
+        orbit_list_filter = config['GENERAL_CONFIG']['s1_orbit_list_filter']
+    if config.has_option('GENERAL_CONFIG', 's1_orbit_type_list_filter') : 
+        orbit_type_list_filter = config['GENERAL_CONFIG']['s1_orbit_type_list_filter']
         
     if orbit_list_filter and orbit_type_list_filter :
         orbit_list_filter = list(map(str.strip, orbit_list_filter.split(',')))
@@ -768,23 +788,26 @@ def getPathsAndOrbits(config_file, conn, site_id, input_products_list) :
 
     orbit_list = []
     orbit_type_list = []
-    for i in range(len(orbit_list_tmp)):
-        orbit = orbit_list_tmp[i]
-        orbit_type = orbit_type_list_tmp[i]
-        add_orbit = True
-        if (orbit_list_filter and len(orbit_list_filter) > 0) :
+    
+    if (orbit_list_filter and len(orbit_list_filter) > 0) :
+        # Check if the orbit filters are valid just to give a warning 
+        for i in range(len(orbit_list_filter)):
             found = False
-            for j in range(len(orbit_list_filter)):
-                if orbit_list_filter[j] == orbit and orbit_type_list_filter[j] == orbit_type:
+            for j in range(len(orbit_list_tmp)):
+                if orbit_list_tmp[j] == orbit_list_filter[i] and orbit_type_list_tmp[j] == orbit_type_list_filter[i]:
                     found = True
-                    break
+                    break  
             if not found :
-                print("Orbit {} {} not found in the filtering orbits list. It will be filtered!".format(orbit, orbit_type))
-                add_orbit = False
-            
-        if add_orbit:
-            orbit_list.append(orbit)
-            orbit_type_list.append(orbit_type)
+                print("ATTENTION: Orbit {} {} in the filtering orbits list was not found in the products extracted orbits!".format(orbit_list_filter[i], orbit_type_list_filter[i]))
+
+        orbit_list = orbit_list_filter
+        orbit_type_list = orbit_type_list_filter
+    else :
+        orbit_list = orbit_list_tmp
+        orbit_type_list = orbit_type_list_tmp
+        
+    print("Final orbit_list to use:", orbit_list)
+    print("Final orbit_type_list to use", orbit_type_list)
 
     return data_x_detection, orbit_list, orbit_type_list
 
@@ -811,7 +834,7 @@ def main() :
     s4cConfig = S4CConfig(args)
     
     with psycopg2.connect(host=s4cConfig.host, dbname=s4cConfig.dbname, user=s4cConfig.user, password=s4cConfig.password) as conn:
-        data_x_detection, orbit_list, orbit_type_list = getPathsAndOrbits(s4cConfig.config_file, conn, s4cConfig.site_id, args.input_products_list)
+        data_x_detection, orbit_list, orbit_type_list = getPathsAndOrbits(s4cConfig, conn, args.input_products_list)
         print("orbit_list to use:", orbit_list)
         print("orbit_type_list to use", orbit_type_list)
         

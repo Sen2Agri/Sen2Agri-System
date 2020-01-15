@@ -75,6 +75,12 @@ case $key in
     IS_INSIDE_INPUT_PRDS_LIST=1
     shift # past argument
     ;;
+    --prds-are-tif)
+    prds_are_tif="$2"
+    IS_INSIDE_INPUT_PRDS_LIST=0
+    shift # past argument
+    shift # past argument
+    ;;
     -a|--seg-parcel-id-attribute)
     seg_parcel_id_attribute="$2"
     IS_INSIDE_INPUT_PRDS_LIST=0
@@ -219,7 +225,12 @@ else
     CMD_TERM="'"
 fi    
 
-PY_CMD="python ${script_path} --s4c-config-file ${s4c_config_file} --site-id ${site_id} --config-file ${config_file} --input-shape-file ${input_shape_file} --output-data-dir ${output_data_dir} --new-acq-date ${new_acq_date} --older-acq-date ${older_acq_date} --seg-parcel-id-attribute ${seg_parcel_id_attribute} --output-shapefile ${output_shapefile} --do-cmpl ${do_cmpl} --test ${test}"
+PRDS_ARE_TIFF_CMD=""
+if [ ! -z ${prds_are_tif} ] ; then
+    PRDS_ARE_TIFF_CMD="--prds-are-tif ${prds_are_tif}"
+fi
+
+PY_CMD="python ${script_path} --s4c-config-file ${s4c_config_file} --site-id ${site_id} --config-file ${config_file} --input-shape-file ${input_shape_file} --output-data-dir ${output_data_dir} --new-acq-date ${new_acq_date} --older-acq-date ${older_acq_date} --seg-parcel-id-attribute ${seg_parcel_id_attribute} --output-shapefile ${output_shapefile} --do-cmpl ${do_cmpl} --test ${test} ${PRDS_ARE_TIFF_CMD}"
 if [ -z ${input_products_list} ] ; then
     PY_CMD="${PY_CMD} --season-start ${season_start} --season-end ${season_end}"
 else 

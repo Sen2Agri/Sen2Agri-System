@@ -789,7 +789,12 @@ class S4CConfig(object):
         self.do_cmpl = args.do_cmpl
         self.test = args.test
         
+        self.input_products_list = None
+        if args.input_products_list:
+            self.input_products_list = args.input_products_list
 
+        self.prds_are_tif = int(args.prds_are_tif)
+           
         if args.season_start:
             self.season_start = parse_date(args.season_start)
             print("Season_start = ", args.season_start)
@@ -798,9 +803,24 @@ class S4CConfig(object):
             self.season_end = parse_date(args.season_end)
             print("Season_end = ", args.season_end)            
 
-def get_s2_products(config, conn, site_id, prds_list):
+def get_s2_products_from_tiffs(config):
+    products = []
+    l3b_file_regex = "(S2AGRI_L3B_([A-Z]{5,11})_A([0-9]{8})T([0-9]{6})_T([0-9]{2}[A-Z]{3})\.)"
+    regex = re.compile(l3b_file_regex)
+    for tifFilePath in config.input_products_list:
+        tifFileName = os.path.basename(tifFilePath)
+        result = regex.match(tifFileName)
+        if result and len(result.groups()) == 5:
+            dt_str = "{}T{}".format(result.group(3), result.group(4))
+            dt = datetime.datetime.strptime(dt_str, '%Y%m%dT%H%M%S')
+            products.append(NdviProduct(dt, result.group(5), tifFilePath))
+    
+    return products
+    
+def get_s2_products(config, conn):
     with conn.cursor() as cursor:
-        if prds_list is None or len(prds_list) == 0 :
+        if config.input_products_list is None or len(config.input_products_list) == 0 :
+            print ("Extracting NDVI infos from the database for the whole season interval!!!")
             query = SQL(
                 """
                 with products as (
@@ -824,16 +844,23 @@ def get_s2_products(config, conn, site_id, prds_list):
                 """
             )
 
-            site_id_filter = Literal(site_id)
+            site_id_filter = Literal(config.site_id)
             start_date_filter = Literal(config.season_start)
             end_date_filter = Literal(config.season_end)
             query = query.format(site_id_filter, start_date_filter, end_date_filter)
             # print(query.as_string(conn))
         else :
-            if len (prds_list) > 1:
-                prdsSubstr = tuple(prds_list)
+            print ("config.prds_are_tif = {}".format(config.prds_are_tif))
+            if config.prds_are_tif == 1 : 
+                print ("Extracting NDVI infos from TIF files!!!")            
+                return get_s2_products_from_tiffs(config)
+            
+            print ("Extracting NDVI infos from the database for the list of products!!!")
+            # Otherwise, get the products from DB and extract the tiffs
+            if len (config.input_products_list) > 1:
+                prdsSubstr = tuple(config.input_products_list)
             else :
-                prdsSubstr = "('{}')".format(prds_list[0])
+                prdsSubstr = "('{}')".format(config.input_products_list[0])
         
             query= """
                    with products as (
@@ -851,7 +878,7 @@ def get_s2_products(config, conn, site_id, prds_list):
                         products.tiles,
                         products.full_path
                 from products
-                order by date;""".format(site_id, prdsSubstr)
+                order by date;""".format(config.site_id, prdsSubstr)
             #print(query)
         
         # execute the query
@@ -902,6 +929,7 @@ def main() :
     parser.add_argument('-b', '--older-acq-date', help="The older acquisition date")
     # parser.add_argument('-l', '--orbit-list-file', help="The orbit list file")    # NOT USED ANYMORE - ORBITS DETECTED FROM THE DATABASE
     parser.add_argument('-l', '--input-products-list', nargs='+', help="The list of L3B products")   
+    parser.add_argument('--prds-are-tif', help="Specify that the products in the input-product-list are actually the TIF files", type=int, default="0")
     parser.add_argument('-a', '--seg-parcel-id-attribute', help="The SEQ unique ID attribute name", default="NewID")
     parser.add_argument('-x', '--output-shapefile', help="Output shapefile")
     parser.add_argument('-m', '--do-cmpl', help="Run compliancy")
@@ -914,7 +942,7 @@ def main() :
     s4cConfig = S4CConfig(args)
     
     with psycopg2.connect(host=s4cConfig.host, dbname=s4cConfig.dbname, user=s4cConfig.user, password=s4cConfig.password) as conn:
-        products = get_s2_products(s4cConfig, conn, s4cConfig.site_id, args.input_products_list)
+        products = get_s2_products(s4cConfig, conn)
         
         tile_list = []
         data_x_detection = []
