@@ -231,7 +231,7 @@ def get_products_from_file(config) :
             if searchObj:
                 products.append(NdviProduct(parse_date_iso(searchObj.group(1)), searchObj.group(2), full_path))
         elif "AMP" in fileName or "COHE" in fileName:
-            searchObj = re.search( r'SEN4CAP_L2A.+_V(\d{8}T\d{6})_(\d{8}T\d{6})_(VV|VH)_(\d.+)_(AMP|COHE).*', fileName)
+            searchObj = re.search( r'SEN4CAP_L2A.+_V(\d{8}T\d{6})_(\d{8}T\d{6})_(VV|VH)_(\d+)_(?:.+)?(AMP|COHE).*', fileName)
             if searchObj:
                 products.append(RadarProduct(parse_date_iso(searchObj.group(1)), "", int(searchObj.group(4)), searchObj.group(3), searchObj.group(5), full_path))
         elif "amp" in fileName:
