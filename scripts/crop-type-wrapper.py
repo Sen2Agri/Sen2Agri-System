@@ -63,6 +63,7 @@ class Config(object):
 
         self.season_start = parse_date(args.season_start)
         self.season_end = parse_date(args.season_end)
+        self.year = get_year(self.season_start, self.season_end)
 
 
 def get_lpis_path(conn, site_id, season_end):
@@ -97,6 +98,17 @@ def check_file(p):
         if f.readline() and f.readline():
             return True
     return False
+
+
+def get_year(start, end):
+    if start.year == end.year:
+        return start.year
+    d1 = start.replace(month=12, day=31) - start
+    d2 = end - end.replace(month=1, day=1)
+    if d2 >= d1:
+        return end.year
+    else:
+        return start.year
 
 
 def main():
@@ -163,7 +175,6 @@ def main():
     parser.add_argument(
         "--min-node-size", type=int, help="minimum node size", default=10
     )
-    parser.add_argument("--year", type=int, help="year")
 
     args = parser.parse_args()
 
@@ -246,13 +257,12 @@ def main():
 
     os.chdir(current_path)
 
-    year = args.year or date.today().year
     parcels = os.path.join(args.working_path, "parcels.csv")
 
     command = []
     command += ["extract-parcels.py"]
     command += ["-s", config.site_id]
-    command += ["-y", year]
+    command += ["-y", config.year]
     command += [parcels]
 
     run_command(command)
