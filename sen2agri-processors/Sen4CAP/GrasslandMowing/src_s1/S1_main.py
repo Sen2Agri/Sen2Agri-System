@@ -655,11 +655,11 @@ def get_s1_products(config, conn, prds_list):
                     select product.site_id,
                         product.name,
                         case
-                            when substr(product.name, 17, 8) > substr(product.name, 33, 8) then substr(product.name, 17, 8)
-                            else substr(product.name, 33, 8)
+                            when substr(split_part(product.name, '_', 4), 2, 8) > substr(split_part(product.name, '_', 5), 1, 8) then substr(split_part(product.name, '_', 4), 2, 8)
+                            else substr(split_part(product.name, '_', 5), 1, 8)
                         end :: date as date,
                         coalesce(product.orbit_type_id, 1) as orbit_type_id,
-                        substr(product.name, 49, 2) as polarization,
+                        split_part(product.name, '_', 6) as polarization,
                         product.processor_id,
                         product.product_type_id,
                         substr(product.name, length(product.name) - strpos(reverse(product.name), '_') + 2) as radar_product_type,
@@ -695,15 +695,16 @@ def get_s1_products(config, conn, prds_list):
             else :
                 prdsSubstr = "('{}')".format(prds_names_list[0])
         
-            query= """with products as (
+            query= """
+                with products as (
                     select product.site_id,
                         product.name,
                         case
-                            when substr(product.name, 17, 8) > substr(product.name, 33, 8) then substr(product.name, 17, 8)
-                            else substr(product.name, 33, 8)
+                            when substr(split_part(product.name, '_', 4), 2, 8) > substr(split_part(product.name, '_', 5), 1, 8) then substr(split_part(product.name, '_', 4), 2, 8)
+                            else substr(split_part(product.name, '_', 5), 1, 8)
                         end :: date as date,
                         coalesce(product.orbit_type_id, 1) as orbit_type_id,
-                        substr(product.name, 49, 2) as polarization,
+                        split_part(product.name, '_', 6) as polarization,
                         product.processor_id,
                         product.product_type_id,
                         substr(product.name, length(product.name) - strpos(reverse(product.name), '_') + 2) as radar_product_type,
