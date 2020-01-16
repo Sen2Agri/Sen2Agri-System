@@ -163,6 +163,14 @@ def copyConfigFile(config, conn, site_id, config_file) :
     destFilePath = os.path.join(cfgDir, targetFileName)
     print("Copying the L4B config file from {} to {}".format(config_file, destFilePath))
     copyfile(config_file, destFilePath)
+    
+    cfgYear = getSiteConfigKey(conn, 'processor.s4c_l4b.year', site_id)
+    if cfgYear == '' :
+        # add the general key
+        print("The processor.s4c_l4b.year key is not configured in the database. Creating it ...")
+        setConfigValue(conn, None, 'processor.s4c_l4b.year', '')
+    # set also the value specific for the site
+    setConfigValue(conn, site_id, 'processor.s4c_l4b.year', config.year)
 
 def main():
     parser = argparse.ArgumentParser(description="Handles the upload of the grassland mowing config file")
