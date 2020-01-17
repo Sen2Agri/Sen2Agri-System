@@ -648,6 +648,7 @@ class S4CConfig(object):
 
 def get_s1_products(config, conn, prds_list):
     with conn.cursor() as cursor:
+        prds_names_list=[]
         if prds_list is None or len(prds_list) == 0 :
             query = SQL(
                 """
@@ -686,7 +687,6 @@ def get_s1_products(config, conn, prds_list):
             query = query.format(site_id_filter, start_date_filter, end_date_filter)
             # print(query.as_string(conn))
         else :
-            prds_names_list=[]
             for prd in prds_list:
                 prds_names_list.append(os.path.splitext(os.path.basename(prd))[0])
                 
@@ -731,7 +731,7 @@ def get_s1_products(config, conn, prds_list):
 
         products = []
         # We are performing this search to have a warning on not present products but also to have the same order of products as in the inputs
-        if prds_names_list and len(prds_names_list) > 0 :
+        if len(prds_names_list) > 0 :
             for i in range(len(prds_names_list)):
                 prd_name = prds_names_list[i]
                 prd = prds_list[i]
