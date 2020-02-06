@@ -2,7 +2,7 @@
 
 require_once ("ConfigParams.php");
 
-$fetchMode = array('Overwrite'=> array(1, "OVERWRITE"), 'Resume'=>array(2, "RESUME"), 'Copy'=>array(3, "COPY"), 'Symbolic link'=>array(4, "SYMLINK"));
+$fetchMode = array('Overwrite'=> array(1, "OVERWRITE"), 'Resume'=>array(2, "RESUME"), 'Copy'=>array(3, "COPY"), 'Symbolic link'=>array(4, "SYMLINK"), 'Direct link to product'=>array(5, "DIRECT_LINK"));
 $scope = array('Download'=>2,'Query'=>1,'Query and download'=>3);
 $sat_scope = array();
 
@@ -95,6 +95,7 @@ if(isset($_REQUEST['btnSave'])){
     // Check if any error occurred
     if (!curl_errno($curl)) {
         $httpcode = curl_getinfo($curl,CURLINFO_HTTP_CODE);
+        // TODO: Add in the msg also the message returned in $result
         $msg = ($httpcode>=200 && $httpcode<300) ? 'Successfully updated':'Something went wrong.Data source was not updated.';
         $feedback = "open_dialog('".$msg."')";
     }

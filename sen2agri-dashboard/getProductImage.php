@@ -15,8 +15,16 @@
 	if (pg_numrows($rows) > 0) {
 		$absolute_path = pg_fetch_array($rows, 0)[0];
 		$quicklook_img = pg_fetch_array($rows, 0)[1];
-		$absolute_path = rtrim(normalizePath($absolute_path), '/');
-		$image_path = $absolute_path.'/'.$quicklook_img;
+        // check if the quicklook is an absolute path
+        if (realpath($quicklook_img)) {
+            $image_path = $quicklook_img;
+        } else {
+            if (is_file($absolute_path)) {
+                $absolute_path = rtrim(normalizePath($absolute_path), '/');
+            }
+            $absolute_path = rtrim(normalizePath($absolute_path), '/');
+            $image_path = $absolute_path.'/'.$quicklook_img;
+        }
 	}
 	if ($image_path) {
 		header('Content-Type: image/jpeg');

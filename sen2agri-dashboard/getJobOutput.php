@@ -41,7 +41,44 @@ $db = pg_connect(ConfigParams::getConnection())
 					while ($row = pg_fetch_row($result)) {
 						$rows ++;
 						$status = $row[4];
-						if ($status !== '0') { $status .= '⚠️️'; }
+                        $execution_status = 6;  // execution status is FINISHED (6)
+                        if (sizeof($row) >= 6) {
+                            $execution_status = $row[5];
+                        }
+                        switch ($execution_status) {
+                            case 1:     // "Submitted"
+                            case 2:     // "PendingStart"
+                                $status = html_entity_decode("&#x231A;");   // WATCH
+                                break;
+                            case 3:     // "NeedsInput"
+                                $status = '⚠️️';   
+                                break;
+                            case 4:     // "Running"
+                                $status = html_entity_decode("&#x26A1;");   // HIGH VOLTAGE SIGN
+                                break;
+                            case 5:     // "Paused"
+                                $status = html_entity_decode("&#x270B;");     // RAISED HAND
+                                break;
+                            case 6:     // "Finished"
+                                if ($status !== '0') { 
+                                    if (strlen(strval($status)) == 0) {
+                                        $status = '⚠️️';
+                                    } else {
+                                        $status .= html_entity_decode("&#x274C;");  // CROSS MARK
+                                    }
+                                } else { 
+                                    $status .= html_entity_decode("&#x274E;");  // NEGATIVE GREEN SQUARED CROSS MARK
+                                }
+                                break;
+                            case 7:     // "Cancelled"
+                                $status = html_entity_decode("&#x26D4;"); // NO ENTRY
+                                break;
+                            case 8:     // "Error"
+                                $status .= html_entity_decode("&#x274C;");      // CROSS MARK
+                            default:
+                                $status .= html_entity_decode("&#x2753;"); // BLACK QUESTION MARK ORNAMENT
+                                break;
+                        }
 						$status = htmlentities($status);
 						$tr =	'<tr>'.
 									'<td>' . htmlentities($row[0]) . '</td>'.

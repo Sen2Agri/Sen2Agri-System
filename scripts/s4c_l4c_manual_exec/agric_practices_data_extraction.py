@@ -336,20 +336,18 @@ def get_ndvi_products_from_db(config, conn, site_id):
         return products
         
 def get_radar_products(config, conn, site_id):
-    # TODO: This should be updated as it does not work with site ids > 9
     with conn.cursor() as cursor:
         query = SQL(
             """
             with products as (
                 select product.site_id,
-                    site_tiles.tile_id,
                     product.name,
                     case
-                        when substr(product.name, 17, 8) > substr(product.name, 33, 8) then substr(product.name, 17, 8)
-                        else substr(product.name, 33, 8)
+                        when substr(split_part(product.name, '_', 4), 2, 8) > substr(split_part(product.name, '_', 5), 1, 8) then substr(split_part(product.name, '_', 4), 2, 8)
+                        else substr(split_part(product.name, '_', 5), 1, 8)
                     end :: date as date,
                     coalesce(product.orbit_type_id, 1) as orbit_type_id,
-                    substr(product.name, 49, 2) as polarization,
+                    split_part(product.name, '_', 6) as polarization,
                     product.processor_id,
                     product.product_type_id,
                     substr(product.name, length(product.name) - strpos(reverse(product.name), '_') + 2) as radar_product_type,

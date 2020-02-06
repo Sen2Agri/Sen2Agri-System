@@ -5,7 +5,8 @@ create or replace function sp_get_job_output(
     command text,
     stdout_text step_resource_log.stdout_text%type,
     stderr_text step_resource_log.stderr_text%type,
-    exit_code step.exit_code%type
+    exit_code step.exit_code%type,
+    execution_status step.status_id%type
 ) as
 $$
 begin
@@ -14,7 +15,8 @@ begin
                array_to_string(array_prepend(config.value :: text, array(select json_array_elements_text(json_extract_path(step.parameters, 'arguments')))), ' ') as command,
                step_resource_log.stdout_text,
                step_resource_log.stderr_text,
-               step.exit_code
+               step.exit_code,
+               step.status_id
         from task
         inner join step on step.task_id = task.id
         left outer join step_resource_log on step_resource_log.step_name = step.name and step_resource_log.task_id = task.id
