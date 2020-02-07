@@ -16,6 +16,9 @@ public:
                                         bool extractFromInputParamOnly = true, bool bExtractTiffFiles = true);
     static QStringList FindL3BProductTiffFiles(const QString &path, const QStringList &s2L8TilesFilter,
                                                const QString &l3bBioIndexType);
+    static QString GetSiteYearFromDisk(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                       const QString &siteShortName, const QString &cfgFilesSubPath,
+                                       const QString &cfgKeyPrefix, const QString &cfgKey);
 
 private:
     static QString GetShortNameForProductType(const ProductType &prdType);
