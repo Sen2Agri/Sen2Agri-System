@@ -150,6 +150,7 @@ protected:
     std::vector<MACCSBandViewingAnglesGrid> m_bandViewingAngles;
 
 private:
+    std::string GetRasterPathForBandName(const std::string &bandName, int res);
     std::string GetImageFileName(const std::string &bandName, int prefferedRes);
     bool HasBandName(const std::vector<std::string> &bandNames, const std::string &bandName);
     bool GetValidBandNames(const std::vector<std::string> &bandNames, std::vector<std::string> &validBandNames,
