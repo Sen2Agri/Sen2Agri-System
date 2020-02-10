@@ -126,6 +126,7 @@ INSERT INTO config_metadata VALUES ('processor.l3b.production_interval', 'The ba
 INSERT INTO config_metadata VALUES ('processor.l3b.reprocess', 'Specifies if N-Day reprocessing should be performed for LAI', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.reproc_production_interval', 'The backward processing interval from the scheduled date for L3C products', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.sched_wait_proc_inputs', 'L3B/L3C/L3D LAI scheduled jobs wait for products to become available', 'int', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.l1c_availability_days', 'Number of days before current scheduled date within we must have L1C processed (default 20)', 'int', false, 4);
 
 INSERT INTO config_metadata VALUES ('processor.l4a.reference_data_dir', 'Crop Tye folder where insitu data are checked', 'string', false, 5);
 

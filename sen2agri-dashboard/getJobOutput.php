@@ -61,6 +61,9 @@ $db = pg_connect(ConfigParams::getConnection())
                                 break;
                             case 6:     // "Finished"
                                 if ($status !== '0') { 
+                                    // Normally, if execution status exists and is set in the database, this should not happen.
+                                    // Nevertheless, for the old version when the execution_status did not exist in database, this is the case 
+                                    // when the job did not started yet (execution_status is forced to 6 in one of the lines above)
                                     if (strlen(strval($status)) == 0) {
                                         $status = '⚠️️';
                                     } else {
