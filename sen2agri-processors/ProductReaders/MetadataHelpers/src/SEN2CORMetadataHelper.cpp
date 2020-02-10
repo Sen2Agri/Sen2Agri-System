@@ -180,14 +180,18 @@ std::vector<std::string> SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetBa
 {
     std::vector<std::string> retVect;
     std::vector<std::string> allBands;
-    for(const CommonBandResolution& maccsBandResolution: this->m_metadata->ProductInformation.BandResolutions) {
-        int curRes = std::stoi(maccsBandResolution.Resolution);
-        if (curRes == res) {
-            retVect.push_back(maccsBandResolution.BandName);
-        }
-        if (curRes == 10 || curRes == 20 || curRes == 60) {
-            if (std::find(allBands.begin(), allBands.end(), maccsBandResolution.BandName) == allBands.end()) {
-                allBands.push_back(maccsBandResolution.BandName);
+    for(const CommonBandResolution& sen2corBandResolution: this->m_metadata->ProductInformation.BandResolutions) {
+        int curRes = std::stoi(sen2corBandResolution.Resolution);
+        // first check if the raster exists in the product, otherwise do not return it
+        const std::string &fileName = GetRasterPathForBandName(sen2corBandResolution.BandName, curRes);
+        if (fileName.length() > 0) {
+            if (curRes == res) {
+                retVect.push_back(sen2corBandResolution.BandName);
+            }
+            if (curRes == 10 || curRes == 20 || curRes == 60) {
+                if (std::find(allBands.begin(), allBands.end(), sen2corBandResolution.BandName) == allBands.end()) {
+                    allBands.push_back(sen2corBandResolution.BandName);
+                }
             }
         }
     }
@@ -353,11 +357,20 @@ bool SEN2CORMetadataHelper<PixelType, MasksPixelType>::BandAvailableForResolutio
     return false;
 }
 
+template <typename PixelType, typename MasksPixelType>
+std::string SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetRasterPathForBandName(const std::string &bandName, int res) {
+    const std::string &normalizedBandName = NormalizeBandName(bandName);
+    const std::string &suffix = ("_" + normalizedBandName + "_" + std::to_string(res) + "m");
+    const std::string &filePath = this->GetSen2CorImageFileName(this->m_metadata->ProductOrganization.ImageFiles, suffix);
+    if ((filePath.length() != 0) && boost::filesystem::exists(filePath)) {
+        return filePath;
+    }
+    return "";
+}
 
 template <typename PixelType, typename MasksPixelType>
 std::string SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetImageFileName(const std::string &bandName, int prefferedRes) {
-    std::string suffix = ("_" + NormalizeBandName(bandName) + "_" + std::to_string(prefferedRes) + "m");
-    const std::string &fileName = this->GetSen2CorImageFileName(this->m_metadata->ProductOrganization.ImageFiles, suffix);
+    const std::string &fileName = GetRasterPathForBandName(bandName, prefferedRes);
     if (fileName.length() != 0) {
         return fileName;
     }
@@ -365,7 +378,7 @@ std::string SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetImageFileName(c
     std::vector<int> vectResolutions = this->m_vectResolutions;
     vectResolutions.erase(std::remove(vectResolutions.begin(), vectResolutions.end(), prefferedRes), vectResolutions.end());
     for (auto res: vectResolutions) {
-        suffix = ("_" + NormalizeBandName(bandName) + "_" + std::to_string(res) + "m");
+        const std::string &suffix = ("_" + NormalizeBandName(bandName) + "_" + std::to_string(res) + "m");
         const std::string &fileName2 = this->GetSen2CorImageFileName(this->m_metadata->ProductOrganization.ImageFiles, suffix);
         if (fileName2.length() != 0) {
             return fileName2;

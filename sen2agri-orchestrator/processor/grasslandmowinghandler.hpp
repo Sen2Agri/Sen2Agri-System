@@ -2,6 +2,7 @@
 #define GRASSLANDMOWINGHANDLER_HPP
 
 #include "processorhandler.hpp"
+#include "s4c_utils.hpp"
 
 #define L4B_GM_CFG_PREFIX "processor.s4c_l4b."
 
@@ -16,8 +17,13 @@ namespace grassland_mowing {
             parameters = QJsonDocument::fromJson(evt.parametersJson.toUtf8()).object();
             configParameters = pCtx->GetJobConfigurationParameters(evt.jobId, L4B_GM_CFG_PREFIX);
             inputPrdsType = GetInputProductsType(parameters, configParameters);
-            year = QDate::currentDate().year();
             siteShortName = pContext->GetSiteShortName(event.siteId);
+            year = ProcessorHandlerHelper::GetStringConfigValue(parameters, configParameters,
+                                                                "year", L4B_GM_CFG_PREFIX);
+            if (year.size() == 0) {
+                year = S4CUtils::GetSiteYearFromDisk(parameters, configParameters, siteShortName,
+                                                     "config", L4B_GM_CFG_PREFIX, "cfg_dir");
+            }
         }
         static InputProductsType GetInputProductsType(const QJsonObject &parameters, const std::map<QString, QString> &configParameters);
         static InputProductsType GetInputProductsType(const QString &str);
@@ -38,7 +44,7 @@ namespace grassland_mowing {
         QStringList l3bPrds;
         QStringList s1Prds;
         QString siteShortName;
-        int year;
+        QString year;
         QString ctNumFilter;
         QString l4bCfgFile;
 

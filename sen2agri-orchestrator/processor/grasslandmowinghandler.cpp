@@ -188,7 +188,6 @@ bool GrasslandMowingHandler::CheckInputParameters(GrasslandMowingExecConfig &cfg
             }
         }
     }
-    cfg.year = ProcessorHandlerHelper::GuessYear(cfg.startDate, cfg.endDate);
     return LoadConfigFileAdditionalValues(cfg, err);
 }
 
@@ -375,7 +374,7 @@ QStringList GrasslandMowingHandler::GetInputShpGeneratorArgs(GrasslandMowingExec
                                                                           "gen_shp_py_script", L4B_GM_CFG_PREFIX);
 
     QStringList retArgs =  {"-s", QString::number(cfg.event.siteId),
-            "-y", QString::number(cfg.year),
+            "-y", cfg.year,
             "-o", outShpFile};
     if (pyScriptPath.size() > 0) {
         retArgs += "-p";
@@ -457,7 +456,7 @@ QString GrasslandMowingHandler::GetProcessorDirValue(GrasslandMowingExecConfig &
         dataExtrDirName = defVal;
     }
     dataExtrDirName = dataExtrDirName.replace("{site}", cfg.siteShortName);
-    dataExtrDirName = dataExtrDirName.replace("{year}", QString::number(cfg.year));
+    dataExtrDirName = dataExtrDirName.replace("{year}", cfg.year);
     dataExtrDirName = dataExtrDirName.replace("{processor}", processorDescr.shortName);
 
     return dataExtrDirName;
@@ -468,7 +467,7 @@ QString GrasslandMowingHandler::GetL4BConfigFilePath(GrasslandMowingExecConfig &
     QString strCfgPath;
     const QString &strCfgDir = GetProcessorDirValue(jobCfg, "cfg_dir", L4B_GM_DEF_CFG_DIR);
     QDir directory(strCfgDir);
-    QString preferedCfgFileName = "S4C_L4B_Config_" + QString::number(jobCfg.year) + ".cfg";
+    QString preferedCfgFileName = "S4C_L4B_Config_" + jobCfg.year + ".cfg";
     if (directory.exists()) {
         const QStringList &dirFiles = directory.entryList(QStringList() <<"*.cfg",QDir::Files);
         foreach(const QString &fileName, dirFiles) {
