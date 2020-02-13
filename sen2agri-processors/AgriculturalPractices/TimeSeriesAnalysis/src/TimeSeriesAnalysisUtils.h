@@ -110,61 +110,12 @@ bool ComputePValue(const std::vector<T>& xData, const std::vector<T>& yData, dou
     if(xData.size() != yData.size() || xData.size() <= 2) {
         return false;
     }
-//    int n = 4;
-//    double xData1[4] = { 1970, 1980, 1990, 2000};
-//    double yData1[4] = {1.23,   11.432,   14.653, 21.6534};
-//    double c0, c1, cov00, cov01, cov11, sumsq;
-//    gsl_fit_linear (xData1, 1, yData1, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-
-//    std::cout<<"Coefficients\tEstimate\tStd. Error\tt value\tPr(>|t|)"<<std::endl;
-
-//    double stdev0=sqrt(cov00);
-//    double t0=c0/stdev0;
-//    double pv0=t0<0?2*(1-gsl_cdf_tdist_P(-t0,n-2)):2*(1-gsl_cdf_tdist_P(t0,n-2));//This is the p-value of the constant term
-//    std::cout<<"Intercept\t"<<c0<<"\t"<<stdev0<<"\t"<<t0<<"\t"<<pv0<<std::endl;
-
-//    double stdev1=sqrt(cov11);
-//    double t1=c1/stdev1;
-//    double pv1=t1<0?2*(1-gsl_cdf_tdist_P(-t1,n-2)):2*(1-gsl_cdf_tdist_P(t1,n-2));//This is the p-value of the linear term
-//    std::cout<<"x\t"<<c1<<"\t"<<stdev1<<"\t"<<t1<<"\t"<<pv1<<std::endl;
-
-//    double dl=n-2;//degrees of liberty
-
-//    double ySum = 0;
-//    for (long i = 0; i < n; i++) {
-//        ySum += yData1[i];
-//    }
-//    double ym = ySum / n; //Average of vector y
-
-//    double sct = 0; // sct = sum of total squares
-//    for (long i = 0; i < n; i++) {
-//        sct += pow(yData1[i]-ym,2);
-//    }
-//    //double sct=pow(yData1[0]-ym,2)+pow(yData1[1]-ym,2)+pow(yData1[2]-ym,2)+pow(yData1[3]-ym,2); // sct = sum of total squares
-//    double R2=1-sumsq/sct;
-//    std::cout<<"Multiple R-squared: "<<R2<<",    Adjusted R-squared: "<<1-double(n-1)/dl*(1-R2)<<std::endl;
-//    double F=R2*dl/(1-R2);
-//    double p_value=1-gsl_cdf_fdist_P(F,1,dl);
-//    std::cout<<"F-statistic:  "<<F<<" on 1 and "<<n-2<<" DF,  p-value: "<<p_value<<std::endl;
-
 
     const double* xData1 = &xData[0];
     const double* yData1 = &yData[0];
     int n = xData.size();
     double c0, c1, cov00, cov01, cov11, sumsq;
     gsl_fit_linear (xData1, 1, yData1, 1, n, &c0, &c1, &cov00, &cov01, &cov11, &sumsq);
-
-    //std::cout<<"Coefficients\tEstimate\tStd. Error\tt value\tPr(>|t|)"<<std::endl;
-
-    //double stdev0=sqrt(cov00);
-    //double t0=c0/stdev0;
-    //double pv0=t0<0?2*(1-gsl_cdf_tdist_P(-t0,n-2)):2*(1-gsl_cdf_tdist_P(t0,n-2));//This is the p-value of the constant term
-    //std::cout<<"Intercept\t"<<c0<<"\t"<<stdev0<<"\t"<<t0<<"\t"<<pv0<<std::endl;
-
-    //double stdev1=sqrt(cov11);
-    //double t1=c1/stdev1;
-    //double pv1=t1<0?2*(1-gsl_cdf_tdist_P(-t1,n-2)):2*(1-gsl_cdf_tdist_P(t1,n-2));//This is the p-value of the linear term
-    //std::cout<<"x\t"<<c1<<"\t"<<stdev1<<"\t"<<t1<<"\t"<<pv1<<std::endl;
 
     double dl=n-2;//degrees of liberty
     double ySum = 0;
@@ -202,6 +153,40 @@ inline int GetPosInVector(const std::vector<std::string> &vect, const std::strin
         return std::distance(vect.begin(), std::find(vect.begin(), vect.end(), item));
     }
     return -1;
+}
+
+inline bool ComputeMeanAndStandardDeviation (const std::vector<double> &inVect,
+                                      double &meanVal, double &stdDevVal,
+                                      bool genSampleStandardDev = false) {
+    if (inVect.size() == 0) {
+        return false;
+    }
+    if (genSampleStandardDev && inVect.size() == 1) {
+        return false;
+    }
+    double sum = std::accumulate(inVect.begin(), inVect.end(), 0.0);
+    meanVal = sum / inVect.size();
+
+    // Boost implementation
+//        boost::accumulators::accumulator_set<double, boost::accumulators::stats<boost::accumulators::tag::variance> > acc;
+//        for (int i = 0; i<inVect.size(); i++) {
+//            acc(inVect[i]);
+//        }
+//        //cout << mean(acc) << endl;
+//        stdDevVal = sqrt(boost::accumulators::variance(acc));
+
+    // Non boost implementation
+
+    std::vector<double> diff(inVect.size());
+    std::transform(inVect.begin(), inVect.end(), diff.begin(), [meanVal](double x) { return x - meanVal; });
+    double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+    int vecSize = inVect.size();
+    if (genSampleStandardDev) {
+        vecSize -= 1;
+    }
+    stdDevVal = std::sqrt(sq_sum / vecSize);
+
+    return true;
 }
 
 
