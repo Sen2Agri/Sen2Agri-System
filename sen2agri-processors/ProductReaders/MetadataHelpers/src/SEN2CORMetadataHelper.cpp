@@ -389,7 +389,8 @@ std::string SEN2CORMetadataHelper<PixelType, MasksPixelType>::GetImageFileName(c
 
 template <typename PixelType, typename MasksPixelType>
 std::string SEN2CORMetadataHelper<PixelType, MasksPixelType>::NormalizeBandName(const std::string &bandName) {
-    if (bandName.length() == 0 || bandName[0] != 'B' || bandName.length() == 1 || bandName.length() > 3) {
+    if (bandName.length() == 0 || bandName[0] != 'B' || bandName.length() == 1 ||
+            bandName.length() > 3 || bandName == "B8A") {
         return bandName;
     }
     char buff[4];
