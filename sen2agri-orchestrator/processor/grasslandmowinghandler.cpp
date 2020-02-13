@@ -99,7 +99,7 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
         TaskToSubmit &s1MowingDetectionTask = allTasksList[curTaskIdx++];
         const QString &s1MowingDetectionOutFile = productFormatterTask.GetFilePath(outShpFileName + ".shp");
         const QString &s1OutDir = GetOutputDataDir(cfg, s1MowingDetectionTask, "SEN4CAP_L4B_S1_OutputData");
-        const QStringList &s1MowingDetectionArgs = GetMowingDetectionArgs(cfg, L2_S1, inputShpLocation,
+        const QStringList &s1MowingDetectionArgs = GetMowingDetectionArgs(cfg, L2_S1, s1InputShpLocation,
                                                                           s1OutDir, s1MowingDetectionOutFile);
         steps.append(s1MowingDetectionTask.CreateStep("S1MowingDetection", s1MowingDetectionArgs));
 
