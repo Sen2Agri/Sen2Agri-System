@@ -2,6 +2,7 @@
 #define AGRICPRACTICESHANDLER_HPP
 
 #include "processorhandler.hpp"
+#include "s4c_utils.hpp"
 
 #define L4C_AP_CFG_PREFIX   "processor.s4c_l4c."
 
@@ -57,9 +58,17 @@ typedef struct AgricPracticesJobCfg {
         siteCfg.prdsPerGroup = ProcessorHandlerHelper::GetIntConfigValue(parameters, configParameters, "prds_per_group", L4C_AP_CFG_PREFIX);
         isScheduledJob = false;
         execOper = GetExecutionOperation(parameters, configParameters);
+        siteCfg.country = ProcessorHandlerHelper::GetStringConfigValue(parameters, configParameters,
+                                                                   "country", L4C_AP_CFG_PREFIX);
+        siteCfg.tsaMinAcqsNo = ProcessorHandlerHelper::GetStringConfigValue(parameters, configParameters,
+                                                                        "tsa_min_acqs_no", L4C_AP_CFG_PREFIX);
+        siteCfg.year = GetYear(parameters, configParameters, siteShortName);
     }
     static AgricPractOperation GetExecutionOperation(const QJsonObject &parameters,
                                                      const std::map<QString, QString> &configParameters);
+    static QString GetYear(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                      const QString &siteShortName);
+
     EventProcessingContext *pCtx;
     JobSubmittedEvent event;
     QJsonObject parameters;
@@ -87,7 +96,6 @@ class AgricPracticesHandler : public ProcessorHandler
 {
 public:
     static AgricPractOperation GetExecutionOperation(const QString &str);
-
 
 private:
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -130,7 +138,7 @@ private:
     QStringList GetDataExtractionArgs(const AgricPracticesJobCfg &jobCfg, const QString &filterIds, const ProductType &prdType,
                                       const QString &uidField, const QStringList &inputFiles,
                                       const QString &outDir);
-    QStringList GetFilesMergeArgs(const QStringList &listInputPaths, const QString &outFileName);
+    QStringList GetFilesMergeArgs(const QStringList &listInputPaths, const QString &outFileName, const QDateTime &prdMaxDate);
     QStringList GetTimeSeriesAnalysisArgs(const AgricPracticesJobCfg &jobCfg, const QString &practice, const QString &practicesFile,
                                           const QString &inNdviFile, const QString &inAmpFile, const QString &inCoheFile,
                                           const QString &outDir);

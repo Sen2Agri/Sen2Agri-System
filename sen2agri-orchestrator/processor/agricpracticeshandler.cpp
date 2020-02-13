@@ -156,6 +156,7 @@ void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &evt)
 {
     AgricPracticesJobCfg jobCfg(&ctx, evt);
+    qDebug() << "Using the year " << jobCfg.siteCfg.year;
 
     // Moved this from the GetProcessingDefinitionImpl function as it might be time consuming and scheduler will
     // throw exception if timeout exceeded
@@ -177,14 +178,6 @@ void AgricPracticesHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     if (!jobCfg.seasonStartDate.isValid()) {
         ConfigurationParameterValueMap map;
         GetSeasonStartEndDates(ctx.GetSiteSeasons(event.siteId), jobCfg.seasonStartDate, jobCfg.seasonEndDate, jobCfg.prdMaxDate, map);
-    }
-
-    jobCfg.siteCfg.country = ProcessorHandlerHelper::GetStringConfigValue(jobCfg.parameters, jobCfg.configParameters,
-                                                               "country", L4C_AP_CFG_PREFIX);
-    jobCfg.siteCfg.tsaMinAcqsNo = ProcessorHandlerHelper::GetStringConfigValue(jobCfg.parameters, jobCfg.configParameters,
-                                                                    "tsa_min_acqs_no", L4C_AP_CFG_PREFIX);
-    if (jobCfg.siteCfg.year.size() == 0) {
-        jobCfg.siteCfg.year = QString::number(ProcessorHandlerHelper::GuessYear(jobCfg.seasonStartDate, jobCfg.seasonEndDate));
     }
 
     QString errMsg;
@@ -329,8 +322,8 @@ ProcessorJobDefinitionParams AgricPracticesHandler::GetProcessingDefinitionImpl(
     const QString &siteShortName = ctx.GetSiteShortName(siteId);
     QString errMsg;
 
-    int year = ProcessorHandlerHelper::GuessYear(seasonStartDate, seasonEndDate);
-    if (!CheckExecutionPreconditions(&ctx, parameters, configParams, siteId, siteShortName, QString::number(year), errMsg)) {
+    const QString &yearStr = AgricPracticesJobCfg::GetYear(parameters, configParams, siteShortName);
+    if (!CheckExecutionPreconditions(&ctx, parameters, configParams, siteId, siteShortName, yearStr, errMsg)) {
         Logger::error("Scheduled job execution: " + errMsg);
         return params;
     }
@@ -553,11 +546,16 @@ QStringList AgricPracticesHandler::GetDataExtractionArgs(const AgricPracticesJob
     return retArgs;
 }
 
-QStringList AgricPracticesHandler::GetFilesMergeArgs(const QStringList &listInputPaths, const QString &outFileName)
+QStringList AgricPracticesHandler::GetFilesMergeArgs(const QStringList &listInputPaths, const QString &outFileName,
+                                                     const QDateTime &prdMaxDate)
 {
     QStringList retArgs = { "AgricPractMergeDataExtractionFiles", "-csvcompact", "1", "-sort", "1",
                             "-outformat", "csv", "-out", outFileName, "-il" };
     retArgs += listInputPaths;
+    if (prdMaxDate.isValid()) {
+        retArgs += "-maxdate";
+        retArgs += prdMaxDate.toString("yyyy-MM-dd");
+    }
     return retArgs;
 }
 
@@ -577,7 +575,7 @@ QStringList AgricPracticesHandler::GetTimeSeriesAnalysisArgs(const AgricPractice
     } else if (practice == "NA") {
         pTsaPracticeParams = &(jobCfg.siteCfg.naTsaParams);
     }
-    QStringList retArgs = { "TimeSeriesAnalysis", "-intype", "csv", "-debug", "0", "-allowgaps", "1", "-gapsfill", "0", "-plotgraph", "1",
+    QStringList retArgs = { "TimeSeriesAnalysis", "-intype", "csv", "-debug", "0", "-allowgaps", "1", "-plotgraph", "1",
                             "-rescontprd", "0", "-country", jobCfg.siteCfg.country, "-practice", tsaExpectedPractice, "-year", jobCfg.siteCfg.year,
                             "-harvestshp", practicesFile, "-diramp", inAmpFile, "-dircohe", inCoheFile, "-dirndvi", inNdviFile,
                             "-outdir", outDir };
@@ -718,7 +716,7 @@ QString AgricPracticesHandler::CreateStepsForFilesMerge(const AgricPracticesJobC
                               QList<TaskToSubmit> &allTasksList, int &curTaskIdx) {
     TaskToSubmit &mergeTask = allTasksList[curTaskIdx++];
     const QString &mergedFile = mergeTask.GetFilePath(BuildMergeResultFileName(jobCfg.siteCfg.country, jobCfg.siteCfg.year, prdType));
-    const QStringList &mergeArgs = GetFilesMergeArgs(dataExtrDirs, mergedFile);
+    const QStringList &mergeArgs = GetFilesMergeArgs(dataExtrDirs, mergedFile, jobCfg.prdMaxDate);
     steps.append(mergeTask.CreateStep("AgricPractMergeDataExtractionFiles", mergeArgs));
 
     return mergedFile;
@@ -877,9 +875,9 @@ void AgricPracticesHandler::HandleProductAvailableImpl(EventProcessingContext &c
     }
 
     QString errMsg;
+    const QString &yearStr = AgricPracticesJobCfg::GetYear(parameters, configParameters, siteShortName);
     if (!CheckExecutionPreconditions(&ctx, parameters, configParameters, prd.siteId, siteShortName,
-                                     QString::number(prd.created.date().year()),
-                                     errMsg)) {
+                                     yearStr, errMsg)) {
         Logger::info(QStringLiteral("Agric_practices - HandleProductAvailable - Cannot trigger data extraction job "
                      "for product %1 and siteid = %2. The error was: %3").arg(prd.fullPath).arg(QString::number((int)prd.siteId))
                      .arg(errMsg));
@@ -1020,10 +1018,6 @@ int AgricPracticesHandler::UpdateJobSubmittedParamsFromSchedReq(AgricPracticesJo
 
         jobCfg.seasonStartDate = QDateTime::fromString(strSeasonStartDate, "yyyyMMdd");
         jobCfg.seasonEndDate = QDateTime::fromString(strSeasonEndDate, "yyyyMMdd").addSecs(SECS_TILL_EOD);
-
-        if (jobCfg.siteCfg.year.size() == 0) {
-            jobCfg.siteCfg.year = QString::number(ProcessorHandlerHelper::GuessYear(jobCfg.seasonStartDate, jobCfg.seasonEndDate));
-        }
 
         const auto &startDate = QDateTime::fromString(strStartDate, "yyyyMMdd");
         const auto &endDate = QDateTime::fromString(strEndDate, "yyyyMMdd").addSecs(SECS_TILL_EOD);
@@ -1288,167 +1282,6 @@ QString AgricPracticesHandler::GetDataExtractionTaskName(const AgricPracticesJob
     return taskName;
 }
 
-// ######################## THESE FUNCTIONS ARE NOT USED ANYMORE ################################
-// TODO: This is the version of getting the parameters from the database instead of the file
-bool AgricPracticesHandler::GetSiteConfigForSiteId2(AgricPracticesJobCfg &jobCfg)
-{
-    // TODO: We could try extracting the country and the year from the site name???
-
-    jobCfg.siteCfg.country = ProcessorHandlerHelper::GetStringConfigValue(jobCfg.parameters, jobCfg.configParameters, "country", L4C_AP_CFG_PREFIX);
-    jobCfg.siteCfg.year = ProcessorHandlerHelper::GetStringConfigValue(jobCfg.parameters, jobCfg.configParameters, "year", L4C_AP_CFG_PREFIX);
-
-    if (!GetLpisProductFiles(jobCfg)) {
-        Logger::error(QStringLiteral("Cannot get the LPIS product files for site %1.")
-                      .arg(jobCfg.siteShortName));
-        return false;
-    }
-
-    jobCfg.siteCfg.practices = GetPracticeTableFiles(jobCfg.parameters, jobCfg.configParameters,
-                                                     jobCfg.siteShortName, jobCfg.siteCfg.year);
-
-    // validate practices
-    TQStrQStrMap *pTsaParams;
-    TQStrQStrMap tsaCfgParams;
-
-    QString practicePrefix;
-    QString tsaPrefix;
-
-    for (const auto &practice: jobCfg.siteCfg.practices.keys()) {
-        if (practice != "CC" && practice != "FL" && practice != "NFC" && practice != "NA") {
-            jobCfg.pCtx->MarkJobFailed(jobCfg.event.jobId);
-            throw std::runtime_error(QStringLiteral("Unsupported practice called %1.").arg(practice).toStdString());
-        }
-        if (practice == "CC") {
-            pTsaParams = &jobCfg.siteCfg.ccTsaParams;
-            practicePrefix = L4C_AP_GEN_CC_CFG_PREFIX;
-            tsaPrefix = L4C_AP_TSA_CC_CFG_PREFIX;
-        } else if (practice == "FL") {
-            pTsaParams = &jobCfg.siteCfg.flTsaParams;
-            practicePrefix = L4C_AP_GEN_FL_CFG_PREFIX;
-            tsaPrefix = L4C_AP_TSA_FL_CFG_PREFIX;
-        } else if (practice == "NFC") {
-            pTsaParams = &jobCfg.siteCfg.nfcTsaParams;
-            practicePrefix = L4C_AP_GEN_NFC_CFG_PREFIX;
-            tsaPrefix = L4C_AP_TSA_NFC_CFG_PREFIX;
-        } else if (practice == "NA") {
-            pTsaParams = &jobCfg.siteCfg.naTsaParams;
-            practicePrefix = L4C_AP_GEN_NA_CFG_PREFIX;
-            tsaPrefix = L4C_AP_TSA_NA_CFG_PREFIX;
-        }
-        tsaCfgParams = ProcessorHandlerHelper::FilterConfigParameters(jobCfg.configParameters, tsaPrefix);
-
-        UpdatePracticesParams(jobCfg.parameters, jobCfg.configParameters, tsaCfgParams, tsaPrefix, pTsaParams);
-    }
-
-    return true;
-}
-
-/*
-QStringList AgricPracticesHandler::GetAdditionalFilesAsList(const QString &files, const AgricPracticesSiteCfg &cfg) {
-    QRegExp separators(",| |;");
-    const QStringList &listFileNames = files.split(separators,  QString::SkipEmptyParts);
-    QStringList retList;
-    for(const QString &fileName: listFileNames) {
-        if (fileName.trimmed().size() > 0) {
-            if (QFileInfo::exists(fileName) && QFileInfo(fileName).isFile()) {
-                retList.append(fileName);
-            } else {
-                // Build the file path
-                retList.append(QDir(cfg.additionalFilesRootDir).filePath(fileName));
-            }
-        }
-    }
-    return retList;
-}
-
-QStringList AgricPracticesHandler::GetIdsExtractorArgs(const AgricPracticesJobCfg &jobCfg, const QString &outFile,
-                                                       const QString &finalTargetDir)
-{
-    QStringList retArgs = { "LPISDataSelection", "-inshp", jobCfg.siteCfg.fullDeclsFilePath, "-country", jobCfg.siteCfg.country,
-                            "-seqidsonly", "1", "-out", outFile };
-    if (finalTargetDir.size() > 0) {
-        retArgs += "-copydir";
-        retArgs += finalTargetDir;
-    }
-    TQStrQStrMap::const_iterator itFiles = jobCfg.siteCfg.naPracticeParams.find("addfiles");
-    if (itFiles != jobCfg.siteCfg.naPracticeParams.end() && itFiles->second.trimmed().size() > 0) {
-        retArgs += "-addfiles";
-        retArgs += GetAdditionalFilesAsList(itFiles->second, jobCfg.siteCfg);
-    }
-    return retArgs;
-}
-
-QString AgricPracticesHandler::CreateStepForLPISSelection(const QString &practice, const AgricPracticesJobCfg &jobCfg,
-                                                          QList<TaskToSubmit> &allTasksList, NewStepList &steps, int &curTaskIdx) {
-    QString tsInputTablesDir ;
-    TaskToSubmit &lpisSelectionTask = allTasksList[curTaskIdx++];
-    QString fileName;
-    if (practice.size() == 0) {
-        fileName = BuildPracticesTableResultFileName(jobCfg.siteCfg.country, jobCfg.siteCfg.year, "FilterIds");
-    } else {
-        fileName = BuildPracticesTableResultFileName(jobCfg.siteCfg.country, jobCfg.siteCfg.year, practice);
-    }
-
-    const QString &tmpLpisSelFilePath = lpisSelectionTask.GetFilePath(fileName);
-    QString lpisSelFilePath = tmpLpisSelFilePath;
-    if (jobCfg.execOper == dataExtraction || jobCfg.isScheduledJob) {
-        tsInputTablesDir = GetTsInputTablesDir(jobCfg.parameters, jobCfg.configParameters, jobCfg.siteShortName, practice);
-//        // get the directory where the ids file should be finally moved
-//        tsInputTablesDir = GetProcessorDirValue(jobCfg.parameters, jobCfg.configParameters, "ts_input_tables_dir", jobCfg.siteShortName,
-//                             "/mnt/archive/agric_practices_files/{site}/input_files");
-        lpisSelFilePath = QDir(tsInputTablesDir).filePath(fileName);
-        QDir().mkpath(tsInputTablesDir);
-    }
-    QStringList lpisSelectionArgs;
-    if (practice.size() == 0) {
-        lpisSelectionArgs = GetIdsExtractorArgs(jobCfg, tmpLpisSelFilePath, tsInputTablesDir);
-    } else {
-        lpisSelectionArgs = GetPracticesExtractionArgs(jobCfg, tmpLpisSelFilePath, practice, tsInputTablesDir);
-    }
-
-    steps.append(lpisSelectionTask.CreateStep("LPISDataSelection", lpisSelectionArgs));
-
-    return lpisSelFilePath;
-}
-
-QStringList AgricPracticesHandler::GetPracticesExtractionArgs(const AgricPracticesJobCfg &jobCfg, const QString &outFile,
-                                                              const QString &practice, const QString &finalTargetDir)
-{
-    const TQStrQStrMap *pPracticeParams = 0;
-    QString dataSelPractice = GetTsaExpectedPractice(practice);
-    if (practice == "CC") {
-        pPracticeParams = &(jobCfg.siteCfg.ccPracticeParams);
-    } else if (practice == "FL") {
-        pPracticeParams = &(jobCfg.siteCfg.flPracticeParams);
-    } else if (practice == "NFC") {
-        pPracticeParams = &(jobCfg.siteCfg.nfcPracticeParams);
-    } else if (practice == "NA") {
-        pPracticeParams = &(jobCfg.siteCfg.naPracticeParams);
-    }
-
-    QStringList retArgs = { "LPISDataSelection", "-inshp", jobCfg.siteCfg.fullDeclsFilePath, "-country", jobCfg.siteCfg.country,
-                            "-practice", dataSelPractice, "-year", jobCfg.siteCfg.year, "-out", outFile };
-
-    if (finalTargetDir.size() > 0) {
-        retArgs += "-copydir";
-        retArgs += finalTargetDir;
-    }
-
-    for (TQStrQStrMap::const_iterator it=pPracticeParams->begin(); it!=pPracticeParams->end(); ++it) {
-        if (it->second.size() > 0) {
-            retArgs += ("-" + it->first);
-            if (it->first == "addfiles") {
-                retArgs += GetAdditionalFilesAsList(it->second, jobCfg.siteCfg);
-            } else {
-                retArgs += it->second;
-            }
-        }
-    }
-
-    return retArgs;
-}
-*/
-
 // ###################### AgricPracticesJobCfg functions ############################
 
 AgricPractOperation AgricPracticesJobCfg::GetExecutionOperation(const QJsonObject &parameters, const std::map<QString, QString> &configParameters)
@@ -1457,3 +1290,14 @@ AgricPractOperation AgricPracticesJobCfg::GetExecutionOperation(const QJsonObjec
     return AgricPracticesHandler::GetExecutionOperation(execOper);
 }
 
+QString AgricPracticesJobCfg::GetYear(const QJsonObject &parameters, const std::map<QString, QString> &configParameters,
+                                                  const QString &siteShortName)
+{
+    QString year = ProcessorHandlerHelper::GetStringConfigValue(parameters, configParameters,
+                                                                    "year", L4C_AP_CFG_PREFIX);
+    if (year.size() == 0) {
+        year = S4CUtils::GetSiteYearFromDisk(parameters, configParameters, siteShortName, "config",
+                                                     L4C_AP_CFG_PREFIX, "cfg_dir");
+    }
+    return year;
+}
