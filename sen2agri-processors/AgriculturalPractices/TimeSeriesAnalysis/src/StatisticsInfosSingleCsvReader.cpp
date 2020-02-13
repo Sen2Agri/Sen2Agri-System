@@ -10,8 +10,8 @@
 
 StatisticsInfosSingleCsvReader::StatisticsInfosSingleCsvReader()
 {
-    m_InputFileHeader = {"KOD_PB", "suffix", "date", "mean", "stdev"};
-    m_CoheInputFileHeader = {"KOD_PB", "suffix", "date1", "date2", "mean", "stdev"};
+    m_InputFileHeaderLen = 5;   // {"NewID", "suffix", "date", "mean", "stdev"};
+    m_CoheInputFileHeaderLen = 6; // {"NewID", "suffix", "date1", "date2", "mean", "stdev"};
     m_bIsCoheFile = false;
 }
 
@@ -32,13 +32,13 @@ void StatisticsInfosSingleCsvReader::Initialize(const std::string &source, const
     }
     std::vector<std::string> hdrItems;
     boost::algorithm::split(hdrItems, line, [](char c){return c == ';';});
-    if (hdrItems.size() != m_InputFileHeader.size() &&
-        hdrItems.size() != m_CoheInputFileHeader.size()) {
+    if (hdrItems.size() != m_InputFileHeaderLen &&
+        hdrItems.size() != m_CoheInputFileHeaderLen) {
         //otbAppLogWARNING("Invalid line fields length for line " << fileLine);
         std::cout << "Invalid header length for file " << source << std::endl;
         return;
     }
-    m_bIsCoheFile = (hdrItems.size() == m_CoheInputFileHeader.size());
+    m_bIsCoheFile = (hdrItems.size() == m_CoheInputFileHeaderLen);
 
     m_strSource = source;
     m_year = year;
@@ -246,12 +246,12 @@ bool StatisticsInfosSingleCsvReader::ExtractInfosFromLine(const std::string &fil
         }
 
         if (m_bIsCoheFile) {
-            if (lineElems.size() != (size_t)(m_CoheInputFileHeader.size() - hdrDiff)) {
+            if (lineElems.size() != (size_t)(m_CoheInputFileHeaderLen - hdrDiff)) {
                 std::cout << "Invalid file field length for " << fid + "_" + suffix << std::endl;
                 return false;
             }
         } else {
-            if (lineElems.size() != (size_t)(m_InputFileHeader.size() - hdrDiff)) {
+            if (lineElems.size() != (size_t)(m_InputFileHeaderLen - hdrDiff)) {
                 std::cout << "Invalid file field length for " << fid + "_" + suffix << std::endl;
                 return false;
             }

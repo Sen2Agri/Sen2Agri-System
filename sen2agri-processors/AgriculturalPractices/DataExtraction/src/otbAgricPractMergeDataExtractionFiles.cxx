@@ -160,7 +160,7 @@ private:
     AgricPractMergeDataExtractionFiles() : m_bForceKeepSuffixInOutput(false),
         m_bSortInputProducts(false)
     {
-        m_HeaderFields = {"KOD_PB", "date", "mean", "stdev"};
+        m_HeaderFields = {"NewID", "date", "mean", "stdev"};
     }
 
     void DoInit() override
@@ -195,6 +195,10 @@ private:
                                             "this filter will be merged");
         MandatoryOff("sfilter");
 
+        AddParameter(ParameterType_String, "maxdate", "Limit date to consider the values");
+        SetParameterDescription("maxdate","If the maxdate is set only the dates less than this value are considered");
+        MandatoryOff("maxdate");
+
         AddParameter(ParameterType_Int, "skeep", "Force keeping the suffix in the output file");
         SetParameterDescription("skeep","If the output is a folder and individual files are created, force"
                                             "keeping the suffix in the output files (for coherence, for ex.)");
@@ -216,7 +220,7 @@ private:
         AddParameter(ParameterType_Int, "sort", "Sorts the input products lexicographically");
         SetParameterDescription("sort","If set, the input products will be sorted lexicographically");
         MandatoryOff("sort");
-        SetDefaultParameterInt("sort",0);
+        SetDefaultParameterInt("sort",1);
 
         AddRAMParameter();
 
@@ -241,6 +245,10 @@ private:
         const std::vector<std::string> &inFilePaths = GetInputFilePaths();
         if (HasValue("sfilter")) {
             m_suffixFilter = GetParameterAsString("sfilter");
+        }
+
+        if (HasValue("maxdate")) {
+            m_MaxDate = GetParameterAsString("maxdate");
         }
 
         if (HasValue("skeep")) {
@@ -412,11 +420,16 @@ private:
                 }
                 fidInfo.meanVal = std::atof(results[curIdx++].c_str());
                 fidInfo.stdDevVal = std::atof(results[curIdx++].c_str());
-                fid.infos.emplace_back(fidInfo);
+                if (m_MaxDate.size() == 0 || m_MaxDate >= fidInfo.date) {
+                    fid.infos.emplace_back(fidInfo);
+                }
                 j++;
             }
             if (fieldValid) {
-                retFids.emplace_back(fid);
+                // do not add fields that have no date (they did not pass maximum date filter)
+                if (fid.infos.size() > 0) {
+                    retFids.emplace_back(fid);
+                }
             }
             i++;
         }
@@ -445,7 +458,9 @@ private:
 //            fid.fid = GetAttribute(valuesEl, "id");
 //            fid.name = GetAttribute(valuesEl, "name");
 //            fid.infos = ReadFidInfos(valuesEl);
-//            retFids.emplace_back(fid);
+//            if (fid.infos.size() > 0) {
+//              retFids.emplace_back(fid);
+//            }
 //        }
 
 //        otbAppLogINFO("Reading file " << filePath << " OK");
@@ -464,7 +479,9 @@ private:
             fidInfo.date2 = GetAttribute(valuesEl, "date2");
             fidInfo.meanVal = std::atof(GetAttribute(valuesEl, "mean").c_str());
             fidInfo.stdDevVal = std::atof(GetAttribute(valuesEl, "stdev").c_str());
-           result.emplace_back(fidInfo);
+            if (m_MaxDate.size() == 0 || m_MaxDate >= fidInfo.date) {
+                result.emplace_back(fidInfo);
+            }
         }
         return result;
     }
@@ -771,6 +788,7 @@ private:
     std::vector<std::string> m_HeaderFields;
     bool m_bUseDate2;
     std::string m_suffixFilter;
+    std::string m_MaxDate;
     bool m_bForceKeepSuffixInOutput;
     bool m_bSortInputProducts;
 

@@ -8,8 +8,8 @@
 
 StatisticsInfosFolderFilesReader::StatisticsInfosFolderFilesReader()
 {
-    m_InputFileHeader = {"KOD_PB", "date", "mean", "stdev"};
-    m_CoheInputFileHeader = {"KOD_PB", "date1", "date2", "mean", "stdev"};
+    m_InputFileHeaderLen = 4;   // {"NewID", "date", "mean", "stdev"};
+    m_CoheInputFileHeaderLen = 5; // {"NewID", "date1", "date2", "mean", "stdev"};
 }
 
 void StatisticsInfosFolderFilesReader::Initialize(const std::string &source, const std::vector<std::string> &filters, int year)
@@ -125,13 +125,13 @@ std::vector<std::string> StatisticsInfosFolderFilesReader::GetInputFileLineEleme
 bool StatisticsInfosFolderFilesReader::ExtractInfosFromLine(const std::string &fileLine, InputFileLineInfoType &lineInfo)
 {
     const std::vector<std::string> &lineElems = GetInputFileLineElements(fileLine);
-    if (lineElems.size() != m_InputFileHeader.size() &&
-        lineElems.size() != m_CoheInputFileHeader.size()) {
+    if (lineElems.size() != m_InputFileHeaderLen &&
+        lineElems.size() != m_CoheInputFileHeaderLen) {
         //otbAppLogWARNING("Invalid line fields length for line " << fileLine);
         std::cout << "Invalid line fields length for line " << fileLine << std::endl;
         return false;
     }
-    bool isCohe = (lineElems.size() == m_CoheInputFileHeader.size());
+    bool isCohe = (lineElems.size() == m_CoheInputFileHeaderLen);
     int meanIdx = isCohe ? 3 : 2;
     int stdDevIdx = isCohe ? 4 : 3;
     std::string::size_type sz;     // alias of size_t

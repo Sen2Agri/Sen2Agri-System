@@ -38,8 +38,8 @@ private:
                               std::vector<InputFileLineInfoType> &lineInfos, std::string &uid);
 
 private:
-    std::vector<std::string> m_InputFileHeader;
-    std::vector<std::string> m_CoheInputFileHeader;
+    size_t m_InputFileHeaderLen;
+    size_t m_CoheInputFileHeaderLen;
 
     std::string m_strSource;
     IdxMapType m_IdxMap;

@@ -37,8 +37,8 @@ private:
 
 private:
     std::vector<FileInfoType> m_InfoFiles;
-    std::vector<std::string> m_InputFileHeader;
-    std::vector<std::string> m_CoheInputFileHeader;
+    size_t m_InputFileHeaderLen;
+    size_t m_CoheInputFileHeaderLen;
 };
 
 #endif

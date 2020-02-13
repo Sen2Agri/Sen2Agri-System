@@ -567,7 +567,7 @@ private:
         const std::string &outDir = this->GetParameterString("outdir");
         m_agricPracticesDataWriter = AgricPracticesWriterType2::New();
         m_agricPracticesDataWriter->SetTargetFileName(BuildUniqueFileName(outDir, imagesPaths[0]));
-        std::vector<std::string> header = {"KOD_PB", "date", "mean", "stdev"};
+        std::vector<std::string> header = {"NewID", "date", "mean", "stdev"};
         if (m_bOutputMinMax) {
             header.push_back("min");
             header.push_back("max");
