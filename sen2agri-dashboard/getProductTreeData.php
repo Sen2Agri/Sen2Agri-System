@@ -49,6 +49,8 @@ try {
     	if(strlen($site_id)==0) $site_id = null;
     	
     	$satellit_id = null;
+        
+        $userName = _SESSION['userName'];
     	
     	$season_id = null;
     	if(isset($_REQUEST['season_id']) && $_REQUEST['season_id']!=""){
@@ -78,7 +80,7 @@ try {
     	
     	if(isset($_REQUEST['action']) && $_REQUEST['action']=='getNodes'){ //get level 3 for treeview
     	
-    	    $rows         = pg_query_params($dbconn, "select * from sp_get_dashboard_products_nodes($1,$2,$3,$4,$5,$6,$7,$8)",array($site_id,$product_type_id,$season_id,$satellit_id,$from,$to,$tiles,true)) or die(pg_last_error());
+    	    $rows         = pg_query_params($dbconn, "select * from sp_get_dashboard_products_nodes($1,$2,$3,$4,$5,$6,$7,$8,$9)",array($userName,$site_id,$product_type_id,$season_id,$satellit_id,$from,$to,$tiles,true)) or die(pg_last_error());
     	  
     	    $responseJson = pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "";
     	    $productRows  = json_decode($responseJson); 
@@ -115,7 +117,7 @@ try {
     	    }
     	    
     	}else{//get the first 2 levels for treeview
-        	$rows         = pg_query_params($dbconn, "select * from sp_get_dashboard_products_nodes($1,$2,$3,$4,$5,$6,$7)",array($site_id,$product_type_id,$season_id,$satellit_id,$from,$to,$tiles)) or die(pg_last_error());
+        	$rows         = pg_query_params($dbconn, "select * from sp_get_dashboard_products_nodes($1,$2,$3,$4,$5,$6,$7,$8)",array($userName,$site_id,$product_type_id,$season_id,$satellit_id,$from,$to,$tiles)) or die(pg_last_error());
         	
         	$responseJson = pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "";
         	$productRows  = json_decode($responseJson); 

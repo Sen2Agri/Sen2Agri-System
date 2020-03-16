@@ -1,4 +1,5 @@
 ﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_products_nodes(
+    _user_name character varying,
     _site_id integer[] DEFAULT NULL::integer[],
     _product_type_id integer[] DEFAULT NULL::integer[],
     _season_id smallint DEFAULT NULL::smallint,
@@ -16,14 +17,17 @@ $BODY$
 			    product_type_names(id, name, description, row, is_raster) AS (
 				select id, name, description, row_number() over (order by description), is_raster
 				from product_type
+				-- LPIS products should be excluded
+				where name != 'lpis'
 			    ),
 		$sql$;
 
-		IF $8 IS TRUE THEN
+		IF $9 IS TRUE THEN
 	            q := q || $sql$
 			site_names(id, name, geog, row) AS (
-				select id, name, st_astext(geog), row_number() over (order by name)
-				from site
+				select s.id, s.name, st_astext(s.geog), row_number() over (order by s.name)
+				from site s
+				join user u on u.login = $1 and (u.role_id = 1 or s.id in (select * from unnest(u.site_id))
 			    ),
 			data(id, product, footprint, site_coord, product_type_id, satellite_id, is_raster) AS (
 
@@ -62,9 +66,9 @@ $BODY$
 			    AND EXISTS (
 				    SELECT * FROM season WHERE season.site_id = P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date
 		    $sql$;
-		    IF $3 IS NOT NULL THEN
+		    IF $4 IS NOT NULL THEN
 			q := q || $sql$
-				AND season.id=$3
+				AND season.id=$4
 				$sql$;
 		    END IF;
 
@@ -72,35 +76,35 @@ $BODY$
 			)
 		    $sql$;
 		     raise notice '%', _site_id;raise notice '%', _product_type_id;raise notice '%', _satellit_id;
-		    IF $1 IS NOT NULL THEN
+		    IF $2 IS NOT NULL THEN
 			q := q || $sql$
-				AND P.site_id = ANY($1)
+				AND P.site_id = ANY($2)
 
 		    $sql$;
 		    END IF;
 
-		    IF $2 IS NOT NULL THEN
+		    IF $3 IS NOT NULL THEN
 			q := q || $sql$
-			 	AND P.product_type_id= ANY($2)
+			 	AND P.product_type_id= ANY($3)
 
 				$sql$;
 		    END IF;
 
-		IF $5 IS NOT NULL THEN
-		q := q || $sql$
-			AND P.created_timestamp >= to_timestamp(cast($5 as TEXT),'YYYY-MM-DD HH24:MI:SS')
-			$sql$;
-		END IF;
-
 		IF $6 IS NOT NULL THEN
 		q := q || $sql$
-			AND P.created_timestamp <= to_timestamp(cast($6 as TEXT),'YYYY-MM-DD HH24:MI:SS') + interval '1 day'
+			AND P.created_timestamp >= to_timestamp(cast($6 as TEXT),'YYYY-MM-DD HH24:MI:SS')
 			$sql$;
 		END IF;
 
 		IF $7 IS NOT NULL THEN
 		q := q || $sql$
-			AND P.tiles <@$7 AND P.tiles!='{}'
+			AND P.created_timestamp <= to_timestamp(cast($7 as TEXT),'YYYY-MM-DD HH24:MI:SS') + interval '1 day'
+			$sql$;
+		END IF;
+
+		IF $8 IS NOT NULL THEN
+		q := q || $sql$
+			AND P.tiles <@$8 AND P.tiles!='{}'
 			$sql$;
 		END IF;
 
