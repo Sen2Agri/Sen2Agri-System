@@ -14,10 +14,10 @@ function getParameters($current_processor_name, $adv){
         }
     } 
     $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
-    $sql = "SELECT cm.*,reverse(split_part(reverse(cm.key),'.',1)) as param_name, cf.value as param_value
+    $sql = "SELECT cm.*,reverse(split_part(reverse(cm.key),'.',1)) as param_name, cf.value as param_value, cf.site_id as site_id
             FROM config_metadata cm
             INNER JOIN config_category cfc ON cm.config_category_id = cfc.id
-            LEFT JOIN config cf ON lower(cf.key) = lower(cm.key) AND EXISTS (SELECT id FROM site WHERE id = cf.site_id)
+            LEFT JOIN config cf ON lower(cf.key) = lower(cm.key)
             WHERE cfc.id IN (3,4,5,6,18,19,20,21) AND cm.Key ilike 'processor.{$current_processor_name}.%' AND is_site_visible=true 
             AND is_advanced='".$adv."' 
             ORDER BY cfc.display_order";
@@ -338,6 +338,12 @@ $processors = pg_fetch_all($res);
 				}
 			
 			}
+            
+        function filterParameters(params) {
+            return params.filter(function f(currentElement, index, array) {
+                return currentElement.site_id == null;
+            });
+        }
 
 	   	//get advanced parameters for each processor
 		var advancedParams = $(".control_advanced>input");
@@ -364,18 +370,20 @@ $processors = pg_fetch_all($res);
 	        		});
 
 			ajaxAdvParam.done(function(data){
+                // first filter the parameters such that we can have only one instance of each parameter even it belongs to several sites
 				if(data.hasOwnProperty('advanced') && !$.isEmptyObject(data.advanced)){
-	    			
-    				$.each(data.advanced,function(param){ 			
-    					 displayAdvancedParameter(data.advanced[param], current_processor);
+                    var advancedParams = filterParameters(data.advanced);	    			
+    				$.each(advancedParams,function(param){ 
+    					 displayAdvancedParameter(advancedParams[param], current_processor);
     					});
 
     				// hide all advanced parameters
     				$('.advanced').addClass("hidden");
 	    		}
 				if (data.hasOwnProperty('specific') && !$.isEmptyObject(data.specific)) {
-					$.each(data.specific, function (param) {
-						displaySpecificParameter(data.specific[param], current_processor);   				
+                    var specificParams = filterParameters(data.specific);	    			
+					$.each(specificParams, function (param) {
+						displaySpecificParameter(specificParams[param], current_processor);   				
 					});
 				}
 				}).fail( function (responseData, textStatus, errorThrown) {

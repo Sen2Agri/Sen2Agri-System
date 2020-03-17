@@ -1032,6 +1032,7 @@ function update_sites(json_data) {
 			var btnFilterEl = $("#"+siteEl.form.id+" button[name='btnFilter']");
 			var productsEls = $("#"+siteEl.form.id+" select.input-files");
 			
+            update_custom_param_values(siteEl.options[siteEl.selectedIndex].value, siteEl.form.id);
 			if(siteEl.selectedIndex > 0) {
 				//get products for all product types in category
 				$.each(productsEls, function (index, product) {
@@ -1140,6 +1141,68 @@ function update_crop_mask(json_data, cropMaskEl) {
 	$.each(json_data, function(index, productObj) {
 		cropMaskEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');
 	});
+}
+
+function filterParameters(params, siteId) {
+    var siteIdElems = params.filter(function f(currentElement) {
+        return currentElement.site_id == siteId;
+    });
+    if (siteId != null) {
+        // check for the parameters that did not had a value for the specific site 
+        var noSiteIdElems = params.filter(function f(currentElement) {
+            return currentElement.site_id == null;
+        });
+        noSiteIdElems.forEach(function(value) {
+            if (siteIdElems.filter(function(e) { return e.key === value.key; }).length == 0) {
+                siteIdElems.push(value);
+            }            
+        });
+    }
+    return siteIdElems;
+}
+
+function update_custom_param_values(siteId, formId) {
+    var current_processor = formId.replace('form','');
+    
+    $.ajaxSetup({
+            async: false
+        });
+    
+    var ajaxAdvParam = $.ajax({
+        type:"GET",
+        data:{action:'getParameters',current_processor: current_processor},
+        dataType:'json'
+            });
+
+        ajaxAdvParam.done(function(data){
+            function updateParamInput(params, index) {
+                var param = params[index];
+                var paramInput =  $("#"+formId+" input#"+param.param_name+"_" + current_processor);
+                if(paramInput.is('input')){
+                    paramInput.attr({value:param.param_value});
+                }   
+            }
+            // first filter the parameters such that we can have only one instance of each parameter even it belongs to several sites
+            if(data.hasOwnProperty('advanced') && !$.isEmptyObject(data.advanced)){
+                var advancedParams = filterParameters(data.advanced, siteId);	    			
+                $.each(advancedParams,function(param){ 
+                    updateParamInput(advancedParams, param);
+                });
+            }
+            if (data.hasOwnProperty('specific') && !$.isEmptyObject(data.specific)) {
+                var specificParams = filterParameters(data.specific, siteId);	    			
+                $.each(specificParams, function (param) {
+                    updateParamInput(specificParams, param);
+                });
+            }
+            }).fail( function (responseData, textStatus, errorThrown) {
+                console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+            });	    
+
+          $.ajaxSetup({
+                async: true
+            });
+
 }
 
 function get_products(siteId, productsEl, formId, filter) {
