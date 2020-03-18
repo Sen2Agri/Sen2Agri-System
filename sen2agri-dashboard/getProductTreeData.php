@@ -50,7 +50,7 @@ try {
     	
     	$satellit_id = null;
         
-        $userName = _SESSION['userName'];
+        $userName = $_SESSION['userName'];
     	
     	$season_id = null;
     	if(isset($_REQUEST['season_id']) && $_REQUEST['season_id']!=""){
