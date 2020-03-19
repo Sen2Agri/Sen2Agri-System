@@ -1,9 +1,9 @@
 <?php
 class ConfigParams {
-    static $DB_NAME = 'sen2agri';
+    static $DB_NAME = 'sen4cap_cyl';
     static $CONN_STRING;
-    static $SERVICES_URL = 'http://localhost:8082/dashboard';
-    static $REST_SERVICES_URL = 'http://localhost:8080';
+    static $SERVICES_URL = 'http://sen2agri-dev.c-s.ro:8081/dashboard';
+    static $REST_SERVICES_URL = 'http://192.168.60.110:8083';
     static $SITE_ID;
     static $USER_NAME;
 
@@ -18,7 +18,7 @@ class ConfigParams {
     
     private static function setConnection(){
         if(!isset(self::$CONN_STRING)){
-            self::$CONN_STRING = 'host=localhost port=5432 dbname='.self::$DB_NAME.' user=admin password=sen2agri';
+            self::$CONN_STRING = 'host=192.168.60.193 port=5432 dbname='.self::$DB_NAME.' user=admin password=admin';
         }
     }
     

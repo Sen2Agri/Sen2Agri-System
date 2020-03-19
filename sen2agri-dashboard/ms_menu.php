@@ -32,6 +32,7 @@ if (isset($_SESSION['siteId'])) {
 				<li><a href="users.php">Users</a></li>
 				<li><a href="datasource.php">Data Sources</a></li>
 				<?php }?>
+				<li><a href="statistics.php">Statistics</a></li>
 				<li class="logout"><a href="logout.php">Logout</a></li>
             </ul>
         </div>
@@ -48,6 +49,9 @@ if (isset($_SESSION['siteId'])) {
                 <li>Dashboard</li>
                 <li>Custom Jobs</li>
                 <li>Monitoring</li>
+                <li>Users</li>
+                <li>Data Sources</li>
+                <li>Statistics</li>
             </ul>
         </div>
     </div>

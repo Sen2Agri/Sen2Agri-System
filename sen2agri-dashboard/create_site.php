@@ -411,7 +411,7 @@ function getTargetFolder($siteId, $uploadDescr) {
 	}
 	$queryStr = "SELECT key, value FROM sp_get_parameters('" . $uploadDescr->dbUploadDirKey ."') WHERE site_id IS NULL";
 	$rows = pg_query($dbconn, $queryStr) or die(pg_last_error());
-	$result = pg_fetch_array($rows, 0)[1];
+	$result = (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[1] : "");
 	
 	$targetDataDir = str_replace("{site}", $siteId, $result);
 	if (!empty($uploadDescr->uploadRelPath)) {
