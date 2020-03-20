@@ -17,6 +17,7 @@
 	<link rel="stylesheet" href="styles/styles.css?<?php echo rand(10,10000);?>" />
 	<link rel="stylesheet" href="styles/theme.css?<?php echo rand(10,10000);?>" />
 	<link rel="stylesheet" href="libraries/openlayers/css/ol.css" />
+	<link rel="stylesheet" href="libraries/nvd3-1.1.11/nv.d3.css" />
 	<link rel="stylesheet" href="libraries/bootstrap-treeview/bootstrap-treeview.css" />
 	
 	<script src="libraries/aspnetcdn/ajax/jQuery/jquery-2.1.4.min.js"></script>

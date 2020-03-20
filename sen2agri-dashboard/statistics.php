@@ -51,8 +51,11 @@ function select_satellite() {
 				.statistics .form-group-sm .radio-group input{width:30px}
 				.statistics .form-group-sm .radio-group label{width:100%;font-weight:400;margin:0}
 				.statistics .filters{background-color:#edf2e4;padding:10px;border:1px solid #dddddd;border-radius:5px}
-				.statistics .reports{border:1px solid #edf2e4;border-width:1px 1px 1px 0;padding:10px;text-align:center;background:transparent url(images/radar.png) no-repeat 50% 50%}
+				.statistics .reports-orbit,.statistics .reports-aggregate{border:1px solid #edf2e4;padding:10px;text-align:center}
+				.statistics .reports-aggregate{border-width:1px 1px 1px 0;background:transparent url(images/chart.png) no-repeat 50% 50%;min-height:250px}
+				.statistics .reports-orbit{border-width:1px 1px 1px 0;background:transparent url(images/radar.png) no-repeat 50% 50%}
 				.statistics input.add-edit-btn{width:100%;border-radius:4px;font-size:14px;text-align:center;margin-top:10px}
+				.nvd3 g.nv-groups path.nv-line{stroke-width:3px}
 			</style>
 			<div class="panel panel-default config for-table statistics">
 				<div class="panel-heading"><h4 class="panel-title"><span>Orbit reports</span></h4></div>
@@ -124,8 +127,13 @@ function select_satellite() {
 								</div>
 							</div>
 						</div>
-						<div class="col-md-9 reports">
-							<div id="chart-container"></div>
+						<div class="col-md-9 reports-orbit">
+							<div id="chart_orbit"></div>
+						</div>
+					</div>
+					<div class="row" style="padding:0 15px">
+						<div class="col-md-12 reports-aggregate">
+							<div id="chart_aggregate"></div>
 						</div>
 					</div>
 				</div>
@@ -133,7 +141,6 @@ function select_satellite() {
 		</div>
 	</div>
 </div>
-<script type="text/javascript" src="libraries/radar-chart/d3.v3.js"></script>
 <script type="text/javascript" src="libraries/radar-chart/radar-chart.min.js"></script>
 <link rel="stylesheet" href="libraries/radar-chart/radar-chart.min.css">
 
@@ -208,12 +215,48 @@ function getOrbitStatistics(satellite, siteId, orbit, fromDate, toDate) {
 	});
 	return deferred.promise();
 }
+function getAggregateStatistics(satellite, siteId, orbit, fromDate, toDate) {
+	var deferred = $.Deferred();
+	
+	var oData = {
+		"report_type": "aggregate",
+		"satellite": satellite,
+	};
+	if (siteId != "" && siteId != "0") {
+		oData.siteId = siteId;
+	}
+	if (orbit != "" && orbit != "0") {
+		oData.orbit = orbit;
+	}
+	if (fromDate != "" && toDate != "") {
+		oData.fromDate = fromDate;
+		oData.toDate   = toDate;
+	}
+	$.ajax({
+        async: false,
+      	url: "getReports.php",
+		data: oData,
+		method: "GET",
+		dataType: "json",
+		success: function (response) {
+			if (response.status == "SUCCEEDED") {
+				deferred.resolve(response);
+			} else if (response.status == "FAILED") {
+				deferred.reject(null, "FAILED", response.message);
+			}
+        },
+		error: function (jqXHR, textStatus, errorThrown) {
+			deferred.reject(jqXHR, textStatus, "Error while retrieving statistics.");
+		}
+	});
+	return deferred.promise();
+}
 
 function showRadar(satellite, siteId, orbit, fromDate, toDate) {
 	var data = [];
 	var chart = RadarChart.chart();
 	
-	var w = $(".statistics .reports").width() - 1;
+	var w = $(".statistics .reports-orbit").width() - 1;
 	var h = $(".statistics .filters").height() - 2;
 	var size = w > h ? h : w;
 	
@@ -247,12 +290,97 @@ function showRadar(satellite, siteId, orbit, fromDate, toDate) {
 		RadarChart.defaultConfig.radius = 3;
 		RadarChart.defaultConfig.w = size;
 		RadarChart.defaultConfig.h = size;
-		RadarChart.draw("#chart-container", data);
+		RadarChart.draw("#chart_orbit", data);
 	})
 	.fail(function (jqXHR, status, error) {
 		alert(error);
 	});
 }
+function showAggregate(satellite, siteId, orbit, fromDate, toDate) {
+	$.when(getAggregateStatistics(satellite, siteId, orbit, fromDate, toDate))
+	.done(function (response) {
+		var pairs            = { "key": "Pairs"            , "color": "#4e4e4e", "type": "bar" , "yAxis": 1, "values" : [ ] };
+		var processed        = { "key": "Processed"        , "color": "#2eb32e", "type": "bar" , "yAxis": 1, "values" : [ ] };
+		var notYetProcessed  = { "key": "Not Yet Processed", "color": "#007bbb", "type": "bar" , "yAxis": 1, "values" : [ ] };
+		var falselyProcessed = { "key": "Falsely Processed", "color": "#ffc100", "type": "bar" , "yAxis": 1, "values" : [ ] };
+		var noIntersections  = { "key": "No Intersections" , "color": "#a5a5a5", "type": "bar" , "yAxis": 1, "values" : [ ] };
+		var errors           = { "key": "Errors"           , "color": "#bb0000", "type": "bar" , "yAxis": 1, "values" : [ ] };
+		var acquisitions     = { "key": "Acquisitions"     , "color": "#336cc1", "type": "line", "yAxis": 2, "values" : [ ] };
+		var axisKeys = [];
+		$.each(response.data, function(index, value) {
+			pairs.values.push           ({ x: index, y: value.pairs });
+			processed.values.push       ({ x: index, y: value.processed });
+			notYetProcessed.values.push ({ x: index, y: value.notYetProcessed });
+			notYetProcessed.values.push ({ x: index, y: value.processed });
+			falselyProcessed.values.push({ x: index, y: value.falselyProcessed });
+			noIntersections.values.push ({ x: index, y: value.noIntersections });
+			errors.values.push          ({ x: index, y: value.errors });
+			acquisitions.values.push    ({ x: index, y: value.acquisitions });
+			axisKeys.push(value.calendarDate.substring(5));
+		});
+		
+		nv.addGraph(function() {
+			var chart = nv.models.multiChart();
+			chart.margin({ top: 0, right: 60, bottom: 20, left: 50 });
+			//chart.useInteractiveGuideline(true);
+			chart.xAxis
+				.tickFormat(function (d) {
+					return (typeof axisKeys[d] !== "undefined") ? axisKeys[d] : "";
+				});
+			
+			var seriesData = [];
+			seriesData.push(acquisitions);
+			seriesData.push(pairs);
+			seriesData.push(processed);
+			seriesData.push(notYetProcessed);
+			seriesData.push(falselyProcessed);
+			seriesData.push(noIntersections);
+			seriesData.push(errors);
+			
+			// Get and set max values for each axis
+			var minY1 = 0;
+			var minY2 = 0;
+			var maxY1 = 0;
+			var maxY2 = 0;
+			for (var i = 0; i < seriesData.length; i++) {
+				var _axis = seriesData[i].yAxis;
+				var _values = seriesData[i].values;
+
+				// Walk values and set largest to variables
+				for (var j = 0; j < _values.length; j++) {
+					// For maxY1
+					if (_axis == 1) {
+						if(_values[j].y > maxY1) {
+							maxY1 = _values[j].y;
+						}
+					}
+					// For maxY2
+					if (_axis == 2) {
+						if (_values[j].y > maxY2) {
+							maxY2 = _values[j].y;
+						}
+					}
+				}
+			}
+			chart.yDomain1([minY1, maxY1]);
+			chart.yDomain2([minY2, maxY2]);
+			
+			$("#chart_aggregate svg").remove();
+			$("#chart_aggregate").append("<svg style='width:100%;height:500px'> </svg>");
+			d3.select("#chart_aggregate svg")
+				.datum(seriesData)
+				.call(chart);
+
+			nv.utils.windowResize(chart.update);
+			
+			return chart;
+		});
+	})
+	.fail(function (jqXHR, status, error) {
+		alert(error);
+	});
+}
+
 function updateFromToDate(repYear, month, last) {
 	if ((month == "2") && (parseInt(repYear)/4 === parseInt(repYear/4))) {
 		last = "29";
@@ -264,10 +392,12 @@ function updateFromToDate(repYear, month, last) {
 	$("input[name='toDate']").val(repYear + "-" + month + "-" + last);
 }
 $(document).ready(function() {
-	var mH = $(".statistics .filters").get(0).offsetHeight;
-	$(".statistics .reports").css({ "min-height": mH + "px" });
+	//$("select[name=satellite_select]").val("S1");
 	
-	var crtYear = new Date().getFullYear() + "";
+	var mH = $(".statistics .filters").get(0).offsetHeight;
+	$(".statistics .reports-orbit").css({ "min-height": mH + "px" });
+	
+	var crtYear = (new Date().getFullYear() - 1 ) + "";
 	$("input[name='report_year']").val(crtYear);
 	var $selMonth = $("input[name='month_no']:checked");
 	if ($selMonth.length > 0) {
@@ -321,8 +451,13 @@ $(document).ready(function() {
 			var siteId   = $("select[name='siteId_select']").val();
 			var sat      = $("select[name='satellite_select']").val();
 			if (sat != "0") {
-				$(".statistics .reports").css({ "background-image": "none" });
+				$(".statistics .reports-orbit,.statistics .reports-aggregate").css({ "background-image": "none" });
+				
+				d3.selectAll("svg").selectAll("*").remove();
+				d3.selectAll('.nvtooltip').remove();
+				
 				showRadar(sat, siteId, orbit, fromDate, toDate);
+				showAggregate(sat, siteId, orbit, fromDate, toDate);
 			}
 		}
 	});
