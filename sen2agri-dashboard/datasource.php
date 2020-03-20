@@ -2,7 +2,7 @@
 
 require_once ("ConfigParams.php");
 
-$fetchMode = array('Overwrite'=> array(1, "OVERWRITE"), 'Resume'=>array(2, "RESUME"), 'Copy'=>array(3, "COPY"), 'Symbolic link'=>array(4, "SYMLINK"), 'Direct link to product'=>array(5, "DIRECT_LINK"));
+$fetchMode = array('Overwrite'=> array(1, "OVERWRITE"), 'Resume'=>array(2, "RESUME"), 'Copy'=>array(3, "COPY"), 'Symbolic link'=>array(4, "SYMLINK"), 'Direct link to product'=>array(5, "CHECK"));
 $scope = array('Download'=>2,'Query'=>1,'Query and download'=>3);
 $sat_scope = array();
 
@@ -346,11 +346,13 @@ $(document).ready(function(){
         $(this).validate({
             rules: {
                 local_root:{
-                       required:function(element){ //set required TRUE only when fetch_mode is 3 OR 4                     
+                       required:function(element){ //set required TRUE only when fetch_mode is 3, 4 or 5
                                var fetch_mode = $('#'+element.form.id+' select[name="fetch_mode"]');
                                var selected_index = $('#'+element.form.id+' select[name="fetch_mode"]').prop('selectedIndex');
                               
-                               return ( fetch_mode[0].options[selected_index].id==3 ||  fetch_mode[0].options[selected_index].id==4);
+                               return ( fetch_mode[0].options[selected_index].id==3 ||  
+                                        fetch_mode[0].options[selected_index].id==4 || 
+                                        fetch_mode[0].options[selected_index].id==5);
                        }
                 },
                 scope:{
