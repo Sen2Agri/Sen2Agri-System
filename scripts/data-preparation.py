@@ -548,7 +548,7 @@ add constraint {} unique(ori_crop);"""
 
                 for col in ["ori_id", "ori_hold", "ori_crop"]:
                     if column_exists(conn, "public", self.lpis_table_staging, col):
-                        logging.error("`{}` is not an allowed LPIS column name")
+                        logging.error("`{}` is not an allowed LPIS column name".format(col))
                         sys.exit(1)
 
                 ori_crop_type = get_column_type(
