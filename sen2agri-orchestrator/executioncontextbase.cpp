@@ -12,6 +12,12 @@ ProductList ExecutionContextBase::GetProducts(int siteId, int productTypeId, con
     return persistenceManager.GetProducts(siteId, productTypeId, startDate, endDate);
 }
 
+L1CProductList ExecutionContextBase::GetL1CProducts(int siteId, const SatellitesList &satelliteIds, const StatusesList &statusIds,
+                                                    const QDateTime &startDate, const QDateTime &endDate)
+{
+    return persistenceManager.GetL1CProducts(siteId, satelliteIds, statusIds, startDate, endDate);
+}
+
 QString ExecutionContextBase::GetProcessorShortName(int processorId)
 {
     return persistenceManager.GetProcessorShortName(processorId);

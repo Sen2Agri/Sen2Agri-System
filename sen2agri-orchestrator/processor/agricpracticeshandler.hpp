@@ -5,6 +5,7 @@
 #include "s4c_utils.hpp"
 
 #define L4C_AP_CFG_PREFIX   "processor.s4c_l4c."
+#define LPIS_PATH_CFG_KEY   "processor.lpis.path"
 
 typedef struct AgricPracticesSiteCfg {
     AgricPracticesSiteCfg() {
@@ -63,6 +64,10 @@ typedef struct AgricPracticesJobCfg {
         siteCfg.tsaMinAcqsNo = ProcessorHandlerHelper::GetStringConfigValue(parameters, configParameters,
                                                                         "tsa_min_acqs_no", L4C_AP_CFG_PREFIX);
         siteCfg.year = GetYear(parameters, configParameters, siteShortName);
+        lpisConfigValue = ProcessorHandlerHelper::GetMapValue(pCtx->GetJobConfigurationParameters(evt.jobId, LPIS_PATH_CFG_KEY), LPIS_PATH_CFG_KEY,
+                                                              "/mnt/archive/lpis/{site}/{year}");
+        lpisConfigValue = lpisConfigValue.replace("{site}", siteShortName);
+        lpisConfigValue = lpisConfigValue.replace("{year}", siteCfg.year);
     }
     static AgricPractOperation GetExecutionOperation(const QJsonObject &parameters,
                                                      const std::map<QString, QString> &configParameters);
@@ -73,6 +78,7 @@ typedef struct AgricPracticesJobCfg {
     JobSubmittedEvent event;
     QJsonObject parameters;
     std::map<QString, QString> configParameters;
+    QString lpisConfigValue;
 
     AgricPracticesSiteCfg siteCfg;
 

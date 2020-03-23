@@ -70,7 +70,8 @@ protected:
     ProcessorHandlerHelper::SatelliteIdType GetSatIdForTile(const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &mapSatTiles,
                                                                            const QString &tileId);
     bool IsCloudOptimizedGeotiff(const std::map<QString, QString> &configParameters);
-
+    bool CheckL1CInputs(SchedulingContext &ctx, const ConfigurationParameterValueMap &mapCfg, const QString &l1cAvailDaysKey, int siteId,
+                        const QDateTime &seasonStartDate, const QDateTime &qScheduledDate);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

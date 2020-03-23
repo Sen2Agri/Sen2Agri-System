@@ -532,6 +532,70 @@ bool ProcessorHandler::IsCloudOptimizedGeotiff(const std::map<QString, QString> 
     return bIsCog;
 }
 
+bool ProcessorHandler::CheckL1CInputs(SchedulingContext &ctx, const ConfigurationParameterValueMap &mapCfg,
+                                      const QString &l1cAvailDaysKey, int siteId,
+                                      const QDateTime &seasonStartDate, const QDateTime &qScheduledDate) {
+    int l1cAvailabilityDates = mapCfg[l1cAvailDaysKey].value.toInt();
+
+    // if the first days of the season, then don't check the L1C availability
+    if(seasonStartDate.daysTo(qScheduledDate) > l1cAvailabilityDates) {
+        ConfigurationParameterValueMap emptyMap;
+        const ConfigurationParameterValueMap &l8DwnEnabled = ctx.GetConfigurationParameters(QString("downloader.l8.enabled"), siteId, emptyMap);
+        const ConfigurationParameterValueMap &l8Enabled = ctx.GetConfigurationParameters(QString("l8.enabled"), siteId, emptyMap);
+        const ConfigurationParameterValueMap &s2DwnEnabled = ctx.GetConfigurationParameters(QString("downloader.s2.enabled"), siteId, emptyMap);
+        const ConfigurationParameterValueMap &s2Enabled = ctx.GetConfigurationParameters(QString("s2.enabled"), siteId, emptyMap);
+        SatellitesList listSats;
+        if (s2DwnEnabled["downloader.s2.enabled"].value == "true" && s2Enabled["s2.enabled"].value == "true") {
+            listSats.append(static_cast<int>(Satellite::Sentinel2));
+        }
+        if (l8DwnEnabled["downloader.l8.enabled"].value == "true" && l8Enabled["l8.enabled"].value == "true") {
+            listSats.append(static_cast<int>(Satellite::Landsat8));
+        }
+        // no satellite enabled - site might be disabled
+        if (listSats.size() == 0) {
+            Logger::warn(QStringLiteral("Orchestrator scheduling: Cannot launch scheduled job for site %1 as there are no satellites enabled "
+                                        "for the interval %2 - %3").
+                         arg(siteId).arg(seasonStartDate.toString("yyyy-MM-dd HH:mm:ss")).arg(qScheduledDate.toString("yyyy-MM-dd HH:mm:ss")));
+            return false;
+        }
+        StatusesList statuses = {1, 2, 5, 6};
+        // Get the l1c products with status 2, 5 and 6 from the last N days interval
+        const L1CProductList &l1cPrds = ctx.GetL1CProducts(siteId, listSats, statuses, qScheduledDate.addDays(-l1cAvailabilityDates), qScheduledDate);
+        // do not schedule the job if no L1C products available
+        if (l1cPrds.size() == 0) {
+            Logger::warn(QStringLiteral("Orchestrator scheduling: Cannot launch scheduled job for site %1 as there are no products downloaded "
+                                        "for the interval %2 - %3").
+                         arg(siteId).arg(seasonStartDate.toString("yyyy-MM-dd HH:mm:ss")).arg(qScheduledDate.toString("yyyy-MM-dd HH:mm:ss")));
+            return false;
+        }
+        // iterate the products and see how many are with each of the status
+        int notProcessedYet = 0;
+        int processed = 0;
+        for (const L1CProduct &l1cPrd: l1cPrds) {
+            switch (l1cPrd.statusId) {
+                case 1:
+                case 2:
+                case 7:
+                    notProcessedYet++;
+                    break;
+                case 5:
+                case 6:
+                    processed++;
+                    break;
+                default : break;
+            }
+        }
+        if (notProcessedYet > 0) {
+            Logger::warn(QStringLiteral("Orchestrator scheduling: Cannot launch scheduled job for site %1 as there are still "
+                                        "products with status 1, 2 or 7 for the interval %2 - %3").
+                         arg(siteId).arg(seasonStartDate.toString("yyyy-MM-dd HH:mm:ss")).arg(qScheduledDate.toString("yyyy-MM-dd HH:mm:ss")));
+            return false;
+        }
+        // otherwise, if we have only statuses 5 and 6, we just return true
+    }
+    return true;
+}
+
 /*
 ProductList GetInsertedOrCreatedProducts(int siteId, const ProductType &productType, const QDateTime &startDate, const QDateTime &endDate,
                                          const QDateTime &seasonStartDate, const QDateTime &seasonEndDate)

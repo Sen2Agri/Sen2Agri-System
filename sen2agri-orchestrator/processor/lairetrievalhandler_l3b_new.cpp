@@ -459,7 +459,7 @@ void LaiRetrievalHandlerL3BNew::HandleJobSubmittedImpl(EventProcessingContext &c
 
     // create and submit the tasks for the received products
     QMap<QString, QStringList> inputProductToTilesMap;
-    QStringList listTilesMetaFiles = GetL2AInputProductsTiles(ctx, event, inputProductToTilesMap);
+    const QStringList &listTilesMetaFiles = GetL2AInputProductsTiles(ctx, event, inputProductToTilesMap);
     if(listTilesMetaFiles.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(

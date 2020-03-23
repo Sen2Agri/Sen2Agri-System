@@ -70,6 +70,7 @@ public:
     Product GetProduct(int productId);
     Product GetProduct(int siteId, const QString &productName);
     ProductList GetProductsForTile(int siteId, const QString &tileId, ProductType productType, int satelliteId, int targetSatelliteId);
+    L1CProductList GetL1CProducts(int siteId, const SatellitesList &satelliteIds, const StatusesList &statusIds, const QDateTime &startDate, const QDateTime &endDate);
     TileList GetSiteTiles(int siteId, int satelliteId);
     TileList GetIntersectingTiles(Satellite satellite, const QString &tileId);
 

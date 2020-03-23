@@ -84,11 +84,24 @@ def drop_table(conn, name):
         cursor.execute(query)
         conn.commit()
     
+def detectDelimiter(csvFile):
+    with open(csvFile, 'r') as myCsvfile:
+        header = myCsvfile.readline()
+        if header.find(";") != -1:
+            return ";"
+        if header.find(",") != -1:
+            return ","
+        if header.find("\t") != -1:
+            return "\t"
+    return ","
+    
 def validateUploadedFileStruct(input_file) : 
     ret = False
     # Check if the input file exists and has the expected structure (at least at header level and number of columns for each line)
     with open(input_file) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
+        delim = detectDelimiter(input_file)
+        print("Detected delimiter is: {}".format(delim))
+        csv_reader = csv.reader(csv_file, delimiter=delim)
         for row in csv_reader:
             print("Column names are: {}".format(", ".join(row)))
             if not checkInputFileColumnNames(row) :

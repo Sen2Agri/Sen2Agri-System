@@ -21,6 +21,7 @@ static QString getScheduledTaskJson(const ScheduledTask &task);
 
 static QString getExecutionStatusListJson(const ExecutionStatusList &statusList);
 static QString getTilesJson(const TileIdList &tilesList);
+static QString getIntListJsonJson(const QList<int> &intList);
 
 static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatistics &statistics);
 
@@ -1070,6 +1071,53 @@ ProductList PersistenceManagerDBProvider::GetProductsForTile(int siteId, const Q
         });
 }
 
+L1CProductList PersistenceManagerDBProvider::GetL1CProducts(int siteId,
+                                                      const SatellitesList &satelliteIds,
+                                                      const StatusesList &statusIds,
+                                                      const QDateTime &startDate,
+                                                      const QDateTime &endDate)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_l1c_products("
+                                           ":siteId, :satIds, :statusIds, :startDate, :endDate)"));
+        query.bindValue(QStringLiteral(":siteId"), siteId);
+        query.bindValue(QStringLiteral(":satIds"), getIntListJsonJson(satelliteIds));
+        query.bindValue(QStringLiteral(":statusIds"), getIntListJsonJson(statusIds));
+        query.bindValue(QStringLiteral(":startDate"), startDate);
+        query.bindValue(QStringLiteral(":endDate"), endDate);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto productIdCol = dataRecord.indexOf(QStringLiteral("ProductId"));
+        auto satelliteIdCol = dataRecord.indexOf(QStringLiteral("SatelliteId"));
+        auto statusIdCol = dataRecord.indexOf(QStringLiteral("StatusId"));
+        auto siteIdCol = dataRecord.indexOf(QStringLiteral("SiteId"));
+        auto fullPathCol = dataRecord.indexOf(QStringLiteral("full_path"));
+        auto creationDateCol = dataRecord.indexOf(QStringLiteral("product_date"));
+        auto insertionDateCol = dataRecord.indexOf(QStringLiteral("created_timestamp"));
+
+        L1CProductList result;
+        while (query.next()) {
+            result.append({ query.value(productIdCol).toInt(), query.value(satelliteIdCol).toInt(),
+                            query.value(statusIdCol).toInt(),
+                            query.value(siteIdCol).toInt(), query.value(fullPathCol).toString(),
+                            QDateTime().fromString(query.value(creationDateCol).toString(),
+                                                   Qt::ISODate),
+                            QDateTime().fromString(query.value(insertionDateCol).toString(),
+                                                   Qt::ISODate)});
+        }
+
+        return result;
+    });
+}
+
 TileList PersistenceManagerDBProvider::GetSiteTiles(int siteId, int satelliteId)
 {
     auto db = getDatabase();
@@ -1587,6 +1635,16 @@ static QString getTilesJson(const TileIdList &tilesList)
 {
     QJsonArray array;
     for (const auto &t : tilesList) {
+        array.append(t);
+    }
+
+    return jsonToString(array);
+}
+
+static QString getIntListJsonJson(const QList<int> &intList)
+{
+    QJsonArray array;
+    for (const auto &t : intList) {
         array.append(t);
     }
 

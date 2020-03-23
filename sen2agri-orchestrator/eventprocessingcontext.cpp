@@ -232,9 +232,10 @@ QString EventProcessingContext::GetProductAbsolutePath(int siteId, const QString
 QStringList EventProcessingContext::findProductFiles(const QString &absPath) {
     QStringList result;
     for (const auto &file : QDir(absPath).entryList({ "S2*_OPER_SSC_L2VALD_*.HDR",
-                                                    "L8_*_L8C_L2VALD_*.HDR", "*.xml" },
+                                                    "L8_*_L8C_L2VALD_*.HDR", "MTD_MSIL2A.xml",
+                                                    "SPOT*.xml"},
                                                     QDir::Files)) {
-        result.append(absPath + file);
+        result.append(QDir::cleanPath(absPath + QDir::separator() + file));
     }
     // Check for MAJA product
     if (result.isEmpty()) {

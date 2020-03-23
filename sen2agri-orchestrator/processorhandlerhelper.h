@@ -132,7 +132,7 @@ public:
     static bool GetParameterValueAsString(const QJsonObject &parameters, const QString &key, QString &outVal);
 
     static TQStrQStrMap FilterConfigParameters(const TQStrQStrMap &configParameters, const QString &cfgPrefix);
-    static int GuessYear(const QDateTime &startDateTime, const QDateTime &endDateTime);
+    // static int GuessYear(const QDateTime &startDateTime, const QDateTime &endDateTime);
     static QDateTime GetDateTimeFromString(const QString &strTime);
     static QDateTime GetLocalDateTime(const QString &strTime);
 
