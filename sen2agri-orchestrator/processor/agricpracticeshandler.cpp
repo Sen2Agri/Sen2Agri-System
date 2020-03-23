@@ -948,10 +948,23 @@ bool AgricPracticesHandler::GetLpisProductFiles(AgricPracticesJobCfg &jobCfg) {
         throw std::runtime_error(QStringLiteral("No LPIS product found in database for the agricultural practices execution for site %1.").
                                  arg(jobCfg.siteShortName).toStdString());
     }
+    bool pathInPrds = false;
+    for(const Product &lpisPrd: lpisPrds) {
+        if(QDir::cleanPath(jobCfg.lpisConfigValue) == QDir::cleanPath(lpisPrd.fullPath)) {
+            pathInPrds = true;
+            Logger::info(QStringLiteral("Agricultural Practices : The computed LPIS path %1 was found in database for LPIS product with id %2 ... OK!").
+                         arg(jobCfg.lpisConfigValue).arg(lpisPrd.productId));
+            break;
+        }
+    }
+    if (!pathInPrds) {
+        Logger::error(QStringLiteral("Agricultural Practices : The computed LPIS path %1 cannot be found for any LPIS product in database! Continuing with this path ...").
+                     arg(jobCfg.lpisConfigValue));
+    }
 
     // If the year is >= 2019, then use LAEA for AMP and COHE and no matter which other for NDVI
-    const QString &prdLpisPath = lpisPrds[lpisPrds.size()-1].fullPath;
-    QDir directory(prdLpisPath);
+    //const QString &prdLpisPath = lpisPrds[lpisPrds.size()-1].fullPath;
+    QDir directory(jobCfg.lpisConfigValue);
     QString allFieldsName = "decl_" + jobCfg.siteShortName + "_" + jobCfg.siteCfg.year + ".csv";
 
     const QStringList &dirFiles = directory.entryList(QStringList() << "*.shp" << "*.csv",QDir::Files);
@@ -973,7 +986,7 @@ bool AgricPracticesHandler::GetLpisProductFiles(AgricPracticesJobCfg &jobCfg) {
 
     Logger::info(QStringLiteral("Agricultural Practices Scheduled using for site %1 LPIS from = %2, with files: NDVI = %3, "
                                 "AMP_COHE = %4, DECLS = %5 (expected %6)").
-                 arg(jobCfg.siteShortName).arg(prdLpisPath).arg(jobCfg.siteCfg.ndviIdsGeomShapePath)
+                 arg(jobCfg.siteShortName).arg(jobCfg.lpisConfigValue).arg(jobCfg.siteCfg.ndviIdsGeomShapePath)
                  .arg(jobCfg.siteCfg.ampCoheIdsGeomShapePath).arg(jobCfg.siteCfg.fullDeclsFilePath)
                  .arg(allFieldsName));
 
