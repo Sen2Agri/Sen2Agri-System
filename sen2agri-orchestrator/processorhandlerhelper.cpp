@@ -1078,6 +1078,7 @@ TQStrQStrMap ProcessorHandlerHelper::FilterConfigParameters(const TQStrQStrMap &
     return retMap;
 }
 
+/*
 int ProcessorHandlerHelper::GuessYear(const QDateTime &startDateTime, const QDateTime &endDateTime) {
     const QDate &startDate = startDateTime.date();
     const QDate &endDate = endDateTime.date();
@@ -1097,6 +1098,7 @@ int ProcessorHandlerHelper::GuessYear(const QDateTime &startDateTime, const QDat
     // if there are more days in the first year, we consider this year, otherwise the end year
     return startDiff > endDiff ? startYear : endYear;
 }
+*/
 
 QDateTime ProcessorHandlerHelper::GetDateTimeFromString(const QString &strTime) {
     QDateTime date = QDateTime::fromString(strTime, "yyyyMMdd");

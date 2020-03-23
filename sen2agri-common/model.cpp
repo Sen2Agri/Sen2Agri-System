@@ -472,6 +472,53 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Product &product)
     return argument;
 }
 
+L1CProduct::L1CProduct() : productId(), satelliteId(), statusId(), siteId()
+{
+}
+
+L1CProduct::L1CProduct(int productId,
+                 int satelliteId,
+                 int statusId,
+                 int siteId,
+                 QString fullPath,
+                 QDateTime created,
+                 QDateTime inserted)
+    : productId(productId),
+      satelliteId(satelliteId),
+      statusId(statusId),
+      siteId(siteId),
+      fullPath(std::move(fullPath)),
+      created(std::move(created)),
+      inserted(std::move(inserted))
+{
+}
+
+void L1CProduct::registerMetaTypes()
+{
+    qDBusRegisterMetaType<L1CProduct>();
+    qDBusRegisterMetaType<L1CProductList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const L1CProduct &product)
+{
+    argument.beginStructure();
+    argument << product.productId << product.satelliteId << product.statusId << product.siteId
+             << product.fullPath << product.created << product.inserted;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, L1CProduct &product)
+{
+    argument.beginStructure();
+    argument >> product.productId >> product.satelliteId >> product.statusId >>
+        product.siteId >> product.fullPath >> product.created >> product.inserted;
+    argument.endStructure();
+
+    return argument;
+}
+
 Tile::Tile()
     : satellite(Satellite::Invalid)
 {

@@ -265,6 +265,39 @@ Q_DECLARE_METATYPE(ProductList)
 QDBusArgument &operator<<(QDBusArgument &argument, const Product &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Product &message);
 
+class L1CProduct
+{
+public:
+    int productId;
+    int satelliteId;
+    int statusId;
+    int siteId;
+    QString fullPath;
+    QDateTime created;
+    QDateTime inserted;
+
+    L1CProduct();
+    L1CProduct(int productId,
+            int satelliteId,
+            int statusId,
+            int siteId,
+            QString fullPath,
+            QDateTime created,
+            QDateTime inserted);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<L1CProduct> L1CProductList;
+typedef QList<int> StatusesList;
+typedef QList<int> SatellitesList;
+
+Q_DECLARE_METATYPE(L1CProduct)
+Q_DECLARE_METATYPE(L1CProductList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const L1CProduct &message);
+const QDBusArgument &operator>>(const QDBusArgument &argument, L1CProduct &message);
+
 enum class Satellite
 {
     Invalid = 0,

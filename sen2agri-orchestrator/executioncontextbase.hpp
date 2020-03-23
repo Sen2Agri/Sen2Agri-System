@@ -9,6 +9,7 @@ class ExecutionContextBase
 public:
     ExecutionContextBase(PersistenceManagerDBProvider &persistenceManager);
     ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
+    L1CProductList GetL1CProducts(int siteId, const SatellitesList &satelliteIds, const StatusesList &statusIds, const QDateTime &startDate, const QDateTime &endDate);
     QString GetSiteName(int siteId);
     QString GetSiteShortName(int siteId);
     QString GetProcessorShortName(int processorId);
