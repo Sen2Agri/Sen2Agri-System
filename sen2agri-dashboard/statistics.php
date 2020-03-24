@@ -374,6 +374,7 @@ function showRadar(satellite, siteId, orbit, fromDate, toDate) {
 	$.when(getOrbitStatistics(satellite, siteId, orbit, fromDate, toDate))
 	.done(function (response) {
 		if (typeof response.data === "undefined" || typeof response.data.columnLabels === "undefined" || typeof response.data.series === "undefined") {
+			setButtonStatus($("button[name='update_orbit_report']"), true, false);
 			return;
 		}
 		
@@ -403,6 +404,7 @@ function showRadar(satellite, siteId, orbit, fromDate, toDate) {
 	})
 	.fail(function (jqXHR, status, error) {
 		alert(error);
+		setButtonStatus($("button[name='update_orbit_report']"), true, false);
 	});
 }
 function showOrbitReport() {
@@ -437,6 +439,7 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 	$.when(getAggregateStatistics(satellite, siteId, orbit, fromDate, toDate))
 	.done(function (response) {
 		if (typeof response.data === "undefined" || typeof response.data.columnLabels === "undefined" || typeof response.data.series === "undefined") {
+			setButtonStatus($("button[name='update_aggregate_reports']"), true, false);
 			return;
 		}
 		
@@ -562,12 +565,14 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 	})
 	.fail(function (jqXHR, status, error) {
 		alert(error);
+		setButtonStatus($("button[name='update_aggregate_reports']"), true, false);
 	});
 }
 function showAllAggregateReports() {
 	// Make sure year is set
 	if (isNaN($("input[name='report_year']", "form#filters_aggregate").val())) {
 		$("input[name='report_year']", "form#filters_aggregate").val(new Date().getFullYear());
+		setButtonStatus($("button[name='update_aggregate_reports']"), true, false);
 	}
 	// Get filters values
 	var sat    = $("select[name='satellite_select']", "form#filters_aggregate").val();
@@ -591,6 +596,8 @@ function showAllAggregateReports() {
 			var toDate   = moment(fromDate, "YYYY-MM-DD").add(1, "month").add(-1, "day").format("YYYY-MM-DD");
 			showAggregate(this.value, sat, siteId, orbit, fromDate, toDate);
 		});
+	} else {
+		setButtonStatus($("button[name='update_aggregate_reports']"), true, false);
 	}
 }
 /* =========== GENERAL FUNCTIONS =========== */
