@@ -27,7 +27,7 @@ if (isset($_REQUEST['report_type']) && $_REQUEST['report_type'] == "orbit") {
 	}
 	if (isset($_REQUEST['getOrbitList']) && $_REQUEST['getOrbitList'] != "") {
 		$curl = curl_init();
-		$url =  ConfigParams::$REST_SERVICES_URL . "/reports/orbit/list?satellite=" . $satellite . $orbit;
+		$url =  ConfigParams::$REST_SERVICES_URL . "/reports/orbit/list?satellite=" . $satellite . $siteId;
 		curl_setopt($curl, CURLOPT_URL,  $url );
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
 		
