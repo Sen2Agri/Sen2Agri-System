@@ -11,7 +11,7 @@ if (isset($_REQUEST['report_type']) && $_REQUEST['report_type'] == "orbit") {
 	$toDate = "";
 
 	if (isset($_REQUEST['satellite']) && $_REQUEST['satellite'] != "") {
-		$satellite = $_REQUEST['satellite'];
+		$satellite = "?satellite=" . $_REQUEST['satellite'];
 	}
 	if (isset($_REQUEST['siteId']) && $_REQUEST['siteId'] != "0" && $_REQUEST['siteId'] != "") {
 		$siteId = "&siteId=" . $_REQUEST['siteId'];
@@ -27,9 +27,10 @@ if (isset($_REQUEST['report_type']) && $_REQUEST['report_type'] == "orbit") {
 	}
 	if (isset($_REQUEST['getOrbitList']) && $_REQUEST['getOrbitList'] != "") {
 		$curl = curl_init();
-		$url =  ConfigParams::$REST_SERVICES_URL . "/reports/orbit/list?satellite=" . $satellite . $siteId;
+		$url =  ConfigParams::$REST_SERVICES_URL . "/reports/orbit/list" . $satellite . $siteId;
 		curl_setopt($curl, CURLOPT_URL,  $url );
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
 		
 		$result = curl_exec($curl);
 		echo $result;
@@ -37,9 +38,10 @@ if (isset($_REQUEST['report_type']) && $_REQUEST['report_type'] == "orbit") {
 		curl_close($curl);
 	} else {
 		$curl = curl_init();
-		$url =  ConfigParams::$REST_SERVICES_URL . "/reports/orbit?satellite=" . $satellite . $siteId. $orbit . $fromDate . $toDate;
+		$url =  ConfigParams::$REST_SERVICES_URL . "/reports/orbit" . $satellite . $siteId. $orbit . $fromDate . $toDate . "&sort=asc";
 		curl_setopt($curl, CURLOPT_URL,  $url );
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
 		
 		$result = curl_exec($curl);
 		echo $result;
@@ -56,7 +58,7 @@ if (isset($_REQUEST['report_type']) && $_REQUEST['report_type'] == "orbit") {
 	$toDate = "";
 
 	if (isset($_REQUEST['satellite']) && $_REQUEST['satellite'] != "") {
-		$satellite = $_REQUEST['satellite'];
+		$satellite = "?satellite=" . $_REQUEST['satellite'];
 	}
 	if (isset($_REQUEST['siteId']) && $_REQUEST['siteId'] != "0" && $_REQUEST['siteId'] != "") {
 		$siteId = "&siteId=" . $_REQUEST['siteId'];
@@ -71,9 +73,10 @@ if (isset($_REQUEST['report_type']) && $_REQUEST['report_type'] == "orbit") {
 		$toDate = "&toDate=" . $_REQUEST['toDate'];
 	}
 	$curl = curl_init();
-	$url =  ConfigParams::$REST_SERVICES_URL . "/reports/l2/aggregate?satellite=" . $satellite . $siteId. $orbit . $fromDate . $toDate;
+	$url =  ConfigParams::$REST_SERVICES_URL . "/reports/l2/aggregate" . $satellite . $siteId. $orbit . $fromDate . $toDate;
 	curl_setopt($curl, CURLOPT_URL,  $url );
 	curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+	curl_setopt($curl, CURLOPT_FRESH_CONNECT, 1);
 	
 	$result = curl_exec($curl);
 	echo $result;

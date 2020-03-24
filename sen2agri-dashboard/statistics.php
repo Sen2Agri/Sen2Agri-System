@@ -43,7 +43,6 @@ function select_satellite() {
 			<!-------------- Orbit statistics ---------------->
 			<style>
 				.nvtooltip{position:fixed !important}
-			
 				#accordion_statistics *{box-sizing:border-box}
 				#accordion_statistics .panel-body{border:0}
 				.statistics .form-group-sm{margin-bottom:5px}
@@ -53,19 +52,39 @@ function select_satellite() {
 				.statistics .form-group-sm .radio-group input{width:30px}
 				.statistics .form-group-sm .radio-group label{width:100%;font-weight:400;margin:0}
 				.statistics .filters{background-color:#edf2e4;padding:10px;border:1px solid #dddddd;border-radius:5px}
-				.statistics .reports-orbit,.statistics .reports-aggregate{padding:10px;text-align:center}
-				.statistics .reports-aggregate{background:transparent url(images/chart.png) no-repeat 50% 50%;min-height:600px}
+				.statistics .reports-aggregate{background:transparent url(images/chart.png) no-repeat 50% 50%;min-height:600px;padding:10px;text-align:center;overflow:hidden}
 				.statistics .reports-orbit    {background:transparent url(images/radar.png) no-repeat 50% 50%;min-height:600px}
-				.statistics input.add-edit-btn{width:100%;border-radius:4px;font-size:14px;text-align:center;margin-top:10px}
+				.statistics .add-edit-btn{width:100%;font-size:14px;text-align:center;margin-top:10px}
+				.statistics .add-edit-btn span{color:white;display:none}
+				.statistics .add-edit-btn.pending-btn span{display:inline-block}
 				.statistics h4.panel-title a, .statistics h4.panel-title span{width:100%}
-				
-				#charts_aggregate .chart-container:first-child{margin-top:100px}
+				#charts_aggregate .chart-container:first-child{margin-top:105px}
 				#charts_aggregate .chart-container:first-child svg{overflow:visible}
+				#charts_aggregate .chart-container:first-child::after{
+					position: absolute;
+					content: "Click / Double-click \A legend labels \A to customize your selection";
+					white-space: pre;
+					background-color: #edf2e4;
+					top: 15px;
+					left: 50px;
+					overflow: hidden;
+					font-size: 12px;
+					color: green;
+					text-align: left;
+					opacity: 0;
+					padding: 10px;
+					border-radius: 10px;
+					transition: opacity 2s;
+				}
+				#charts_aggregate .chart-container.show-legend-info:first-child::after{
+					opacity:1;
+				}
+				#chart_orbit .tooltip{font-size:20px;font-weight:700}
 				.nvd3 g.nv-groups path.nv-line{stroke-width:3px}
 				.nvd3 g.nv-y2 .nv-axislabel{font:15px Arial,Helvetica,sans-serif;font-weight:700;fill:#336cc1}
-				.chart-title{color:#81a53e;font-weight:700}
+				.chart-title{color:#81a53e;font-weight:700;text-align:center}
 				.chart-title>span{color:#336cc1}
-				.chart-title~svg{margin-bottom:20px;height:300px;width:100%}
+				#charts_aggregate .chart-title~svg{margin-bottom:20px;height:300px;width:100%}
 			</style>
 			<div class="container-fluid">
 				<div class="panel-group statistics config" id="accordion_statistics">
@@ -80,19 +99,19 @@ function select_satellite() {
 								<form id="filters_aggregate" role="form" method="post">
 									<div class="col-md-3 filters">
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="site_select">Site:</label>
+											<label class="control-label col-md-3" for="site_select">Site</label>
 											<div class="col-md-9">
 												<select class="form-control" name="site_select"><?php select_site();?></select>
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="satellite_select">Satellite:</label>
+											<label class="control-label col-md-3" for="satellite_select">Satellite</label>
 											<div class="col-md-9">
 												<select class="form-control" name="satellite_select"><?php select_satellite();?></select>
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="orbit_select">Orbit:</label>
+											<label class="control-label col-md-3" for="orbit_select">Orbit</label>
 											<div class="col-md-9">
 												<select size="6" class="form-control" name="orbit_select" style="height:auto">
 													<option value="0" selected>All</option>
@@ -101,13 +120,13 @@ function select_satellite() {
 										</div>
 										<br/>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="report_year">Year:</label>
+											<label class="control-label col-md-3" for="report_year">Year</label>
 											<div class="col-md-9">
 												<input class="form-control" type="number" name="report_year" />
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="report_year">Month:</label>
+											<label class="control-label col-md-3" for="report_year">Month</label>
 											<div class="radio-group col-md-9">
 												<label for="month_agg_1"><input type="checkbox" name="month_agg_1" value="1" id="month_agg_1" checked />January</label>
 												<label for="month_agg_2"><input type="checkbox" name="month_agg_2" value="2" id="month_agg_2" />February</label>
@@ -130,8 +149,8 @@ function select_satellite() {
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
-											<div class="col-md-12">
-												<input class="add-edit-btn" name="update_aggregate_reports" type="button" value="Show reports" style="border-radius:4px;font-size:14px" disabled>
+											<div class="col-md-12 add-edit-btn-parent loading">
+												<button type="button" class="add-edit-btn" name="update_aggregate_reports" disabled>Show reports&nbsp;&nbsp;<span class="glyphicon glyphicon-repeat glyphicon-spin"></span></button>
 											</div>
 										</div>
 									</div>
@@ -150,22 +169,22 @@ function select_satellite() {
 						</div>						
 						<div id="reports_orbit" class="panel-collapse collapse">
 							<div class="panel-body">
-								<form id="filters_orbit" role="form" method="post">
-									<div class="col-md-3 filters">
+								<div class="col-md-3 filters">
+									<form id="filters_orbit" role="form" method="post">
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="site_select">Site:</label>
+											<label class="control-label col-md-3" for="site_select">Site</label>
 											<div class="col-md-9">
 												<select class="form-control" name="site_select"><?php select_site();?></select>
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="satellite_select">Satellite:</label>
+											<label class="control-label col-md-3" for="satellite_select">Satellite</label>
 											<div class="col-md-9">
 												<select class="form-control" name="satellite_select"><?php select_satellite();?></select>
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="orbit_select">Orbit:</label>
+											<label class="control-label col-md-3" for="orbit_select">Orbit</label>
 											<div class="col-md-9">
 												<select size="6" class="form-control" name="orbit_select" style="height:auto">
 													<option value="0" selected>All</option>
@@ -174,13 +193,13 @@ function select_satellite() {
 										</div>
 										<br/>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="report_year">Year:</label>
+											<label class="control-label col-md-3" for="report_year">Year</label>
 											<div class="col-md-9">
 												<input class="form-control" type="number" name="report_year" />
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-3" for="report_year">Month:</label>
+											<label class="control-label col-md-3" for="report_year">Month</label>
 											<div class="radio-group col-md-9">
 												<label for="month_orb_1"><input type="radio" name="month_orb" value="1" id="month_orb_1" checked />January</label>
 												<label for="month_orb_2"><input type="radio" name="month_orb" value="2" id="month_orb_2" />February</label>
@@ -199,24 +218,24 @@ function select_satellite() {
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-4" for="fromDate" style="text-align:right;padding-right:0">From:</label>
+											<label class="control-label col-md-4" for="fromDate" style="text-align:right;padding-right:0">From</label>
 											<div class="col-md-8">
 												<input class="form-control" type="date" name="fromDate" />
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
-											<label class="control-label col-md-4" for="toDate" style="text-align:right;padding-right:0">To:</label>
+											<label class="control-label col-md-4" for="toDate" style="text-align:right;padding-right:0">To</label>
 											<div class="col-md-8">
 												<input class="form-control" type="date" name="toDate" />
 											</div>
 										</div>
 										<div class="row form-group form-group-sm">
 											<div class="col-md-12">
-												<input class="add-edit-btn" name="update_orbit_report" type="button" value="Show report" style="float:right;border-radius:4px;font-size:14px" disabled>
+												<button type="button" class="add-edit-btn" name="update_orbit_report" disabled>Show report&nbsp;&nbsp;<span class="glyphicon glyphicon-repeat glyphicon-spin"></span></button>
 											</div>
 										</div>
-									</div>
-								</form>
+									</form>
+								</div>
 								<div class="col-md-9 reports-orbit">
 									<div id="chart_orbit"></div>
 								</div>
@@ -234,14 +253,12 @@ function select_satellite() {
 <link href="libraries/jquery-ui/jquery-ui.min.css" type="text/css" rel="stylesheet">
 <script src="libraries/jquery-ui/jquery-ui.min.js" type="text/javascript"></script>
 <!-- includes for radar chart -->
-<link href="libraries/radar-chart/radar-chart.min.css" type="text/css" rel="stylesheet">
-<script src="libraries/radar-chart/radar-chart.min.js" type="text/javascript"></script>
-
+<script src="libraries/radar-chart/RadarChart.js" type="text/javascript"></script>
 <script type="text/javascript">
 window.chartsList = [];
 window.radarChart = null;
-
-function updateOrbitList(form) {
+/* =========== GET DATA =========== */
+function getOrbitList(form) {
 	var $orbit_select = $("select[name='orbit_select']", form);
 	var option_orb = "<option value=\"0\" selected>All</option>";
 	$orbit_select.html(option_orb);
@@ -260,6 +277,7 @@ function updateOrbitList(form) {
 		$.ajax({
 			url: "getReports.php",
 			data: oData,
+			cache: false,
 			method: "GET",
 			dataType: "json",
 			success: function (response) {
@@ -295,6 +313,7 @@ function getOrbitStatistics(satellite, siteId, orbit, fromDate, toDate) {
         async: false,
       	url: "getReports.php",
 		data: oData,
+		cache: false,
 		method: "GET",
 		dataType: "json",
 		success: function (response) {
@@ -331,6 +350,7 @@ function getAggregateStatistics(satellite, siteId, orbit, fromDate, toDate) {
         async: false,
       	url: "getReports.php",
 		data: oData,
+		cache: false,
 		method: "GET",
 		dataType: "json",
 		success: function (response) {
@@ -346,87 +366,130 @@ function getAggregateStatistics(satellite, siteId, orbit, fromDate, toDate) {
 	});
 	return deferred.promise();
 }
-
+/* =========== SHOW REPORTS =========== */
 function showRadar(satellite, siteId, orbit, fromDate, toDate) {
 	var data = [];
-	var size = $(".statistics .reports-orbit").width() - 50;
+	var size = $(".statistics .reports-orbit").width() - 100;
 	
 	$.when(getOrbitStatistics(satellite, siteId, orbit, fromDate, toDate))
 	.done(function (response) {
-		var header = "orbit";
-		var body = (orbit == "0" ? "acquisitions_all" : "acquisitions_" + orbit);
-		$.each(response.data, function(index, value) {
-			header += "," + value.calendarDate.substring(5);
-			body   += "," + value.acquisitions;
+		if (typeof response.data === "undefined" || typeof response.data.columnLabels === "undefined" || typeof response.data.series === "undefined") {
+			return;
+		}
+		
+		var newSeries = [];
+		var maxValue = 1;
+		$.each(response.data.series, function(index, value) {
+			newSeries.push({ "axis": value.calendarDate.substring(5), "value": value.acquisitions });
+			maxValue = Math.max(maxValue, value.acquisitions);
 		});
-		var report = header + "\n" + body;
-		csv = report.split("\n").map(function (i) { return i.split(","); });
-		var headers = [];
-		csv.forEach(function (item, i) {
-			if (i == 0) {
-				headers = item;
-			} else {
-				newSeries = {};
-				item.forEach(function(v, j) {
-					if (j == 0) {
-						newSeries.className = v;
-						newSeries.axes = [];
-					} else {
-						newSeries.axes.push({ "axis": [headers[j]], "value": parseFloat(v) });
-					}
-				});
-				data.push(newSeries);
-			}
-		});
-		RadarChart.defaultConfig.w = size;
-		RadarChart.defaultConfig.h = size;
-		RadarChart.draw("#chart_orbit", data);
+		data.push(newSeries);
+		var color = d3.scale.ordinal()
+			.range([ "#7EAF50", "#EDC951", "#CC333F" ]);
+		var margin = { top: 50, right: 50, bottom: 50, left: 50 },
+			width = size - margin.left - margin.right,
+			height = width;
+		var radarChartOptions = {
+			  w: size,
+			  h: size,
+			  margin: margin,
+			  maxValue: maxValue,
+			  levels: maxValue,
+			  color: color,
+			  labelFactor: 1.08
+		  };
+		RadarChart("#chart_orbit", data, radarChartOptions);
+		setButtonStatus($("button[name='update_orbit_report']"), true, false);
 	})
 	.fail(function (jqXHR, status, error) {
 		alert(error);
 	});
 }
+function showOrbitReport() {
+	var d1 = Date.parse($("input[name=fromDate").get(0).valueAsDate);
+	var d2 = Date.parse($("input[name=toDate").get(0).valueAsDate);
+	if (isNaN(d1) || isNaN(d2)) {
+		alert("Please select valid dates for your report!");
+		setButtonStatus($("button[name='update_orbit_report']"), true, false);
+	} else {
+		if (d1 > d2) {
+			var dt = $("input[name='toDate']").val();
+			$("input[name='toDate']").val($("input[name='fromDate']").val());
+			$("input[name='fromDate']").val(dt);
+		}
+		var sat      = $("select[name='satellite_select']", "form#filters_orbit").val();
+		var siteId   = $("select[name='site_select']"     , "form#filters_orbit").val();
+		var orbit    = $("select[name='orbit_select']"    , "form#filters_orbit").val();
+		var fromDate = $("input[name='fromDate']"         , "form#filters_orbit").val();
+		var toDate   = $("input[name='toDate']"           , "form#filters_orbit").val();
+		if (sat != "0") {
+			$(".reports-orbit").css({ "background-image": "none" });
+			$("#chart_orbit svg").remove();
+			$("#chart_orbit>*").remove();
+			var satName = $("select[name='satellite_select']>option[value='" + sat + "']", "form#filters_orbit").text();
+			var title = satName + " Orbit <span>" + (orbit == "0" ? "" : orbit) + "</span> Acquisitions from <span>" + fromDate + "</span> to <span>" + toDate + "</span>";
+			$("#chart_orbit").append("<div class='chart-title'>" + title + "</div>");
+			showRadar(sat, siteId, orbit, fromDate, toDate);
+		}
+	}
+}
 function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 	$.when(getAggregateStatistics(satellite, siteId, orbit, fromDate, toDate))
 	.done(function (response) {
-		var pairs            = { "key": "Pairs"            , "color": "#4e4e4e", "type": "bar" , "yAxis": 1, "values" : [ ] };
-		var processed        = { "key": "Processed"        , "color": "#2eb32e", "type": "bar" , "yAxis": 1, "values" : [ ] };
-		var notYetProcessed  = { "key": "Not Yet Processed", "color": "#007bbb", "type": "bar" , "yAxis": 1, "values" : [ ] };
-		var falselyProcessed = { "key": "Falsely Processed", "color": "#ffc100", "type": "bar" , "yAxis": 1, "values" : [ ] };
-		var noIntersections  = { "key": "No Intersections" , "color": "#a5a5a5", "type": "bar" , "yAxis": 1, "values" : [ ] };
-		var errors           = { "key": "Errors"           , "color": "#bb0000", "type": "bar" , "yAxis": 1, "values" : [ ] };
-		var acquisitions     = { "key": "Acquisitions"     , "color": "#336cc1", "type": "line", "yAxis": 2, "values" : [ ] };
-		// Add empty values for months with less than 31 days
-		for (var i = response.data.length + 1; i < 32; i++) {
-			var foo = {
-				calendarDate: fromDate.substring(0, 8) + i,
-				acquisitions: 0,
-				downloadFailed: 0,
-				processed: 0,
-				notYetProcessed: 0,
-				falselyProcessed: 0,
-				errors: 0,
-				pairs: 0,
-				noIntersections: 0
-			}
-			response.data.push(foo);
+		if (typeof response.data === "undefined" || typeof response.data.columnLabels === "undefined" || typeof response.data.series === "undefined") {
+			return;
 		}
-		var axisKeys = [];
-		$.each(response.data, function(index, value) {
-			pairs.values.push           ({ x: index, y: value.pairs });
-			processed.values.push       ({ x: index, y: value.processed });
-			notYetProcessed.values.push ({ x: index, y: value.notYetProcessed });
-			notYetProcessed.values.push ({ x: index, y: value.processed });
-			falselyProcessed.values.push({ x: index, y: value.falselyProcessed });
-			noIntersections.values.push ({ x: index, y: value.noIntersections });
-			errors.values.push          ({ x: index, y: value.errors });
-			acquisitions.values.push    ({ x: index, y: value.acquisitions });
-			axisKeys.push(value.calendarDate.substring(8));
+		
+		// define colors
+		var colors = [];
+		colors["acquisitions"    ] = "#336cc1";
+		colors["downloadFailed"  ] = "#336cc1";
+		colors["processed"       ] = "#2eb32e";
+		colors["notYetProcessed" ] = "#007bbb";
+		colors["falselyProcessed"] = "#ffc100";
+		colors["errors"          ] = "#bb0000";
+		colors["pairs"           ] = "#4e4e4e";
+		colors["noIntersections" ] = "#a5a5a5";
+		colors["clouds"          ] = "#cccccc";
+		colors["foo"             ] = "#555555";
+		// define series structure
+		var series = {};
+		var foo = {};
+		$.each(response.data.columnLabels, function (key, value) {
+			if (key != "calendarDate") {
+				series[key] = {
+					"key"   : value,
+					"color" : (typeof colors[key] !== "undefined" ?  colors[key] : colors["foo"]),
+					"type"  : (key == "acquisitions" ? "line" : "bar") ,
+					"yAxis" : (key == "acquisitions" ? 2 : 1),
+					"values": []
+				};
+				foo[key] = 0;
+			}
 		});
+		for (var i = response.data.series.length + 1; i < 32; i++) {
+			var fooX = $.extend({}, foo);
+			fooX["calendarDate"] = fromDate.substring(0, 8) + i;
+			response.data.series.push(fooX);
+		}
+		
+		// extract series values and define xAxis labels
+		var axisKeys = [];
+		$.each(response.data.series, function(index, rec) {
+			$.each(rec, function (key, value) {
+				if (key != "calendarDate") {
+					series[key].values.push({ x: index, y: value });
+				} else {
+					axisKeys.push(value.substring(8));
+				}
+			});
+		});
+		// create chart
 		nv.addGraph({
 			generate: function() {
 				var chart = nv.models.multiChart();
 				chart.margin({ top: 10, right: 40, bottom: 20, left: 30 });
+				chart.legendRightAxisHint("");
 				chart.legend.margin({top: -60, right: 0, left: 0, bottom: 0});
 				chart.xAxis
 					.ticks(31)
@@ -439,45 +502,28 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 					.tickFormat(function (d){ return (d == parseInt(d) ? d3.format('1.0f')(d) : ""); })
 					.axisLabel("Acquisitions")
 					.axisLabelDistance(-40);
-				var seriesData = [];
-				seriesData.push(acquisitions);
-				seriesData.push(pairs);
-				seriesData.push(processed);
-				seriesData.push(notYetProcessed);
-				seriesData.push(falselyProcessed);
-				seriesData.push(noIntersections);
-				seriesData.push(errors);
 				
+				var seriesData = $.map(series, function (value, key) { return value; });
 				// Get and set max values for each axis
 				var minY1 = 0;
+				var maxY1 = 1;
 				var minY2 = 0;
-				var maxY1 = 0;
-				var maxY2 = 0;
-				for (var i = 0; i < seriesData.length; i++) {
+				var maxY2 = 1;
+				for (var i = 0; i < seriesData.length; i ++) {
 					var _axis = seriesData[i].yAxis;
 					var _values = seriesData[i].values;
-
-					// Walk values and set largest to variables
-					for (var j = 0; j < _values.length; j++) {
+					for (var j = 0; j < _values.length; j ++) {
 						// For maxY1
-						if (_axis == 1) {
-							if(_values[j].y > maxY1) {
-								maxY1 = _values[j].y;
-							}
-						}
+						if (_axis == 1) { maxY1 = (_values[j].y > maxY1) ? _values[j].y : maxY1; }
 						// For maxY2
-						if (_axis == 2) {
-							if (_values[j].y > maxY2) {
-								maxY2 = _values[j].y;
-							}
-						}
+						if (_axis == 2) { maxY2 = (_values[j].y > maxY2) ? _values[j].y : maxY2; }
 					}
 				}
 				chart.yDomain1([minY1, maxY1]);
 				chart.yDomain2([minY2, maxY2]);
 				
-				var  satName = $("select[name='satellite_select']>option[value='" + satellite + "']", "form#filters_aggregate").text()
-				var title = satName + " Preprocessing for <span>" + moment(id, "MM").format("MMMM") + " " + moment(fromDate, "YYYY-MM-DD").format("YYYY") + "</span>";
+				var  satName = $("select[name='satellite_select']>option[value='" + satellite + "']", "form#filters_aggregate").text();
+				var title = satName + " Preprocessing for <span>" + moment(id, "MM").format("MMMM") + " " + moment(fromDate, "YYYY-MM-DD").format("YYYY") + "</span><span>" + (orbit == "0" ? "" : " [Orbit " + orbit + "]") + "</span>";
 				
 				$("#charts_aggregate").append("<div id='chart_aggregate_" + id + "' class='chart-container'><div class='chart-title'>" + title + "</div><svg> </svg></div>");
 				d3.select("#chart_aggregate_" + id + "> svg")
@@ -492,9 +538,9 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 				window.chartsList.push(chart);
 				// update previous charts limits
 				var minY1 = 0;
-				var maxY1 = 0;
+				var maxY1 = 1;
 				var minY2 = 0;
-				var maxY2 = 0;
+				var maxY2 = 1;
 				$.each(chartsList, function () {
 					minY1 = Math.min(minY1, this._options["yDomain1"][0]);
 					maxY1 = Math.max(maxY1, this._options["yDomain1"][1]);
@@ -506,6 +552,11 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 					this.yDomain2([minY2, maxY2]);
 					this.update();
 				});
+				var count = $(".radio-group input[type='checkbox']:checked", "form#filters_aggregate").length;
+				if (chartsList.length == count) {
+					setButtonStatus($("button[name='update_aggregate_reports']"), true, false);
+					showLegendInfo();
+				}
 			}
 		});
 	})
@@ -524,7 +575,7 @@ function showAllAggregateReports() {
 	var orbit  = $("select[name='orbit_select']"    , "form#filters_aggregate").val();
 	var year   = $("input[name='report_year']"      , "form#filters_aggregate").val();
 	if (sat != "0" && $(".radio-group input[type='checkbox']:checked", "form#filters_aggregate").length > 0) {
-		// Remove previous charts tooltips
+		// Remove previous chart tooltips
 		$.each(window.chartsList, function () {
 			if (typeof this.tooltip() !== "undefined" && $(this.tooltip.node()).length > 0) {
 				$(this.tooltip.node()).remove();
@@ -540,6 +591,24 @@ function showAllAggregateReports() {
 			var toDate   = moment(fromDate, "YYYY-MM-DD").add(1, "month").add(-1, "day").format("YYYY-MM-DD");
 			showAggregate(this.value, sat, siteId, orbit, fromDate, toDate);
 		});
+	}
+}
+/* =========== GENERAL FUNCTIONS =========== */
+function showLegendInfo() {
+	if (!$("#filters_aggregate").hasClass("show-legend-info")) {
+		$("#filters_aggregate, #charts_aggregate .chart-container").addClass("show-legend-info");
+		setTimeout(function () { $("#filters_aggregate, #charts_aggregate .chart-container").removeClass("show-legend-info"); }, 10000);
+	} else {
+		$("#charts_aggregate .chart-container").addClass("show-legend-info");
+	}
+	
+}
+function setButtonStatus($btn, enabled, pending) {
+	$btn.prop("disabled", !enabled);
+	if (pending) {
+		$btn.addClass("pending-btn");
+	} else {
+		$btn.removeClass("pending-btn");
 	}
 }
 function setFromToDate(year, month) {
@@ -575,10 +644,6 @@ function setFromToDate(year, month) {
 }
 /* =========== START =========== */
 $(document).ready(function() {
-	//$("select[name=satellite_select]").val("S1");
-	//$("input[name=update_orbit_report]").prop("disabled", false);
-	//$("input[name=update_aggregate_reports]").prop("disabled", false);
-	
 	// Set filter default year
 	var crtYear = (new Date().getFullYear() - 1 ) + "";
 	$("input[name='report_year']").val(crtYear);
@@ -590,20 +655,19 @@ $(document).ready(function() {
 		$(".radio-group input[type='checkbox']", "form#filters_aggregate").prop("checked", $(this).is(":checked"));
 	})
 	.on("change", "select[name='satellite_select']", function (e) {
-		if (this.value == "0") {
-			$("input[name='update_aggregate_reports']", e.delegateTarget).prop("disabled", true);
-		} else {
-			$("input[name='update_aggregate_reports']", e.delegateTarget).prop("disabled", false);
-		}
-		updateOrbitList(e.delegateTarget);
+		var siteId = $("select[name='site_select']", e.delegateTarget).val();
+		setButtonStatus($("button[name='update_aggregate_reports']"), (this.value != "0") && (siteId != "0"));
+		getOrbitList(e.delegateTarget);
 	})
 	.on("change", "select[name='site_select']", function (e) {
-		updateOrbitList(e.delegateTarget);
+		var sattelite = $("select[name='satellite_select']", e.delegateTarget).val();
+		setButtonStatus($("button[name='update_aggregate_reports']"), (this.value != "0") && (sattelite != "0"));
+		getOrbitList(e.delegateTarget);
 	});
-	
 	// Display selected aggregate reports
-	$("input[name='update_aggregate_reports']").on("click", function (e) {
-		showAllAggregateReports();
+	$("button[name='update_aggregate_reports']").on("click", function (e) {
+		setButtonStatus($(this), false, true);
+		setTimeout(function () { showAllAggregateReports(); }, 200);
 	});
 	
 	// Orbit filters changes
@@ -620,42 +684,33 @@ $(document).ready(function() {
 		$("#custom_date").prop("checked", true);
 	})
 	.on("change", "select[name='satellite_select']", function (e) {
-		if (this.value == "0") {
-			$("input[name='update_orbit_report']", e.delegateTarget).prop("disabled", true);
-		} else {
-			$("input[name='update_orbit_report']", e.delegateTarget).prop("disabled", false);
-		}
-		updateOrbitList(e.delegateTarget);
+		var siteId = $("select[name='site_select']", e.delegateTarget).val();
+		setButtonStatus($("button[name='update_orbit_report']"), (this.value != "0") && (siteId != "0"));
+		getOrbitList(e.delegateTarget);
 	})
 	.on("change", "select[name='site_select']", function (e) {
-		updateOrbitList(e.delegateTarget);
+		var sattelite = $("select[name='satellite_select']", e.delegateTarget).val();
+		setButtonStatus($("button[name='update_orbit_report']"), (this.value != "0") && (sattelite != "0"));
+		getOrbitList(e.delegateTarget);
 	});
 	// Display orbit report
-	$("input[name='update_orbit_report']").on("click", function (e) {
-		var d1 = Date.parse($("input[name=fromDate").get(0).valueAsDate);
-		var d2 = Date.parse($("input[name=toDate").get(0).valueAsDate);
-		if (isNaN(d1) || isNaN(d2)) {
-			alert("Please select valid dates for your report!");
-		} else {
-			if (d1 > d2) {
-				var dt = $("input[name='toDate']").val();
-				$("input[name='toDate']").val($("input[name='fromDate']").val());
-				$("input[name='fromDate']").val(dt);
-			}
-			var sat      = $("select[name='satellite_select']", "form#filters_orbit").val();
-			var siteId   = $("select[name='site_select']"     , "form#filters_orbit").val();
-			var orbit    = $("select[name='orbit_select']"    , "form#filters_orbit").val();
-			var fromDate = $("input[name='fromDate']"         , "form#filters_orbit").val();
-			var toDate   = $("input[name='toDate']"           , "form#filters_orbit").val();
-			if (sat != "0") {
-				$(".reports-orbit").css({ "background-image": "none" });
-				
-				$("#chart_orbit svg").remove();
-				$("#chart_orbit>*").remove();
-				
-				showRadar(sat, siteId, orbit, fromDate, toDate);
-			}
-		}
+	$("button[name='update_orbit_report']").on("click", function (e) {
+		setButtonStatus($(this), false, true);
+		setTimeout(function () { showOrbitReport(); }, 200);
+	});
+	
+	// Chart legend events
+	$("#charts_aggregate")
+	.on("click dblclick", ".nv-series", function(e) {
+		var label = $(this).index() + 1;
+		$("#charts_aggregate>div:not(:first-child) g.legendWrap g.nv-series:nth-child(" + label + ")")
+		d3.selectAll("#charts_aggregate>div:not(:first-child) g.legendWrap g.nv-series:nth-child(" + label + ")")
+        .each(function(d) {
+            this.dispatchEvent(new Event(e.type));
+        });
+	})
+	.on("mouseenter", "g.legendWrap", function(e) {
+		showLegendInfo();
 	});
 });
 

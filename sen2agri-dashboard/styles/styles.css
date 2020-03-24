@@ -793,10 +793,11 @@ input.filter-product-site-btn {
 }
 
 
-input.add-edit-btn,
+.add-edit-btn,
 .config input[type="submit"] {
 	font-family:Arial,Helvetica,sans-serif;
 	border: 0px solid transparent;
+	border-radius: 3px;
 	outline: 0px solid transparent;
 	padding: 10px;
 	background-color: #7EAF50;
@@ -840,17 +841,17 @@ div.add-delete-site form {
 /*
 /fit
 */
-input.add-edit-btn:not(:disabled):hover,
+.add-edit-btn:not(:disabled):hover,
 .config input[type="submit"]:not(:disabled):hover {
 	background-color: #99BF52;
 	color: yellow;
 }
-input.add-edit-btn:active,
+.add-edit-btn:active,
 .config input[type="submit"]:active {
 	background-color: #7EAF50;
 	color:yellow;
 }
-input.add-edit-btn:disabled{
+.add-edit-btn:disabled{
 	background-color: #cccccc;
 }
 
