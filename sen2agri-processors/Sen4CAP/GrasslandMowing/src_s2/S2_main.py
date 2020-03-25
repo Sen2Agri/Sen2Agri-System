@@ -585,10 +585,11 @@ def main_run(configFile, segmentsFile, data_x_detection, data_x_model, outputDir
     config = configparser.ConfigParser()
     config.read(configFile)
 
+    re_compile = "(S2AGRI_L3B_([A-Z]{5,11})_A([0-9]{8})T([0-9]{6})_T([0-9]{2}[A-Z]{3})\.)"
     # [S2_input_data]
-    re_compile = config['S2_input_data']['re_compile']
-#    data_x_detection = list(map(str.strip, config['S2_input_data']['data_x_detection'].split(',')))
-#    data_x_model = list(map(str.strip, config['S2_input_data']['data_x_model'].split(',')))
+    # re_compile = config['S2_input_data']['re_compile']
+    # data_x_detection = list(map(str.strip, config['S2_input_data']['data_x_detection'].split(',')))
+    # data_x_model = list(map(str.strip, config['S2_input_data']['data_x_model'].split(',')))
     print("data_x_detection", data_x_detection)
     print("data_x_model", data_x_model)
 
