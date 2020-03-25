@@ -40,14 +40,20 @@ function select_satellite() {
 <div id="main">
 	<div id="main2">
 		<div id="main3">
-			<!-------------- Orbit statistics ---------------->
 			<style>
+				/* ==== Adjust aggregate charts to hide last entries for all series ==== */
+				#charts_aggregate svg g.nv-x text{transform:translate(10px,0)}														/* ---- Shift line and oX labels to align to the center of the tick  ---- */
+				#charts_aggregate svg g.nv-x g.nv-axisMax-x{display:none}															/* ---- Hide last oX label ---- */
+				#charts_aggregate svg g.nv-multibar{transform:scale(1.033,1)}														/* ---- Scale bars to match 31 tickes instead of 30  ---- */
+				#charts_aggregate svg g.nv-multibar g.nv-group rect[style="fill: transparent; stroke: transparent;"]{display:none}	/* ---- Hide all bars that are marked as invalid (transparent color) ---- */
+				/* ==== End ==== */
+				
 				.nvtooltip{position:fixed !important}
 				#accordion_statistics *{box-sizing:border-box}
 				#accordion_statistics .panel-body{border:0}
 				.statistics .form-group-sm{margin-bottom:5px}
-				.statistics .form-group-sm .form-control{height:30px}
-				.statistics .form-group-sm .control-label{font-size:14px;line-height:26px}
+				.statistics .form-group-sm .form-control{height:30px;line-height:20px}
+				.statistics .form-group-sm .control-label{font-size:14px;line-height:25px}
 				.statistics .form-group-sm .radio-group{font-size:14px}
 				.statistics .form-group-sm .radio-group input{width:30px}
 				.statistics .form-group-sm .radio-group label{width:100%;font-weight:400;margin:0}
@@ -463,7 +469,7 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 				series[key] = {
 					"key"   : value,
 					"color" : (typeof colors[key] !== "undefined" ?  colors[key] : colors["foo"]),
-					"type"  : (key == "acquisitions" ? "line" : "bar") ,
+					"type"  : (key == "acquisitions" ? "line" : "bar"),
 					"yAxis" : (key == "acquisitions" ? 2 : 1),
 					"values": []
 				};
@@ -475,15 +481,26 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 			fooX["calendarDate"] = fromDate.substring(0, 8) + i;
 			response.data.series.push(fooX);
 		}
-		
 		// extract series values and define xAxis labels
 		var axisKeys = [];
 		$.each(response.data.series, function(index, rec) {
+			var crtDate = rec["calendarDate"];
+			var validDate = (moment(crtDate, "YYYY-MM-DD").format("YYYY-MM-DD") == crtDate);
 			$.each(rec, function (key, value) {
 				if (key != "calendarDate") {
-					series[key].values.push({ x: index, y: value });
+					if (validDate) {
+						series[key].values.push({ x: index, y: value });
+					} else {
+						series[key].values.push({ x: index, y: value, color: "transparent" });
+					}
+					// add an invisible extra tick in order to correctly align bars with acquisition line
+					if (index == 30) { series[key].values.push({ x: index + 1, y: 0, color: "transparent" }); }
 				} else {
-					axisKeys.push(value.substring(8));
+					if (moment(value, "YYYY-MM-DD").format("YYYY-MM-DD") == value) {
+						axisKeys.push(parseInt(value.substring(8)));
+					} else {
+						axisKeys.push("-");
+					}
 				}
 			});
 		});
@@ -495,9 +512,9 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 				chart.legendRightAxisHint("");
 				chart.legend.margin({top: -60, right: 0, left: 0, bottom: 0});
 				chart.xAxis
-					.ticks(31)
+					.ticks(axisKeys.length + 1)
 					.tickFormat(function (d) {
-						return (typeof axisKeys[d] !== "undefined") ? parseInt(axisKeys[d]) : "";
+						return (typeof axisKeys[d] !== "undefined") ? axisKeys[d] : "-";
 					});
 				chart.yAxis1
 					.tickFormat(function (d){ return (d == parseInt(d) ? d3.format('1.0f')(d) : ""); })
@@ -507,7 +524,6 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 					.axisLabelDistance(-40);
 				
 				var seriesData = $.map(series, function (value, key) { return value; });
-				// Get and set max values for each axis
 				var minY1 = 0;
 				var maxY1 = 1;
 				var minY2 = 0;
@@ -516,16 +532,14 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 					var _axis = seriesData[i].yAxis;
 					var _values = seriesData[i].values;
 					for (var j = 0; j < _values.length; j ++) {
-						// For maxY1
 						if (_axis == 1) { maxY1 = (_values[j].y > maxY1) ? _values[j].y : maxY1; }
-						// For maxY2
 						if (_axis == 2) { maxY2 = (_values[j].y > maxY2) ? _values[j].y : maxY2; }
 					}
 				}
 				chart.yDomain1([minY1, maxY1]);
 				chart.yDomain2([minY2, maxY2]);
 				
-				var  satName = $("select[name='satellite_select']>option[value='" + satellite + "']", "form#filters_aggregate").text();
+				var satName = $("select[name='satellite_select']>option[value='" + satellite + "']", "form#filters_aggregate").text();
 				var title = satName + " Preprocessing for <span>" + moment(id, "MM").format("MMMM") + " " + moment(fromDate, "YYYY-MM-DD").format("YYYY") + "</span><span>" + (orbit == "0" ? "" : " [Orbit " + orbit + "]") + "</span>";
 				
 				$("#charts_aggregate").append("<div id='chart_aggregate_" + id + "' class='chart-container'><div class='chart-title'>" + title + "</div><svg> </svg></div>");
@@ -602,13 +616,15 @@ function showAllAggregateReports() {
 }
 /* =========== GENERAL FUNCTIONS =========== */
 function showLegendInfo() {
-	if (!$("#filters_aggregate").hasClass("show-legend-info")) {
-		$("#filters_aggregate, #charts_aggregate .chart-container").addClass("show-legend-info");
-		setTimeout(function () { $("#filters_aggregate, #charts_aggregate .chart-container").removeClass("show-legend-info"); }, 10000);
-	} else {
-		$("#charts_aggregate .chart-container").addClass("show-legend-info");
+	// Prevent this functionality in IE
+	if (typeof(Event) === 'function') {
+		if (!$("#filters_aggregate").hasClass("show-legend-info")) {
+			$("#filters_aggregate, #charts_aggregate .chart-container").addClass("show-legend-info");
+			setTimeout(function () { $("#filters_aggregate, #charts_aggregate .chart-container").removeClass("show-legend-info"); }, 10000);
+		} else {
+			$("#charts_aggregate .chart-container").addClass("show-legend-info");
+		}
 	}
-	
 }
 function setButtonStatus($btn, enabled, pending) {
 	$btn.prop("disabled", !enabled);
@@ -713,7 +729,10 @@ $(document).ready(function() {
 		$("#charts_aggregate>div:not(:first-child) g.legendWrap g.nv-series:nth-child(" + label + ")")
 		d3.selectAll("#charts_aggregate>div:not(:first-child) g.legendWrap g.nv-series:nth-child(" + label + ")")
         .each(function(d) {
-            this.dispatchEvent(new Event(e.type));
+			// Prevent this functionality in IE
+			if (typeof(Event) === 'function') {
+				this.dispatchEvent(new Event(e.type));
+			}
         });
 	})
 	.on("mouseenter", "g.legendWrap", function(e) {
