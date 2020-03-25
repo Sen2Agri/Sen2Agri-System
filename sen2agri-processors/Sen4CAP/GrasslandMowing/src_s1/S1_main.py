@@ -495,8 +495,9 @@ def main_run(configFile, segmentsFile, data_x_detection, outputDir, new_acq_date
     config = configparser.ConfigParser()
     config.read(configFile)
 
+    re_compile = "(SEN4CAP_L2A_(S[0-9]{1,2})_V([0-9]{8})T([0-9]{6})_([0-9]{8})T([0-9]{6})_([VH]{2})_([0-9]{3})_(?:.+)?(AMP|COHE)\.)"
     # [S1_input_data]
-    re_compile = config['S1_input_data']['re_compile']
+    # re_compile = config['S1_input_data']['re_compile']
     # data_x_detection = list(map(str.strip, config['S1_input_data']['data_x_detection'].split(',')))
     print("re_compile", re_compile)
     print("data_x_detection", data_x_detection)
