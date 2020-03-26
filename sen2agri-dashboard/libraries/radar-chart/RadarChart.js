@@ -19,7 +19,8 @@ function RadarChart(id, data, options) {
 	 opacityCircles: 0.1, 	//The opacity of the circles of each blob
 	 strokeWidth: 2, 		//The width of the stroke around each blob
 	 roundStrokes: false,	//If true the area and stroke will follow a round path (cardinal-closed)
-	 color: d3.scale.category10()	//Color function
+	 color: d3.scale.category10(),	//Color function
+	 maxLabels: 60			// Maximum number of labels
 	};
 	
 	//Put all of the options into a variable called cfg
@@ -115,15 +116,15 @@ function RadarChart(id, data, options) {
 	axis.append("line")
 		.attr("x1", 0)
 		.attr("y1", 0)
-		.attr("x2", function(d, i){ return rScale(maxValue*1.1) * Math.cos(angleSlice*i - Math.PI/2); })
-		.attr("y2", function(d, i){ return rScale(maxValue*1.1) * Math.sin(angleSlice*i - Math.PI/2); })
-		.attr("class", "line")
+		.attr("x2", function(d, i){ return rScale(maxValue*1) * Math.cos(angleSlice*i - Math.PI/2); })
+		.attr("y2", function(d, i){ return rScale(maxValue*1) * Math.sin(angleSlice*i - Math.PI/2); })
+		.attr("class", function (d, i) { return "line line-" + data[0][i].date + (i % (parseInt(axis[0].length/cfg.maxLabels)+1) == 0 ? "" : " hidden"); })
 		.style("stroke", "white")
 		.style("stroke-width", "2px");
 
 	//Append the labels at each axis
 	axis.append("text")
-		.attr("class", "legend")
+		.attr("class", function (d, i) { return "legend legend-" + data[0][i].date + (i % (parseInt(axis[0].length/cfg.maxLabels)+1) == 0 ? "" : " hidden"); })
 		.style("font-size", "11px")
 		.attr("text-anchor", "middle")
 		.attr("dy", "0.35em")
