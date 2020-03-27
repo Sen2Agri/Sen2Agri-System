@@ -40,18 +40,18 @@ function select_satellite() {
 	<div id="main2">
 		<div id="main3">
 			<style>
-				.chart-title{color:#81a53e;font-weight:700;text-align:center}
+				/* ==== General chart settings ==== */
+				.chart-title{color:#81a53e;font-weight:700;text-align:center;margin:5px 0}
 				.chart-title>span{color:#336cc1}
 				
-				/* ==== General chart settings ==== */
-				#charts_aggregate path.nv-line{stroke-width:3px}
-				#charts_aggregate line.nv-guideline{stroke:#346cc1;stroke-dasharray:5}
-				
 				/* ==== Aggregate Chart adjustments ==== */
-				#charts_aggregate svg{margin-bottom:20px;height:300px;width:100%}
+				#charts_aggregate path.nv-line{stroke-width:3px}
+				#charts_aggregate line.nv-guideline{stroke:rgba(164, 189, 117, 0.2);stroke-width:4%;transform:translate(1.55%,0)}
+				#charts_aggregate svg{margin-bottom:10px;height:300px;width:100%}
 				#charts_aggregate .nv-axislabel{font:15px Arial,Helvetica,sans-serif;font-weight:700;fill:#336cc1}
 				/* ---- Legend adjustments ---- */
-				.chart-container:first-child{margin-top:105px}
+				#charts_aggregate .chart-container{border-bottom: 1px solid transparent;margin-bottom:10px}
+				#charts_aggregate .chart-container:first-child{margin-top:105px}
 				#charts_aggregate .chart-container:first-child svg{overflow:visible}
 				#charts_aggregate .chart-container:first-child::after{
 					content:"Click / Double-click \A legend labels \A to customize your selection";
@@ -60,9 +60,9 @@ function select_satellite() {
 				}
 				#charts_aggregate.show-legend-info .chart-container:first-child::after{opacity:1}
 				/* ---- Adjust series (bars and line) ---- */
-				#charts_aggregate svg g.nv-x text{transform:translate(10px,0)}														/* ---- Shift line and oX labels to align to the center of the tick  ---- */
+				#charts_aggregate svg g.nv-x text{transform:translate(1.55%,0)}														/* ---- Shift line and oX labels to align to the center of the tick  ---- */
 				#charts_aggregate svg g.nv-x g.nv-axisMax-x{display:none}															/* ---- Hide last oX label ---- */
-				#charts_aggregate svg g.nv-multibar{transform:scale(1.033,1)}														/* ---- Scale bars to match 31 tickes instead of 30  ---- */
+				#charts_aggregate svg g.nv-multibar{transform:translate(-0.15%,0) scale(1.035,1)}									/* ---- Scale and align bars to match 31 tickes instead of 30  ---- */
 				#charts_aggregate svg g.nv-multibar g.nv-group rect[style="fill: transparent; stroke: transparent;"]{display:none}	/* ---- Hide all bars that are marked as invalid (transparent color) ---- */
 				
 				/* ==== Orbit Chart adjustments ==== */
@@ -267,8 +267,9 @@ function select_satellite() {
 <!-- includes for datepicker and other controls -->
 <link href="libraries/jquery-ui/jquery-ui.min.css" type="text/css" rel="stylesheet">
 <script src="libraries/jquery-ui/jquery-ui.min.js" type="text/javascript"></script>
-<!-- includes for radar chart -->
+<!-- includes for RadarChart and multiChart-->
 <script src="libraries/radar-chart/RadarChart.js" type="text/javascript"></script>
+<script src="libraries/nvd3-1.1.11/multiChart.js" type="text/javascript"></script>
 <script type="text/javascript">
 window.chartsList = [];
 window.radarChart = null;
@@ -597,6 +598,7 @@ function showAggregate(id, satellite, siteId, orbit, fromDate, toDate) {
 					d.axisKeys = axisKeys;
 					return tooltipContentHtml(d);
 				});
+				// disable tooltip then enable it when all charts are loaded (see in callback section)
 				chart.interactiveLayer.tooltip.enabled(false);
 				
 				var seriesData = $.map(series, function (value, key) { return value; });
