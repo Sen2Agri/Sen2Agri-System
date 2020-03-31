@@ -245,6 +245,7 @@ processorList = <?php echo json_encode( $processorList)?>;
 <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
 <script src="libraries/jquery-validate/jquery.validate.min.js"></script>
 <script src="libraries/jquery-validate/additional-methods.min.js"></script>
+<script src="libraries/nvd3-1.1.11/indentedTree.js"></script>
 
 <script>
 	function selectedSchedule(event, param) {
