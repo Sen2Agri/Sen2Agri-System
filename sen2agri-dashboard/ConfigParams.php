@@ -1,27 +1,37 @@
 <?php
 class ConfigParams {
-    static $DB_NAME = 'sen2agri';
+    static $DEFAULT_DB_HOST = 'localhost';
+    static $DEFAULT_DB_PORT = 5432;
+    static $DEFAULT_DB_NAME = 'sen2agri';
+    static $DEFAULT_DB_USER = 'admin';
+    static $DEFAULT_DB_PASS = 'sen2agri';
+    static $DEFAULT_SERVICES_URL = 'http://localhost:8082/dashboard';
+    static $DEFAULT_REST_SERVICES_URL = 'http://localhost:8080';
+    static $DB_NAME;
     static $CONN_STRING;
-    static $SERVICES_URL = 'http://localhost:8082/dashboard';
-    static $REST_SERVICES_URL = 'http://localhost:8080';
+    static $SERVICES_URL;
+    static $REST_SERVICES_URL;
     static $SITE_ID;
     static $USER_NAME;
 
-    public function __construct(){
-        self::setConnection();
-    }
-    
     public function getConnection(){
-        self::setConnection();
+        if (!self::$CONN_STRING) {
+            $db_host = getenv('DB_HOST') ?: self::$DEFAULT_DB_HOST;
+            $db_port = getenv('DB_PORT') ?: self::$DEFAULT_DB_PORT;
+            $db_name = getenv('DB_NAME') ?: self::$DEFAULT_DB_NAME;
+            $db_user = getenv('DB_USER') ?: self::$DEFAULT_DB_USER;
+            $db_pass = getenv('DB_PASS') ?: self::$DEFAULT_DB_PASS;
+
+            self::$DB_NAME = $db_name;
+            self::$CONN_STRING = "host=$db_host port=$db_port dbname=$db_name user=$db_user password=$db_pass";
+
+            self::$SERVICES_URL = getenv('SERVICES_URL') ?: self::$DEFAULT_SERVICES_URL;
+            self::$REST_SERVICES_URL = (getenv('REST_SERVICES_URL') ?: self::getServicesUrl()) ?: self::$DEFAULT_REST_SERVICES_URL;
+        }
+
         return self::$CONN_STRING;
     }
-    
-    private static function setConnection(){
-        if(!isset(self::$CONN_STRING)){
-            self::$CONN_STRING = 'host=localhost port=5432 dbname='.self::$DB_NAME.' user=admin password=sen2agri';
-        }
-    }
-    
+
     static function init() {
         // set login information
         if (isset($_SESSION['siteId']) && isset($_SESSION['userId']) && isset($_SESSION['userName'])) {
@@ -29,13 +39,12 @@ class ConfigParams {
             self::$USER_NAME = $_SESSION['userName'];
         }
     }
-    
+
     public function isSen2Agri(){
-        if(self::$DB_NAME == "sen2agri")
-            return true;
+        return self::$DB_NAME == "sen2agri";
     }
-    
-    static function getServicePort(){
+
+    static function getServicesUrl(){
         $props_file = "/usr/share/sen2agri/sen2agri-services/config/services.properties";
         if( file_exists("/usr/share/sen2agri/" . self::$DB_NAME . "-services/config/services.properties")){
             $props_file = "/usr/share/sen2agri/" . self::$DB_NAME . "-services/config/services.properties";
@@ -50,12 +59,12 @@ class ConfigParams {
 		    		break;
 		    	}
 		    }
-		    $REST_SERVICES_PORT = trim(substr($matches, strpos($matches,'=')+1));
-            self::$REST_SERVICES_URL = 'http://localhost:' . $REST_SERVICES_PORT;
-	    }
+		    $port = trim(substr($matches, strpos($matches,'=')+1));
+            return "http://localhost:$port";
+        }
+        return NULL;
     }
 }
 
 ConfigParams::init();
-ConfigParams::getServicePort();
 ?>
