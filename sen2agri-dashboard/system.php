@@ -1,4 +1,4 @@
-﻿<?php include "master.php"; ?>
+<?php include "master.php"; ?>
     <div id="main">
         <div id="main2">
             <div id="main3">

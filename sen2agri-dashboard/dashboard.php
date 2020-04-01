@@ -1,4 +1,4 @@
-﻿<?php include "master.php"; ?>
+<?php include "master.php"; ?>
 <?php include "dashboardCreatJobs.php"; ?>
 <?php
 

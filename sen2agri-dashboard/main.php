@@ -1,4 +1,4 @@
-﻿<?php include "master.php"; ?>
+<?php include "master.php"; ?>
 <?php 
 
 $dbconn       = pg_connect(ConfigParams::getConnection()) or die ("Could not connect");
