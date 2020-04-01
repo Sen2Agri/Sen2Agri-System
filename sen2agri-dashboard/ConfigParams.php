@@ -24,16 +24,17 @@ class ConfigParams {
 
             self::$DB_NAME = $db_name;
             self::$CONN_STRING = "host=$db_host port=$db_port dbname=$db_name user=$db_user password=$db_pass";
-
-            self::$SERVICES_URL = getenv('SERVICES_URL') ?: self::$DEFAULT_SERVICES_URL;
-            self::$REST_SERVICES_URL = (getenv('REST_SERVICES_URL') ?: self::getServicesUrl()) ?: self::$DEFAULT_REST_SERVICES_URL;
         }
 
         return self::$CONN_STRING;
     }
 
     static function init() {
-        // set login information
+        // set services url and rest services url
+        self::$SERVICES_URL = getenv('SERVICES_URL') ?: self::$DEFAULT_SERVICES_URL;
+        self::$REST_SERVICES_URL = (getenv('REST_SERVICES_URL') ?: self::getServicesUrl()) ?: self::$DEFAULT_REST_SERVICES_URL;
+        
+		// set login information
         if (isset($_SESSION['siteId']) && isset($_SESSION['userId']) && isset($_SESSION['userName'])) {
             self::$SITE_ID   = $_SESSION['siteId'];
             self::$USER_NAME = $_SESSION['userName'];
