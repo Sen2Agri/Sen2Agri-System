@@ -823,7 +823,7 @@ function updateWebConfigParams()
     # Strip trailing space.
     REST_SERVER_PORT="${REST_SERVER_PORT%% }"
      if [[ !  -z  $REST_SERVER_PORT  ]] ; then
-        sed -i -e "s|static \$REST_SERVICES_URL = \x27http:\/\/localhost:8080|static \$REST_SERVICES_URL = \x27http:\/\/localhost:$REST_SERVER_PORT|g" /var/www/html/ConfigParams.php
+        sed -i -e "s|static \$DEFAULT_REST_SERVICES_URL = \x27http:\/\/localhost:8080|static \$DEFAULT_REST_SERVICES_URL = \x27http:\/\/localhost:$REST_SERVER_PORT|g" /var/www/html/ConfigParams.php
      fi
 
     DB_NAME=$(get_install_config_property "DB_NAME")
