@@ -424,6 +424,19 @@ function populate_from_scripts()
          echo "Executing SQL script: $scriptToExecute"
          cat "$scriptToExecute" | su - postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
       done
+    # Now check for the custom db folder if there are new scripts, others than in sen2agri. In this case, we must execute them too
+    if [ -d "$customDbPath" ]; then
+        for scriptName in "$customDbPath"/*.sql
+        do
+            scriptToExecute=${scriptName}
+            scriptFileName=$(basename -- "$scriptName")
+            if [[ ! -f ${curPath}/${scriptFileName} ]]; then
+                ## perform execution of each sql script
+                echo "Executing SQL script: $scriptToExecute"
+                cat "$scriptToExecute" | su - postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
+            fi            
+        done
+    fi
 }
 #-----------------------------------------------------------#
 function install_and_config_webserver()
@@ -529,12 +542,12 @@ function install_additional_packages()
 {
     if ! [[ "${SEN2AGRI_DATABASE_NAME}" == "sen2agri" ]] ; then
         # Install and config SNAP
-        wget http://step.esa.int/downloads/6.0/installers/esa-snap_sentinel_unix_6_0.sh && \
-        cp -f esa-snap_sentinel_unix_6_0.sh /tmp/ && \
-        chmod +x /tmp/esa-snap_sentinel_unix_6_0.sh && \
-        /tmp/esa-snap_sentinel_unix_6_0.sh -q && \
+        wget http://step.esa.int/downloads/7.0/installers/esa-snap_sentinel_unix_7_0.sh && \
+        cp -f esa-snap_sentinel_unix_7_0.sh /tmp/ && \
+        chmod +x /tmp/esa-snap_sentinel_unix_7_0.sh && \
+        /tmp/esa-snap_sentinel_unix_7_0.sh -q && \
         /opt/snap/bin/snap --nosplash --nogui --modules --update-all
-        rm -f ./esa-snap_sentinel_unix_6_0.sh /tmp/esa-snap_sentinel_unix_6_0.sh
+        rm -f ./esa-snap_sentinel_unix_7_0.sh /tmp/esa-snap_sentinel_unix_7_0.sh
         if [ ! -h /usr/local/bin/gpt ]; then sudo ln -s /opt/snap/bin/gpt /usr/local/bin/gpt;fi
 
         cp -f ${GPT_CONFIG_FILE} /opt/snap/bin/
@@ -558,6 +571,10 @@ EOF
       # sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b -p /mnt/archive/sen4cap_miniconda/miniconda3/"
         sudo -u sen2agri-service bash -c 'echo ". /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
         sudo su -l sen2agri-service -c bash -c "conda config --set report_errors false"
+        if [ -d "/home/sen2agri-service/miniconda3/envs/sen4cap" ] ; then
+            sudo rm -fR /home/sen2agri-service/miniconda3/envs/sen4cap
+        fi
+        sudo su -l sen2agri-service -c bash -c "conda update -n base conda"
         sudo su -l sen2agri-service -c bash -c "conda env create --file=/mnt/archive/sen4cap_conda.yml"
         sudo su -l sen2agri-service -c bash -c "conda info --envs"
 

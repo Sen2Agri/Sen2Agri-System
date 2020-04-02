@@ -118,13 +118,13 @@ function enableSciHubDwnDS()
 #    sudo -u postgres psql sen2agri -c "update datasource set fetch_mode = (select fetch_mode from datasource where satellite_id = 1 and name = 'Amazon Web Services') where satellite_id = 1 and name = 'Scientific Data Hub';"
 }
 
-function updateWebRestPort()
+function updateWebConfigParams()
 {
     # Set the port 8082 for the dashboard services URL
     sed -i -e "s|static \$DEFAULT_SERVICES_URL = \x27http:\/\/localhost:8080\/dashboard|static \$DEFAULT_SERVICES_URL = \x27http:\/\/localhost:8082\/dashboard|g" /var/www/html/ConfigParams.php
     sed -i -e "s|static \$DEFAULT_SERVICES_URL = \x27http:\/\/localhost:8081\/dashboard|static \$DEFAULT_SERVICES_URL = \x27http:\/\/localhost:8082\/dashboard|g" /var/www/html/ConfigParams.php
 
-    REST_SERVER_PORT=$(sed -n 's/^server.port =//p' ${TARGET_SERVICES_DIR}/config/services.properties)
+    REST_SERVER_PORT=$(sed -n 's/^server.port =//p' ${TARGET_SERVICES_DIR}/config/services.properties | sed -e 's/\r//g')
     # Strip leading space.
     REST_SERVER_PORT="${REST_SERVER_PORT## }"
     # Strip trailing space.
@@ -132,6 +132,11 @@ function updateWebRestPort()
      if [[ !  -z  $REST_SERVER_PORT  ]] ; then
         sed -i -e "s|static \$DEFAULT_REST_SERVICES_URL = \x27http:\/\/localhost:8080|static \$DEFAULT_REST_SERVICES_URL = \x27http:\/\/localhost:$REST_SERVER_PORT|g" /var/www/html/ConfigParams.php
      fi
+     
+    if [[ ! -z $DB_NAME ]] ; then
+        sed -i -e "s|static \$DEFAULT_DB_NAME = \x27sen2agri|static \$DEFAULT_DB_NAME = \x27${DB_NAME}|g" /var/www/html/ConfigParams.php
+    fi
+
 }
 
 function resetDownloadFailedProducts()
@@ -173,11 +178,11 @@ fi
 echo "$DB_NAME"
 
 TARGET_SERVICES_DIR="/usr/share/sen2agri/sen2agri-services"
-if [ "$DB_NAME" != "sen2agri" ] ; then
-    if [ -d "/usr/share/sen2agri/${DB_NAME}-services" ] ; then
-        TARGET_SERVICES_DIR="/usr/share/sen2agri/${DB_NAME}-services"
-    fi
-fi
+#if [ "$DB_NAME" != "sen2agri" ] ; then 
+#    if [ -d "/usr/share/sen2agri/${DB_NAME}-services" ] ; then
+#        TARGET_SERVICES_DIR="/usr/share/sen2agri/${DB_NAME}-services"    
+#    fi
+#fi
 
 install_sen2agri_services
 
@@ -196,6 +201,7 @@ if [ "$DB_NAME" == "sen2agri" ] ; then
     cat migrations/migration-1.8.2-1.8.3.sql | su -l postgres -c "psql $DB_NAME"
     cat migrations/migration-1.8.3-2.0.sql | su -l postgres -c "psql $DB_NAME"
     cat migrations/migration-2.0.0-2.0.1.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-2.0.1-2.0.2.sql | su -l postgres -c "psql $DB_NAME"
 else
     run_migration_scripts "migrations/${DB_NAME}" "${DB_NAME}"
 fi
@@ -208,11 +214,11 @@ if [ -d ../reference_data/ ]; then
     cp -rf ../reference_data/* /mnt/archive/reference_data
 fi
 
+# Update the port in /var/www/html/ConfigParams.php as version 1.8 had 8080 instead of 8081
+updateWebConfigParams
+
 if [ "$DB_NAME" == "sen2agri" ] ; then
     updateDownloadCredentials
-
-    # Update the port in /var/www/html/ConfigParams.php as version 1.8 had 8080 instead of 8081
-    updateWebRestPort
 
     # Enable SciHub as the download datasource
     enableSciHubDwnDS
@@ -240,13 +246,30 @@ else
     cp "${SCRIPTPATH}/../tools/miniconda/Miniconda3-latest-Linux-x86_64.sh" "/mnt/archive/"
     cp "${SCRIPTPATH}/../tools/miniconda/sen4cap_conda.yml" "/mnt/archive/"
 
-    sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b"
-    # sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b -p /mnt/archive/sen4cap_miniconda/miniconda3/"
-    # sudo -u sen2agri-service bash -c 'echo ". /mnt/archive/sen4cap_miniconda/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
-    sudo -u sen2agri-service bash -c 'echo ". /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
+    echo "Installing conda ..."
+    if [ -f /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh ] ; then
+        echo "/home/sen2agri-service/miniconda3/etc/profile.d/conda.sh found ..."
+        echo "Miniconda already installed for user sen2agri-service. Nothing to do ..."
+    else 
+        sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b"
+        # sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b -p /mnt/archive/sen4cap_miniconda/miniconda3/"
+        # sudo -u sen2agri-service bash -c 'echo ". /mnt/archive/sen4cap_miniconda/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
+        echo "Updating bashrc ..."
+        sudo -u sen2agri-service bash -c 'echo ". /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
+    fi
+    echo "Setting report_errors to false..."
     sudo su -l sen2agri-service -c bash -c "conda config --set report_errors false"
-    sudo su -l sen2agri-service -c bash -c "conda env create --file=/mnt/archive/sen4cap_conda.yml"
-    sudo su -l sen2agri-service -c bash -c "conda info --envs"
+    CUR_SEN4CAP_ENV_VAL=$(sudo su -l sen2agri-service -c bash -c "conda info --envs" | grep sen4cap)
+    if [ -z "$CUR_SEN4CAP_ENV_VAL" ]; then
+        echo "Creating sen4cap conda environment ..."
+        sudo su -l sen2agri-service -c bash -c "conda env create --file=/mnt/archive/sen4cap_conda.yml"
+        echo "Printing current environments ..."
+        sudo su -l sen2agri-service -c bash -c "conda info --envs"
+    else 
+        echo "sen4cap conda environment already exists. Nothing to do ..."
+        echo "Environments:"
+        sudo su -l sen2agri-service -c bash -c "conda info --envs"
+    fi
 
     rm "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh"
     rm "/mnt/archive/sen4cap_conda.yml"

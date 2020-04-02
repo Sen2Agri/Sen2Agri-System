@@ -24,7 +24,7 @@ select 	$1 as site,
 	from d
 	join public.downloader_history i on i.site_id = d.site_id AND i.orbit_id = d.orbit_id AND i.satellite_id = d.satellite_id and st_intersects(d.footprint, i.footprint) AND DATE_PART('day', d.product_date - i.product_date) BETWEEN 5 AND 7 AND st_area(st_intersection(i.footprint, d.footprint)) / st_area(d.footprint) > 0.05
 	join public.product p on p.downloader_history_id = d.id
-	WHERE NOT EXISTS(SELECT sr.* FROM reports.s1_report sr WHERE sr.downloader_history_id = d.id AND sr.intersected_product = i.product_name)
+	WHERE NOT EXISTS(SELECT sr.* FROM reports.s1_report sr WHERE sr.downloader_history_id = d.id AND sr.intersected_product = i.product_name AND sr.site_id = i.site_id AND sr.l2_product = p.name)
 		and d.site_id = $1 AND d.satellite_id = 3 and i.id is not null
 		and p.name like concat('%', substr(split_part(i.product_name, '_', 6), 1, 15),'%')
 union
@@ -46,7 +46,7 @@ select 	$1 as site,
 	join public.downloader_history i on i.site_id = d.site_id AND i.orbit_id = d.orbit_id AND i.satellite_id = d.satellite_id and st_intersects(d.footprint, i.footprint) AND DATE_PART('day', d.product_date - i.product_date) BETWEEN 11 AND 13 AND st_area(st_intersection(i.footprint, d.footprint)) / st_area(d.footprint) > 0.05
 	join public.product p on p.downloader_history_id = d.id
 	left outer join public.product_stats ps on ps.product_id = p.id
-	WHERE NOT EXISTS(SELECT sr.* FROM reports.s1_report sr WHERE sr.downloader_history_id = d.id AND sr.intersected_product = i.product_name)
+	WHERE NOT EXISTS(SELECT sr.* FROM reports.s1_report sr WHERE sr.downloader_history_id = d.id AND sr.intersected_product = i.product_name AND sr.site_id = i.site_id AND sr.l2_product = p.name)
 		and d.site_id = $1 AND d.satellite_id = 3 and i.id is not null and left(d.product_name, 3) = left(i.product_name, 3)
 		and p.name like concat('%', substr(split_part(i.product_name, '_', 6), 1, 15),'%')
 union

@@ -347,12 +347,13 @@ begin
             execute _statement;   
             
             
-            _statement := $str$
-                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b_lai.sub_products', NULL, 'L3B,L3C,L3D', '2019-04-12 14:56:57.501918+02');
-            $str$;
-            raise notice '%', _statement;
-            execute _statement;   
-            
+            if not exists (select * from config where key = 'processor.l3b_lai.sub_products') then
+                _statement := $str$
+                    INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b_lai.sub_products', NULL, 'L3B,L3C,L3D', '2019-04-12 14:56:57.501918+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;   
+            end if;    
             _statement := $str$
                 create or replace function sp_clear_pending_l1_tiles()
                     returns void
@@ -376,7 +377,7 @@ begin
             $str$;
             raise notice '%', _statement;
             execute _statement;
-            
+
             UPDATE config SET value = 8082 WHERE key = 'http-listener.listen-port';
             
             _statement := 'update meta set version = ''2.0.1'';';

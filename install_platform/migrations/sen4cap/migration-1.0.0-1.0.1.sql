@@ -6,7 +6,220 @@ begin
     raise notice 'running migrations';
 
     if exists (select * from information_schema.tables where table_schema = 'public' and table_name = 'meta') then
-        if exists (select * from meta where version in ('1.0.0', '2.0.0-RC1')) then
+        if exists (select * from meta where version in ('1.0.0', '2.0.0-RC1', '1.0.1')) then
+            -- new tables creation, if not exist 
+            _statement := $str$
+                create table if not exists agricultural_practice(
+                    id int not null primary key,
+                    name text not null
+                );
+                INSERT INTO agricultural_practice(id, name) SELECT 1, 'NA' WHERE NOT EXISTS (SELECT 1 FROM agricultural_practice WHERE id=1);
+                INSERT INTO agricultural_practice(id, name) SELECT 2, 'CatchCrop' WHERE NOT EXISTS (SELECT 1 FROM agricultural_practice WHERE id=2);
+                INSERT INTO agricultural_practice(id, name) SELECT 3, 'NFC' WHERE NOT EXISTS (SELECT 1 FROM agricultural_practice WHERE id=3);
+                INSERT INTO agricultural_practice(id, name) SELECT 4, 'Fallow' WHERE NOT EXISTS (SELECT 1 FROM agricultural_practice WHERE id=4);
+
+                create table if not exists product_details_l4a(
+                    product_id int not null references product(id) on delete cascade,
+                    "NewID" int not null,
+                    "CT_decl" int,
+                    "CT_pred_1" int,
+                    "CT_conf_1" real,
+                    "CT_pred_2" int,
+                    "CT_conf_2" real,
+                    constraint product_details_l4a_pkey primary key(product_id, "NewID")
+                );
+            
+                create table if not exists product_details_l4c(
+                    product_id int not null references product(id) on delete cascade,
+                    "NewID" int not null,
+                    practice_id int not null references agricultural_practice(id),
+                    orig_id text not null,
+                    country text not null,
+                    year int not null,
+                    main_crop text not null,
+                    veg_start text not null,
+                    h_start text not null,
+                    h_end text not null,
+                    practice text not null,
+                    p_type text not null,
+                    p_start text not null,
+                    p_end text not null,
+                    l_week text not null,
+                    m1 text not null,
+                    m2 text not null,
+                    m3 text not null,
+                    m4 text not null,
+                    m5 text not null,
+                    h_week text not null,
+                    h_w_start text not null,
+                    h_w_end text not null,
+                    h_w_s1 text not null,
+                    m6 text not null,
+                    m7 text not null,
+                    m8 text not null,
+                    m9 text not null,
+                    m10 text not null,
+                    c_index text not null,
+                    s1_pix text not null,
+                    s1_gaps text not null,
+                    h_s1_gaps text not null,
+                    p_s1_gaps text not null,
+                    h_w_s1_gaps text,
+                    h_quality text,
+                    c_quality text,    
+                    constraint product_details_l4c_pkey primary key(product_id, "NewID")
+                );
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+            
+            -- product_details_l4c table updates
+            if not exists (SELECT column_name FROM information_schema.columns WHERE table_name='product_details_l4c' and column_name='h_w_s1_gaps') then
+                _statement := $str$
+                    -- these are all added in the same time so if one exists, the others also exist
+                    ALTER TABLE product_details_l4c ADD COLUMN h_w_s1_gaps text, ADD COLUMN h_quality text, ADD COLUMN c_quality text;
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            
+            _statement := $str$
+                DROP FUNCTION IF EXISTS sp_get_dashboard_products_nodes(integer[], integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[], boolean);
+                
+                CREATE OR REPLACE FUNCTION sp_get_dashboard_products_nodes(
+                    _user_name character varying,
+                    _site_id integer[] DEFAULT NULL::integer[],
+                    _product_type_id integer[] DEFAULT NULL::integer[],
+                    _season_id smallint DEFAULT NULL::smallint,
+                    _satellit_id integer[] DEFAULT NULL::integer[],
+                    _since_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone,
+                    _until_timestamp timestamp with time zone DEFAULT NULL::timestamp with time zone,
+                    _tiles character varying[] DEFAULT NULL::character varying[],
+                    _get_nodes boolean DEFAULT false)
+                  RETURNS SETOF json AS
+                $BODY$
+                    DECLARE q text;
+                    BEGIN
+                        q := $sql$
+                        WITH
+                        product_type_names(id, name, description, row, is_raster) AS (
+                        select id, name, description, row_number() over (order by description), is_raster
+                        from product_type
+                        -- LPIS products should be excluded
+                        where name != 'lpis'
+                        ),
+                    $sql$;
+
+                    IF $9 IS TRUE THEN
+                        q := q || $sql$
+                        site_names(id, name, geog, row) AS (
+                        select s.id, s.name, st_astext(s.geog), row_number() over (order by s.name)
+                        from site s
+                        join public.user u on u.login = $1 and (u.role_id = 1 or s.id in (select * from unnest(u.site_id)))
+                        ),
+                        data(id, product, footprint, site_coord, product_type_id, satellite_id, is_raster) AS (
+
+                        SELECT
+                        P.id,
+                        P.name,
+                        P.footprint,
+                        S.geog,
+                        PT.id,
+                        P.satellite_id,
+                        PT.is_raster
+                        $sql$;
+                        ELSE
+                        q := q || $sql$
+                        site_names(id, name,  row) AS (
+                        select id, name, row_number() over (order by name)
+                        from site
+                        ),
+                          data(id, satellite_id, product_type_id, product_type_description,site, site_id) AS (
+                        SELECT
+                        P.id,
+                        P.satellite_id,
+                        PT.id,
+                        PT.description,
+                        S.name,
+                        S.id
+                         $sql$;
+                    END IF;
+
+                     q := q || $sql$
+                        FROM product P
+                        JOIN product_type_names PT ON P.product_type_id = PT.id
+                        JOIN processor PR ON P.processor_id = PR.id
+                        JOIN site_names S ON P.site_id = S.id
+                        WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
+                        AND EXISTS (
+                            SELECT * FROM season WHERE season.site_id = P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date
+                        $sql$;
+                        IF $4 IS NOT NULL THEN
+                        q := q || $sql$
+                        AND season.id=$4
+                        $sql$;
+                        END IF;
+
+                        q := q || $sql$
+                        )
+                        $sql$;
+                         raise notice '%', _site_id;raise notice '%', _product_type_id;raise notice '%', _satellit_id;
+                        IF $2 IS NOT NULL THEN
+                        q := q || $sql$
+                        AND P.site_id = ANY($2)
+
+                        $sql$;
+                        END IF;
+
+                        IF $3 IS NOT NULL THEN
+                        q := q || $sql$
+                        AND P.product_type_id= ANY($3)
+
+                        $sql$;
+                        END IF;
+
+                    IF $6 IS NOT NULL THEN
+                    q := q || $sql$
+                        AND P.created_timestamp >= to_timestamp(cast($6 as TEXT),'YYYY-MM-DD HH24:MI:SS')
+                        $sql$;
+                    END IF;
+
+                    IF $7 IS NOT NULL THEN
+                    q := q || $sql$
+                        AND P.created_timestamp <= to_timestamp(cast($7 as TEXT),'YYYY-MM-DD HH24:MI:SS') + interval '1 day'
+                        $sql$;
+                    END IF;
+
+                    IF $8 IS NOT NULL THEN
+                    q := q || $sql$
+                        AND P.tiles <@$8 AND P.tiles!='{}'
+                        $sql$;
+                    END IF;
+
+                    q := q || $sql$
+                        ORDER BY S.row, PT.row, P.name
+                        )
+                    --         select * from data;
+                        SELECT array_to_json(array_agg(row_to_json(data)), true) FROM data;
+                        $sql$;
+
+                        raise notice '%', q;
+
+                        RETURN QUERY
+                        EXECUTE q
+                        USING _user_name, _site_id, _product_type_id, _season_id, _satellit_id, _since_timestamp, _until_timestamp, _tiles, _get_nodes;
+                    END
+                    $BODY$
+                  LANGUAGE plpgsql STABLE
+                  COST 100
+                  ROWS 1000;
+                ALTER FUNCTION sp_get_dashboard_products_nodes(character varying, integer[], integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[], boolean)
+                  OWNER TO admin;
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;              
+
+
             if exists (select * from meta where version in ('2.0.0-RC1')) then
                 raise notice 'upgrading from beta_version to 1.0.1';
                 
@@ -25,77 +238,6 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
 
-    -- new tables creation, if not exist 
-                _statement := $str$
-                    create table if not exists agricultural_practice(
-                        id int not null primary key,
-                        name text not null
-                    );
-                    create table if not exists product_details_l4a(
-                        product_id int not null references product(id) on delete cascade,
-                        "NewID" int not null,
-                        "CT_decl" int,
-                        "CT_pred_1" int,
-                        "CT_conf_1" real,
-                        "CT_pred_2" int,
-                        "CT_conf_2" real,
-                        constraint product_details_l4a_pkey primary key(product_id, "NewID")
-                    );
-                
-                    create table if not exists product_details_l4c(
-                        product_id int not null references product(id) on delete cascade,
-                        "NewID" int not null,
-                        practice_id int not null references agricultural_practice(id),
-                        orig_id text not null,
-                        country text not null,
-                        year int not null,
-                        main_crop text not null,
-                        veg_start text not null,
-                        h_start text not null,
-                        h_end text not null,
-                        practice text not null,
-                        p_type text not null,
-                        p_start text not null,
-                        p_end text not null,
-                        l_week text not null,
-                        m1 text not null,
-                        m2 text not null,
-                        m3 text not null,
-                        m4 text not null,
-                        m5 text not null,
-                        h_week text not null,
-                        h_w_start text not null,
-                        h_w_end text not null,
-                        h_w_s1 text not null,
-                        m6 text not null,
-                        m7 text not null,
-                        m8 text not null,
-                        m9 text not null,
-                        m10 text not null,
-                        c_index text not null,
-                        s1_pix text not null,
-                        s1_gaps text not null,
-                        h_s1_gaps text not null,
-                        p_s1_gaps text not null,
-                        h_w_s1_gaps text,
-                        h_quality text,
-                        c_quality text,    
-                        constraint product_details_l4c_pkey primary key(product_id, "NewID")
-                    );
-                $str$;
-                raise notice '%', _statement;
-                execute _statement;
-
-    -- product_details_l4c table updates
-                if not exists (SELECT column_name FROM information_schema.columns WHERE table_name='product_details_l4c' and column_name='h_w_s1_gaps') then
-                    _statement := $str$
-                        -- these are all added in the same time so if one exists, the others also exist
-                        ALTER TABLE product_details_l4c ADD COLUMN h_w_s1_gaps text, ADD COLUMN h_quality text, ADD COLUMN c_quality text;
-                    $str$;
-                    raise notice '%', _statement;
-                    execute _statement;
-                end if;
-                
     -- config_category  updates
                 _statement := $str$
                     DELETE FROM config_category WHERE id = 20 and name = 'L4B Grassland Mowing';
@@ -519,6 +661,45 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;
+                
+                _statement := $str$            
+                    drop function sp_get_job_output(_job_id job.id%type)
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;                
+
+                _statement := $str$            
+                    create or replace function sp_get_job_output(
+                        _job_id job.id%type
+                    ) returns table (
+                        step_name step.name%type,
+                        command text,
+                        stdout_text step_resource_log.stdout_text%type,
+                        stderr_text step_resource_log.stderr_text%type,
+                        exit_code step.exit_code%type,
+                        execution_status step.status_id%type
+                    ) as
+                    $$
+                    begin
+                        return query
+                            select step.name,
+                                   array_to_string(array_prepend(config.value :: text, array(select json_array_elements_text(json_extract_path(step.parameters, 'arguments')))), ' ') as command,
+                                   step_resource_log.stdout_text,
+                                   step_resource_log.stderr_text,
+                                   step.exit_code,
+                                   step.status_id
+                            from task
+                            inner join step on step.task_id = task.id
+                            left outer join step_resource_log on step_resource_log.step_name = step.name and step_resource_log.task_id = task.id
+                            left outer join config on config.site_id is null and config.key = 'executor.module.path.' || task.module_short_name
+                            where task.job_id = _job_id
+                            order by step.submit_timestamp;
+                    end;
+                    $$
+                        language plpgsql stable;
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;                
             end if;
             
             _statement := 'update meta set version = ''1.0.1'';';

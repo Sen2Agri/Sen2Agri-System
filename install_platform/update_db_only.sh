@@ -42,6 +42,7 @@ if [ "$DB_NAME" == "sen2agri" ] ; then
     cat migrations/migration-1.8.2-1.8.3.sql | su -l postgres -c "psql $DB_NAME"
     cat migrations/migration-1.8.3-2.0.sql | su -l postgres -c "psql $DB_NAME"
     cat migrations/migration-2.0.0-2.0.1.sql | su -l postgres -c "psql $DB_NAME"
+    cat migrations/migration-2.0.1-2.0.2.sql | su -l postgres -c "psql $DB_NAME"
 else 
     run_migration_scripts "migrations/${DB_NAME}" "${DB_NAME}"
 fi
