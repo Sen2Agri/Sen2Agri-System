@@ -571,7 +571,7 @@ EOF
 function maccs_or_maja()
 {
 #    while [[ $answer != '1' ]] && [[ $answer != '2' ]]
-#    do	
+#    do
 #	read -n1 -p "What L1C processor should be used? (1 for MACCS / 2 for MAJA): " -r answer
 #	printf "\n"
 #	case $answer in
@@ -828,7 +828,7 @@ function updateWebConfigParams()
 
     DB_NAME=$(get_install_config_property "DB_NAME")
     if [[ ! -z $DB_NAME ]] ; then
-        sed -i -e "s|static \$DB_NAME = \x27sen2agri|static \$DB_NAME = \x27${DB_NAME}|g" /var/www/html/ConfigParams.php
+        sed -i -e "s|static \$DEFAULT_DB_NAME = \x27sen2agri|static \$DEFAULT_DB_NAME = \x27${DB_NAME}|g" /var/www/html/ConfigParams.php
     fi
 }
 
