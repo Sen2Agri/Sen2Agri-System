@@ -829,7 +829,9 @@ class WeeklyComposite(object):
 
         if not os.path.exists(self.output):
             self.inputs = filter(os.path.exists, self.inputs)
-            inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
+            inputs = [
+                get_otb_extended_filename_skipgeom(input) for input in self.inputs
+            ]
 
             command = []
             command += ["otbcli", "Composite"]
@@ -918,7 +920,9 @@ class BackscatterMonthlyComposite(object):
 
         if not os.path.exists(self.output):
             self.inputs = filter(os.path.exists, self.inputs)
-            inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
+            inputs = [
+                get_otb_extended_filename_skipgeom(input) for input in self.inputs
+            ]
 
             command = []
             command += ["otbcli", "BackscatterTemporalFeatures"]
@@ -954,7 +958,9 @@ class CoherenceMonthlyComposite(object):
 
         if not os.path.exists(self.output):
             self.inputs = filter(os.path.exists, self.inputs)
-            inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
+            inputs = [
+                get_otb_extended_filename_skipgeom(input) for input in self.inputs
+            ]
 
             command = []
             command += ["otbcli", "CoherenceMonthlyFeatures"]
@@ -989,7 +995,9 @@ class CoherenceSeasonComposite(object):
 
         if not os.path.exists(self.output):
             self.inputs = filter(os.path.exists, self.inputs)
-            inputs = [get_otb_extended_filename_skipgeom(input) for input in self.inputs]
+            inputs = [
+                get_otb_extended_filename_skipgeom(input) for input in self.inputs
+            ]
 
             command = []
             command += ["otbcli", "StandardDeviation"]
@@ -1286,7 +1294,7 @@ def generate_headers(date_file, headers_mean, headers_dev):
         "b5",
         "b6",
         "b7",
-        "b8a",
+        "b12",
         "ndvi",
         "ndwi",
         "brightness",
