@@ -33,14 +33,14 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperInputImageListParameter.h"
 
-#include "otbStatisticsXMLFileReader.h"
 #include "../MultiModelImageClassifier/otbMultiModelImageClassificationFilter.h"
-#include "otbMultiToMonoChannelExtractROI.h"
-#include "otbImageToVectorImageCastFilter.h"
-#include "otbWrapperTypes.h"
-#include "otbObjectList.h"
-#include "otbVectorImage.h"
 #include "otbImageList.h"
+#include "otbImageToVectorImageCastFilter.h"
+#include "otbMultiToMonoChannelExtractROI.h"
+#include "otbObjectList.h"
+#include "otbStatisticsXMLFileReader.h"
+#include "otbVectorImage.h"
+#include "otbWrapperTypes.h"
 
 #include "../Filters/CropTypePreprocessing.h"
 #include "../Filters/otbStreamingStatisticsMapFromLabelImageFilter.h"
@@ -62,11 +62,12 @@ public:
 
     itkTypeMacro(OpticalFeatures, otb::Application);
 
-    typedef Int16VectorImageType                                                     OutputImageType;
-    typedef FloatVectorImageType                                                     FeatureImageType;
-    typedef Int32ImageType                                                           ClassImageType;
+    typedef Int16VectorImageType OutputImageType;
+    typedef FloatVectorImageType FeatureImageType;
+    typedef Int32ImageType ClassImageType;
 
-    typedef otb::StreamingStatisticsMapFromLabelImageFilter<FeatureImageType, ClassImageType> StatisticsFilterType;
+    typedef otb::StreamingStatisticsMapFromLabelImageFilter<FeatureImageType, ClassImageType>
+        StatisticsFilterType;
 
 private:
     void DoInit() override
@@ -119,13 +120,12 @@ private:
         SetMinimumParameterFloatValue("pixsize", 1.0);
         MandatoryOff("pixsize");
 
-        AddParameter(ParameterType_String,
-                     "mission",
+        AddParameter(ParameterType_String, "mission",
                      "The main raster series that will be used. By default, SENTINEL is used");
         MandatoryOff("mission");
 
-        AddParameter(
-            ParameterType_Empty, "rededge", "Include Sentinel-2 vegetation red edge bands");
+        AddParameter(ParameterType_Empty, "rededge",
+                     "Include Sentinel-2 vegetation red edge bands");
         MandatoryOff("rededge");
 
         AddRAMParameter();
@@ -134,9 +134,7 @@ private:
         SetDocExampleParameterValue("out", "features.tif");
     }
 
-    void DoUpdateParameters() override
-    {
-    }
+    void DoUpdateParameters() override {}
 
     void DoExecute() override
     {
@@ -158,6 +156,7 @@ private:
         m_Preprocessor = CropTypePreprocessing::New();
         m_Preprocessor->SetPixelSize(pixSize);
         m_Preprocessor->SetMission(mission);
+        m_Preprocessor->SetUseSwir2Band(true);
         if (GetParameterEmpty("rededge")) {
             m_Preprocessor->SetIncludeRedEdge(true);
         }
@@ -259,10 +258,10 @@ private:
         }
     }
 
-    CropTypePreprocessing::Pointer          m_Preprocessor;
-    StatisticsFilterType::Pointer           m_StatisticsFilter;
+    CropTypePreprocessing::Pointer m_Preprocessor;
+    StatisticsFilterType::Pointer m_StatisticsFilter;
 };
-}
-}
+} // namespace Wrapper
+} // namespace otb
 
 OTB_APPLICATION_EXPORT(otb::Wrapper::OpticalFeatures)

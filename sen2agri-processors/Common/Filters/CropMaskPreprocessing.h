@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #pragma once
 
 #include "otbWrapperApplication.h"
@@ -20,55 +20,57 @@
 #include "otbWrapperApplicationRegistry.h"
 #include "otbWrapperInputImageListParameter.h"
 
-#include "otbVectorImage.h"
 #include "otbImageList.h"
+#include "otbVectorImage.h"
 
 #include "otbStreamingResampleImageFilter.h"
 
-//Transform
+// Transform
 #include "itkScalableAffineTransform.h"
 //#include "itkIdentityTransform.h"
 #include "itkScaleTransform.h"
 
 // Filters
-#include "otbMultiChannelExtractROI.h"
 #include "otbConcatenateVectorImagesFilter.h"
+#include "otbMultiChannelExtractROI.h"
 
 #include "CropMaskFeaturesSupervised.hxx"
 #include "CropMaskSupervisedRedEdgeFeaturesFilter.h"
-#include "otbTemporalResamplingFilter.h"
 #include "otbTemporalMergingFilter.h"
+#include "otbTemporalResamplingFilter.h"
 
-#include "otbSpotMaskFilter.h"
 #include "otbSentinelMaskFilter.h"
+#include "otbSpotMaskFilter.h"
 
-#include "TimeSeriesReader.h"
 #include "TemporalMerging.hxx"
+#include "TimeSeriesReader.h"
 
 #include <string>
 
-typedef CropMaskFeaturesSupervisedFunctor<ImageType::PixelType>     FeaturesFunctorType;
-typedef CropMaskFeaturesSupervisedBMFunctor<ImageType::PixelType>   FeaturesBMFunctorType;
+typedef CropMaskFeaturesSupervisedFunctor<ImageType::PixelType> FeaturesFunctorType;
+typedef CropMaskFeaturesSupervisedBMFunctor<ImageType::PixelType> FeaturesBMFunctorType;
 
-typedef UnaryFunctorImageFilterWithNBands<FeaturesFunctorType>      FeatureExtractorFilterType;
-typedef UnaryFunctorImageFilterWithNBands<FeaturesBMFunctorType>    FeatureExtractorBMFilterType;
+typedef UnaryFunctorImageFilterWithNBands<FeaturesFunctorType> FeatureExtractorFilterType;
+typedef UnaryFunctorImageFilterWithNBands<FeaturesBMFunctorType> FeatureExtractorBMFilterType;
 
-typedef otb::ObjectList<FeatureExtractorFilterType>                 FeatureExtractorFilterListType;
-typedef otb::ObjectList<FeatureExtractorBMFilterType>               FeatureExtractorBMFilterListType;
+typedef otb::ObjectList<FeatureExtractorFilterType> FeatureExtractorFilterListType;
+typedef otb::ObjectList<FeatureExtractorBMFilterType> FeatureExtractorBMFilterListType;
 
-typedef otb::TemporalResamplingFilter<ImageType, MaskType, ImageType>  TemporalResamplingFilterType;
-typedef otb::ObjectList<TemporalResamplingFilterType>                  TemporalResamplingFilterListType;
+typedef otb::TemporalResamplingFilter<ImageType, MaskType, ImageType> TemporalResamplingFilterType;
+typedef otb::ObjectList<TemporalResamplingFilterType> TemporalResamplingFilterListType;
 
-typedef TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType>       TemporalMergingFunctorType;
-typedef otb::BinaryFunctorImageFilterWithNBands<ImageType, MaskType, ImageType,
-        TemporalMergingFunctorType>                                             TemporalMergingFilterType;
-typedef otb::ObjectList<TemporalMergingFilterType>                              TemporalMergingFilterListType;
+typedef TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType>
+    TemporalMergingFunctorType;
+typedef otb::
+    BinaryFunctorImageFilterWithNBands<ImageType, MaskType, ImageType, TemporalMergingFunctorType>
+        TemporalMergingFilterType;
+typedef otb::ObjectList<TemporalMergingFilterType> TemporalMergingFilterListType;
 
-typedef CropMaskSupervisedRedEdgeFeaturesFilter<ImageType>          RedEdgeFeaturesFilterType;
-typedef otb::ObjectList<RedEdgeFeaturesFilterType>                  RedEdgeFeaturesFilterListType;
+typedef CropMaskSupervisedRedEdgeFeaturesFilter<ImageType> RedEdgeFeaturesFilterType;
+typedef otb::ObjectList<RedEdgeFeaturesFilterType> RedEdgeFeaturesFilterListType;
 
-typedef otb::ConcatenateVectorImagesFilter<ImageType>               ConcatenateImagesFilterType;
-typedef otb::ObjectList<ConcatenateImagesFilterType>                ConcatenateImagesFilterListType;
+typedef otb::ConcatenateVectorImagesFilter<ImageType> ConcatenateImagesFilterType;
+typedef otb::ObjectList<ConcatenateImagesFilterType> ConcatenateImagesFilterListType;
 
 class CropMaskPreprocessing : public TimeSeriesReader
 {
@@ -78,25 +80,19 @@ public:
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
 
-    itkNewMacro(Self)
-    itkTypeMacro(CropMaskPreprocessing, TimeSeriesReader)
+    itkNewMacro(Self) itkTypeMacro(CropMaskPreprocessing, TimeSeriesReader)
 
-    itkSetMacro(IncludeRedEdge, bool)
-    itkGetMacro(IncludeRedEdge, bool)
+        itkSetMacro(IncludeRedEdge, bool) itkGetMacro(IncludeRedEdge, bool)
 
-    itkSetMacro(W, int)
-    itkGetMacro(W, int)
+            itkSetMacro(W, int) itkGetMacro(W, int)
 
-    itkSetMacro(Delta, float)
-    itkGetMacro(Delta, float)
+                itkSetMacro(Delta, float) itkGetMacro(Delta, float)
 
-    itkSetMacro(TSoil, float)
-    itkGetMacro(TSoil, float)
+                    itkSetMacro(TSoil, float) itkGetMacro(TSoil, float)
 
-    itkSetMacro(BM, bool)
-    itkGetMacro(BM, bool)
+                        itkSetMacro(BM, bool) itkGetMacro(BM, bool)
 
-    CropMaskPreprocessing()
+                            CropMaskPreprocessing()
         : m_IncludeRedEdge()
     {
         m_TemporalResamplers = TemporalResamplingFilterListType::New();
@@ -107,9 +103,9 @@ public:
         m_ConcatenateImagesFilters = ConcatenateImagesFilterListType::New();
     }
 
-    void getRedEdgeBands(const std::unique_ptr<MetadataHelper<float, uint8_t>>& pHelper,
-                                                   const TileData &td,
-                                                   ImageDescriptor &descriptor) override
+    void getRedEdgeBands(const std::unique_ptr<MetadataHelper<float, uint8_t>> &pHelper,
+                         const TileData &td,
+                         ImageDescriptor &descriptor) override
     {
         if (!m_IncludeRedEdge) {
             return;
@@ -127,73 +123,24 @@ public:
         ExtractFloatChannelFilterType::Pointer channelExtractor;
 
         std::vector<int> relBandsIdxs;
-        MetadataHelper<float, uint8_t>::VectorImageType::Pointer img = pHelper->GetImage(redEdgeBands, &relBandsIdxs);
+        MetadataHelper<float, uint8_t>::VectorImageType::Pointer img =
+            pHelper->GetImage(redEdgeBands, &relBandsIdxs);
         img->UpdateOutputInformation();
 
-        for (int bandIndex: relBandsIdxs) {
+        for (int bandIndex : relBandsIdxs) {
             channelExtractor = ExtractFloatChannelFilterType::New();
             channelExtractor->SetInput(img);
             channelExtractor->SetIndex(bandIndex);
             m_Filters->PushBack(channelExtractor);
-            auto resampledBand = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+            auto resampledBand =
+                getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
             descriptor.redEdgeBands.push_back(resampledBand);
         }
     }
-/*
-    void getSentinelRedEdgeBands(const MACCSFileMetadata &meta,
-                          const TileData &td,
-                          ImageDescriptor &descriptor,
-                          Int16ImageReaderType::Pointer reader1,
-                          Int16ImageReaderType::Pointer reader2) override
+
+    otb::Wrapper::FloatVectorImageType *GetOutput(const std::vector<MissionDays> &sensorOutDays)
     {
-        if (!m_IncludeRedEdge) {
-            return;
-        }
-
-        auto b4Band = descriptor.bands[1];
-        auto b8Band = descriptor.bands[2];
-
-        ExtractChannelFilterType::Pointer channelExtractor;
-
-        int b2Index = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B2");
-        channelExtractor = ExtractChannelFilterType::New();
-        channelExtractor->SetInput(reader1->GetOutput());
-        channelExtractor->SetIndex(b2Index - 1);
-        m_Filters->PushBack(channelExtractor);
-        auto b2Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
-
-        int b5Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B5");
-        channelExtractor = ExtractChannelFilterType::New();
-        channelExtractor->SetInput(reader2->GetOutput());
-        channelExtractor->SetIndex(b5Index - 1);
-        m_Filters->PushBack(channelExtractor);
-        auto b5Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
-
-        int b6Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B6");
-        channelExtractor = ExtractChannelFilterType::New();
-        channelExtractor->SetInput(reader2->GetOutput());
-        channelExtractor->SetIndex(b6Index - 1);
-        m_Filters->PushBack(channelExtractor);
-        auto b6Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
-
-        int b7Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B7");
-        channelExtractor = ExtractChannelFilterType::New();
-        channelExtractor->SetInput(reader2->GetOutput());
-        channelExtractor->SetIndex(b7Index - 1);
-        m_Filters->PushBack(channelExtractor);
-        auto b7Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
-
-        descriptor.redEdgeBands.push_back(b2Band);
-        descriptor.redEdgeBands.push_back(b4Band);
-        descriptor.redEdgeBands.push_back(b5Band);
-        descriptor.redEdgeBands.push_back(b6Band);
-        descriptor.redEdgeBands.push_back(b7Band);
-        descriptor.redEdgeBands.push_back(b8Band);
-    }
-*/
-    otb::Wrapper::FloatVectorImageType * GetOutput(const std::vector<MissionDays> &sensorOutDays)
-    {
-        std::map<std::string, std::vector<int> > dayMap;
+        std::map<std::string, std::vector<int>> dayMap;
         for (const auto &e : sensorOutDays) {
             dayMap[e.mission] = e.days;
         }
@@ -201,7 +148,7 @@ public:
         // Also build the image dates structures
         otb::SensorDataCollection sdCollection;
         std::string lastMission = "";
-        for (const ImageDescriptor& id : m_Descriptors) {
+        for (const ImageDescriptor &id : m_Descriptors) {
             if (id.mission != lastMission) {
                 otb::SensorData sd;
                 sd.sensorName = id.mission;
@@ -250,7 +197,7 @@ public:
                     sd.outDates = e.days;
                     sd.bandCount = 6;
 
-                    for (const ImageDescriptor& id : m_Descriptors) {
+                    for (const ImageDescriptor &id : m_Descriptors) {
                         if (id.mission == e.mission) {
                             int inDay = getDaysFromEpoch(id.aquisitionDate);
                             sd.inDates.push_back(inDay);
@@ -262,7 +209,6 @@ public:
             }
 
             redEdgeTemporalResampler->SetInputData(redEdgeSdCollection);
-
 
             if (!redEdgeSdCollection.empty()) {
                 redEdgeFeaturesFilter = RedEdgeFeaturesFilterType::New();
@@ -282,14 +228,14 @@ public:
             }
             priority--;
         }
-        std::sort(imgInfos.begin(), imgInfos.end(), [](const ImageInfo& o1, const ImageInfo& o2) {
+        std::sort(imgInfos.begin(), imgInfos.end(), [](const ImageInfo &o1, const ImageInfo &o2) {
             return (o1.day < o2.day) || ((o1.day == o2.day) && (o1.priority > o2.priority));
         });
 
         // count the number of output images and create the out days file
         std::vector<int> od;
         int lastDay = -1;
-        for (auto& imgInfo : imgInfos) {
+        for (auto &imgInfo : imgInfos) {
             if (lastDay != imgInfo.day) {
                 od.push_back(imgInfo.day);
                 lastDay = imgInfo.day;
@@ -304,9 +250,10 @@ public:
         int imageBands = m_BandsConcat->GetOutput()->GetNumberOfComponentsPerPixel() /
                          m_MaskConcat->GetOutput()->GetNumberOfComponentsPerPixel();
 
-
         temporalMerger->SetNumberOfOutputBands(imageBands * od.size());
-        temporalMerger->SetFunctor(TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType>(imgInfos, od.size(), imageBands));
+        temporalMerger->SetFunctor(
+            TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType>(imgInfos, od.size(),
+                                                                              imageBands));
 
         temporalMerger->SetInput1(temporalResampler->GetOutput());
         temporalMerger->SetInput2(m_MaskConcat->GetOutput());
@@ -359,12 +306,12 @@ private:
     PixelValueType m_TSoil;
     bool m_BM;
 
-    TemporalResamplingFilterListType::Pointer         m_TemporalResamplers;
-    TemporalMergingFilterListType::Pointer            m_TemporalMergers;
-    FeatureExtractorFilterListType::Pointer           m_FeatureExtractors;
-    FeatureExtractorBMFilterListType::Pointer         m_FeatureExtractorsBM;
-    RedEdgeFeaturesFilterListType::Pointer            m_RedEdgeFeaturesFilters;
-    ConcatenateImagesFilterListType::Pointer          m_ConcatenateImagesFilters;
+    TemporalResamplingFilterListType::Pointer m_TemporalResamplers;
+    TemporalMergingFilterListType::Pointer m_TemporalMergers;
+    FeatureExtractorFilterListType::Pointer m_FeatureExtractors;
+    FeatureExtractorBMFilterListType::Pointer m_FeatureExtractorsBM;
+    RedEdgeFeaturesFilterListType::Pointer m_RedEdgeFeaturesFilters;
+    ConcatenateImagesFilterListType::Pointer m_ConcatenateImagesFilters;
 };
 
-typedef otb::ObjectList<CropMaskPreprocessing>        CropMaskPreprocessingList;
+typedef otb::ObjectList<CropMaskPreprocessing> CropMaskPreprocessingList;

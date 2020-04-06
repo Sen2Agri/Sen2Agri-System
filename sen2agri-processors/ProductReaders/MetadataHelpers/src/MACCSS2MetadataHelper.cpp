@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #include "MACCSS2MetadataHelper.h"
 #include "ViewingAngles.hpp"
 
@@ -21,10 +21,10 @@
 #include <boost/system/error_code.hpp>
 
 template <typename PixelType, typename MasksPixelType>
-bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::is_number(const std::string& s)
+bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::is_number(const std::string &s)
 {
-    return !s.empty() && std::find_if(s.begin(),
-        s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
+    return !s.empty() &&
+           std::find_if(s.begin(), s.end(), [](char c) { return !std::isdigit(c); }) == s.end();
 }
 
 template <typename PixelType, typename MasksPixelType>
@@ -34,7 +34,8 @@ MACCSS2MetadataHelper<PixelType, MasksPixelType>::MACCSS2MetadataHelper()
 }
 
 template <typename PixelType, typename MasksPixelType>
-bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::LoadAndUpdateMetadataValues(const std::string &file)
+bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::LoadAndUpdateMetadataValues(
+    const std::string &file)
 {
     if (!this->LoadAndCheckMetadata(file)) {
         return false;
@@ -56,8 +57,9 @@ bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::LoadAndUpdateMetadataValu
     this->m_nNirBandName = "B8";
     this->m_nNarrowNirBandName = "B8A";
     this->m_nSwirBandName = "B11";
+    this->m_nSwir2BandName = "B12";
 
-    this->m_redEdgeBandNames = {"B5", "B6", "B7"};
+    this->m_redEdgeBandNames = { "B5", "B6", "B7" };
 
     this->InitializeS2Angles();
 
@@ -73,8 +75,9 @@ bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::LoadAndCheckMetadata(cons
     // the helper will return the hardcoded values from the constructor as these are not
     // present in the metadata
     if (this->m_metadata = maccsMetadataReader->ReadMetadata(file)) {
-        if (this->m_metadata->Header.FixedHeader.Mission.find(SENTINEL_MISSION_STR) != std::string::npos &&
-                this->m_metadata->Header.FixedHeader.SourceSystem == "MACCS") {
+        if (this->m_metadata->Header.FixedHeader.Mission.find(SENTINEL_MISSION_STR) !=
+                std::string::npos &&
+            this->m_metadata->Header.FixedHeader.SourceSystem == "MACCS") {
             return true;
         }
     }
@@ -82,18 +85,22 @@ bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::LoadAndCheckMetadata(cons
 }
 
 template <typename PixelType, typename MasksPixelType>
-typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetImage(const std::vector<std::string> &bandNames, int outRes)
+typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer
+MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetImage(
+    const std::vector<std::string> &bandNames, int outRes)
 {
     return GetImage(bandNames, NULL, outRes);
 }
 
 template <typename PixelType, typename MasksPixelType>
-typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetImage(const std::vector<std::string> &bandNames,
-                                                                                 std::vector<int> *pRetRelBandIdxs, int outRes)
+typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer
+MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetImage(
+    const std::vector<std::string> &bandNames, std::vector<int> *pRetRelBandIdxs, int outRes)
 {
     int minRes;
     std::map<int, std::vector<std::string>> mapResBandNames;
-    std::map<int, std::vector<int>> mapRes = GroupBandsByResolution(bandNames, minRes, mapResBandNames);
+    std::map<int, std::vector<int>> mapRes =
+        GroupBandsByResolution(bandNames, minRes, mapResBandNames);
     if (mapRes.size() == 0 || mapRes.size() > 2) {
         return NULL;
     }
@@ -112,45 +119,54 @@ typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer MAC
             (*pRetRelBandIdxs) = retRelBandIdxs;
         }
 
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageReaderType::Pointer reader = this->CreateReader(getImageFileName(curRes));
-        // if we have uniques band IDs and they are the same as the total number of bands, we just return the raster
+        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageReaderType::Pointer
+            reader = this->CreateReader(getImageFileName(curRes));
+        // if we have uniques band IDs and they are the same as the total number of bands, we just
+        // return the raster
         if (bandNames.size() == (size_t)nBandsNoForCurRes || bHasRetRelPtr) {
             // if no resampling, just return the raster
             if (outRes == -1 || outRes == curRes) {
                 return reader->GetOutput();
             }
-            float fMultiplicationFactor = ((float)curRes)/outRes;
-            return this->m_ImageResampler.getResampler(reader->GetOutput(), fMultiplicationFactor)->GetOutput();
+            float fMultiplicationFactor = ((float)curRes) / outRes;
+            return this->m_ImageResampler.getResampler(reader->GetOutput(), fMultiplicationFactor)
+                ->GetOutput();
         }
 
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer imageList = this->CreateImageList();
-        this->m_bandsExtractor.ExtractImageBands(reader->GetOutput(), imageList,
-                                           retRelBandIdxs, Interpolator_BCO);
+        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer
+            imageList = this->CreateImageList();
+        this->m_bandsExtractor.ExtractImageBands(reader->GetOutput(), imageList, retRelBandIdxs,
+                                                 Interpolator_BCO);
 
         imageList->UpdateOutputInformation();
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ListConcatenerFilterType::Pointer concat = this->CreateConcatenner();
+        typename MACCSMetadataHelperBase<PixelType,
+                                         MasksPixelType>::ListConcatenerFilterType::Pointer concat =
+            this->CreateConcatenner();
         concat->SetInput(imageList);
         concat->UpdateOutputInformation();
 
-        float fMultiplicationFactor = ((float)curRes)/outRes;
+        float fMultiplicationFactor = ((float)curRes) / outRes;
         if (fMultiplicationFactor > 1) {
-            return this->m_ImageResampler.getResampler(concat->GetOutput(), fMultiplicationFactor)->GetOutput();
+            return this->m_ImageResampler.getResampler(concat->GetOutput(), fMultiplicationFactor)
+                ->GetOutput();
         }
 
         return concat->GetOutput();
     } else {
         // we have bands from both rasters
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer imageList = this->CreateImageList();
-        std::map<int, std::vector<int>>::iterator  containerIt = mapRes.begin();
-        std::map<int, std::vector<std::string>>::iterator  containerIt2 = mapResBandNames.begin();
+        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer
+            imageList = this->CreateImageList();
+        std::map<int, std::vector<int>>::iterator containerIt = mapRes.begin();
+        std::map<int, std::vector<std::string>>::iterator containerIt2 = mapResBandNames.begin();
         std::map<std::string, int> mapBandNamesToListIdx;
-        for (int curRes: this->m_vectResolutions) {
-            typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageReaderType::Pointer reader = this->CreateReader(getImageFileName(curRes));
+        for (int curRes : this->m_vectResolutions) {
+            typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageReaderType::Pointer
+                reader = this->CreateReader(getImageFileName(curRes));
             const std::vector<int> &relBandsIdxs = containerIt->second;
             const std::vector<std::string> &resBandsNames = containerIt2->second;
-            const std::vector<int> &addedRelBandIdx = this->m_bandsExtractor.ExtractImageBands(reader->GetOutput(), imageList,
-                                                                                  relBandsIdxs, Interpolator_BCO, curRes, outRes);
-            for (int i = 0; i<resBandsNames.size(); i++) {
+            const std::vector<int> &addedRelBandIdx = this->m_bandsExtractor.ExtractImageBands(
+                reader->GetOutput(), imageList, relBandsIdxs, Interpolator_BCO, curRes, outRes);
+            for (int i = 0; i < resBandsNames.size(); i++) {
                 mapBandNamesToListIdx[resBandsNames[i]] = addedRelBandIdx[i];
             }
             containerIt++;
@@ -160,16 +176,21 @@ typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer MAC
         imageList->UpdateOutputInformation();
 
         // create the image list containing the exact order of bands as the ones received
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer imageListFinal = this->CreateImageList();
-        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ListConcatenerFilterType::Pointer concat = this->CreateConcatenner();
+        typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer
+            imageListFinal = this->CreateImageList();
+        typename MACCSMetadataHelperBase<PixelType,
+                                         MasksPixelType>::ListConcatenerFilterType::Pointer concat =
+            this->CreateConcatenner();
         int i = 0;
-        for (const std::string &bandName: bandNames) {
+        for (const std::string &bandName : bandNames) {
             // get the band in the resolutions map
-            for (int curRes: this->m_vectResolutions) {
+            for (int curRes : this->m_vectResolutions) {
                 const std::vector<std::string> &resBandsNames = mapResBandNames[curRes];
-                if (std::find(resBandsNames.begin(), resBandsNames.end(), bandName) != resBandsNames.end()) {
+                if (std::find(resBandsNames.begin(), resBandsNames.end(), bandName) !=
+                    resBandsNames.end()) {
                     // we found the band in this resolution then we get the index
-                    imageListFinal->PushBack(imageList->GetNthElement(mapBandNamesToListIdx[bandName]));
+                    imageListFinal->PushBack(
+                        imageList->GetNthElement(mapBandNamesToListIdx[bandName]));
                     if (pRetRelBandIdxs != NULL) {
                         pRetRelBandIdxs->push_back(i);
                         i++;
@@ -185,12 +206,16 @@ typename MetadataHelper<PixelType, MasksPixelType>::VectorImageType::Pointer MAC
 }
 
 template <typename PixelType, typename MasksPixelType>
-typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetImageList(const std::vector<std::string> &bandNames,
-                                                                           typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer outImgList, int outRes)
+typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer
+MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetImageList(
+    const std::vector<std::string> &bandNames,
+    typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer outImgList,
+    int outRes)
 {
     int minRes;
     std::map<int, std::vector<std::string>> mapResBandNames;
-    std::map<int, std::vector<int>> mapRes = GroupBandsByResolution(bandNames, minRes, mapResBandNames);
+    std::map<int, std::vector<int>> mapRes =
+        GroupBandsByResolution(bandNames, minRes, mapResBandNames);
     if (mapRes.size() == 0 || mapRes.size() > 2) {
         return NULL;
     }
@@ -198,33 +223,37 @@ typename MetadataHelper<PixelType, MasksPixelType>::ImageListType::Pointer MACCS
         outRes = minRes;
     }
 
-    typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer imageList = outImgList;
+    typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageListType::Pointer imageList =
+        outImgList;
     if (!imageList) {
         imageList = this->CreateImageList();
     }
     // we have bands from both rasters
     std::map<int, std::vector<int>>::iterator containerIt;
-    for (int curRes: this->m_vectResolutions) {
+    for (int curRes : this->m_vectResolutions) {
         containerIt = mapRes.find(curRes);
         if (containerIt != mapRes.end()) {
             std::vector<int> relBandsIdxs = containerIt->second;
             if (relBandsIdxs.size() > 0) {
-                typename MACCSMetadataHelperBase<PixelType, MasksPixelType>::ImageReaderType::Pointer reader = this->CreateReader(getImageFileName(curRes));
-                this->m_bandsExtractor.ExtractImageBands(reader->GetOutput(), imageList, relBandsIdxs,
-                                                   Interpolator_BCO, curRes, outRes);
+                typename MACCSMetadataHelperBase<PixelType,
+                                                 MasksPixelType>::ImageReaderType::Pointer reader =
+                    this->CreateReader(getImageFileName(curRes));
+                this->m_bandsExtractor.ExtractImageBands(
+                    reader->GetOutput(), imageList, relBandsIdxs, Interpolator_BCO, curRes, outRes);
             }
         }
     }
     return imageList;
-
 }
 
 template <typename PixelType, typename MasksPixelType>
-std::vector<std::string> MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetBandNamesForResolution(int res)
+std::vector<std::string>
+MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetBandNamesForResolution(int res)
 {
     std::vector<std::string> retVect;
     std::vector<std::string> allBands;
-    for(const CommonBandResolution& maccsBandResolution: this->m_metadata->ProductInformation.BandResolutions) {
+    for (const CommonBandResolution &maccsBandResolution :
+         this->m_metadata->ProductInformation.BandResolutions) {
         int curRes = std::stoi(maccsBandResolution.Resolution);
         if (curRes == res) {
             retVect.push_back(maccsBandResolution.BandName);
@@ -245,14 +274,17 @@ std::vector<std::string> MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetPh
 template <typename PixelType, typename MasksPixelType>
 std::vector<std::string> MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAllBandNames()
 {
-    // We are hardcoding as in MAJA we do not have anymore the 60m resolution bands described anywhere
-    return {"B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B9", "B10", "B11", "B12"};
+    // We are hardcoding as in MAJA we do not have anymore the 60m resolution bands described
+    // anywhere
+    return { "B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8", "B8A", "B9", "B10", "B11", "B12" };
 }
 
 template <typename PixelType, typename MasksPixelType>
-int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetResolutionForBand(const std::string &bandName)
+int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetResolutionForBand(
+    const std::string &bandName)
 {
-    for(const CommonBandResolution& maccsBandResolution: this->m_metadata->ProductInformation.BandResolutions) {
+    for (const CommonBandResolution &maccsBandResolution :
+         this->m_metadata->ProductInformation.BandResolutions) {
         if (maccsBandResolution.BandName == bandName) {
             return std::stoi(maccsBandResolution.Resolution);
         }
@@ -263,48 +295,54 @@ int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetResolutionForBand(const
 template <typename PixelType, typename MasksPixelType>
 std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAotImageFileName(int res)
 {
-    if(res != 20) {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
+    if (res != 20) {
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles,
+                                           "_ATB_R1");
     } else {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles,
+                                           "_ATB_R2");
     }
 }
 
 template <typename PixelType, typename MasksPixelType>
 float MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAotQuantificationValue(int res)
 {
-    typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *pInfos = ReadSpecificMACCSAotHdrFile(res);
+    typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *pInfos =
+        ReadSpecificMACCSAotHdrFile(res);
     return pInfos->m_fAotQuantificationValue;
 }
 
 template <typename PixelType, typename MasksPixelType>
 float MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAotNoDataValue(int res)
 {
-    typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *pInfos = ReadSpecificMACCSAotHdrFile(res);
+    typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *pInfos =
+        ReadSpecificMACCSAotHdrFile(res);
     return pInfos->m_fAotNoDataVal;
 }
 
 template <typename PixelType, typename MasksPixelType>
 int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAotBandIndex(int res)
 {
-    typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *pInfos = ReadSpecificMACCSAotHdrFile(res);
+    typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *pInfos =
+        ReadSpecificMACCSAotHdrFile(res);
     return pInfos->m_nAotBandIndex;
 }
 
-//template <typename PixelType, typename MasksPixelType>
-//void MACCSS2MetadataHelper<PixelType, MasksPixelType>::ReadSpecificMACCSImgHdrFile(int res)
+// template <typename PixelType, typename MasksPixelType>
+// void MACCSS2MetadataHelper<PixelType, MasksPixelType>::ReadSpecificMACCSImgHdrFile(int res)
 //{
 //    std::string fileName;
 //    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
 //    int nBandsNoForCurRes = ((res != 20) ? 4 : 6);
 //    if(res != 20) {
-//        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
-//        this->m_specificImgMetadata10M = maccsMetadataReader->ReadMetadata(fileName);
+//        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.ImageFiles,
+//        "_FRE_R1"); this->m_specificImgMetadata10M = maccsMetadataReader->ReadMetadata(fileName);
 //    } else {
-//        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R2");
-//        this->m_specificImgMetadata20M = maccsMetadataReader->ReadMetadata(fileName);
+//        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.ImageFiles,
+//        "_FRE_R2"); this->m_specificImgMetadata20M = maccsMetadataReader->ReadMetadata(fileName);
 //    }
-//    const std::unique_ptr<MACCSFileMetadata> &specificImgMetadata = ((res != 20) ? this->m_specificImgMetadata10M : this->m_specificImgMetadata20M);
+//    const std::unique_ptr<MACCSFileMetadata> &specificImgMetadata = ((res != 20) ?
+//    this->m_specificImgMetadata10M : this->m_specificImgMetadata20M);
 
 //    if((size_t)nBandsNoForCurRes > specificImgMetadata->ImageInformation.Bands.size()) {
 //        itkExceptionMacro("Invalid number of bands found in specific img xml: " <<
@@ -313,13 +351,15 @@ int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAotBandIndex(int res)
 //    }
 //}
 
-//void MACCSS2MetadataHelper::ReadSpecificMACCSCldHdrFile(int res)
+// void MACCSS2MetadataHelper::ReadSpecificMACCSCldHdrFile(int res)
 //{
 //    std::string fileName;
 //    if(res != 20) {
-//        fileName = GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
+//        fileName = GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles,
+//        "_CLD_R1");
 //    } else {
-//        fileName = GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
+//        fileName = GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles,
+//        "_CLD_R2");
 //    }
 
 //    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
@@ -327,27 +367,34 @@ int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAotBandIndex(int res)
 //}
 
 template <typename PixelType, typename MasksPixelType>
-typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *MACCSS2MetadataHelper<PixelType, MasksPixelType>::ReadSpecificMACCSAotHdrFile(int res)
+typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *
+MACCSS2MetadataHelper<PixelType, MasksPixelType>::ReadSpecificMACCSAotHdrFile(int res)
 {
     std::string fileName;
     typename MetadataHelper<PixelType, MasksPixelType>::AotInfos *pAotInfos;
-    if(res != 20) {
-        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
+    if (res != 20) {
+        fileName =
+            this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
         pAotInfos = &aotInfos10M;
     } else {
-        fileName = this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
+        fileName =
+            this->GetMACCSImageHdrName(this->m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
         pAotInfos = &aotInfos20M;
     }
     if (!pAotInfos->isInitialized) {
         MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
-        if (std::unique_ptr<MACCSFileMetadata> specificAotMetadata = maccsMetadataReader->ReadMetadata(fileName)) {
+        if (std::unique_ptr<MACCSFileMetadata> specificAotMetadata =
+                maccsMetadataReader->ReadMetadata(fileName)) {
             // add the information to the list
-            pAotInfos->m_fAotQuantificationValue = atof(specificAotMetadata->ImageInformation.AOTQuantificationValue.c_str());
-            pAotInfos->m_fAotNoDataVal = atof(specificAotMetadata->ImageInformation.AOTNoDataValue.c_str());
-            pAotInfos->m_nAotBandIndex = this->getBandIndex(specificAotMetadata->ImageInformation.Bands, "AOT");
+            pAotInfos->m_fAotQuantificationValue =
+                atof(specificAotMetadata->ImageInformation.AOTQuantificationValue.c_str());
+            pAotInfos->m_fAotNoDataVal =
+                atof(specificAotMetadata->ImageInformation.AOTNoDataValue.c_str());
+            pAotInfos->m_nAotBandIndex =
+                this->getBandIndex(specificAotMetadata->ImageInformation.Bands, "AOT");
 
-            if(pAotInfos->m_fAotQuantificationValue < 1) {
-                pAotInfos->m_fAotQuantificationValue = (1/pAotInfos->m_fAotQuantificationValue);
+            if (pAotInfos->m_fAotQuantificationValue < 1) {
+                pAotInfos->m_fAotQuantificationValue = (1 / pAotInfos->m_fAotQuantificationValue);
             }
             pAotInfos->isInitialized = true;
         }
@@ -371,31 +418,38 @@ void MACCSS2MetadataHelper::ReadSpecificMACCSMskHdrFile(int res)
 */
 
 template <typename PixelType, typename MasksPixelType>
-std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getImageFileName(int res) {
-    if(res != 20) {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
+std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getImageFileName(int res)
+{
+    if (res != 20) {
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles,
+                                           "_FRE_R1");
     } else {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles, "_FRE_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.ImageFiles,
+                                           "_FRE_R2");
     }
 }
 
 template <typename PixelType, typename MasksPixelType>
 std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getCloudFileName(int res)
 {
-    if(res != 20) {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
+    if (res != 20) {
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles,
+                                           "_CLD_R1");
     } else {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles,
+                                           "_CLD_R2");
     }
 }
 
 template <typename PixelType, typename MasksPixelType>
 std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getWaterFileName(int res)
 {
-    if(res != 20) {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
+    if (res != 20) {
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles,
+                                           "_MSK_R1");
     } else {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_MSK_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles,
+                                           "_MSK_R2");
     }
 }
 
@@ -409,23 +463,26 @@ std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getSnowFileName(in
 template <typename PixelType, typename MasksPixelType>
 std::string MACCSS2MetadataHelper<PixelType, MasksPixelType>::getQualityFileName(int res)
 {
-    if(res != 20) {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_QLT_R1");
+    if (res != 20) {
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles,
+                                           "_QLT_R1");
     } else {
-        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles, "_QLT_R2");
+        return this->GetMACCSImageFileName(this->m_metadata->ProductOrganization.AnnexFiles,
+                                           "_QLT_R2");
     }
 }
 
 template <typename PixelType, typename MasksPixelType>
-std::vector<MetadataHelperViewingAnglesGrid> MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetDetailedViewingAngles(int res)
+std::vector<MetadataHelperViewingAnglesGrid>
+MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetDetailedViewingAngles(int res)
 {
-    for(unsigned int i = 0; i<this->m_maccsBandViewingAngles.size(); i++) {
+    for (unsigned int i = 0; i < this->m_maccsBandViewingAngles.size(); i++) {
         MACCSBandViewingAnglesGrid maccsGrid = this->m_maccsBandViewingAngles[i];
-        //Return only the angles of the bands for the current resolution
-        if(this->BandAvailableForResolution(maccsGrid.BandId, res)) {
+        // Return only the angles of the bands for the current resolution
+        if (this->BandAvailableForResolution(maccsGrid.BandId, res)) {
             MetadataHelperViewingAnglesGrid mhGrid;
             mhGrid.BandId = maccsGrid.BandId;
-            //mhGrid.DetectorId = maccsGrid.DetectorId;
+            // mhGrid.DetectorId = maccsGrid.DetectorId;
             mhGrid.Angles.Azimuth.ColumnStep = maccsGrid.Angles.Azimuth.ColumnStep;
             mhGrid.Angles.Azimuth.ColumnUnit = maccsGrid.Angles.Azimuth.ColumnUnit;
             mhGrid.Angles.Azimuth.RowStep = maccsGrid.Angles.Azimuth.RowStep;
@@ -445,21 +502,26 @@ std::vector<MetadataHelperViewingAnglesGrid> MACCSS2MetadataHelper<PixelType, Ma
 }
 
 template <typename PixelType, typename MasksPixelType>
-const CommonResolution& MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetMACCSResolutionInfo(int nResolution) {
-    for(const CommonResolution& maccsRes: this->m_metadata->ImageInformation.Resolutions) {
-        if(std::atoi(maccsRes.Id.c_str()) == nResolution) {
+const CommonResolution &
+MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetMACCSResolutionInfo(int nResolution)
+{
+    for (const CommonResolution &maccsRes : this->m_metadata->ImageInformation.Resolutions) {
+        if (std::atoi(maccsRes.Id.c_str()) == nResolution) {
             return maccsRes;
         }
     }
-    itkExceptionMacro("No resolution structure was found in the main xml for S2 resolution : " << nResolution);
+    itkExceptionMacro(
+        "No resolution structure was found in the main xml for S2 resolution : " << nResolution);
 }
 
 template <typename PixelType, typename MasksPixelType>
-std::vector<CommonBand> MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAllMACCSBandsInfos() {
+std::vector<CommonBand> MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAllMACCSBandsInfos()
+{
     // Sentinel 2
     std::vector<CommonBand> maccsBands;
     int bandIdx = 1;
-    for(const CommonBandWavelength& maccsBandWavelength: this->m_metadata->ProductInformation.BandWavelengths) {
+    for (const CommonBandWavelength &maccsBandWavelength :
+         this->m_metadata->ProductInformation.BandWavelengths) {
         CommonBand band;
         band.Id = std::to_string(bandIdx);
         band.Name = maccsBandWavelength.BandName;
@@ -470,38 +532,42 @@ std::vector<CommonBand> MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetAll
 }
 
 template <typename PixelType, typename MasksPixelType>
-void MACCSS2MetadataHelper<PixelType, MasksPixelType>::InitializeS2Angles() {
+void MACCSS2MetadataHelper<PixelType, MasksPixelType>::InitializeS2Angles()
+{
     this->m_bHasGlobalMeanAngles = true;
     this->m_bHasBandMeanAngles = true;
     this->m_bHasDetailedAngles = true;
     this->m_detailedAnglesGridSize = 23;
 
     // update the solar mean angle
-    this->m_solarMeanAngles.azimuth = this->m_metadata->ProductInformation.MeanSunAngle.AzimuthValue;
+    this->m_solarMeanAngles.azimuth =
+        this->m_metadata->ProductInformation.MeanSunAngle.AzimuthValue;
     this->m_solarMeanAngles.zenith = this->m_metadata->ProductInformation.MeanSunAngle.ZenithValue;
 
     // first compute the total number of bands to add into this->m_sensorBandsMeanAngles
     unsigned int nMaxBandId = 0;
-    std::vector<CommonMeanViewingIncidenceAngle> angles = this->m_metadata->ProductInformation.MeanViewingIncidenceAngles;
+    std::vector<CommonMeanViewingIncidenceAngle> angles =
+        this->m_metadata->ProductInformation.MeanViewingIncidenceAngles;
     bool bHasBandIds = true;
-    for(unsigned int i = 0; i<angles.size(); i++) {
+    for (unsigned int i = 0; i < angles.size(); i++) {
         if (!is_number(angles[i].BandId)) {
             bHasBandIds = false;
             break;
         }
         unsigned int anglesBandId = std::atoi(angles[i].BandId.c_str());
-        if(nMaxBandId < anglesBandId) {
+        if (nMaxBandId < anglesBandId) {
             nMaxBandId = anglesBandId;
         }
     }
-    if(bHasBandIds && nMaxBandId+1 != angles.size()) {
-        std::cout << "ATTENTION: Number of mean viewing angles different than the maximum band + 1 " << std::endl;
+    if (bHasBandIds && nMaxBandId + 1 != angles.size()) {
+        std::cout << "ATTENTION: Number of mean viewing angles different than the maximum band + 1 "
+                  << std::endl;
     }
     // compute the array size
-    unsigned int nArrSize = (nMaxBandId > angles.size() ? nMaxBandId+1 : angles.size());
+    unsigned int nArrSize = (nMaxBandId > angles.size() ? nMaxBandId + 1 : angles.size());
     // update the viewing mean angle
     this->m_sensorBandsMeanAngles.resize(nArrSize);
-    for(unsigned int i = 0; i<angles.size(); i++) {
+    for (unsigned int i = 0; i < angles.size(); i++) {
         this->m_sensorBandsMeanAngles[i].azimuth = angles[i].Angles.AzimuthValue;
         this->m_sensorBandsMeanAngles[i].zenith = angles[i].Angles.ZenithValue;
     }
@@ -526,29 +592,43 @@ void MACCSS2MetadataHelper<PixelType, MasksPixelType>::InitializeS2Angles() {
         this->m_allDetectorsDetailedViewingAngles.push_back(mhGrid);
     }
     // extract the detailed viewing and solar angles
-    this->m_maccsBandViewingAngles = ComputeViewingAngles(this->m_metadata->ProductInformation.ViewingAngles);
+    this->m_maccsBandViewingAngles =
+        ComputeViewingAngles(this->m_metadata->ProductInformation.ViewingAngles);
 
-    this->m_detailedSolarAngles.Azimuth.ColumnStep = this->m_metadata->ProductInformation.SolarAngles.Azimuth.ColumnStep;
-    this->m_detailedSolarAngles.Azimuth.ColumnUnit = this->m_metadata->ProductInformation.SolarAngles.Azimuth.ColumnUnit;
-    this->m_detailedSolarAngles.Azimuth.RowStep = this->m_metadata->ProductInformation.SolarAngles.Azimuth.RowStep;
-    this->m_detailedSolarAngles.Azimuth.RowUnit = this->m_metadata->ProductInformation.SolarAngles.Azimuth.RowUnit;
-    this->m_detailedSolarAngles.Azimuth.Values = this->m_metadata->ProductInformation.SolarAngles.Azimuth.Values;
+    this->m_detailedSolarAngles.Azimuth.ColumnStep =
+        this->m_metadata->ProductInformation.SolarAngles.Azimuth.ColumnStep;
+    this->m_detailedSolarAngles.Azimuth.ColumnUnit =
+        this->m_metadata->ProductInformation.SolarAngles.Azimuth.ColumnUnit;
+    this->m_detailedSolarAngles.Azimuth.RowStep =
+        this->m_metadata->ProductInformation.SolarAngles.Azimuth.RowStep;
+    this->m_detailedSolarAngles.Azimuth.RowUnit =
+        this->m_metadata->ProductInformation.SolarAngles.Azimuth.RowUnit;
+    this->m_detailedSolarAngles.Azimuth.Values =
+        this->m_metadata->ProductInformation.SolarAngles.Azimuth.Values;
 
-    this->m_detailedSolarAngles.Zenith.ColumnStep = this->m_metadata->ProductInformation.SolarAngles.Zenith.ColumnStep;
-    this->m_detailedSolarAngles.Zenith.ColumnUnit = this->m_metadata->ProductInformation.SolarAngles.Zenith.ColumnUnit;
-    this->m_detailedSolarAngles.Zenith.RowStep = this->m_metadata->ProductInformation.SolarAngles.Zenith.RowStep;
-    this->m_detailedSolarAngles.Zenith.RowUnit = this->m_metadata->ProductInformation.SolarAngles.Zenith.RowUnit;
-    this->m_detailedSolarAngles.Zenith.Values = this->m_metadata->ProductInformation.SolarAngles.Zenith.Values;
+    this->m_detailedSolarAngles.Zenith.ColumnStep =
+        this->m_metadata->ProductInformation.SolarAngles.Zenith.ColumnStep;
+    this->m_detailedSolarAngles.Zenith.ColumnUnit =
+        this->m_metadata->ProductInformation.SolarAngles.Zenith.ColumnUnit;
+    this->m_detailedSolarAngles.Zenith.RowStep =
+        this->m_metadata->ProductInformation.SolarAngles.Zenith.RowStep;
+    this->m_detailedSolarAngles.Zenith.RowUnit =
+        this->m_metadata->ProductInformation.SolarAngles.Zenith.RowUnit;
+    this->m_detailedSolarAngles.Zenith.Values =
+        this->m_metadata->ProductInformation.SolarAngles.Zenith.Values;
 }
 
 template <typename PixelType, typename MasksPixelType>
-bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::BandAvailableForResolution(const std::string &bandId, int nRes) {
+bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::BandAvailableForResolution(
+    const std::string &bandId, int nRes)
+{
     // Sentinel 2
     int nBand = std::atoi(bandId.c_str());
-    if(nBand < this->m_metadata->ProductInformation.BandResolutions.size()) {
-        const CommonBandResolution& maccsBandResolution = this->m_metadata->ProductInformation.BandResolutions[nBand];
+    if (nBand < this->m_metadata->ProductInformation.BandResolutions.size()) {
+        const CommonBandResolution &maccsBandResolution =
+            this->m_metadata->ProductInformation.BandResolutions[nBand];
         int nBandRes = std::atoi(maccsBandResolution.Resolution.c_str());
-        if(nBandRes == nRes) {
+        if (nBandRes == nRes) {
             return true;
         }
     }
@@ -556,8 +636,11 @@ bool MACCSS2MetadataHelper<PixelType, MasksPixelType>::BandAvailableForResolutio
 }
 
 template <typename PixelType, typename MasksPixelType>
-std::map<int, std::vector<int>> MACCSS2MetadataHelper<PixelType, MasksPixelType>::GroupBandsByResolution(const std::vector<std::string> &bandNames, int &minRes,
-                                                                  std::map<int, std::vector<std::string>> &mapBandNames)
+std::map<int, std::vector<int>>
+MACCSS2MetadataHelper<PixelType, MasksPixelType>::GroupBandsByResolution(
+    const std::vector<std::string> &bandNames,
+    int &minRes,
+    std::map<int, std::vector<std::string>> &mapBandNames)
 {
     std::map<int, std::vector<int>> mapRes;
     std::map<int, std::vector<int>>::iterator containerIt;
@@ -565,24 +648,25 @@ std::map<int, std::vector<int>> MACCSS2MetadataHelper<PixelType, MasksPixelType>
 
     minRes = -1;
     for (const std::string &bandName : bandNames) {
-        int bandIdx = this->GetRelativeBandIdx(bandName) -1;
+        int bandIdx = this->GetRelativeBandIdx(bandName) - 1;
         int curRes = this->GetResolutionForBand(bandName);
         if (minRes == -1 || curRes < minRes) {
             minRes = curRes;
         }
-        if (std::find(this->m_vectResolutions.begin(), this->m_vectResolutions.end(), curRes) == this->m_vectResolutions.end()) {
+        if (std::find(this->m_vectResolutions.begin(), this->m_vectResolutions.end(), curRes) ==
+            this->m_vectResolutions.end()) {
             // ignore the 60m resolution or invalid resolutions
             continue;
         }
         containerIt = mapRes.find(curRes);
         containerIt2 = mapBandNames.find(curRes);
-        if(containerIt != mapRes.end()) {
+        if (containerIt != mapRes.end()) {
             containerIt->second.push_back(bandIdx);
             containerIt2->second.push_back(bandName);
         } else {
             // add it into the container
-            mapRes[curRes] = {bandIdx};
-            mapBandNames[curRes] = {bandName};
+            mapRes[curRes] = { bandIdx };
+            mapBandNames[curRes] = { bandName };
         }
     }
 
@@ -591,8 +675,10 @@ std::map<int, std::vector<int>> MACCSS2MetadataHelper<PixelType, MasksPixelType>
 
 // Get the id of the band. Return -1 if band not found.
 template <typename PixelType, typename MasksPixelType>
-int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetRelativeBandIdx(const std::string &bandName) {
-    for(const CommonResolution &resInfo: this->m_metadata->ImageInformation.Resolutions) {
+int MACCSS2MetadataHelper<PixelType, MasksPixelType>::GetRelativeBandIdx(
+    const std::string &bandName)
+{
+    for (const CommonResolution &resInfo : this->m_metadata->ImageInformation.Resolutions) {
         int bandIdx = this->getBandIndex(resInfo.Bands, bandName);
         if (bandIdx != -1) {
             return bandIdx;
