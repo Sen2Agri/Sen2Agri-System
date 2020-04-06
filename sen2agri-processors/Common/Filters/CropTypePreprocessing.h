@@ -167,6 +167,7 @@ public:
 
 private:
     bool m_IncludeRedEdge;
+    bool m_UseSwir2Band;
 
     TemporalResamplingFilterListType::Pointer m_TemporalResamplers;
     CropTypeFeatureExtractionFilterListType::Pointer m_FeatureExtractors;
