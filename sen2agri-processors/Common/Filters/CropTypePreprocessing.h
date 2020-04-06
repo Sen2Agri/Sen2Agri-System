@@ -62,7 +62,7 @@ public:
 
     itkSetMacro(IncludeRedEdge, bool);
     itkGetMacro(IncludeRedEdge, bool);
-    itkSetMacro(IncludeRedEdge, bool);
+    itkSetMacro(UseSwir2Band, bool);
     itkGetMacro(UseSwir2Band, bool);
 
     CropTypePreprocessing() : m_IncludeRedEdge(), m_UseSwir2Band()
