@@ -1313,7 +1313,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 <div id="main">
 	<div id="main2">
 		<div id="main3">
-			<!-- Start code for adding site---------- -->
+			<!-- Start code for adding site -->
 			<?php
 			?>
 			<div class="panel panel-default create-site">
@@ -1326,7 +1326,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 						// admin ?>
 						<div class="panel-heading row"><input name="addsite" type="button" class="add-edit-btn" value="Create new site" onclick="formAddSite()" style="width: 200px"></div>
 					<?php } ?>
-					<!---------------------------  form  add site ------------------------>
+					<!--  form  add site -->
 					<div class="add-edit-site" id="div_addsite" style="display: none;">
 						<form enctype="multipart/form-data" id="siteform" action="create_site.php" method="post">
 							<div class="row">
@@ -1368,9 +1368,9 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 							</div>
 						</form>
 					</div>
-					<!---------------------------- end form add ---------------------------------->
+					<!-- end form add -->
 
-					<!---------------------------  form upload files ------------------------>
+					<!--  form upload files -->
 					<div class="add-edit-site" id="div_uploadfiles" style="display:none;">
 						<form enctype="multipart/form-data" id="siteform_upload" action="create_site.php" method="post">
 							<div class="row">
@@ -1464,9 +1464,9 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 							</div>
 						</div>
 					</div>
-					<!---------------------------- end form Upload ---------------------------------->
+					<!-- end form Upload -->
 					
-					<!---------------------------  form  delete site ------------------------>
+					<!--  form  delete site -->
 					<div class="add-edit-site" id="div_deletesite" style="display: none;">
 						<form enctype="multipart/form-data" id="siteform_delete" action="create_site.php" method="post">
 							<div class="row">
@@ -1488,9 +1488,9 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 							</div>
 						</form>
 					</div>
-					<!---------------------------- end form Delete ---------------------------------->
+					<!-- end form Delete -->
 
-					<!---------------------------- form edit sites ------------------------------->
+					<!-- form edit sites -->
 					<div class="add-edit-site" id="div_editsite" style="display: none;">
 						<!--   onsubmit="return doUploadChangedFiles()" -->
 						<form enctype="multipart/form-data" id="siteform_edit" action="create_site.php" method="post">
@@ -1512,7 +1512,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 									<div class="row">
 										<div class="col-md-1" style="width:10%;padding-right:0px">
 											<div class="form-group form-group-sm">
-												<input class="chkS2" id="chkS2Edit" type="checkbox" name="chkS2Edit" value="S2" checked="checked" disabled ">
+												<input class="chkS2" id="chkS2Edit" type="checkbox" name="chkS2Edit" value="S2" checked="checked" disabled>
 												<label class="control-label" for="chkS2Edit">S2</label>
 											</div>
 										</div>
@@ -1532,7 +1532,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 										</div>
 										<div class="col-md-9" >
 									   		<div class="form-group form-group-sm">
-												<textarea class='form-control' style="resize: vertical;" rows="3" name="L8Tiles""></textarea>
+												<textarea class='form-control' style="resize: vertical;" rows="3" name="L8Tiles"></textarea>
 												<span class="invalidTilesL8"></span>
 											</div>
 										</div>
@@ -1578,9 +1578,9 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 							</div>
 						</form>
 					</div>
-					<!------------------------------ end form edit sites -------------------------------->
+					<!-- end form edit sites -->
 
-					<!------------------------------ list of sites -------------------------------------->
+					<!-- list of sites -->
 					<table class="table table-striped">
 						<thead>
 							<tr>
@@ -1592,7 +1592,7 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 							</tr>
 							<tr>
 								<th>
-									<table class="subtable"><thead><th>Season name</th><th>Season start</th><th>Season mid</th><th>Season end</th><th>Enabled</th></thead><tbody></tbody></table>
+									<table class="subtable"><thead><tr><th>Season name</th><th>Season start</th><th>Season mid</th><th>Season end</th><th>Enabled</th></tr></thead><tbody></tbody></table>
 								</th>
 							</tr>
 						</thead>
@@ -1625,15 +1625,15 @@ if (isset ( $_REQUEST ['delete_site_confirm'] ) && $_REQUEST ['delete_site_confi
 										<td class="seasons"></td>
 										<td class="link"><a onclick='formEditSite(<?= $siteId ?>,"<?= $siteName ?>","<?= $shortName ?>",<?= $site_enabled ? "true" : "false" ?>,
 										<?= json_encode($existingUploadedFiles) ?>,  "<?= $siteL8Enabled ?>")'>Edit</a></td>
-										<td><input type="checkbox" name="enabled-checkbox"<?= $site_enabled ? "checked" : "" ?>></td>
+										<td><input type="checkbox" name="enabled-checkbox"<?= $site_enabled ? " checked" : "" ?>></td>
 									</tr>
 						<?php  } } } } ?>
 						</tbody>
 					</table>
-					<!------------------------------ end list sites ------------------------------>
+					<!-- end list sites -->
 				</div>
 			</div>
-			<!-- End code for adding site---------- -->
+			<!-- End code for adding site -->
 		</div>
 	</div>
 </div>
@@ -1750,9 +1750,11 @@ $(document).ready( function() {
 			error.appendTo(element.parent());
 		},
 		submitHandler: function(form) {
+			$(form).validate().settings.ignore = "*";
+			return true;
 			// To POST the new site, use a form's clone in order to prevent cyclic revalidation
-			$(document.body).append($(form).clone().attr("name", "siteform_clone").css("display", "none"));
-			$("form[name=siteform_clone").submit();
+			//$(document.body).append($(form).clone().attr("name", "siteform_clone").css("display", "none"));
+			//$("form[name=siteform_clone").submit();
 		},
 		// set this class to error-labels to indicate valid fields
 		success: function(label) {
