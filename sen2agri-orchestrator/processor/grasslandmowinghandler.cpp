@@ -314,37 +314,43 @@ ProcessorJobDefinitionParams GrasslandMowingHandler::GetProcessingDefinitionImpl
                                  "\"end_date\": \"" + endDate.toString("yyyyMMdd") + "\", " +
                                  "\"season_start_date\": \"" + seasonStartDate.toString("yyyyMMdd") + "\", " +
                                  "\"season_end_date\": \"" + seasonEndDate.toString("yyyyMMdd") + "\"");
+
+    InputProductsType prdType = all;
     if(requestOverrideCfgValues.contains("product_type")) {
         const ConfigurationParameterValue &productType = requestOverrideCfgValues["product_type"];
         params.jsonParameters.append(", \"input_product_types\": \"" + productType.value + "\"}");
+        prdType = GrasslandMowingExecConfig::GetInputProductsType(productType.value);
     } else {
         params.jsonParameters.append("}");
     }
 
     params.isValid = true;
 
-//    params.productList = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
-//    params.productList += ctx.GetProducts(siteId, (int)ProductType::S4CS1L2AmpProductTypeId, startDate, endDate);
-//    params.productList += ctx.GetProducts(siteId, (int)ProductType::S4CS1L2CoheProductTypeId, startDate, endDate);
-
-//    // Normally for PhenoNDVI we need at least 4 products available in order to be able to create a S4C_L4B product
-//    // but if we do not return here, the schedule block waiting for products (that might never happen)
-//    bool waitForAvailProcInputs = (mapCfg["processor.s4c_l4b.sched_wait_proc_inputs"].value.toInt() != 0);
-//    if((waitForAvailProcInputs == false) || (params.productList.size() >= 4)) {
-//        params.isValid = true;
-//        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for S4C_L4B a number "
-//                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
-//                      .arg(params.productList.size())
-//                      .arg(siteId)
-//                      .arg(startDate.toString())
-//                      .arg(endDate.toString()));
-//    } else {
-//        Logger::debug(QStringLiteral("Scheduled job for S4C_L4B and site ID %1 with start date %2 and end date %3 "
-//                                     "will not be executed (no products)!")
-//                      .arg(siteId)
-//                      .arg(startDate.toString())
-//                      .arg(endDate.toString()));
-//    }
+    if ((prdType & L3B) != 0) {
+        // we should have at least some products in the last 60 days to launch the processing
+        if (startDate.daysTo(endDate) > 60) {
+            const QDateTime &bufIntervalTime = endDate.addDays(-60);
+            ProductList l3bPrdsList = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, bufIntervalTime, endDate);
+            if (l3bPrdsList.size() == 0) {
+                params.isValid = false;
+                Logger::debug(QStringLiteral("Executing S4C_L4B scheduled job. No NDVI products were found 60 days before "
+                                             "scheduled time for site ID %1 within interval [ %2 and %3]! "
+                                             "The schedule for this date will wait ...")
+                              .arg(siteId).arg(bufIntervalTime.toString()).arg(endDate.toString()));
+            }
+        }
+    }
+    if ((prdType & L2_S1) != 0) {
+        const QDateTime &bufIntervalTime = endDate.addDays(-15);
+        const ProductList &ampPrdsList = ctx.GetProducts(siteId, (int)ProductType::S4CS1L2AmpProductTypeId, bufIntervalTime, endDate);
+        const ProductList &cohePrdsList = ctx.GetProducts(siteId, (int)ProductType::S4CS1L2CoheProductTypeId, bufIntervalTime, endDate);
+        if(ampPrdsList.size() == 0 && cohePrdsList.size() == 0) {
+            params.isValid = false;
+            Logger::debug(QStringLiteral("Executing S4C_L4B scheduled job. No S1 products were found 15 days before scheduled time "
+                                         "for site ID %1 within interval [ %2 and %3]! The schedule for this date will wait ...")
+                          .arg(siteId).arg(bufIntervalTime.toString()).arg(endDate.toString()));
+        }
+    }
 
     return params;
 }
