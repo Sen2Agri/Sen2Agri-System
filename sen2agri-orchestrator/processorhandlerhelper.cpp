@@ -18,14 +18,18 @@
 //       not the name of the satellite as it appears inside the file metadata of product (that can be SENTINEL-2A, LANDSAT_8 etc.)
 /* static */
 QMap<QString, ProcessorHandlerHelper::L2MetaTileNameInfos> ProcessorHandlerHelper::m_mapSensorL2ATileMetaFileInfos =
-    {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 2, "hdr", R"(S2[A-D]_OPER_SSC_L2VALD_(\d{2}[A-Z]{3})_.*_(\d{8}).HDR)", false, 1}},
-     {"SENTINEL2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 1, "xml", R"(SENTINEL2[A-D]_(\d{8})-(\d{6})-(\d{3})_L2A_T(\d{2})([A-Za-z]{3})_.*_MTD_ALL\.xml)", false, -1}},
-     {"MTD_MSIL2A", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 1, "xml", R"(S2[A-D]_MSIL2A_(\d{8})T\d{6}_.*T(\d{2}[A-Z]{3})_.*\.SAFE)", true, -1}},
-     {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, 2, "hdr", R"(L8_.*_L8C_L2VALD_(\d{6})_(\d{8}).HDR)", false, 1}},
-     {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, 3, "xml", "", false, -1}}, //SPOT4_*_*_<DATE>_*_*.xml
-     {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, 3, "xml", "", false, -1}}, //SPOT5_*_*_<DATE>_*_*.xml
+        // MACCS product name ex. S2A_OPER_SSC_L2VALD_29SMR____20151209.HDR
+    {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, "hdr", R"(S2[A-D]_OPER_SSC_L2VALD_(\d{2}[A-Z]{3})_.*_(\d{8}).HDR)", false, 1, 2}},
+     // MAJA product name ex. SENTINEL2A_20180124-110332-457_L2A_T30TYP_C_V1-0_MTD_ALL.xml
+     {"SENTINEL2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, "xml", R"(SENTINEL2[A-D]_(\d{8})-(\d{6})-(\d{3})_L2A_T(\d{2}[A-Za-z]{3})_.*_MTD_ALL\.xml)", false, 4, 1}},
+     // Sen2Cor product name ex. S2A_MSIL2A_20200205T100211_N0214_R122_T33UVQ_20200205T114355.SAFE
+     {"MTD_MSIL2A", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, "xml", R"(S2[A-D]_MSIL2A_(\d{8})T\d{6}_.*T(\d{2}[A-Z]{3})_.*\.SAFE)", true, 2, 1}},
+     // L8 (MACCS and MAJA) product name ex. L8_TEST_L8C_L2VALD_196030_20191003.HDR
+     {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, "hdr", R"(L8_.*_L8C_L2VALD_(\d{6})_(\d{8}).HDR)", false, 1, 2}},
+     {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, "xml", "", false, -1, 3}}, //SPOT4_*_*_<DATE>_*_*.xml
+     {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, "xml", "", false, -1, 3}}, //SPOT5_*_*_<DATE>_*_*.xml
      // this prefix is impossible to occur in the file name
-     {INVALID_FILE_SEQUENCE, {ProcessorHandlerHelper::L2_PRODUCT_TYPE_UNKNOWN, ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN, -1, INVALID_FILE_SEQUENCE, "", false, -1}}
+     {INVALID_FILE_SEQUENCE, {ProcessorHandlerHelper::L2_PRODUCT_TYPE_UNKNOWN, ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN, INVALID_FILE_SEQUENCE, "", false, -1, -1}}
 };
 
 QMap<QString, ProductType> ProcessorHandlerHelper::m_mapHighLevelProductTypeInfos = {
@@ -60,6 +64,16 @@ ProductType ProcessorHandlerHelper::GetProductTypeFromFileName(const QString &pa
     } else {
         name = info.baseName();
     }
+
+    // check if it is an L2A product
+    const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(info);
+    if(infos.productType != L2_PRODUCT_TYPE_UNKNOWN) {
+        return ProductType::L2AProductTypeId;
+    }
+
+    // check if it is a higher level product
+    // TODO: Maybe here we should add a more generic mechanism to detect if is a project high level product, as for L2A
+    //      to avoid the conditions below
     QStringList nameWords = name.split("_");
     if(nameWords.size() > 2) {
         // we have an higher level product or SEN4CAP L2A product
@@ -68,11 +82,6 @@ ProductType ProcessorHandlerHelper::GetProductTypeFromFileName(const QString &pa
             i = m_mapHighLevelProductTypeInfos.find(nameWords[1]);
             if(i != m_mapHighLevelProductTypeInfos.end()) {
                 return i.value();
-            }
-        } else {
-            const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(info);
-            if(infos.productType != L2_PRODUCT_TYPE_UNKNOWN) {
-                return ProductType::L2AProductTypeId;
             }
         }
     }
@@ -87,14 +96,21 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &
     QString fileNameWithoutExtension = info.completeBaseName();
     satelliteId = SATELLITE_ID_TYPE_UNKNOWN;
     //QString extension = info.suffix();
-    // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
-    QStringList pieces = fileNameWithoutExtension.split("_");
-
     ProductType productType = GetProductTypeFromFileName(path, false);
     if(productType != ProductType::InvalidProductTypeId) {
         if(productType == ProductType::L2AProductTypeId) {
             const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(info);
             satelliteId = infos.satelliteIdType;
+            const QString &extrStr = GetL2AFieldFromPath(path, L2MetaTileNameInfos::TILE_IDX);
+            if (extrStr.size() > 0) {
+                return extrStr;
+            }
+            // TODO: The if else below I think might be removed. The generic part above should do the job
+            // If tests with MACCS, MAJA (both S2 and L8) and Sen2Cor are succesful
+
+            // /////////////    START TO REMOVE //////////////////////////////
+            // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
+            QStringList pieces = fileNameWithoutExtension.split("_");
             if(infos.productType == L2_PRODUCT_TYPE_S2) {
                 // TODO: Here we should do it generic and use the REGEX from the L2MetaTileNameInfos
                 if((pieces.size() == 9) && (pieces[5] == "")) {
@@ -114,7 +130,10 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &
                     return QString(pieces[4]);
                 }
             }
+            // /////////////    END TO REMOVE //////////////////////////////
         } else {
+            // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
+            QStringList pieces = fileNameWithoutExtension.split("_");
             for (const QString &piece : pieces) {
                 int pieceLen = piece.length();
                 if (((pieceLen == 6) || (pieceLen == 7)) && (piece.at(0) == 'T')) {
@@ -654,12 +673,24 @@ ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::GetL2ASatelliteF
     return GetL2AProductTileNameInfos(info).satelliteIdType;
 }
 
-QDateTime ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path) {
+QString ProcessorHandlerHelper::GetL2AFieldFromPath(const QString &path, ProcessorHandlerHelper::L2MetaTileNameInfos::REGEX_IDX regexIdx) {
     QFileInfo info(path);
 
     const ProcessorHandlerHelper::L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(info);
-    int dateIdxInName = infos.dateIdxInName;
-    QString dateStr;
+    int fieldIdxInName = -1;
+    switch (regexIdx)
+    {
+        case L2MetaTileNameInfos::TILE_IDX:
+            fieldIdxInName = infos.tileIdxInName;
+            break;
+        case L2MetaTileNameInfos::DATE_IDX:
+            fieldIdxInName = infos.dateIdxInName;
+            break;
+    }
+    QString extractedStr;
+    if (fieldIdxInName < 0) {
+        return extractedStr;
+    }
 
     QString name;
     if(info.isDir()) {
@@ -672,22 +703,27 @@ QDateTime ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path)
             name = info.fileName();
         }
     }
-    if (infos.tileNameRegex.size() > 0 && dateIdxInName >= 0) {
+    if (infos.tileNameRegex.size() > 0) {
         QRegularExpression rex(infos.tileNameRegex);
         QRegularExpression re(rex);
         const QRegularExpressionMatch &match = re.match(name);
         if (match.hasMatch()) {
-            dateStr = match.captured(dateIdxInName);
+            extractedStr = match.captured(fieldIdxInName);
         }
     } else {
+        // otherwise, check by splitting by _
         QStringList nameWords = name.split("_");
-        if(dateIdxInName >= 0 && dateIdxInName < nameWords.size()) {
-            dateStr = nameWords[dateIdxInName];
+        if(fieldIdxInName >= 0 && fieldIdxInName < nameWords.size()) {
+            extractedStr = nameWords[fieldIdxInName];
         }
     }
+    return extractedStr;
+}
 
-    if (dateStr.size() > 0) {
-        return QDateTime::fromString(dateStr, "yyyyMMdd");
+QDateTime ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path) {
+    const QString &extrStr = GetL2AFieldFromPath(path, L2MetaTileNameInfos::DATE_IDX);
+    if (extrStr.size() > 0) {
+        return QDateTime::fromString(extrStr, "yyyyMMdd");
     }
 
     return QDateTime();

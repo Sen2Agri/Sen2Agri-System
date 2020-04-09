@@ -24,18 +24,21 @@ public:
                   SATELLITE_ID_TYPE_SPOT5 = 4} SatelliteIdType;
 
     typedef struct {
+        typedef enum {TILE_IDX=0,
+                     DATE_IDX} REGEX_IDX;
         L2ProductType productType;
         SatelliteIdType satelliteIdType;
-        // position of the date in the name when split by _
-        int dateIdxInName;
         // The expected extension of the tile metadata file
         QString extension;
         //Regext for the product name
         QString tileNameRegex;
         // If set, this means that the regex is applied on parent dir name
         bool regexOnParentFolder;
-        // TODO: Not used for now
+        // the idx of the tile in the tile name regex
         int tileIdxInName;
+        // position of the date group in the regex if regex is given
+        // or in the name when split by _
+        int dateIdxInName;
     } L2MetaTileNameInfos;
 
     typedef struct InfoTileFile {
@@ -97,6 +100,7 @@ public:
     static const L2MetaTileNameInfos &GetL2AProductTileNameInfos(const QFileInfo &metaFileInfo);
     static SatelliteIdType GetL2ASatelliteFromTile(const QString &tileMetadataPath);
     static L2ProductType GetL2AProductTypeFromTile(const QString &tileMetadataPath);
+    static QString GetL2AFieldFromPath(const QString &path, L2MetaTileNameInfos::REGEX_IDX regexIdx);
     static QDateTime GetL2AProductDateFromPath(const QString &path);
     static bool IsValidL2AMetadataFileName(const QString &path);
     static bool GetL2AIntevalFromProducts(const QStringList &productsList, QDateTime &minTime, QDateTime &maxTime);
