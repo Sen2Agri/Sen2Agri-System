@@ -214,7 +214,7 @@ def getPracticeOutFile(config, conn, site_id, practice):
     if not os.path.exists(practicesDir):
         os.makedirs(practicesDir) 
 
-    practiceFileName = "Sen4CAP_L4C_" + practice + "_" + config.country + "_" + str(config.year) + ".csv"
+    practiceFileName = "Sen4CAP_L4C_" + practice + "_" + str(config.year) + ".csv"
     return os.path.join(practicesDir, practiceFileName)
 
 def hasPracticeImported(conn, site_id, practice, year):

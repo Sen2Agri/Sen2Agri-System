@@ -209,7 +209,7 @@ def import_agricultural_practices(config, conn, pg_path, file, site_id):
         
     with conn.cursor() as cursor:
         query = SQL(
-            """ delete from  l4c_practices where site_id = {} and practice_short_name = {} and year = {}  and country = {} """
+            """ delete from  l4c_practices where site_id = {} and practice_short_name = {} and year = {} """
         ).format(Literal(site_id), Literal(config.practice), Literal(config.year), Literal(config.country))
         print(query.as_string(conn))
         cursor.execute(query)
