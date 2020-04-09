@@ -22,7 +22,7 @@ BEGIN
 	FROM public.downloader_history d 
 		JOIN public.downloader_status ds ON ds.id = d.status_id
 		LEFT JOIN public.l1_tile_history th ON th.downloader_history_id = d.id 
-		LEFT JOIN public.product p ON REPLACE(p.name, 'MSIL2A', 'MSIL1C') = d.product_name 
+		LEFT JOIN public.product p ON p.name IN (d.product_name, REPLACE(d.product_name, 'MSIL1C', 'MSIL2A')) 
 	WHERE NOT EXISTS(SELECT sr.* FROM reports.s2_report sr WHERE sr.downloader_history_id = d.id) AND d.satellite_id = 1 and d.site_id = $1
 ORDER BY d.orbit_id, acquisition_date, d.product_name, l2_product;
 END
