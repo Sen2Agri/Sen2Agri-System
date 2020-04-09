@@ -11,7 +11,8 @@ BEGIN
 
 	UPDATE job
 	SET status_id = 8, -- Error
-	status_timestamp = now()
+	status_timestamp = now(),
+	end_timestamp = now()
 	WHERE id = _job_id;
 
 END;

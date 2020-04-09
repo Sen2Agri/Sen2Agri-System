@@ -24,7 +24,8 @@ BEGIN
 
 	UPDATE job
 	SET status_id = 7, --Cancelled
-	status_timestamp = now()
+	status_timestamp = now(),
+	end_timestamp = now()
 	WHERE id = _job_id
     AND status_id NOT IN (6, 7, 8); -- Finished or failed jobs can't be cancelled
 END;
