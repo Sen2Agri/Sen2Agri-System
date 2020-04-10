@@ -434,7 +434,7 @@ function populate_from_scripts()
                 ## perform execution of each sql script
                 echo "Executing SQL script: $scriptToExecute"
                 cat "$scriptToExecute" | su - postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
-            fi            
+            fi
         done
     fi
 }
@@ -555,7 +555,7 @@ function install_additional_packages()
         # Install R-devel
         yum install -y R-devel
         Rscript - <<- EOF
-        packages <- c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily")
+        packages <- c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily", "caTools", "tidyverse", "data.table")
         diff <- setdiff(packages, rownames(installed.packages()))
         if (length(diff) > 0) {
             install.packages(diff, repos = c(CRAN = "https://cran.rstudio.com"))

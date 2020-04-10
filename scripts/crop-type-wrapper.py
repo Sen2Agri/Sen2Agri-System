@@ -258,12 +258,13 @@ def main():
     os.chdir(current_path)
 
     parcels = os.path.join(args.working_path, "parcels.csv")
+    lut = os.path.join(args.working_path, "lut.csv")
 
     command = []
     command += ["extract-parcels.py"]
     command += ["-s", config.site_id]
     command += ["-y", config.year]
-    command += [parcels]
+    command += [parcels, lut]
 
     run_command(command)
 
@@ -301,6 +302,7 @@ def main():
     command += [args.smote_k]
     command += [args.num_trees]
     command += [args.min_node_size]
+    command += [lut]
 
     run_command(command)
 

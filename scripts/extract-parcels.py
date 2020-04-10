@@ -10,6 +10,7 @@ import psycopg2
 from psycopg2.sql import SQL, Literal, Identifier
 import psycopg2.extras
 import sys
+
 try:
     from configparser import ConfigParser
 except ImportError:
@@ -49,23 +50,29 @@ def get_site_name(conn, site_id):
         return rows[0][0]
 
 
-def save_to_csv(cursor, path):
-    with open(path, 'wb') as csvfile:
+def save_to_csv(cursor, path, headers):
+    with open(path, "wb") as csvfile:
         writer = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL)
-
-        writer.writerow(['NewID', 'Area_meters', 'S1Pix', 'S2Pix', 'CTnumL4A', 'LC'])
+        writer.writerow(headers)
         for row in cursor:
             writer.writerow(row)
 
 
 def extract_parcels(config, args, lpis_table, lut_table, id, geom):
-    with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
+    with psycopg2.connect(
+        host=config.host,
+        port=config.port,
+        dbname=config.dbname,
+        user=config.user,
+        password=config.password,
+    ) as conn:
         q1 = """
             select lpis."NewID",
                 lpis."Area_meters",
                 lpis."S1Pix",
                 lpis."S2Pix",
                 lut.ctnuml4a as "CTnumL4A",
+                lut.ctl4a as "CTL4A",
                 lut.lc
             from {} lpis
             natural join {} lut
@@ -84,6 +91,7 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
                 lpis."S1Pix",
                 lpis."S2Pix",
                 lut.ctnuml4a as "CTnumL4A",
+                lut.ctl4a as "CTL4A",
                 lut.lc
             from stratum
             inner join {} lpis on lpis.wkb_geometry && stratum.geom and ST_Relate(lpis.wkb_geometry, stratum.geom, '2********')
@@ -95,38 +103,77 @@ def extract_parcels(config, args, lpis_table, lut_table, id, geom):
             order by "NewID"
             """
 
+        headers = ["NewID", "Area_meters", "S1Pix", "S2Pix", "CTnumL4A", "CTL4A", "LC"]
         with conn.cursor() as cursor:
             if args.strata is None:
-                output = args.output
+                output = args.output_parcels
                 query = SQL(q1).format(Identifier(lpis_table), Identifier(lut_table))
                 print(query.as_string(conn))
 
                 cursor.execute(query)
-                save_to_csv(cursor, output)
+                save_to_csv(cursor, output, headers)
                 conn.commit()
             else:
-                dirname = os.path.dirname(args.output)
-                basename = os.path.basename(args.output)
+                dirname = os.path.dirname(args.output_parcels)
+                basename = os.path.basename(args.output_parcels)
                 split = os.path.splitext(basename)
 
-                query = SQL(q2).format(Literal(geom.ExportToWkt()), Literal(args.srid), Literal(lpis_table), Identifier(lpis_table), Identifier(lut_table))
+                query = SQL(q2).format(
+                    Literal(geom.ExportToWkt()),
+                    Literal(args.srid),
+                    Literal(lpis_table),
+                    Identifier(lpis_table),
+                    Identifier(lut_table),
+                )
 
                 print(query.as_string(conn))
 
                 cursor.execute(query)
                 output = os.path.join(dirname, "{}-{}{}".format(split[0], id, split[1]))
-                save_to_csv(cursor, output)
+                save_to_csv(cursor, output, headers)
                 conn.commit()
 
 
+def extract_lut(config, args, lut_table):
+    with psycopg2.connect(
+        host=config.host,
+        port=config.port,
+        dbname=config.dbname,
+        user=config.user,
+        password=config.password,
+    ) as conn:
+        q = 'select ctnuml4a as "CTnumL4A", ctl4a as "CTL4A" from {}'
+
+        with conn.cursor() as cursor:
+            output = args.output_lut
+            query = SQL(q).format(Identifier(lut_table))
+            print(query.as_string(conn))
+
+            cursor.execute(query)
+
+            headers = ["CTnumL4A", "CTL4A"]
+            save_to_csv(cursor, output, headers)
+            conn.commit()
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Crops and recompresses S1 L2A products")
-    parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
-    parser.add_argument('-s', '--site-id', type=int, help="site ID to filter by")
-    parser.add_argument('-y', '--year', help="year")
-    parser.add_argument('--strata', help="strata definition")
-    parser.add_argument('--srid', help="strata SRID")
-    parser.add_argument('output', help="output file", default="parcels.csv")
+    parser = argparse.ArgumentParser(
+        description="Crops and recompresses S1 L2A products"
+    )
+    parser.add_argument(
+        "-c",
+        "--config-file",
+        default="/etc/sen2agri/sen2agri.conf",
+        help="configuration file location",
+    )
+    parser.add_argument("-s", "--site-id", type=int, help="site ID to filter by")
+    parser.add_argument("-y", "--year", help="year")
+    parser.add_argument("--strata", help="strata definition")
+    parser.add_argument("--srid", help="strata SRID")
+    parser.add_argument(
+        "output_parcels", help="output parcels file", default="parcels.csv"
+    )
+    parser.add_argument("output_lut", help="output LUT file", default="lut.csv")
 
     args = parser.parse_args()
 
@@ -137,7 +184,13 @@ def main():
             print("--srid is required with --strata")
             sys.exit(1)
 
-    with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
+    with psycopg2.connect(
+        host=config.host,
+        port=config.port,
+        dbname=config.dbname,
+        user=config.user,
+        password=config.password,
+    ) as conn:
         site_name = get_site_name(conn, config.site_id)
         year = args.year or date.today().year
         lpis_table = "decl_{}_{}".format(site_name, year)
@@ -152,6 +205,7 @@ def main():
             id = feature.GetField("id")
             geom = feature.GetGeometryRef()
             extract_parcels(config, args, lpis_table, lut_table, id, geom)
+    extract_lut(config, args, lut_table)
 
 
 if __name__ == "__main__":
