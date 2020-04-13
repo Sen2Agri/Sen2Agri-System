@@ -131,6 +131,7 @@ INSERT INTO config_metadata VALUES ('processor.l3b.l1c_availability_days', 'Numb
 INSERT INTO config_metadata VALUES ('processor.l4a.reference_data_dir', 'Crop Tye folder where insitu data are checked', 'string', false, 5);
 
 INSERT INTO config_metadata VALUES ('processor.s4c_l4a.lc', 'LC classes to assess', 'string', TRUE, 5, TRUE, 'LC classes to assess', '{"min":"","step":"","max":""}');
+INSERT INTO config_metadata VALUES ('processor.s4c_l4a.mode', 'Mode', 'string', FALSE, 5, TRUE, 'Mode (both, s1-only, s2-only)', '{"min":"","step":"","max":""}');
 INSERT INTO config_metadata VALUES ('processor.s4c_l4a.min-s2-pix', 'Minimum number of S2 pixels', 'int', TRUE, 5, TRUE, 'Minimum number of S2 pixels', '{"min":"0","step":"1","max":""}');
 INSERT INTO config_metadata VALUES ('processor.s4c_l4a.min-s1-pix', 'Minimum number of S1 pixels', 'int', TRUE, 5, TRUE, 'Minimum number of S1 pixels', '{"min":"0","step":"1","max":""}');
 INSERT INTO config_metadata VALUES ('processor.s4c_l4a.best-s2-pix', 'Minimum number of S2 pixels for parcels to use in training', 'int', TRUE, 5, TRUE, 'Minimum number of S2 pixels for parcels to use in training', '{"min":"0","step":"1","max":""}');

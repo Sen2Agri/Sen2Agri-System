@@ -120,6 +120,13 @@ def main():
         help="configuration file location",
     )
     parser.add_argument("-s", "--site-id", type=int, help="site ID to filter by")
+    parser.add_argument(
+        "-m",
+        "--mode",
+        help="processing mode",
+        choices=["s1-only", "s2-only", "both"],
+        default="both",
+    )
     parser.add_argument("--season-start", help="season start date")
     parser.add_argument("--season-end", help="season end date")
     parser.add_argument("--out-path", default=".", help="output path")
@@ -196,64 +203,71 @@ def main():
 
     current_path = os.getcwd()
     os.chdir(args.working_path)
-    try:
-        os.mkdir("optical")
-    except OSError:
-        pass
-    try:
-        os.mkdir("sar")
-    except OSError:
-        pass
-    try:
-        os.mkdir("sar-merged")
-    except OSError:
-        pass
+    if args.mode != "s1-only":
+        try:
+            os.mkdir("optical")
+        except OSError:
+            pass
+    if args.mode != "s2-only":
+        try:
+            os.mkdir("sar")
+        except OSError:
+            pass
+        try:
+            os.mkdir("sar-merged")
+        except OSError:
+            pass
     try:
         os.mkdir("features")
     except OSError:
         pass
 
-    os.chdir("optical")
+    if args.mode != "s1-only":
+        os.chdir("optical")
 
-    command = []
-    command += ["crop-type-parcels.py"]
-    command += ["-m", "optical"]
-    command += ["-s", config.site_id]
-    command += ["--season-start", format_date(config.season_start)]
-    command += ["--season-end", format_date(config.season_end)]
-    command += ["--lpis-path", lpis_path]
-    if config.tiles:
-        command += ["--tiles"] + config.tiles
-    if config_file:
-        command += ["-c", config_file]
+        command = []
+        command += ["crop-type-parcels.py"]
+        command += ["-m", "optical"]
+        command += ["-s", config.site_id]
+        command += ["--season-start", format_date(config.season_start)]
+        command += ["--season-end", format_date(config.season_end)]
+        command += ["--lpis-path", lpis_path]
+        if config.tiles:
+            command += ["--tiles"] + config.tiles
+        if config_file:
+            command += ["-c", config_file]
 
-    run_command(command)
+        run_command(command)
+        os.chdir("..")
 
-    os.chdir("../sar")
-    command = []
-    command += ["crop-type-parcels.py"]
-    command += ["-m", "sar"]
-    command += ["-s", config.site_id]
-    command += ["--season-start", format_date(config.season_start)]
-    command += ["--season-end", format_date(config.season_end)]
-    command += ["--lpis-path", lpis_path]
-    if config.tiles:
-        command += ["--tiles"] + config.tiles
-    if config_file:
-        command += ["-c", config_file]
+    if args.mode != "s2-only":
+        os.chdir("sar")
+        command = []
+        command += ["crop-type-parcels.py"]
+        command += ["-m", "sar"]
+        command += ["-s", config.site_id]
+        command += ["--season-start", format_date(config.season_start)]
+        command += ["--season-end", format_date(config.season_end)]
+        command += ["--lpis-path", lpis_path]
+        if config.tiles:
+            command += ["--tiles"] + config.tiles
+        if config_file:
+            command += ["-c", config_file]
 
-    run_command(command)
+        run_command(command)
 
-    os.chdir("..")
-    command = []
-    command += ["merge-sar.py"]
-    command += ["sar", "sar-merged"]
+        os.chdir("..")
+        command = []
+        command += ["merge-sar.py"]
+        command += ["sar", "sar-merged"]
 
-    run_command(command)
+        run_command(command)
 
-    os.rename("optical/optical-features.csv", "features/optical-features.csv")
-    os.rename("sar-merged/sar-features.csv", "features/sar-features.csv")
-    os.rename("sar-merged/sar-temporal.csv", "features/sar-temporal.csv")
+    if args.mode != "s1-only":
+        os.rename("optical/optical-features.csv", "features/optical-features.csv")
+    if args.mode != "s2-only":
+        os.rename("sar-merged/sar-features.csv", "features/sar-features.csv")
+        os.rename("sar-merged/sar-temporal.csv", "features/sar-temporal.csv")
 
     os.chdir(current_path)
 
@@ -272,12 +286,17 @@ def main():
     sar_features = os.path.join(args.working_path, "features/sar-features.csv")
     sar_temporal = os.path.join(args.working_path, "features/sar-temporal.csv")
 
-    if not check_file(optical_features):
+    if args.mode == "s1-only" or not check_file(optical_features):
         optical_features = "0"
-    if not check_file(sar_features):
+    if args.mode == "s2-only" or not check_file(sar_features):
         sar_features = "0"
-    if not check_file(sar_temporal):
+    if args.mode == "s2-only" or not check_file(sar_temporal):
         sar_temporal = "0"
+
+    if args.mode == "s2-only":
+        args.min_s1_pix = 0
+    elif args.mode == "s1-only":
+        args.min_s2_pix = 0
 
     command = []
     command += ["crop_type.R"]
