@@ -9,12 +9,12 @@ DECLARE startDate date;
 DECLARE endDate date;
 BEGIN
 	IF $2 IS NULL THEN
-		SELECT MIN(acquisition_date) INTO startDate FROM reports.s1_report;
+		SELECT MIN(r.acquisition_date) INTO startDate FROM reports.s1_report r;
 	ELSE
 		SELECT _fromDate INTO startDate;
 	END IF;
 	IF $3 IS NULL THEN
-		SELECT MAX(acquisition_date) INTO endDate FROM reports.s1_report;
+		SELECT MAX(r.acquisition_date) INTO endDate FROM reports.s1_report r;
 	ELSE
 		SELECT _toDate INTO endDate;
 	END IF;
@@ -23,57 +23,59 @@ BEGIN
 			(SELECT date_trunc('day', dd)::date AS cdate 
 				FROM generate_series(startDate::timestamp, endDate::timestamp, '1 day'::interval) dd),
 		ac AS 
-			(SELECT acquisition_date, COUNT(DISTINCT downloader_history_id) AS acquisitions 
-				FROM reports.s1_report 
-				WHERE ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+			(SELECT r.acquisition_date, COUNT(DISTINCT downloader_history_id) AS acquisitions 
+				FROM reports.s1_report r
+				WHERE ($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
 				GROUP BY acquisition_date 
 				ORDER BY acquisition_date),
 		p AS 
-			(SELECT acquisition_date, COUNT(intersected_product) AS pairs 
-				FROM reports.s1_report 
-				WHERE ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+			(SELECT r.acquisition_date, COUNT(intersected_product) AS pairs 
+				FROM reports.s1_report r
+				WHERE ($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
 				GROUP BY acquisition_date 
 				ORDER BY acquisition_date),
 		proc AS 
-			(SELECT acquisition_date, COUNT(intersected_product) AS cnt 
-				FROM reports.s1_report 
-				WHERE status_description = 'processed' AND
-					($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+			(SELECT r.acquisition_date, COUNT(intersected_product) AS cnt 
+				FROM reports.s1_report r
+				WHERE r.status_description = 'processed' AND
+					($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
 				GROUP BY acquisition_date 
 				ORDER BY acquisition_date),
 		ndld AS 
-			(SELECT acquisition_date, count(downloader_history_id) AS cnt 
-				FROM reports.s1_report 
-				WHERE status_description IN ('failed','aborted') AND intersected_product IS NULL AND
-					($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+			(SELECT r.acquisition_date, count(downloader_history_id) AS cnt 
+				FROM reports.s1_report r
+				WHERE r.status_description IN ('failed','aborted') AND r.intersected_product IS NULL AND
+					($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
 				GROUP BY acquisition_date 
 				ORDER BY acquisition_date),
-		dld AS 
-			(SELECT acquisition_date, COUNT(downloader_history_id) AS cnt 
-				FROM reports.s1_report 
-				WHERE status_description IN ('downloaded', 'processing') AND intersected_product IS NOT NULL AND
-					($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
-				GROUP BY acquisition_date 
-				ORDER BY acquisition_date),
-		fproc AS 
-			(SELECT acquisition_date, COUNT(DISTINCT downloader_history_id) AS cnt 
-				FROM reports.s1_report 
-				WHERE status_description = 'processed' AND intersected_product IS NULL AND
-					($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+        dld AS
+            (SELECT r.acquisition_date, COUNT(r.downloader_history_id) AS cnt
+                FROM reports.s1_report r
+                WHERE r.status_description IN ('downloaded', 'processing') AND r.intersected_product IS NOT NULL AND
+                    ($1 IS NULL OR r.site_id = $1) AND ($2 IS NULL OR r.orbit_id = $2) AND r.acquisition_date BETWEEN startDate AND endDate
+                     AND NOT EXISTS (SELECT s.downloader_history_id FROM reports.s1_report s
+                                    WHERE s.downloader_history_id = r.downloader_history_id AND r.l2_product LIKE '%COHE%')
+                GROUP BY acquisition_date
+                ORDER BY acquisition_date),
+        fproc AS 
+			(SELECT r.acquisition_date, COUNT(DISTINCT downloader_history_id) AS cnt 
+				FROM reports.s1_report r
+				WHERE r.status_description = 'processed' AND r.intersected_product IS NULL AND
+					($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
 				GROUP BY acquisition_date 
 				ORDER BY acquisition_date),
 		ni AS 
-			(SELECT acquisition_date, count(downloader_history_id) AS cnt 
-				FROM reports.s1_report 
-				WHERE status_description = 'downloaded' AND intersected_product IS NULL AND
-					($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+			(SELECT r.acquisition_date, count(downloader_history_id) AS cnt 
+				FROM reports.s1_report r
+				WHERE r.status_description = 'downloaded' AND r.intersected_product IS NULL AND
+					($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
 				GROUP BY acquisition_date 
 				ORDER BY acquisition_date),
 		e AS 
-			(SELECT acquisition_date, COUNT(intersected_product) AS cnt 
-				FROM reports.s1_report 
-				WHERE status_description LIKE 'processing_%failed' AND
-					($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+			(SELECT r.acquisition_date, COUNT(intersected_product) AS cnt 
+				FROM reports.s1_report r
+				WHERE r.status_description LIKE 'processing_%failed' AND
+					($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
 				GROUP BY acquisition_date 
 				ORDER BY acquisition_date)
 	SELECT 	SUM(COALESCE(ac.acquisitions, 0))::integer,

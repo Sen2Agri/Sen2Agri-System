@@ -1,21 +1,28 @@
-﻿CREATE OR REPLACE FUNCTION reports.sp_reports_s2_detail(
-	IN siteId smallint DEFAULT NULL::smallint,
-	IN orbitId integer DEFAULT NULL::integer,
-	IN fromDate date DEFAULT NULL::date,
-	IN toDate date DEFAULT NULL::date)
-  RETURNS TABLE(site_id smallint, downloader_history_id integer, orbit_id integer, acquisition_date date, product_name character varying,
-		status_description character varying, status_reason character varying, l2_product character varying, clouds integer) AS
-$BODY$
+﻿-- FUNCTION: reports.sp_reports_s2_detail(smallint, integer, date, date)
+
+-- DROP FUNCTION reports.sp_reports_s2_detail(smallint, integer, date, date);
+
+CREATE OR REPLACE FUNCTION reports.sp_reports_s2_detail(
+	siteid smallint DEFAULT NULL::smallint,
+	orbitid integer DEFAULT NULL::integer,
+	fromdate date DEFAULT NULL::date,
+	todate date DEFAULT NULL::date)
+RETURNS TABLE(site_id smallint, downloader_history_id integer, orbit_id integer, acquisition_date date, product_name character varying, status_description character varying, status_reason character varying, l2_product character varying, clouds integer) 
+    LANGUAGE 'plpgsql'
+    COST 100
+    STABLE 
+    ROWS 1000
+AS $BODY$
 DECLARE startDate date;
 DECLARE endDate date;
 BEGIN
 	IF $3 IS NULL THEN
-		SELECT MIN(acquisition_date) INTO startDate FROM reports.s2_report;
+		SELECT MIN(r.acquisition_date) INTO startDate FROM reports.s2_report r;
 	ELSE
 		SELECT fromDate INTO startDate;
 	END IF;
 	IF $4 IS NULL THEN
-		SELECT MAX(acquisition_date) INTO endDate FROM reports.s2_report;
+		SELECT MAX(r.acquisition_date) INTO endDate FROM reports.s2_report r;
 	ELSE
 		SELECT toDate INTO endDate;
 	END IF;
@@ -26,9 +33,7 @@ BEGIN
 	ORDER BY r.site_id, r.acquisition_date, r.product_name;
 END
 
-$BODY$
-  LANGUAGE plpgsql STABLE
-  COST 100
-  ROWS 1000;
+$BODY$;
+
 ALTER FUNCTION reports.sp_reports_s2_detail(smallint, integer, date, date)
-  OWNER TO postgres;
+    OWNER TO postgres;

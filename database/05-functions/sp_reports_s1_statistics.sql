@@ -49,13 +49,15 @@ BEGIN
 					($1 IS NULL OR site_id = $1) AND ($2 IS NULL OR orbit_id = $2) AND acquisition_date BETWEEN startDate AND endDate
 				GROUP BY acquisition_date 
 				ORDER BY acquisition_date),
-		dld AS 
-			(SELECT acquisition_date, COUNT(downloader_history_id) AS cnt 
-				FROM reports.s1_report 
-				WHERE status_description IN ('downloaded', 'processing') AND intersected_product IS NOT NULL AND
-					($1 IS NULL OR site_id = $1) AND ($2 IS NULL OR orbit_id = $2) AND acquisition_date BETWEEN startDate AND endDate
-				GROUP BY acquisition_date 
-				ORDER BY acquisition_date),
+        dld AS
+            (SELECT r.acquisition_date, COUNT(r.downloader_history_id) AS cnt
+                FROM reports.s1_report r
+                WHERE r.status_description IN ('downloaded', 'processing') AND r.intersected_product IS NOT NULL AND
+                    ($1 IS NULL OR r.site_id = $1) AND ($2 IS NULL OR r.orbit_id = $2) AND r.acquisition_date BETWEEN startDate AND endDate
+                     AND NOT EXISTS (SELECT s.downloader_history_id FROM reports.s1_report s
+                                    WHERE s.downloader_history_id = r.downloader_history_id AND r.l2_product LIKE '%COHE%')
+                GROUP BY acquisition_date
+                ORDER BY acquisition_date),
 		fproc AS 
 			(SELECT acquisition_date, COUNT(DISTINCT downloader_history_id) AS cnt 
 				FROM reports.s1_report 

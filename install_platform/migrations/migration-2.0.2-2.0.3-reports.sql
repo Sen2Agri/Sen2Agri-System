@@ -209,7 +209,7 @@ begin
                     FROM public.downloader_history d 
                         JOIN public.downloader_status ds ON ds.id = d.status_id
                         LEFT JOIN public.l1_tile_history th ON th.downloader_history_id = d.id 
-                        LEFT JOIN public.product p ON REPLACE(p.name, 'MSIL2A', 'MSIL1C') = d.product_name 
+                        LEFT JOIN public.product p ON p.name IN (d.product_name, REPLACE(d.product_name, 'MSIL1C', 'MSIL2A'))
                     WHERE NOT EXISTS(SELECT sr.* FROM reports.s2_report sr WHERE sr.downloader_history_id = d.id) AND d.satellite_id = 1 and d.site_id = $1
                 ORDER BY d.orbit_id, acquisition_date, d.product_name, l2_product;
                 END
@@ -293,23 +293,26 @@ begin
 
 
                 CREATE OR REPLACE FUNCTION reports.sp_reports_l8_detail(
-                    IN siteId smallint DEFAULT NULL::smallint,
-                    IN orbitId integer DEFAULT NULL::integer,
-                    IN fromDate date DEFAULT NULL::date,
-                    IN toDate date DEFAULT NULL::date)
-                  RETURNS TABLE(site_id smallint, downloader_history_id integer, orbit_id integer, acquisition_date date, product_name character varying,
-                        status_description character varying, status_reason character varying, l2_product character varying, clouds integer) AS
-                $BODY$
+                    siteid smallint DEFAULT NULL::smallint,
+                    orbitid integer DEFAULT NULL::integer,
+                    fromdate date DEFAULT NULL::date,
+                    todate date DEFAULT NULL::date)
+                RETURNS TABLE(site_id smallint, downloader_history_id integer, orbit_id integer, acquisition_date date, product_name character varying, status_description character varying, status_reason character varying, l2_product character varying, clouds integer) 
+                    LANGUAGE 'plpgsql'
+                    COST 100
+                    STABLE 
+                    ROWS 1000
+                AS $BODY$
                 DECLARE startDate date;
                 DECLARE endDate date;
                 BEGIN
                     IF $3 IS NULL THEN
-                        SELECT MIN(acquisition_date) INTO startDate FROM reports.l8_report;
+                        SELECT MIN(r.acquisition_date) INTO startDate FROM reports.l8_report r;
                     ELSE
                         SELECT fromDate INTO startDate;
                     END IF;
                     IF $4 IS NULL THEN
-                        SELECT MAX(acquisition_date) INTO endDate FROM reports.l8_report;
+                        SELECT MAX(r.acquisition_date) INTO endDate FROM reports.l8_report r;
                     ELSE
                         SELECT toDate INTO endDate;
                     END IF;
@@ -319,6 +322,7 @@ begin
                         WHERE ($1 IS NULL OR r.site_id = $1) AND ($2 IS NULL OR r.orbit_id::integer = $2) AND r.acquisition_date BETWEEN startDate AND endDate
                     ORDER BY r.site_id, r.acquisition_date, r.product_name;
                 END
+
 
                 $BODY$
                   LANGUAGE plpgsql STABLE
@@ -503,24 +507,26 @@ begin
 
 
                 CREATE OR REPLACE FUNCTION reports.sp_reports_s1_detail(
-                    IN siteId smallint DEFAULT NULL::smallint,
-                    IN orbitId integer DEFAULT NULL::integer,
-                    IN fromDate date DEFAULT NULL::date,
-                    IN toDate date DEFAULT NULL::date)
-                  RETURNS TABLE(site_id smallint, downloader_history_id integer, orbit_id smallint, acquisition_date date, product_name character varying,
-                        status_description character varying, intersection_date date, intersected_product character varying, intersected_status_id smallint, intersection numeric(5,2), 
-                        polarisation character varying, l2_product character varying, l2_coverage numeric(5,2), status_reason character varying) AS
-                $BODY$
+                    siteid smallint DEFAULT NULL::smallint,
+                    orbitid integer DEFAULT NULL::integer,
+                    fromdate date DEFAULT NULL::date,
+                    todate date DEFAULT NULL::date)
+                RETURNS TABLE(site_id smallint, downloader_history_id integer, orbit_id smallint, acquisition_date date, product_name character varying, status_description character varying, intersection_date date, intersected_product character varying, intersected_status_id smallint, intersection numeric, polarisation character varying, l2_product character varying, l2_coverage numeric, status_reason character varying) 
+                    LANGUAGE 'plpgsql'
+                    COST 100
+                    STABLE 
+                    ROWS 1000
+                AS $BODY$
                 DECLARE startDate date;
                 DECLARE endDate date;
                 BEGIN
                     IF $3 IS NULL THEN
-                        SELECT MIN(acquisition_date) INTO startDate FROM reports.s2_report;
+                        SELECT MIN(r.acquisition_date) INTO startDate FROM reports.s1_report r;
                     ELSE
                         SELECT fromDate INTO startDate;
                     END IF;
                     IF $4 IS NULL THEN
-                        SELECT MAX(acquisition_date) INTO endDate FROM reports.s2_report;
+                        SELECT MAX(r.acquisition_date) INTO endDate FROM reports.s1_report r;
                     ELSE
                         SELECT toDate INTO endDate;
                     END IF;
@@ -533,6 +539,7 @@ begin
                 END
 
                 $BODY$
+
                   LANGUAGE plpgsql STABLE
                   COST 100
                   ROWS 1000;
@@ -592,12 +599,14 @@ begin
                                     ($1 IS NULL OR site_id = $1) AND ($2 IS NULL OR orbit_id = $2) AND acquisition_date BETWEEN startDate AND endDate
                                 GROUP BY acquisition_date 
                                 ORDER BY acquisition_date),
-                        dld AS 
-                            (SELECT acquisition_date, COUNT(downloader_history_id) AS cnt 
-                                FROM reports.s1_report 
-                                WHERE status_description IN ('downloaded', 'processing') AND intersected_product IS NOT NULL AND
-                                    ($1 IS NULL OR site_id = $1) AND ($2 IS NULL OR orbit_id = $2) AND acquisition_date BETWEEN startDate AND endDate
-                                GROUP BY acquisition_date 
+                        dld AS
+                            (SELECT r.acquisition_date, COUNT(r.downloader_history_id) AS cnt
+                                FROM reports.s1_report r
+                                WHERE r.status_description IN ('downloaded', 'processing') AND r.intersected_product IS NOT NULL AND
+                                    ($1 IS NULL OR r.site_id = $1) AND ($2 IS NULL OR r.orbit_id = $2) AND r.acquisition_date BETWEEN startDate AND endDate
+                                     AND NOT EXISTS (SELECT s.downloader_history_id FROM reports.s1_report s
+                                                    WHERE s.downloader_history_id = r.downloader_history_id AND r.l2_product LIKE '%COHE%')
+                                GROUP BY acquisition_date
                                 ORDER BY acquisition_date),
                         fproc AS 
                             (SELECT acquisition_date, COUNT(DISTINCT downloader_history_id) AS cnt 
@@ -661,12 +670,12 @@ begin
                 DECLARE endDate date;
                 BEGIN
                     IF $2 IS NULL THEN
-                        SELECT MIN(acquisition_date) INTO startDate FROM reports.s1_report;
+                        SELECT MIN(r.acquisition_date) INTO startDate FROM reports.s1_report r;
                     ELSE
                         SELECT _fromDate INTO startDate;
                     END IF;
                     IF $3 IS NULL THEN
-                        SELECT MAX(acquisition_date) INTO endDate FROM reports.s1_report;
+                        SELECT MAX(r.acquisition_date) INTO endDate FROM reports.s1_report r;
                     ELSE
                         SELECT _toDate INTO endDate;
                     END IF;
@@ -675,57 +684,59 @@ begin
                             (SELECT date_trunc('day', dd)::date AS cdate 
                                 FROM generate_series(startDate::timestamp, endDate::timestamp, '1 day'::interval) dd),
                         ac AS 
-                            (SELECT acquisition_date, COUNT(DISTINCT downloader_history_id) AS acquisitions 
-                                FROM reports.s1_report 
-                                WHERE ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+                            (SELECT r.acquisition_date, COUNT(DISTINCT downloader_history_id) AS acquisitions 
+                                FROM reports.s1_report r
+                                WHERE ($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
                                 GROUP BY acquisition_date 
                                 ORDER BY acquisition_date),
                         p AS 
-                            (SELECT acquisition_date, COUNT(intersected_product) AS pairs 
-                                FROM reports.s1_report 
-                                WHERE ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+                            (SELECT r.acquisition_date, COUNT(intersected_product) AS pairs 
+                                FROM reports.s1_report r
+                                WHERE ($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
                                 GROUP BY acquisition_date 
                                 ORDER BY acquisition_date),
                         proc AS 
-                            (SELECT acquisition_date, COUNT(intersected_product) AS cnt 
-                                FROM reports.s1_report 
-                                WHERE status_description = 'processed' AND
-                                    ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+                            (SELECT r.acquisition_date, COUNT(intersected_product) AS cnt 
+                                FROM reports.s1_report r
+                                WHERE r.status_description = 'processed' AND
+                                    ($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
                                 GROUP BY acquisition_date 
                                 ORDER BY acquisition_date),
                         ndld AS 
-                            (SELECT acquisition_date, count(downloader_history_id) AS cnt 
-                                FROM reports.s1_report 
-                                WHERE status_description IN ('failed','aborted') AND intersected_product IS NULL AND
-                                    ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+                            (SELECT r.acquisition_date, count(downloader_history_id) AS cnt 
+                                FROM reports.s1_report r
+                                WHERE r.status_description IN ('failed','aborted') AND r.intersected_product IS NULL AND
+                                    ($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
                                 GROUP BY acquisition_date 
                                 ORDER BY acquisition_date),
-                        dld AS 
-                            (SELECT acquisition_date, COUNT(downloader_history_id) AS cnt 
-                                FROM reports.s1_report 
-                                WHERE status_description IN ('downloaded', 'processing') AND intersected_product IS NOT NULL AND
-                                    ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
-                                GROUP BY acquisition_date 
+                        dld AS
+                            (SELECT r.acquisition_date, COUNT(r.downloader_history_id) AS cnt
+                                FROM reports.s1_report r
+                                WHERE r.status_description IN ('downloaded', 'processing') AND r.intersected_product IS NOT NULL AND
+                                    ($1 IS NULL OR r.site_id = $1) AND ($2 IS NULL OR r.orbit_id = $2) AND r.acquisition_date BETWEEN startDate AND endDate
+                                     AND NOT EXISTS (SELECT s.downloader_history_id FROM reports.s1_report s
+                                                    WHERE s.downloader_history_id = r.downloader_history_id AND r.l2_product LIKE '%COHE%')
+                                GROUP BY acquisition_date
                                 ORDER BY acquisition_date),
                         fproc AS 
-                            (SELECT acquisition_date, COUNT(DISTINCT downloader_history_id) AS cnt 
-                                FROM reports.s1_report 
-                                WHERE status_description = 'processed' AND intersected_product IS NULL AND
-                                    ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+                            (SELECT r.acquisition_date, COUNT(DISTINCT downloader_history_id) AS cnt 
+                                FROM reports.s1_report r
+                                WHERE r.status_description = 'processed' AND r.intersected_product IS NULL AND
+                                    ($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
                                 GROUP BY acquisition_date 
                                 ORDER BY acquisition_date),
                         ni AS 
-                            (SELECT acquisition_date, count(downloader_history_id) AS cnt 
-                                FROM reports.s1_report 
-                                WHERE status_description = 'downloaded' AND intersected_product IS NULL AND
-                                    ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+                            (SELECT r.acquisition_date, count(downloader_history_id) AS cnt 
+                                FROM reports.s1_report r
+                                WHERE r.status_description = 'downloaded' AND r.intersected_product IS NULL AND
+                                    ($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
                                 GROUP BY acquisition_date 
                                 ORDER BY acquisition_date),
                         e AS 
-                            (SELECT acquisition_date, COUNT(intersected_product) AS cnt 
-                                FROM reports.s1_report 
-                                WHERE status_description LIKE 'processing_%failed' AND
-                                    ($1 IS NULL OR site_id = $1) AND acquisition_date BETWEEN startDate AND endDate
+                            (SELECT r.acquisition_date, COUNT(intersected_product) AS cnt 
+                                FROM reports.s1_report r
+                                WHERE r.status_description LIKE 'processing_%failed' AND
+                                    ($1 IS NULL OR r.site_id = $1) AND r.acquisition_date BETWEEN startDate AND endDate
                                 GROUP BY acquisition_date 
                                 ORDER BY acquisition_date)
                     SELECT 	SUM(COALESCE(ac.acquisitions, 0))::integer,
@@ -746,6 +757,7 @@ begin
                         LEFT JOIN ni ON ni.acquisition_date = c.cdate
                         LEFT JOIN e ON e.acquisition_date = c.cdate;
                 END
+
 
                 $BODY$
                   LANGUAGE plpgsql STABLE
@@ -803,23 +815,26 @@ begin
 
 
                 CREATE OR REPLACE FUNCTION reports.sp_reports_s2_detail(
-                    IN siteId smallint DEFAULT NULL::smallint,
-                    IN orbitId integer DEFAULT NULL::integer,
-                    IN fromDate date DEFAULT NULL::date,
-                    IN toDate date DEFAULT NULL::date)
-                  RETURNS TABLE(site_id smallint, downloader_history_id integer, orbit_id integer, acquisition_date date, product_name character varying,
-                        status_description character varying, status_reason character varying, l2_product character varying, clouds integer) AS
-                $BODY$
+                    siteid smallint DEFAULT NULL::smallint,
+                    orbitid integer DEFAULT NULL::integer,
+                    fromdate date DEFAULT NULL::date,
+                    todate date DEFAULT NULL::date)
+                RETURNS TABLE(site_id smallint, downloader_history_id integer, orbit_id integer, acquisition_date date, product_name character varying, status_description character varying, status_reason character varying, l2_product character varying, clouds integer) 
+                    LANGUAGE 'plpgsql'
+                    COST 100
+                    STABLE 
+                    ROWS 1000
+                AS $BODY$
                 DECLARE startDate date;
                 DECLARE endDate date;
                 BEGIN
                     IF $3 IS NULL THEN
-                        SELECT MIN(acquisition_date) INTO startDate FROM reports.s2_report;
+                        SELECT MIN(r.acquisition_date) INTO startDate FROM reports.s2_report r;
                     ELSE
                         SELECT fromDate INTO startDate;
                     END IF;
                     IF $4 IS NULL THEN
-                        SELECT MAX(acquisition_date) INTO endDate FROM reports.s2_report;
+                        SELECT MAX(r.acquisition_date) INTO endDate FROM reports.s2_report r;
                     ELSE
                         SELECT toDate INTO endDate;
                     END IF;
@@ -829,6 +844,7 @@ begin
                         WHERE ($1 IS NULL OR r.site_id = $1) AND ($2 IS NULL OR r.orbit_id = $2) AND r.acquisition_date BETWEEN startDate AND endDate
                     ORDER BY r.site_id, r.acquisition_date, r.product_name;
                 END
+
 
                 $BODY$
                   LANGUAGE plpgsql STABLE

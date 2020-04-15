@@ -12,6 +12,36 @@ begin
 
                 raise notice 'patching 2.0.2';
                 
+                _statement := $str$                
+                    CREATE OR REPLACE FUNCTION public.check_season()
+                            RETURNS TRIGGER AS
+                        $BODY$
+                        BEGIN
+                            IF NOT EXISTS (SELECT id FROM public.season WHERE id != NEW.id AND site_id = NEW.site_id AND enabled = true AND start_date <= NEW.start_date AND end_date >= NEW.end_date) THEN
+                                RETURN NEW;
+                            ELSE
+                                RAISE EXCEPTION 'Nested seasons are not allowed';
+                            END IF;
+                        END;
+                        $BODY$
+                        LANGUAGE plpgsql VOLATILE;
+                        
+                    CREATE TRIGGER check_season_dates 
+                        BEFORE INSERT OR UPDATE ON public.season
+                        FOR EACH ROW EXECUTE PROCEDURE public.check_season();
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;              
+
+                if not exists (select * from config where key = 'processor.s4c_l4a.mode') then
+                    _statement := $str$
+                        INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4a.mode', NULL, 'both', '2019-02-19 11:09:58.820032+02');
+                        INSERT INTO config_metadata VALUES ('processor.s4c_l4a.mode', 'Mode', 'string', FALSE, 5, TRUE, 'Mode (both, s1-only, s2-only)', '{"min":"","step":"","max":""}');
+                    $str$;
+                    raise notice '%', _statement;
+                    execute _statement;
+                end if;
+
                 _statement := $str$
                     DROP FUNCTION IF EXISTS sp_get_dashboard_products_nodes(integer[], integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[], boolean);
                     
@@ -148,6 +178,85 @@ begin
                     raise notice '%', _statement;
                     execute _statement;              
             
+-- Update functions for updating the end timestamp of the job (also to correctly display the end date of the job in the monitoring tab)
+                    _statement := $str$                        
+                        CREATE OR REPLACE FUNCTION sp_mark_job_finished(
+                        IN _job_id int
+                        ) RETURNS void AS $$
+                        BEGIN
+
+                            UPDATE job
+                            SET status_id = 6, --Finished
+                            status_timestamp = now(),
+                            end_timestamp = now()
+                            WHERE id = _job_id; 
+
+                        END;
+                        $$ LANGUAGE plpgsql;
+                    $str$;
+                    raise notice '%', _statement;
+                    execute _statement;                
+
+                    _statement := $str$                        
+                        CREATE OR REPLACE FUNCTION sp_mark_job_cancelled(
+                        IN _job_id int
+                        ) RETURNS void AS $$
+                        BEGIN
+
+                            IF (SELECT current_setting('transaction_isolation') NOT ILIKE 'REPEATABLE READ') THEN
+                                RAISE EXCEPTION 'The transaction isolation level has not been set to REPEATABLE READ as expected.' USING ERRCODE = 'UE001';
+                            END IF;
+
+                            UPDATE step
+                            SET status_id = 7, --Cancelled
+                            status_timestamp = now()
+                            FROM task
+                            WHERE task.id = step.task_id AND task.job_id = _job_id
+                            AND step.status_id NOT IN (6, 8) -- Finished or failed steps can't be cancelled
+                            AND step.status_id != 7; -- Prevent resetting the status on serialization error retries.
+
+                            UPDATE task
+                            SET status_id = 7, --Cancelled
+                            status_timestamp = now()
+                            WHERE job_id = _job_id
+                            AND status_id NOT IN (6, 8) -- Finished or failed tasks can't be cancelled
+                            AND status_id != 7; -- Prevent resetting the status on serialization error retries.
+
+                            UPDATE job
+                            SET status_id = 7, --Cancelled
+                            status_timestamp = now(),
+                            end_timestamp = now()
+                            WHERE id = _job_id
+                            AND status_id NOT IN (6, 7, 8); -- Finished or failed jobs can't be cancelled
+                        END;
+                        $$ LANGUAGE plpgsql;
+                    $str$;
+                    raise notice '%', _statement;
+                    execute _statement;                
+
+                    _statement := $str$                        
+                        CREATE OR REPLACE FUNCTION sp_mark_job_failed(
+                        IN _job_id int
+                        ) RETURNS void AS $$
+                        BEGIN
+                            -- Remaining tasks should be cancelled; the task that has failed has already been marked as failed.
+                            UPDATE task
+                            SET status_id = 7, -- Cancelled
+                            status_timestamp = now()
+                            WHERE job_id = _job_id
+                            AND status_id NOT IN (6, 7, 8); -- Finished, cancelled or failed tasks can't be cancelled
+
+                            UPDATE job
+                            SET status_id = 8, -- Error
+                            status_timestamp = now(),
+                            end_timestamp = now()
+                            WHERE id = _job_id;
+
+                        END;
+                        $$ LANGUAGE plpgsql;
+                    $str$;
+                    raise notice '%', _statement;
+                    execute _statement;                
             end if;
             
             

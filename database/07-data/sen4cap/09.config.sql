@@ -8,8 +8,8 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('archiver.max_age.
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.cog-tiffs', NULL, '0', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.compress-tiffs', NULL, '0', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.gips-path', NULL, '/mnt/archive/gipp/', '2016-02-24 18:12:16.464479+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.maccs-launcher', NULL, '/opt/maccs/core/5.1/bin/maccs', '2016-02-25 16:29:07.763339+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.gips-path', NULL, '/mnt/archive/gipp_maja', '2016-02-24 18:12:16.464479+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.maccs-launcher', NULL, '/opt/maja/3.2.2/bin/maja', '2016-02-25 16:29:07.763339+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.output-path', NULL, '/mnt/archive/maccs_def/{site}/{processor}/', '2016-02-24 18:09:17.379905+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.remove-fre', NULL, '0', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.remove-sre', NULL, '1', '2017-10-24 14:56:57.501918+02');
@@ -201,7 +201,6 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.sub_steps', NULL, 'ALL,DataExtraction,CatchCrop,Fallow,NFC,HarvestOnly,AllTimeSeriesAnalysis', '2019-04-12 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.nrt_data_extr_enabled', NULL, 'true', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ts_input_tables_dir', NULL, '/mnt/archive/agric_practices_files/{site}/input_files', '2019-04-12 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.ndvi_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/data_extraction/ndvi', '2019-04-12 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.amp_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/data_extraction/amp', '2019-04-12 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4c.cohe_data_extr_dir', NULL, '/mnt/archive/agric_practices_files/{site}/data_extraction/cohe', '2019-04-12 14:56:57.501918+02');

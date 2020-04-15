@@ -1,4 +1,4 @@
-create table product_provenance(
+create table if not exists product_provenance(
     product_id int not null,
     parent_product_id int not null,
     parent_product_date timestamp with time zone not null,
