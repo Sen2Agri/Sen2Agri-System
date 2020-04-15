@@ -166,6 +166,12 @@ def get_tile_hdr(tile, path):
         hdr = entries[0]
         return hdr
 
+    pat = "MTD_MSIL2A.xml".format(tile)
+    entries = glob(os.path.join(path, pat))
+    if len(entries) > 0:
+        hdr = entries[0]
+        return hdr
+
     print("No HDR found for tile {} in {}".format(tile, path))
     return None
 

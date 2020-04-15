@@ -44,7 +44,7 @@ class Config(object):
         self.dbname = parser.get("Database", "DatabaseName")
         self.user = parser.get("Database", "UserName")
         self.password = parser.get("Database", "Password")
-        
+
         self.ogr2ogr_path = args.ogr2ogr_path
 
 
@@ -107,13 +107,25 @@ def drop_table(conn, name):
 
 
 def import_crop_type(config, conn, pg_path, product_id, path):
-    path = os.path.join(path, "VECTOR_DATA", "Predict_classif_*.csv")
+    path = os.path.join(path, "VECTOR_DATA", "Parcels_classified_*.csv")
     for file in glob(path):
         table_name = "pd_ct_staging_{}".format(product_id)
 
         drop_table(conn, table_name)
 
-        command = get_import_table_command(config.ogr2ogr_path, pg_path, file, "-nln", table_name, "-gt", 100000, "-lco", "UNLOGGED=YES", "-oo", "AUTODETECT_TYPE=YES")
+        command = get_import_table_command(
+            config.ogr2ogr_path,
+            pg_path,
+            file,
+            "-nln",
+            table_name,
+            "-gt",
+            100000,
+            "-lco",
+            "UNLOGGED=YES",
+            "-oo",
+            "AUTODETECT_TYPE=YES",
+        )
         run_command(command)
 
         with conn.cursor() as cursor:
@@ -160,7 +172,17 @@ def import_agricultural_practices(config, conn, pg_path, product_id, path):
 
         drop_table(conn, table_name)
 
-        command = get_import_table_command(config.ogr2ogr_path, pg_path, file, "-nln", table_name, "-gt", 100000, "-lco", "UNLOGGED=YES")
+        command = get_import_table_command(
+            config.ogr2ogr_path,
+            pg_path,
+            file,
+            "-nln",
+            table_name,
+            "-gt",
+            100000,
+            "-lco",
+            "UNLOGGED=YES",
+        )
         run_command(command)
 
         with conn.cursor() as cursor:
@@ -242,7 +264,7 @@ def import_agricultural_practices(config, conn, pg_path, product_id, path):
                         p_s1gaps,
                         h_w_s1gaps,
                         h_quality,
-                        c_quality                        
+                        c_quality
                     from {}
                     """
             ).format(Literal(product_id), Literal(practice_id), Identifier(table_name))
@@ -254,19 +276,35 @@ def import_agricultural_practices(config, conn, pg_path, product_id, path):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Imports product contents into the database")
-    parser.add_argument('-c', '--config-file', default='/etc/sen2agri/sen2agri.conf', help="configuration file location")
-    parser.add_argument('-p', '--product-id', type=int, help="product id")
-    parser.add_argument('-g', '--ogr2ogr-path', default='ogr2ogr', help="The path to ogr2ogr")
+    parser = argparse.ArgumentParser(
+        description="Imports product contents into the database"
+    )
+    parser.add_argument(
+        "-c",
+        "--config-file",
+        default="/etc/sen2agri/sen2agri.conf",
+        help="configuration file location",
+    )
+    parser.add_argument("-p", "--product-id", type=int, help="product id")
+    parser.add_argument(
+        "-g", "--ogr2ogr-path", default="ogr2ogr", help="The path to ogr2ogr"
+    )
 
     args = parser.parse_args()
 
     config = Config(args)
 
-    pg_path = 'PG:dbname={} host={} port={} user={} password={}'.format(config.dbname, config.host,
-                                                                        config.port, config.user, config.password)
+    pg_path = "PG:dbname={} host={} port={} user={} password={}".format(
+        config.dbname, config.host, config.port, config.user, config.password
+    )
 
-    with psycopg2.connect(host=config.host, port=config.port, dbname=config.dbname, user=config.user, password=config.password) as conn:
+    with psycopg2.connect(
+        host=config.host,
+        port=config.port,
+        dbname=config.dbname,
+        user=config.user,
+        password=config.password,
+    ) as conn:
         r = get_product_info(conn, args.product_id)
         if r is None:
             print("Invalid product id {}".format(args.product_id))
