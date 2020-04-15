@@ -604,10 +604,13 @@ QString AgricPracticesHandler::BuildMergeResultFileName(const QString &country, 
             append(GetShortNameForProductType(prdsType)).append("_Extracted_Data.csv");
 }
 
-QString AgricPracticesHandler::BuildPracticesTableResultFileName(const QString &country, const QString &year, const QString &suffix)
+QString AgricPracticesHandler::BuildPracticesTableResultFileName(const QString &practice, const QString &year, const QString &country)
 {
-    return QString("Sen4CAP_L4C_").append(suffix).append("_").append(country).
-            append("_").append(year).append(".csv");
+    QString ret = QString("Sen4CAP_L4C_").append(practice);
+    if (country.size() > 0) {
+        ret.append("_");
+    }
+    return ret.append(country).append("_").append(year).append(".csv");
 }
 
 void AgricPracticesHandler::CreatePrdDataExtrTasks(const AgricPracticesJobCfg &jobCfg, QList<TaskToSubmit> &outAllTasksList,
@@ -1248,16 +1251,23 @@ QMap<QString, QString> AgricPracticesHandler::GetPracticeTableFiles(const QJsonO
             continue;
         }
         const QString &tsInputTablesDir = GetTsInputTablesDir(parameters, configParameters, siteShortName, year, strTrimmedPractice);
-        const QString &country = ProcessorHandlerHelper::GetStringConfigValue(parameters,
-                                        configParameters, "country", L4C_AP_CFG_PREFIX);
-
-        const QString &fileName = BuildPracticesTableResultFileName(country, year, strTrimmedPractice);
+        const QString &fileName = BuildPracticesTableResultFileName(strTrimmedPractice, year);
         const QString &practiceFilePath = QDir(tsInputTablesDir).filePath(fileName);
         if(QFileInfo(practiceFilePath).exists()) {
             retMap.insert(strTrimmedPractice, practiceFilePath);
         } else {
-            // Just put an empty string and let the caller decide what to do
-            retMap.insert(strTrimmedPractice, "");
+            // just to check the compatibility with the old naming, if the input tables are not regenerated
+            // @Deprecated ... TODO to be removed in a future version
+            const QString &country = ProcessorHandlerHelper::GetStringConfigValue(parameters,
+                                               configParameters, "country", L4C_AP_CFG_PREFIX);
+            const QString &fileName2 = BuildPracticesTableResultFileName(strTrimmedPractice, year, country);
+            const QString &practiceFilePath2 = QDir(tsInputTablesDir).filePath(fileName2);
+            if(QFileInfo(practiceFilePath2).exists()) {
+                retMap.insert(strTrimmedPractice, practiceFilePath2);
+            } else {
+                // Just put an empty string and let the caller decide what to do
+                retMap.insert(strTrimmedPractice, "");
+            }
         }
     }
 

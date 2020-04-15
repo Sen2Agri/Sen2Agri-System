@@ -149,7 +149,7 @@ private:
                                           const QString &inNdviFile, const QString &inAmpFile, const QString &inCoheFile,
                                           const QString &outDir);
     QString BuildMergeResultFileName(const QString &country, const QString &year, const ProductType &prdsType);
-    QString BuildPracticesTableResultFileName(const QString &country, const QString &year, const QString &suffix);
+    QString BuildPracticesTableResultFileName(const QString &practice, const QString &year, const QString &country = "");
 
     void CreatePrdDataExtrTasks(const AgricPracticesJobCfg &jobCfg, QList<TaskToSubmit> &outAllTasksList,
                                 const QString &taskName,
