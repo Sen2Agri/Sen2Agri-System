@@ -21,6 +21,7 @@
         } else {
             if (is_file($absolute_path)) {
                 $absolute_path = rtrim(normalizePath($absolute_path), '/');
+                $absolute_path = dirname($absolute_path);
             }
             $absolute_path = rtrim(normalizePath($absolute_path), '/');
             $image_path = $absolute_path.'/'.$quicklook_img;
