@@ -125,6 +125,10 @@ class Config(object):
         self.path = args.path
         self.lpis_path = args.lpis_path
         self.tiles = args.tiles
+        if args.products:
+            self.products = set(args.products)
+        else:
+            self.products = None
         self.mode = args.mode
 
         self.season_start = parse_date(args.season_start)
@@ -292,6 +296,7 @@ def process_optical(config, conn, pool, satellite_id):
         query = SQL(
             """
             select site_id,
+                   name,
                    full_path,
                    tiles,
                    created_timestamp
@@ -319,9 +324,11 @@ def process_optical(config, conn, pool, satellite_id):
         conn.commit()
 
     product_map = defaultdict(lambda: defaultdict(list))
-    for (site_id, full_path, tiles, created_timestamp) in products:
+    for (site_id, name, full_path, tiles, created_timestamp) in products:
         for tile in tiles:
             if config.tiles is not None and tile not in config.tiles:
+                continue
+            if config.products is not None and name not in config.products:
                 continue
 
             product = OpticalProduct(site_id, tile, created_timestamp.date(), full_path)
@@ -709,6 +716,7 @@ def get_radar_products(config, conn, site_id):
                     product.orbit_type_id,
                     split_part(product.name, '_', 6) as polarization,
                     product.product_type_id,
+                    product.name,
                     product.full_path
                 from sp_get_site_tiles({} :: smallint, 1 :: smallint) as site_tiles
                 inner join shape_tiles_s2 on shape_tiles_s2.tile_id = site_tiles.tile_id
@@ -740,18 +748,20 @@ def get_radar_products(config, conn, site_id):
             orbit_type_id,
             polarization,
             radar_product_type,
+            name,
             full_path,
         ) in results:
-            products.append(
-                RadarProduct(
-                    dt,
-                    tile_id,
-                    orbit_type_id,
-                    polarization,
-                    radar_product_type,
-                    full_path,
+            if config.products is None or name in config.products:
+                products.append(
+                    RadarProduct(
+                        dt,
+                        tile_id,
+                        orbit_type_id,
+                        polarization,
+                        radar_product_type,
+                        full_path,
+                    )
                 )
-            )
 
         return products
 
@@ -1341,7 +1351,8 @@ def main():
     parser.add_argument("--season-end", help="season end date")
     parser.add_argument("-p", "--path", default=".", help="working path")
     parser.add_argument("--lpis-path", help="path to the rasterized LPIS")
-    parser.add_argument("--tiles", default=None, nargs="+", help="tile filter")
+    parser.add_argument("--tiles", nargs="+", help="tile filter")
+    parser.add_argument("--products", nargs="+", help="product filter")
     args = parser.parse_args()
 
     config = Config(args)
