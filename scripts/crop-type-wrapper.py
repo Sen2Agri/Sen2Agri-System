@@ -60,6 +60,7 @@ class Config(object):
 
         self.site_id = args.site_id
         self.tiles = args.tiles
+        self.products = args.products
 
         self.season_start = parse_date(args.season_start)
         self.season_end = parse_date(args.season_end)
@@ -131,7 +132,8 @@ def main():
     parser.add_argument("--season-end", help="season end date")
     parser.add_argument("--out-path", default=".", help="output path")
     parser.add_argument("--working-path", default=".", help="working path")
-    parser.add_argument("--tiles", default=None, nargs="+", help="tile filter")
+    parser.add_argument("--tiles", nargs="+", help="tile filter")
+    parser.add_argument("--products", nargs="+", help="product filter")
     parser.add_argument("--lc", help="LC classes to assess", default="1234")
     parser.add_argument(
         "--min-s2-pix", type=int, help="minimum number of S2 pixels", default=3
@@ -234,6 +236,8 @@ def main():
         command += ["--lpis-path", lpis_path]
         if config.tiles:
             command += ["--tiles"] + config.tiles
+        if config.products:
+            command += ["--products"] + config.products
         if config_file:
             command += ["-c", config_file]
 
@@ -251,6 +255,8 @@ def main():
         command += ["--lpis-path", lpis_path]
         if config.tiles:
             command += ["--tiles"] + config.tiles
+        if config.products:
+            command += ["--products"] + config.products
         if config_file:
             command += ["-c", config_file]
 
