@@ -170,7 +170,7 @@ def get_tile_hdr(tile, path):
         hdr = entries[0]
         return hdr
 
-    pat = "MTD_MSIL2A.xml".format(tile)
+    pat = "MTD_MSIL2A.xml"
     entries = glob(os.path.join(path, pat))
     if len(entries) > 0:
         hdr = entries[0]
