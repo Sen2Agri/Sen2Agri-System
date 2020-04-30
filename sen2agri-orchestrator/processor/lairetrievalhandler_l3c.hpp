@@ -120,6 +120,8 @@ private:
     QMap<QString, TileTemporalFilesInfo> FilterSecondaryProductTiles(const QMap<QString, TileTemporalFilesInfo> &mapTiles,
                                  const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles);
     QStringList GetL3BProductRasterFiles(const TileTemporalFilesInfo &tileTemporalFilesInfo, LAI_RASTER_ADDITIONAL_INFO_IDX idx);
+
+    friend class LaiRetrievalHandler;
 };
 
 #endif // LAIRETRIEVALHANDLERNEW_HPP

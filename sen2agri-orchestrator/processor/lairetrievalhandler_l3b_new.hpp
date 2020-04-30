@@ -125,6 +125,7 @@ private:
     QStringList GetL2ARelPathsFromProcessedL3Bs(EventProcessingContext &ctx, int siteId,
                                                 const QDateTime &startDate, const QDateTime &endDate, QStringList &retFullPaths);
 
+    friend class LaiRetrievalHandler;
 };
 
 #endif // LAIRETRIEVALHANDLERL3BNEW_HPP

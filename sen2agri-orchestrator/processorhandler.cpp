@@ -52,7 +52,12 @@ void ProcessorHandler::HandleJobSubmitted(EventProcessingContext &ctx,
     try {
         HandleJobSubmittedImpl(ctx, event);
     } catch (const std::exception &e) {
-        ctx.MarkJobFailed(event.jobId);
+        try {
+            ctx.MarkEmptyJobFailed(event.jobId, e.what());
+        } catch (const std::exception &e1) {
+            Logger::debug(QStringLiteral("Error marking job failed  %1").arg(e.what()));
+        }
+
         throw std::runtime_error(e.what());
     }
 }

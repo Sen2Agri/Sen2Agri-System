@@ -50,6 +50,7 @@ private:
                                    const QString &l3bProdName);
     QMap<QDate, QStringList> GroupProductTilesByDate(const QMap<QString, QStringList> &inputProductToTilesMap);
 
+    friend class LaiRetrievalHandler;
 };
 
 #endif // LAIRETRIEVALHANDLERL3F_HPP

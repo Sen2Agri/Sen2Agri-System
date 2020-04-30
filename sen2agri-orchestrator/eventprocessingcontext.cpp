@@ -76,6 +76,10 @@ void EventProcessingContext::MarkJobFinished(int jobId)
 }
 
 void EventProcessingContext::MarkJobFailed(int jobId) { persistenceManager.MarkJobFailed(jobId); }
+void EventProcessingContext::MarkEmptyJobFailed(int jobId, const QString &err)
+{
+    persistenceManager.MarkEmptyJobFailed(jobId, err);
+}
 
 void EventProcessingContext::MarkJobNeedsInput(int jobId)
 {

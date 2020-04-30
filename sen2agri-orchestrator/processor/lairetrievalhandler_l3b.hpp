@@ -79,6 +79,8 @@ private:
     QString GetExistingModelForTile(const QStringList &modelsList, const QString &tileFile);
 private:
 
+    friend class LaiRetrievalHandler;
+
 };
 
 #endif // LAIRETRIEVALHANDLERL3B_HPP

@@ -43,14 +43,14 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
     if(bMonoDateLai) {
         if (IsGenNdviMonoDateOnly(configParameters)) {
-            m_ndviHandler.HandleJobSubmitted(ctx, event);
+            m_ndviHandler.HandleJobSubmittedImpl(ctx, event);
         } else if (IsNewLaiMonoDateVersion(configParameters)) {
-            m_l3bHandlerNew.HandleJobSubmitted(ctx, event);
+            m_l3bHandlerNew.HandleJobSubmittedImpl(ctx, event);
         } else {
-            m_l3bHandler.HandleJobSubmitted(ctx, event);
+            m_l3bHandler.HandleJobSubmittedImpl(ctx, event);
         }
     } else if(bNDayReproc || bFittedReproc) {
-        m_l3cHandler.HandleJobSubmitted(ctx, event);
+        m_l3cHandler.HandleJobSubmittedImpl(ctx, event);
     }
 }
 

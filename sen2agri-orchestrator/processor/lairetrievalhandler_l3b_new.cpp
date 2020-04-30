@@ -165,10 +165,10 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
     const auto &laiCfgFile = configParameters["processor.l3b.lai.laibandscfgfile"];
-    bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_ndvi");
-    bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_lai");
-    bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_fapar");
-    bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_fcover");
+    bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "produce_ndvi", "processor.l3b.lai.produce_ndvi");
+    bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "produce_lai", "processor.l3b.lai.produce_lai");
+    bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "produce_fapar", "processor.l3b.lai.produce_fapar");
+    bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "produce_fcover", "processor.l3b.lai.produce_fcover");
 
     // Get the resolution value
     int resolution = 0;
@@ -433,12 +433,12 @@ void LaiRetrievalHandlerL3BNew::HandleJobSubmittedImpl(EventProcessingContext &c
     // throw exception if timeout exceeded
     JobSubmittedEvent event;
     int ret = UpdateJobSubmittedParamsFromSchedReq(ctx, evt, parameters, event);
-    // no products available from the scheduling ... just mark job as done
+    // no products available from the scheduling ... mark also the job as failed
     if (ret == 0) {
-        ctx.MarkJobFinished(event.jobId);
-        Logger::info(QStringLiteral("L3B Scheduled job with id %1 for site %2 marked as done as no products are available for now to process").
-                     arg(event.jobId).arg(event.siteId));
-        return;
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(
+                    QStringLiteral("L3B Scheduled job with id %1 for site %2 marked as done as no products are available for now to process").
+                                         arg(event.jobId).arg(event.siteId).toStdString());
     }
 
     bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "genndvi", "processor.l3b.lai.produce_ndvi");
@@ -448,7 +448,7 @@ void LaiRetrievalHandlerL3BNew::HandleJobSubmittedImpl(EventProcessingContext &c
     if (!bGenNdvi && !bGenLai && !bGenFapar && !bGenFCover) {
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(
-            QStringLiteral("No index was configured to be generated").toStdString());
+            QStringLiteral("No vedgetation index (NDVI, LAI, FAPAR or FCOVER) was configured to be generated").toStdString());
     }
 
     if(!QDir::root().mkpath(modelsFolder)) {

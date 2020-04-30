@@ -558,6 +558,23 @@ void PersistenceManagerDBProvider::MarkJobFinished(int jobId)
     });
 }
 
+void PersistenceManagerDBProvider::MarkEmptyJobFailed(int jobId, const QString &err) {
+    // add also a generic error task and step that contain the error string
+    NewTask task{ jobId, "generic-error-task", "{}", {} };
+    int taskId = SubmitTask(task);
+    // Imediately set the job failed as it sets also the task canceled in order to avoid sending it to executor
+    MarkJobFailed(jobId);
+    // Add also a step in order to have the error
+    NewStepList liststeps = {{taskId, "generic-error-step", "{\"arguments\":[\"/usr/bin/false\"]}"}};
+    SubmitSteps(liststeps);
+    ExecutionStatistics newStats;
+    newStats.node = "local_node";
+    newStats.stdErrText = err;
+    newStats.stdOutText = err;
+    newStats.exitCode = 1;
+    MarkStepFinished(taskId, "generic-error-step", newStats);
+}
+
 void PersistenceManagerDBProvider::MarkJobFailed(int jobId)
 {
     auto db = getDatabase();

@@ -48,6 +48,7 @@ public:
     void MarkJobCancelled(int jobId);
     void MarkJobFinished(int jobId);
     void MarkJobFailed(int jobId);
+    void MarkEmptyJobFailed(int jobId, const QString &err);
     void MarkJobNeedsInput(int jobId);
 
     TaskIdList GetJobTasksByStatus(int jobId, const ExecutionStatusList &statusList);
