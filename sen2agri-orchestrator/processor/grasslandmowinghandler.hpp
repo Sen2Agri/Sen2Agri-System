@@ -12,12 +12,13 @@ namespace grassland_mowing {
 
     typedef struct GrasslandMowingExecConfig {
         class GrasslandMowingHandler;
-        GrasslandMowingExecConfig(EventProcessingContext *pContext, const JobSubmittedEvent &evt) : event(evt) {
+        GrasslandMowingExecConfig(EventProcessingContext *pContext, int siteId, int jobId, const QString &parametersJson)
+            : pCtx(pContext), siteId(siteId), jobId(jobId) {
             pCtx = pContext;
-            parameters = QJsonDocument::fromJson(evt.parametersJson.toUtf8()).object();
-            configParameters = pCtx->GetJobConfigurationParameters(evt.jobId, L4B_GM_CFG_PREFIX);
+            parameters = QJsonDocument::fromJson(parametersJson.toUtf8()).object();
+            configParameters = pCtx->GetJobConfigurationParameters(jobId, L4B_GM_CFG_PREFIX);
             inputPrdsType = GetInputProductsType(parameters, configParameters);
-            siteShortName = pContext->GetSiteShortName(event.siteId);
+            siteShortName = pContext->GetSiteShortName(siteId);
             year = ProcessorHandlerHelper::GetStringConfigValue(parameters, configParameters,
                                                                 "year", L4B_GM_CFG_PREFIX);
             if (year.size() == 0) {
@@ -29,7 +30,8 @@ namespace grassland_mowing {
         static InputProductsType GetInputProductsType(const QString &str);
 
         EventProcessingContext *pCtx;
-        const JobSubmittedEvent &event;
+        int siteId;
+        int jobId;
         QJsonObject parameters;
         std::map<QString, QString> configParameters;
 

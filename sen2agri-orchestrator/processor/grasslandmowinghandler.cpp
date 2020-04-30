@@ -195,7 +195,7 @@ void GrasslandMowingHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
     QString err;
-    GrasslandMowingExecConfig cfg(&ctx, event);
+    GrasslandMowingExecConfig cfg(&ctx, event.siteId, event.jobId, event.parametersJson);
 
     if (!CheckInputParameters(cfg, err)) {
         ctx.MarkJobFailed(event.jobId);
@@ -251,7 +251,7 @@ QStringList GrasslandMowingHandler::GetProductFormatterArgs(TaskToSubmit &produc
     //    -fileclass OPER -level S4C_L4B -baseline 01.00 -siteid 4 -timeperiod 20180101_20181231 -processor generic
     //    -processor.generic.files <files_list>
 
-    const auto &targetFolder = GetFinalProductFolder(*(cfg.pCtx), cfg.event.jobId, cfg.event.siteId);
+    const auto &targetFolder = GetFinalProductFolder(*(cfg.pCtx), cfg.jobId, cfg.siteId);
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
     QString strTimePeriod = cfg.startDate.toString("yyyyMMddTHHmmss").append("_").append(cfg.endDate.toString("yyyyMMddTHHmmss"));
@@ -261,7 +261,7 @@ QStringList GrasslandMowingHandler::GetProductFormatterArgs(TaskToSubmit &produc
                                          "-level", "S4C_L4B",
                                          "-vectprd", "1",
                                          "-baseline", "01.00",
-                                         "-siteid", QString::number(cfg.event.siteId),
+                                         "-siteid", QString::number(cfg.siteId),
                                          "-timeperiod", strTimePeriod,
                                          "-processor", "generic",
                                          "-outprops", outPropsPath,
@@ -379,7 +379,7 @@ QStringList GrasslandMowingHandler::GetInputShpGeneratorArgs(GrasslandMowingExec
     const QString &pyScriptPath = ProcessorHandlerHelper::GetStringConfigValue(cfg.parameters, cfg.configParameters,
                                                                           "gen_shp_py_script", L4B_GM_CFG_PREFIX);
 
-    QStringList retArgs =  {"-s", QString::number(cfg.event.siteId),
+    QStringList retArgs =  {"-s", QString::number(cfg.siteId),
             "-y", cfg.year,
             "-o", outShpFile};
     if (pyScriptPath.size() > 0) {
@@ -409,7 +409,7 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
 
     QStringList retArgs = {
                             "--script-path", scriptToInvoke,
-                            "--site-id", QString::number(cfg.event.siteId),
+                            "--site-id", QString::number(cfg.siteId),
                             "--config-file", cfg.l4bCfgFile,
                             "--input-shape-file", inputShpLocation,
                             "--output-data-dir", outDataDir,
@@ -444,7 +444,7 @@ void GrasslandMowingHandler::UpdatePrdInfos(GrasslandMowingExecConfig &cfg,
 {
     QDateTime tmpStartDate, tmpEndDate;
     for (const auto &prd: arrPrds) {
-        const QString &prdPath = cfg.pCtx->GetProductAbsolutePath(cfg.event.siteId, prd.toString());
+        const QString &prdPath = cfg.pCtx->GetProductAbsolutePath(cfg.siteId, prd.toString());
         if (ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prd.toString(), tmpStartDate, tmpEndDate)) {
             ProcessorHandlerHelper::UpdateMinMaxTimes(tmpEndDate, startDate, endDate);
         }
