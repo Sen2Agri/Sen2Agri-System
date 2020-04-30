@@ -257,43 +257,48 @@ std::vector<CommonFileInformation> ReadSEN2CORImageFileInformation(const TiXmlEl
     if (!productOrganizationEl) {
         return result;
     }
-    const TiXmlElement *granuleListEl = productOrganizationEl->FirstChildElement("Granule_List");
-    if (!granuleListEl) {
-        return result;
-    }
-    // the structure of the xml files sugests that there may be more than 1 tile pre product. This isn't handled here,
-    // so if there are more than 1 tile per product, only the first one will be handled.
-    const TiXmlElement *granuleEl = granuleListEl->FirstChildElement("Granule");
-    if (!granuleEl) {
+    const TiXmlElement *firstGranuleListEl = productOrganizationEl->FirstChildElement("Granule_List");
+    if (!firstGranuleListEl) {
         return result;
     }
 
-    for (auto fileEl = granuleEl->FirstChildElement("IMAGE_FILE"); fileEl;
-         fileEl = fileEl->NextSiblingElement("IMAGE_FILE")) {
-        CommonFileInformation imageFile;
-        //no nature for the image files, so set one by default
-        imageFile.Nature = "PIC";
-        // no BandNumber, BitNumber or GroupId in SEN2COR
-        imageFile.BandNumber = -1;
-        imageFile.BitNumber = -1;
-        imageFile.GroupId = "";
+    for (auto granuleListEl = firstGranuleListEl; granuleListEl;
+         granuleListEl = granuleListEl->NextSiblingElement("Granule_List")) {
 
-        imageFile.FileLocation = GetText(fileEl);
-        if (imageFile.FileLocation.size() >= 2) {
-            if (imageFile.FileLocation.substr(0, 2).compare("./") != 0) {
-                imageFile.FileLocation.insert(0, "./");
-            }
-            imageFile.FileLocation.append(".jp2");
-            imageFile.LogicalName = GetLogicalFileName(imageFile.FileLocation, false);
-            /*size_t lastSlashPos = imageFile.FileLocation.find_last_of("/");
-            if (lastSlashPos != std::string::npos && lastSlashPos + 1 < imageFile.FileLocation.size()) {
-                imageFile.LogicalName = imageFile.FileLocation.substr(lastSlashPos + 1, imageFile.FileLocation.size() - lastSlashPos);
-            } else {
-                imageFile.LogicalName = imageFile.FileLocation;
-            }
-            */
+        // the structure of the xml files sugests that there may be more than 1 tile pre product. This isn't handled here,
+        // so if there are more than 1 tile per product, only the first one will be handled.
+        const TiXmlElement *granuleEl = granuleListEl->FirstChildElement("Granule");
+        if (!granuleEl) {
+            continue;
         }
-        result.emplace_back(imageFile);
+
+        for (auto fileEl = granuleEl->FirstChildElement("IMAGE_FILE"); fileEl;
+             fileEl = fileEl->NextSiblingElement("IMAGE_FILE")) {
+            CommonFileInformation imageFile;
+            //no nature for the image files, so set one by default
+            imageFile.Nature = "PIC";
+            // no BandNumber, BitNumber or GroupId in SEN2COR
+            imageFile.BandNumber = -1;
+            imageFile.BitNumber = -1;
+            imageFile.GroupId = "";
+
+            imageFile.FileLocation = GetText(fileEl);
+            if (imageFile.FileLocation.size() >= 2) {
+                if (imageFile.FileLocation.substr(0, 2).compare("./") != 0) {
+                    imageFile.FileLocation.insert(0, "./");
+                }
+                imageFile.FileLocation.append(".jp2");
+                imageFile.LogicalName = GetLogicalFileName(imageFile.FileLocation, false);
+                /*size_t lastSlashPos = imageFile.FileLocation.find_last_of("/");
+                if (lastSlashPos != std::string::npos && lastSlashPos + 1 < imageFile.FileLocation.size()) {
+                    imageFile.LogicalName = imageFile.FileLocation.substr(lastSlashPos + 1, imageFile.FileLocation.size() - lastSlashPos);
+                } else {
+                    imageFile.LogicalName = imageFile.FileLocation;
+                }
+                */
+            }
+            result.emplace_back(imageFile);
+        }
     }
 
     return result;
