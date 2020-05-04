@@ -132,7 +132,7 @@ function updateWebConfigParams()
      if [[ !  -z  $REST_SERVER_PORT  ]] ; then
         sed -i -e "s|static \$DEFAULT_REST_SERVICES_URL = \x27http:\/\/localhost:8080|static \$DEFAULT_REST_SERVICES_URL = \x27http:\/\/localhost:$REST_SERVER_PORT|g" /var/www/html/ConfigParams.php
      fi
-     
+
     if [[ ! -z $DB_NAME ]] ; then
         sed -i -e "s|static \$DEFAULT_DB_NAME = \x27sen2agri|static \$DEFAULT_DB_NAME = \x27${DB_NAME}|g" /var/www/html/ConfigParams.php
     fi
@@ -178,9 +178,9 @@ fi
 echo "$DB_NAME"
 
 TARGET_SERVICES_DIR="/usr/share/sen2agri/sen2agri-services"
-#if [ "$DB_NAME" != "sen2agri" ] ; then 
+#if [ "$DB_NAME" != "sen2agri" ] ; then
 #    if [ -d "/usr/share/sen2agri/${DB_NAME}-services" ] ; then
-#        TARGET_SERVICES_DIR="/usr/share/sen2agri/${DB_NAME}-services"    
+#        TARGET_SERVICES_DIR="/usr/share/sen2agri/${DB_NAME}-services"
 #    fi
 #fi
 
@@ -250,13 +250,22 @@ else
     if [ -f /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh ] ; then
         echo "/home/sen2agri-service/miniconda3/etc/profile.d/conda.sh found ..."
         echo "Miniconda already installed for user sen2agri-service. Nothing to do ..."
-    else 
+    else
         sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b"
         # sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b -p /mnt/archive/sen4cap_miniconda/miniconda3/"
         # sudo -u sen2agri-service bash -c 'echo ". /mnt/archive/sen4cap_miniconda/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
         echo "Updating bashrc ..."
         sudo -u sen2agri-service bash -c 'echo ". /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
     fi
+    echo "Updating R packages..."
+    Rscript - <<- EOF
+    packages <- c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily", "caTools", "tidyverse", "data.table")
+    diff <- setdiff(packages, rownames(installed.packages()))
+    if (length(diff) > 0) {
+        install.packages(diff, repos = c(CRAN = "https://cran.rstudio.com"))
+    }
+EOF
+
     echo "Setting report_errors to false..."
     sudo su -l sen2agri-service -c bash -c "conda config --set report_errors false"
     CUR_SEN4CAP_ENV_VAL=$(sudo su -l sen2agri-service -c bash -c "conda info --envs" | grep sen4cap)
@@ -265,7 +274,7 @@ else
         sudo su -l sen2agri-service -c bash -c "conda env create --file=/mnt/archive/sen4cap_conda.yml"
         echo "Printing current environments ..."
         sudo su -l sen2agri-service -c bash -c "conda info --envs"
-    else 
+    else
         echo "sen4cap conda environment already exists. Nothing to do ..."
         echo "Environments:"
         sudo su -l sen2agri-service -c bash -c "conda info --envs"
