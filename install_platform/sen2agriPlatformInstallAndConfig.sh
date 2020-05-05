@@ -552,8 +552,8 @@ function install_additional_packages()
 
         cp -f ${GPT_CONFIG_FILE} /opt/snap/bin/
 
-        # Install R-devel
-        yum install -y R-devel
+        # Install R
+        yum install -y R-devel libcurl-devel openssl-devel libxml2-devel
         Rscript - <<- EOF
         packages <- c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily", "caTools", "tidyverse", "data.table")
         diff <- setdiff(packages, rownames(installed.packages()))

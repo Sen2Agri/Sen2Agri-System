@@ -166,7 +166,7 @@ systemctl stop sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2ag
 
 saveOldDownloadCredentials
 
-yum -y install python-dateutil
+yum -y install python-dateutil libcurl-devel openssl-devel libxml2-devel
 yum -y update postgis2_94 geos
 yum -y install ../rpm_binaries/*.rpm
 
