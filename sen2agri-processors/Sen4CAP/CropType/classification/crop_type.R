@@ -50,13 +50,15 @@ LUT <-variable[22]
 
 # LC
 
-if (!(LC_monitored %in% c(1,2,3,4,5,0,"All","123","1234"))) {
-  stop("Wrong argument: choose out of (1,2,3,4,5,0,'All','123','1234')", call.=FALSE)
+if (!(LC_monitored %in% c(1,2,3,4,5,0,"All","12","123","1234"))) {
+  stop("Wrong argument: choose out of (1,2,3,4,5,0,'All','12','123','1234')", call.=FALSE)
 }
 
 if(LC_monitored=="All") landcover=c(0,1,2,3,4,5)
 if(LC_monitored=="1234") landcover=c(1,2,3,4)
 if(LC_monitored=="123") landcover=c(1,2,3)
+if(LC_monitored=="12") landcover=c(1,2)
+
 print(paste0("Monitored land cover classes are:",landcover))
 
 # Sampling method
