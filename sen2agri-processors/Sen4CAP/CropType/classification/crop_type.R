@@ -749,8 +749,8 @@ results_pred_crop_types_filter_F_score$Cumulative_area_percentage[1:length(resul
 results_pred_crop_types_filter_F_score<-rbind(c(NA,NA,NA,NA,NA,Accuracy_metrics$Kappa,"Kappa","Kappa"),results_pred_crop_types_filter_F_score)
 results_pred_crop_types_filter_F_score<-rbind(c(NA,NA,NA,NA,NA,Accuracy_metrics$Accuracy,"Overall accuracy","Overall accuracy"),results_pred_crop_types_filter_F_score)
 
-for (i in c(1:nrow(results_pred_crop_types_filter_F_score))) {
-  results_pred_crop_types_filter_F_score[is.nan(results_pred_crop_types_filter_F_score$Value)] <-NA
+for (row in nrow(results_pred_crop_types_filter_F_score)) {
+  results_pred_crop_types_filter_F_score$Value[is.nan(as.numeric(results_pred_crop_types_filter_F_score$Value))] <-NA
 }
 
 results_pred_crop_types_filter_F_score$CTL4A<-as.character(results_pred_crop_types_filter_F_score$CTL4A)
