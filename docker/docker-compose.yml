@@ -9,4 +9,4 @@ services:
         volumes:
             - /var/lib/postgresql/data:/var/lib/postgresql/data
             - /var/run/postgresql:/var/run/postgresql
-        restart: always
+        restart: unless-stopped
