@@ -476,16 +476,7 @@ function install_downloaders_demmacs()
    #reload daemon to update it with new services
    systemctl daemon-reload
 
-   #start imediately the services for downloaders and demmacs
-   # note that enable --now doesn't work for timers on CentOS 7
-   #NOTE: since 1.8 these downloaders are no longer used. The sen2agri-services are used instead
-#   systemctl enable sen2agri-landsat-downloader.timer
-#   systemctl start sen2agri-landsat-downloader.timer
-#   systemctl enable sen2agri-sentinel-downloader.timer
-#   systemctl start sen2agri-sentinel-downloader.timer
-   #the demmaccs service may be started whenever it's time will come
-   #starting it at the same time with downloaders, will do nothing 'cause it
-   #will not find any downloaded product
+   # `systemctl enable --now` doesn't work for timers on CentOS 7
    systemctl enable sen2agri-demmaccs.timer
    systemctl start sen2agri-demmaccs.timer
 
