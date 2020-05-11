@@ -367,7 +367,7 @@ function install_and_config_postgresql()
 
    # first, the database is created. the privileges will be set after all
    # the tables, data and other stuff is created (see down, privileges.sql
-   cat "$(find ./ -name "database")/00-database"/sen2agri.sql | su - postgres -c 'psql'
+   cat "$(find ./ -name "database")/00-database"/sen2agri.sql | psql -U postgres
 
     if ! [[ "${SEN2AGRI_DATABASE_NAME}" == "sen2agri" ]] ; then
         sed -i -re "s|'demmaccs.maccs-launcher',([^,]+),\s+'[^']+'|'demmaccs.maccs-launcher',\1, '${l1c_processor_location}'|" $(find ./ -name "database")/07-data/${SEN2AGRI_DATABASE_NAME}/09.config.sql
@@ -407,7 +407,7 @@ function populate_from_scripts()
         fi
          ## perform execution of each sql script
          echo "Executing SQL script: $scriptToExecute"
-         cat "$scriptToExecute" | su - postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
+         cat "$scriptToExecute" | psql -U postgres "${SEN2AGRI_DATABASE_NAME}"
       done
     # Now check for the custom db folder if there are new scripts, others than in sen2agri. In this case, we must execute them too
     if [ -d "$customDbPath" ]; then
@@ -418,7 +418,7 @@ function populate_from_scripts()
             if [[ ! -f ${curPath}/${scriptFileName} ]]; then
                 ## perform execution of each sql script
                 echo "Executing SQL script: $scriptToExecute"
-                cat "$scriptToExecute" | su - postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
+                cat "$scriptToExecute" | psql -U postgres "${SEN2AGRI_DATABASE_NAME}"
             fi
         done
     fi
