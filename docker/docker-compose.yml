@@ -1,0 +1,12 @@
+version: '3.0'
+services:
+    db:
+        image: postgis/postgis:11-3.0
+        environment:
+            POSTGRES_PASSWORD: sen2agri
+        ports:
+            - "5432:5432"
+        volumes:
+            - /var/lib/postgresql/data:/var/lib/postgresql/data
+            - /var/run/postgresql:/var/run/postgresql
+        restart: always

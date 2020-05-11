@@ -335,27 +335,19 @@ function create_and_config_slurm_qos()
    scontrol show node
 }
 #-----------------------------------------------------------#
+function config_docker()
+{
+    cd docker
+    docker-compose up
+    cd ..
+}
+#-----------------------------------------------------------#
 function install_and_config_postgresql()
 {
-   #------------INSTALL AND START------------#
-   #install PostgreSQL
-   yum -y install postgresql94-server
+   # NB: the container uses `trust`, not `peer` for local connections
 
-   #initialize the database in PGDATA
-   /usr/pgsql-9.4/bin/postgresql94-setup initdb
-
-   #install pgcrypto in PostgreSQL
-   yum -y install postgresql94-contrib
-
-   #install PostGIS
-   yum -y install postgis22_94
-
-   #start service Postgresql and enable to start at boot
-   systemctl enable postgresql-9.4.service
-   systemctl start postgresql-9.4.service
-
-   ##get status of postgresql-9.4 daemon
-   echo "POSTGRESQL SERVICE: $(systemctl status postgresql-9.4 | grep "Active")"
+   # Install `psql` and client libraries
+   yum -y install postgresql12
 
    #------------DATABASE CREATION------------#
     #DB_NAME=$(head -q -n 1 ./config/db_name.conf 2>/dev/null)
@@ -396,13 +388,6 @@ function install_and_config_postgresql()
    populate_from_scripts "$(find ./ -name "database")/08-keys"
    # granting privileges to sen2agri-service and admin users
    populate_from_scripts "$(find ./ -name "database")/09-privileges"
-
-   #-------------- pg_hba.conf -----------------------#
-   ####  copy conf file to /var/lib/pgsql/9.4/data/pg_hba.conf
-   cp -f $(find ./ -name "pg_hba.conf") /var/lib/pgsql/9.4/data/
-
-   #restart service Postgresql
-   systemctl restart postgresql-9.4.service
 }
 #-----------------------------------------------------------#
 function populate_from_scripts()
@@ -927,9 +912,10 @@ check_paths
 disable_selinux
 disable_firewall
 
-##install EPEL for packages dependencies installation
-yum -y install epel-release
-yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.3-x86_64/pgdg-centos94-9.4-3.noarch.rpm
+##install EPEL for dependencies, PGDG for the Postgres client libraries and
+yum -y install epel-release https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+yum -y update epel-release pgdg-redhat-repo-latest
+yum -y install docker docker-compose
 
 install_sen2agri_services
 
@@ -950,6 +936,8 @@ config_and_start_munge_service
 
 ## config and start slurm
 config_and_start_slurm_service
+
+config_docker
 
 #-----------------------------------------------------------#
 ####  POSTGRESQL INSTALL & CONFIG AND DATABASE CREATION #####
