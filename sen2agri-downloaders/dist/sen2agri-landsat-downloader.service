@@ -1,9 +1,0 @@
-[Unit]
-Description=Downloads Landsat 8 products
-After=postgresql-9.4.service
-Requires=postgresql-9.4.service
-
-[Service]
-Type=simple
-ExecStart=/usr/share/sen2agri/sen2agri-downloaders/downloader.py -r l8 -s /usr/share/sen2agri/sen2agri-downloaders/usgs.txt
-User=sen2agri-service
