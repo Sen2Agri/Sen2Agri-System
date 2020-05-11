@@ -1,7 +1,7 @@
 [Unit]
 Description=Services for Sen2Agri
-After=postgresql-9.4.service
-Requires=postgresql-9.4.service
+After=docker.service
+Requires=docker.service
 
 [Service]
 ExecStart=/usr/share/sen2agri/sen2agri-services/bin/start.sh

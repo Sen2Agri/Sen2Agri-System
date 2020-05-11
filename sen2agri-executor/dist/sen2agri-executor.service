@@ -1,8 +1,8 @@
 [Unit]
 Description=Executor for Sen2Agri
 Before=slurmd.service
-After=postgresql-9.4.service
-Requires=postgresql-9.4.service
+After=docker.service
+Requires=docker.service
 
 [Service]
 BusName=org.esa.sen2agri.processorsExecutor

@@ -1,7 +1,7 @@
 [Unit]
 Description=Runs MACCS on L1C products
-After=postgresql-9.4.service
-Requires=postgresql-9.4.service
+After=docker.service
+Requires=docker.service
 
 [Service]
 Type=simple
