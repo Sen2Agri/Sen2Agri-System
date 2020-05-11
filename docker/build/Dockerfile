@@ -8,10 +8,8 @@ ARG group
 ARG uid
 ARG gid
 
-RUN yum -y update && \
-    yum -y install epel-release && \
+RUN yum -y install epel-release && \
     yum -y update && \
-    yum -y install http://yum.postgresql.org/9.4/redhat/rhel-7.3-x86_64/pgdg-centos94-9.4-3.noarch.rpm && \
     yum -y install boost-devel \
                    cmake \
                    curl-devel \
