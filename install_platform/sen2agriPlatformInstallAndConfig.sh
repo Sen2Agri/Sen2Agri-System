@@ -338,7 +338,7 @@ function create_and_config_slurm_qos()
 function config_docker()
 {
     cd docker
-    docker-compose up
+    docker-compose up -d
     cd ..
 }
 #-----------------------------------------------------------#
