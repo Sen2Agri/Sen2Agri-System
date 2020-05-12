@@ -110,8 +110,8 @@ function enableSciHubDwnDS()
     sed -i 's/AWSDataSource.Sentinel2.local_archive_path=/SciHubDataSource.Sentinel2.local_archive_path=/g' ${TARGET_SERVICES_DIR}/config/services.properties
     sed -i 's/AWSDataSource.Sentinel2.fetch_mode=/SciHubDataSource.Sentinel2.fetch_mode=/g' ${TARGET_SERVICES_DIR}/config/services.properties
 
-    sudo -u postgres psql $DB_NAME -c "update datasource set scope = 3 where satellite_id = 1 and name = 'Scientific Data Hub';"
-    sudo -u postgres psql $DB_NAME -c "update datasource set enabled = 'false' where satellite_id = 1 and name = 'Amazon Web Services';"
+    psql -U postgres $DB_NAME -c "update datasource set scope = 3 where satellite_id = 1 and name = 'Scientific Data Hub';"
+    psql -U postgres $DB_NAME -c "update datasource set enabled = 'false' where satellite_id = 1 and name = 'Amazon Web Services';"
     echo "Disabling Amazon datasource ... Done!"
 
 #    sudo -u postgres psql sen2agri -c "update datasource set local_root = (select local_root from datasource where satellite_id = 1 and name = 'Amazon Web Services') where satellite_id = 1 and name = 'Scientific Data Hub';"
@@ -142,9 +142,9 @@ function updateWebConfigParams()
 function resetDownloadFailedProducts()
 {
     echo "Resetting failed downloaded products from downloader_history ..."
-    sudo -u postgres psql $DB_NAME -c "update downloader_history set no_of_retries = '0' where status_id = '3' "
-    sudo -u postgres psql $DB_NAME -c "update downloader_history set no_of_retries = '0' where status_id = '4' "
-    sudo -u postgres psql $DB_NAME -c "update downloader_history set status_id = '3' where status_id = '4' "
+    psql -U postgres $DB_NAME -c "update downloader_history set no_of_retries = '0' where status_id = '3' "
+    psql -U postgres $DB_NAME -c "update downloader_history set no_of_retries = '0' where status_id = '4' "
+    psql -U postgres $DB_NAME -c "update downloader_history set status_id = '3' where status_id = '4' "
     echo "Resetting failed downloaded products from downloader_history ... Done!"
 }
 
@@ -158,16 +158,79 @@ function run_migration_scripts()
         scriptToExecute=${scriptName}
         ## perform execution of each sql script
         echo "Executing SQL script: $scriptToExecute"
-        cat "$scriptToExecute" | su - postgres -c 'psql '${dbName}''
+        psql -U postgres -f "$scriptToExecute" ${dbName}
    done
+}
+
+function install_docker() {
+    systemctl -q is-enabled docker
+    if [ $? -ne 0 ]; then
+        echo "Installing docker"
+        yum -y update epel-release
+        yum -y install docker docker-compose
+        sed -i "s/'--selinux-enabled /'/" /etc/sysconfig/docker
+        systemctl enable docker
+        systemctl start docker
+    fi
+}
+
+function migrate_postgres_to_docker() {
+    systemctl -q is-enabled postgresql-9.4
+    if [ $? -ne 0 ]; then
+        return
+    fi
+
+    echo "Backing up database"
+    sudo -u postgres pg_dumpall > /tmp/db.sql
+
+    echo "Stopping old Postgres"
+    systemctl stop postgresql-9.4
+    systemctl disable postgresql-9.4
+
+    echo "Installing yum-utils"
+    yum -y install yum-utils
+
+    echo "Uninstalling PGDG packages"
+    yum -y remove $(yumdb search from_repo pgdg94 | awk -F"\n" '{ RS=""; print $1 }')
+
+    echo "Removing old PGDG repository"
+    yum -y remove pgdg-centos94
+
+    echo "Installing Postgres client libraries and tools"
+    yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+    yum -y update pgdg-redhat-repo-latest
+    yum -y install postgresql12
+
+    echo "Starting Postgres container"
+    cd docker
+    docker-compose up -d db
+    cd ..
+
+    echo "Waiting for database to start"
+    sleep 30
+
+    echo "Restoring database backup"
+    psql -U postgres -f /tmp/db.sql
+}
+
+function setup_containers() {
+    cd docker
+    docker-compose up -d
+    cd ..
+}
+
+function migrate_to_docker() {
+    install_docker
+    migrate_postgres_to_docker
+    setup_containers
 }
 
 systemctl stop sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent sen2agri-services
 
 saveOldDownloadCredentials
+migrate_to_docker
 
 yum -y install python-dateutil libcurl-devel openssl-devel libxml2-devel
-yum -y update postgis2_94 geos
 yum -y install ../rpm_binaries/*.rpm
 
 DB_NAME=$(get_install_config_property "DB_NAME")
@@ -189,19 +252,19 @@ install_sen2agri_services
 ldconfig
 
 if [ "$DB_NAME" == "sen2agri" ] ; then
-    cat migrations/migration-1.3-1.3.1.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.3.1-1.4.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.4-1.5.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.5-1.6.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.6-1.6.2.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.6.2-1.7.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.7-1.8.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.8.0-1.8.1.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.8.1-1.8.2.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.8.2-1.8.3.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-1.8.3-2.0.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-2.0.0-2.0.1.sql | su -l postgres -c "psql $DB_NAME"
-    cat migrations/migration-2.0.1-2.0.2.sql | su -l postgres -c "psql $DB_NAME"
+    psql -U postgres -f migrations/migration-1.3-1.3.1.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.3.1-1.4.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.4-1.5.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.5-1.6.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.6-1.6.2.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.6.2-1.7.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.7-1.8.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.8.0-1.8.1.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.8.1-1.8.2.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.8.2-1.8.3.sql $DB_NAME
+    psql -U postgres -f migrations/migration-1.8.3-2.0.sql $DB_NAME
+    psql -U postgres -f migrations/migration-2.0.0-2.0.1.sql $DB_NAME
+    psql -U postgres -f migrations/migration-2.0.1-2.0.2.sql $DB_NAME
 else
     run_migration_scripts "migrations/${DB_NAME}" "${DB_NAME}"
 fi
