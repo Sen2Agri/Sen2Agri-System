@@ -191,7 +191,7 @@ function migrate_postgres_to_docker() {
     yum -y install yum-utils
 
     echo "Uninstalling PGDG packages"
-    yum -y remove $(yumdb search from_repo pgdg94 | awk -F"\n" '{ RS=""; print $1 }')
+    yum -y remove $(yumdb search from_repo pgdg94 | awk -F"\n" '{ RS=""; print $1 }' | grep -v subscription-manager)
 
     echo "Removing old PGDG repository"
     yum -y remove pgdg-centos94
