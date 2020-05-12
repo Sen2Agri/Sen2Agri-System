@@ -340,6 +340,7 @@ function config_docker()
     cd docker
     docker-compose up -d
     cd ..
+    sleep 30
 }
 #-----------------------------------------------------------#
 function install_and_config_postgresql()
