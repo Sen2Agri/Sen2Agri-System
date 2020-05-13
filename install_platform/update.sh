@@ -167,11 +167,12 @@ function install_docker() {
     if [ $? -ne 0 ]; then
         echo "Installing docker"
         yum -y update epel-release
-        yum -y install docker docker-compose
+        yum -y install docker
         sed -i "s/'--selinux-enabled /'/" /etc/sysconfig/docker
         systemctl enable docker
-        systemctl start docker
     fi
+    systemctl start docker
+    yum -y install docker-compose
 }
 
 function migrate_postgres_to_docker() {
