@@ -191,14 +191,17 @@ function migrate_postgres_to_docker() {
     yum -y install yum-utils
 
     echo "Uninstalling PGDG packages"
-    yum -y remove $(yumdb search from_repo pgdg94 | awk -F"\n" '{ RS=""; print $1 }' | grep -v subscription-manager)
+    yum -y autoremove $(yumdb search from_repo pgdg94 | awk -F"\n" '{ RS=""; print $1 }' | grep -v subscription-manager)
 
     echo "Removing old PGDG repository"
-    yum -y remove pgdg-centos94
+    yum -y autoremove pgdg-centos94
+
+    echo "Uninstalling old packages"
+    yum -y autoremove otb sen2agri-processors
 
     echo "Installing Postgres client libraries and tools"
     yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-    yum -y update pgdg-redhat-repo-latest
+    yum -y update pgdg-redhat-repo
     yum -y install postgresql12
 
     echo "Starting Postgres container"
