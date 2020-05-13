@@ -162,9 +162,10 @@ def get_product_info(product_name):
 def get_product_orbit_id(product_name):
     print("Product name is: {}".format(product_name))
     orbit_id = re.search(r"_R(\d{3})_", product_name)
-    print("OrbitId is: {}".format(orbit_id))
     if orbit_id == None:
+        print("OrbitId cannot be extracted from product name {}".format(product_name))
         return 0
+    print("OrbitId is: {}".format(int(orbit_id.group(1))))
     return int(orbit_id.group(1))
 
 
@@ -203,7 +204,15 @@ def insert_product(product_dir):
                 log(product_dir, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
                 for tile_dir in tiles_dir_list:
                     if satellite_id == SENTINEL2_SATELLITE_ID:
-                        tile_img = (glob.glob("{}/*_FRE_B2.tif".format(tile_dir)))                
+                        tile_img = (glob.glob("{}/*_FRE_B2.tif".format(tile_dir)))
+            else :
+                # Check for Sen2Cor format
+                tiles_dir_list = (glob.glob("{}GRANULE/L2A_T*".format(product_dir)))
+                if len(tiles_dir_list) > 0 :
+                    log(product_dir, "Creating common footprint for tiles: {}".format(tiles_dir_list), general_log_filename)
+                    for tile_dir in tiles_dir_list:
+                        if satellite_id == SENTINEL2_SATELLITE_ID:
+                            tile_img = (glob.glob("{}/IMG_DATA/R10m/T*_B08_10m.jp2".format(tile_dir)))
         if len(tile_img) > 0:
             wgs84_extent_list.append(get_footprint(tile_img[0]))
     else:
@@ -248,6 +257,9 @@ def insert_product(product_dir):
                         if tile is None:
                             # Check for MAJA format
                             tile = re.search(r"_L2A_T(\d\d[a-zA-Z]{3})_.+$", tile_dbl_dir)
+                        if tile is None:
+                            # Check for Sen2Cor format
+                            tile = re.search(r"L2A_T(\d\d[a-zA-Z]{3})_.+$", tile_dbl_dir)
                     else:
                         tile = re.search(r"_L2VALD_([\d]{6})_[\w\.]+$", tile_dbl_dir)
                     if tile is not None and not tile.group(1) in l2a_processed_tiles:
