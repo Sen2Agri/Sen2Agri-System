@@ -28,7 +28,7 @@ PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d gdal -d geos -d libge
 : ${WORKING_DIR_RPM:=${PLATFORM_NAME_DIR}/${RPM_DIR}}
 : ${WORKING_DIR_BUILD:=${PLATFORM_NAME_DIR}/${BUILD_DIR}}
 : ${OTB_VERSION:="5.0"}
-OTB_ITERATION=4
+OTB_ITERATION=5
 : ${OTB_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/otb-install"}
 NUM_CPUS=$(grep -c "^processor" /proc/cpuinfo)
 ################################################################################################
