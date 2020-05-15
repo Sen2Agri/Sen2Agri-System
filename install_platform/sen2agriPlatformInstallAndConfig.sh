@@ -707,10 +707,7 @@ function find_l1c_processor()
         fi
     else
         echo "Unable to find ${l1c_processor_name} under ${l1c_processor_path}"
-        echo "You might want to cancel the setup and install it, or you can use Sen2Cor products if available."
-        echo "Hit Ctrl-C now to cancel."
-        sleep 20
-        return 0
+        return 1
     fi
 }
 
