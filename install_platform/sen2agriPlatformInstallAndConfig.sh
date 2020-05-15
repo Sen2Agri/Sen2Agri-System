@@ -551,7 +551,7 @@ EOF
         if [ -d "/home/sen2agri-service/miniconda3/envs/sen4cap" ] ; then
             sudo rm -fR /home/sen2agri-service/miniconda3/envs/sen4cap
         fi
-        sudo su -l sen2agri-service -c bash -c "conda update -n base conda"
+        sudo su -l sen2agri-service -c bash -c "conda update -y -n base conda"
         sudo su -l sen2agri-service -c bash -c "conda env create --file=/mnt/archive/sen4cap_conda.yml"
         sudo su -l sen2agri-service -c bash -c "conda info --envs"
 
