@@ -20,13 +20,19 @@ begin
                     END;
                     $BODY$
                     LANGUAGE plpgsql VOLATILE;
-                    
-                CREATE TRIGGER check_season_dates 
-                    BEFORE INSERT OR UPDATE ON public.season
-                    FOR EACH ROW EXECUTE PROCEDURE public.check_season();
             $str$;
             raise notice '%', _statement;
-            execute _statement;              
+            execute _statement;    
+
+            if not exists (select tgname from pg_trigger where not tgisinternal and tgrelid = 'season'::regclass and tgname = 'check_season_dates') then
+                _statement := $str$
+                    CREATE TRIGGER check_season_dates 
+                        BEFORE INSERT OR UPDATE ON public.season
+                        FOR EACH ROW EXECUTE PROCEDURE public.check_season();
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
 
             if not exists (select * from config where key = 'processor.s4c_l4a.mode') then
                 _statement := $str$
@@ -37,6 +43,15 @@ begin
                 execute _statement;
             end if;
         
+            if not exists (select * from config where key = 'scheduled.reports.enabled') then
+                _statement := $str$
+                    INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.reports.enabled', NULL, 'true', '2020-05-04 14:56:57.501918+02');
+                    INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.reports.interval', NULL, '24', '2020-05-04 14:56:57.501918+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
             -- new tables creation, if not exist 
             _statement := $str$
                 create table if not exists agricultural_practice(
@@ -398,7 +413,22 @@ begin
                 $$ LANGUAGE plpgsql;
             $str$;
             raise notice '%', _statement;
-            execute _statement;                
+            execute _statement; 
+
+            if exists (select * from config where key = 'executor.module.path.lai-end-of-job') then
+                _statement := $str$
+                    UPDATE config SET value = '/usr/bin/true' WHERE key = 'executor.module.path.lai-end-of-job';
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'executor.module.path.lai-processor-end-of-job') then
+                _statement := $str$
+                    INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-processor-end-of-job', NULL, '/usr/bin/true', '2020-04-24 14:56:57.501918+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
 
         if exists (select * from meta where version in ('2.0.0-RC1')) then
             raise notice 'upgrading from beta_version to 1.0.1';
