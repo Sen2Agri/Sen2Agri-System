@@ -770,7 +770,11 @@ TQStrQStrMap AgricPracticesHandler::LoadParamsFromFile(QSettings &settings, cons
     settings.beginGroup(sectionName);
     const QStringList &keys = settings.allKeys();
     foreach (const QString &key, keys) {
-        QString keyNoPrefix = key;
+        QString keyNoPrefix = key.trimmed();
+        if (keyNoPrefix.startsWith('#')) {
+            // comment line that contains an '=' and falsely extracted as key - value pair
+            continue;   // ignore it
+        }
         keyNoPrefix.remove(0, keyPrefix.size());
         QString value = settings.value(key).toString();
         value.replace("${YEAR}", cfg.year);
