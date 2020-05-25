@@ -160,7 +160,7 @@ def main():
         "--pa-train-l",
         type=int,
         help="lower threshold for parcel counts by crop type",
-        default=1100,
+        default=1333,
     )
     parser.add_argument(
         "--sample-ratio-h",
