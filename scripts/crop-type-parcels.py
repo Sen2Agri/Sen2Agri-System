@@ -130,6 +130,7 @@ class Config(object):
         else:
             self.products = None
         self.mode = args.mode
+        self.re = args.re
 
         self.season_start = parse_date(args.season_start)
         self.season_end = parse_date(args.season_end)
@@ -220,7 +221,9 @@ def run_command(args, env=None, retry=False):
             break
 
 
-def extract_optical_features(path, satellite_id, tile, products, ref, dates_file):
+def extract_optical_features(
+    path, satellite_id, tile, products, ref, dates_file, red_edge
+):
     satellite = get_satellite_name_long(satellite_id)
     resolution = get_satellite_resolution(satellite_id)
 
@@ -249,7 +252,8 @@ def extract_optical_features(path, satellite_id, tile, products, ref, dates_file
     command += ["-pixsize", resolution]
     command += ["-mission", satellite]
     command += ["-ref", ref]
-    command += ["-rededge", "true"]
+    if red_edge:
+        command += ["-rededge", "true"]
     command += ["-dates", dates_file]
     command += ["-outmean", mean]
     command += ["-outdev", dev]
@@ -373,6 +377,7 @@ def process_optical(config, conn, pool, satellite_id):
                         filtered_products,
                         tile_ref,
                         dates_file,
+                        config.re,
                     )
                 )
 
@@ -403,7 +408,7 @@ def process_optical(config, conn, pool, satellite_id):
         optical_features = "optical-features.csv"
         optical_features = os.path.join(config.path, optical_features)
 
-        generate_headers(dates_file, headers_mean, headers_dev)
+        generate_headers(dates_file, headers_mean, headers_dev, config.re)
 
         if not os.path.exists(optical_features):
             paste_files(headers_mean, headers_dev, optical_features)
@@ -1294,7 +1299,7 @@ def process_radar(config, conn, pool):
     pool.map(lambda c: c.run(), coherence_season_composites)
 
 
-def generate_headers(date_file, headers_mean, headers_dev):
+def generate_headers(date_file, headers_mean, headers_dev, red_edge):
     dates = []
     with open(date_file, "r") as file:
         for line in file:
@@ -1307,10 +1312,10 @@ def generate_headers(date_file, headers_mean, headers_dev):
         "b4",
         "b8",
         "b11",
-        "b5",
-        "b6",
-        "b7",
-        "b12",
+    ]
+    if red_edge:
+        bands += ["b5" "b6", "b7", "b12"]
+    bands += [
         "ndvi",
         "ndwi",
         "brightness",
@@ -1353,6 +1358,17 @@ def main():
     parser.add_argument("--lpis-path", help="path to the rasterized LPIS")
     parser.add_argument("--tiles", nargs="+", help="tile filter")
     parser.add_argument("--products", nargs="+", help="product filter")
+    re = parser.add_mutually_exclusive_group(required=False)
+    re.add_argument(
+        "--re",
+        help="Include red edge bands (default)",
+        default=True,
+        action="store_true",
+    )
+    re.add_argument(
+        "--no-re", help="Don't include red edge bands", dest="re", action="store_false"
+    )
+
     args = parser.parse_args()
 
     config = Config(args)
