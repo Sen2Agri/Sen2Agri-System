@@ -914,7 +914,7 @@ disable_firewall
 yum -y install epel-release https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm yum-utils
 yum -y update epel-release pgdg-redhat-repo
 yum-config-manager --disable pgdg95
-yum -y install docker docker-compose
+yum -y install docker docker-compose gdal
 sed -i "s/'--selinux-enabled /'/" /etc/sysconfig/docker
 systemctl enable docker
 systemctl start docker
