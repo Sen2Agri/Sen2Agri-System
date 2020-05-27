@@ -6,7 +6,7 @@ begin
     raise notice 'running migrations';
 
     if exists (select * from information_schema.tables where table_schema = 'public' and table_name = 'meta') then
-        if exists (select * from meta where version in ('2.0.2')) then
+        if exists (select * from meta where version in ('2.0.2', '2.0.3')) then
             -- new tables creation, if not exist 
             _statement := $str$
                 CREATE SCHEMA IF NOT EXISTS reports;
@@ -290,8 +290,6 @@ begin
                 ALTER FUNCTION reports.sp_insert_s2_statistics()
                   OWNER TO postgres;
 
-
-
                 CREATE OR REPLACE FUNCTION reports.sp_reports_l8_detail(
                     siteid smallint DEFAULT NULL::smallint,
                     orbitid integer DEFAULT NULL::integer,
@@ -323,13 +321,10 @@ begin
                     ORDER BY r.site_id, r.acquisition_date, r.product_name;
                 END
 
+                $BODY$;
 
-                $BODY$
-                  LANGUAGE plpgsql STABLE
-                  COST 100
-                  ROWS 1000;
                 ALTER FUNCTION reports.sp_reports_l8_detail(smallint, integer, date, date)
-                  OWNER TO postgres;
+                    OWNER TO postgres;
 
 
 
@@ -538,14 +533,10 @@ begin
                     ORDER BY r.site_id, r.acquisition_date, r.product_name;
                 END
 
-                $BODY$
+                $BODY$;
 
-                  LANGUAGE plpgsql STABLE
-                  COST 100
-                  ROWS 1000;
                 ALTER FUNCTION reports.sp_reports_s1_detail(smallint, integer, date, date)
-                  OWNER TO postgres;
-
+                    OWNER TO postgres;
 
 
                 CREATE OR REPLACE FUNCTION reports.sp_reports_s1_statistics(
@@ -845,13 +836,10 @@ begin
                     ORDER BY r.site_id, r.acquisition_date, r.product_name;
                 END
 
+                $BODY$;
 
-                $BODY$
-                  LANGUAGE plpgsql STABLE
-                  COST 100
-                  ROWS 1000;
                 ALTER FUNCTION reports.sp_reports_s2_detail(smallint, integer, date, date)
-                  OWNER TO postgres;
+                    OWNER TO postgres;
 
 
 
@@ -996,13 +984,9 @@ begin
                   ROWS 1000;
                 ALTER FUNCTION reports.sp_reports_s2_statistics_orbit(smallint, integer, date, date)
                   OWNER TO postgres;
-
-
-  
             $str$;
             raise notice '%', _statement;
             execute _statement;
-
         end if;
     end if;
 

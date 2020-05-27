@@ -11,7 +11,7 @@ begin
                 raise notice 'upgrading from 2.0.2 to 2.0.3';
 
                 raise notice 'patching 2.0.2';
-
+                
                 if exists (select * from config where key = 'executor.module.path.lai-end-of-job') then
                     _statement := $str$
                         UPDATE config SET value = '/usr/bin/true' WHERE key = 'executor.module.path.lai-end-of-job';
@@ -54,16 +54,78 @@ begin
                     raise notice '%', _statement;
                     execute _statement;
                 end if;
-
-                if not exists (select * from config where key = 'processor.s4c_l4a.mode') then
+                if not exists (select * from config where key = 'scheduled.reports.enabled') then
                     _statement := $str$
-                        INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.s4c_l4a.mode', NULL, 'both', '2019-02-19 11:09:58.820032+02');
-                        INSERT INTO config_metadata VALUES ('processor.s4c_l4a.mode', 'Mode', 'string', FALSE, 5, TRUE, 'Mode (both, s1-only, s2-only)', '{"min":"","step":"","max":""}');
+                        INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.reports.enabled', NULL, 'true', '2020-05-04 14:56:57.501918+02');
+                        INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.reports.interval', NULL, '24', '2020-05-04 14:56:57.501918+02');
                     $str$;
                     raise notice '%', _statement;
                     execute _statement;
                 end if;
+                if not exists (select * from config where key = 'scheduled.reports.interval') then
+                    _statement := $str$
+                        UPDATE config SET value = 'true' WHERE key = 'scheduled.reports.enabled';
+                        INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.reports.interval', NULL, '24', '2020-05-04 14:56:57.501918+02');
+                    $str$;
+                    raise notice '%', _statement;
+                    execute _statement;
+                end if;
+                -- new tables creation, if not exist 
+                _statement := $str$
+                    create table if not exists product_provenance(
+                        product_id int not null,
+                        parent_product_id int not null,
+                        parent_product_date timestamp with time zone not null,
+                        constraint product_provenance_pkey primary key (product_id, parent_product_id)
+                    );
+                    
+                    create or replace function sp_insert_product_provenance(
+                        _product_id int,
+                        _parent_product_id int,
+                        _parent_product_date int
+                    )
+                    returns void
+                    as $$
+                    begin
+                        insert into product_provenance(product_id, parent_product_id, parent_product_date)
+                        values (_product_id, _parent_product_id, _parent_product_date);
+                    end;
+                    $$
+                    language plpgsql volatile;
+                    
+                    create or replace function sp_is_product_stale(
+                        _product_id int,
+                        _parent_products int[]
+                    )
+                    returns boolean
+                    as $$
+                    begin
+                        return exists (
+                            select pid
+                            from unnest(_parent_products) as pp(pid)
+                            where not exists (
+                                select *
+                                from product_provenance
+                                where (product_id, parent_product_id) = (_product_id, pid)
+                            )
+                        ) or exists (
+                            select *
+                            from product_provenance
+                            where exists (
+                                select *
+                                from product
+                                where product.id = product_provenance.parent_product_id
+                                  and product.created_timestamp >= product_provenance.parent_product_date
+                            )
+                        );
+                    end;
+                    $$
+                    language plpgsql stable;     
 
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            
                 _statement := $str$
                     DROP FUNCTION IF EXISTS sp_get_dashboard_products_nodes(integer[], integer[], smallint, integer[], timestamp with time zone, timestamp with time zone, character varying[], boolean);
                     
@@ -133,7 +195,7 @@ begin
                             JOIN site_names S ON P.site_id = S.id
                             WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
                             AND EXISTS (
-                                SELECT * FROM season WHERE season.site_id = P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date
+                                SELECT * FROM season WHERE season.site_id = P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date + interval '1 day'
                             $sql$;
                             IF $4 IS NOT NULL THEN
                             q := q || $sql$
@@ -200,6 +262,26 @@ begin
                 raise notice '%', _statement;
                 execute _statement;              
             
+                IF to_regclass('public.ix_downloader_history_product_name') IS NULL THEN
+                     _statement := $str$   
+                        create index ix_downloader_history_product_name on downloader_history(product_name);  
+                    $str$;
+                    raise notice '%', _statement;
+                    execute _statement; 
+                END IF;
+                IF to_regclass('public.ix_product_name') IS NULL THEN
+                     _statement := $str$   
+                        create index ix_product_name on product(name);                
+                    $str$;
+                    raise notice '%', _statement;
+                    execute _statement; 
+                END IF;
+                
+                ALTER TABLE product_provenance DROP CONSTRAINT IF EXISTS fk_product_provenance_product_id;
+                alter table product_provenance add constraint fk_product_provenance_product_id foreign key(product_id) references product(id) on delete cascade;
+                ALTER TABLE product_provenance DROP CONSTRAINT IF EXISTS fk_product_provenance_parent_product_id;
+                alter table product_provenance add constraint fk_product_provenance_parent_product_id foreign key(parent_product_id) references product(id) on delete cascade;
+
 -- Update functions for updating the end timestamp of the job (also to correctly display the end date of the job in the monitoring tab)
                 _statement := $str$                        
                     CREATE OR REPLACE FUNCTION sp_mark_job_finished(
@@ -279,8 +361,164 @@ begin
                 $str$;
                 raise notice '%', _statement;
                 execute _statement;                
+
+                _statement := $str$
+                    create or replace function sp_insert_default_scheduled_tasks(
+                        _season_id season.id%type,
+                        _processor_id processor.id%type default null
+                    )
+                    returns void as
+                    $$
+                    declare _site_id site.id%type;
+                    declare _site_name site.short_name%type;
+                    declare _processor_name processor.short_name%type;
+                    declare _season_name season.name%type;
+                    declare _start_date season.start_date%type;
+                    declare _mid_date season.start_date%type;
+                    begin
+                        select site.short_name
+                        into _site_name
+                        from season
+                        inner join site on site.id = season.site_id
+                        where season.id = _season_id;
+
+                        select processor.short_name
+                        into _processor_name
+                        from processor
+                        where id = _processor_id;
+
+                        if not found then
+                            raise exception 'Invalid season id %', _season_id;
+                        end if;
+
+                        select site_id,
+                               name,
+                               start_date,
+                               mid_date
+                        into _site_id,
+                             _season_name,
+                             _start_date,
+                             _mid_date
+                        from season
+                        where id = _season_id;
+
+                        if _processor_id is null or (_processor_id = 2 and _processor_name = 'l3a') then
+                            perform sp_insert_scheduled_task(
+                                        _site_name || '_' || _season_name || '_L3A' :: character varying,
+                                        2,
+                                        _site_id :: int,
+                                        _season_id :: int,
+                                        2::smallint,
+                                        0::smallint,
+                                        31::smallint,
+                                        cast((select date_trunc('month', _start_date) + interval '1 month' - interval '1 day') as character varying),
+                                        60,
+                                        1 :: smallint,
+                                        '{}' :: json);
+                        end if;
+
+                        if _processor_id is null or (_processor_id = 3 and _processor_name = 'l3b_lai')  then
+                            perform sp_insert_scheduled_task(
+                                        _site_name || '_' || _season_name || '_L3B' :: character varying,
+                                        3,
+                                        _site_id :: int,
+                                        _season_id :: int,
+                                        1::smallint,
+                                        1::smallint,
+                                        0::smallint,
+                                        cast((_start_date + 1) as character varying),
+                                        60,
+                                        1 :: smallint,
+                                        '{"general_params":{"product_type":"L3B"}}' :: json);
+                        end if;
+
+                        if _processor_id is null or (_processor_id = 5 and _processor_name = 'l4a') then
+                            perform sp_insert_scheduled_task(
+                                        _site_name || '_' || _season_name || '_L4A' :: character varying,
+                                        5,
+                                        _site_id :: int,
+                                        _season_id :: int,
+                                        2::smallint,
+                                        0::smallint,
+                                        31::smallint,
+                                        cast(_mid_date as character varying),
+                                        60,
+                                        1 :: smallint,
+                                        '{}' :: json);
+                        end if;
+
+                        if _processor_id is null or (_processor_id = 6 and _processor_name = 'l4b') then
+                            perform sp_insert_scheduled_task(
+                                        _site_name || '_' || _season_name || '_L4B' :: character varying,
+                                        6,
+                                        _site_id :: int,
+                                        _season_id :: int,
+                                        2::smallint,
+                                        0::smallint,
+                                        31::smallint,
+                                        cast(_mid_date as character varying),
+                                        60,
+                                        1 :: smallint,
+                                        '{}' :: json);
+                        end if;
+                        
+                        if _processor_id is null or _processor_name = 's4c_l4a' then
+                            perform sp_insert_scheduled_task(
+                                        _site_name || '_' || _season_name || '_S4C_L4A' :: character varying,
+                                        4,
+                                        _site_id :: int,
+                                        _season_id :: int,
+                                        2::smallint,
+                                        0::smallint,
+                                        31::smallint,
+                                        cast(_mid_date as character varying),
+                                        60,
+                                        1 :: smallint,
+                                        '{}' :: json);
+                        end if;
+
+                        if _processor_id is null or _processor_name = 's4c_l4b' then
+                            perform sp_insert_scheduled_task(
+                                        _site_name || '_' || _season_name || '_S4C_L4B' :: character varying,
+                                        5,
+                                        _site_id :: int,
+                                        _season_id :: int,
+                                        2::smallint,
+                                        0::smallint,
+                                        31::smallint,
+                                        cast((_start_date + 31) as character varying),
+                                        60,
+                                        1 :: smallint,
+                                        '{}' :: json);
+                        end if;
+
+                        if _processor_id is null or _processor_name = 's4c_l4c' then
+                            perform sp_insert_scheduled_task(
+                                        _site_name || '_' || _season_name || '_S4C_L4C' :: character varying,
+                                        6,
+                                        _site_id :: int,
+                                        _season_id :: int,
+                                        1::smallint,
+                                        7::smallint,
+                                        0::smallint,
+                                        cast((_start_date + 7) as character varying),
+                                        60,
+                                        1 :: smallint,
+                                        '{}' :: json);
+                        end if;
+
+
+                        if _processor_id is not null and (_processor_id not in (2, 3, 5, 6) and _processor_name not in ('s4c_l4a', 's4c_l4b', 's4c_l4c')) then
+                            raise exception 'No default jobs defined for processor id %', _processor_id;
+                        end if;
+
+                    end;
+                    $$
+                        language plpgsql volatile;
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
             end if;
-            
             
             _statement := 'update meta set version = ''2.0.3'';';
             raise notice '%', _statement;

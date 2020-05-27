@@ -6,7 +6,7 @@ begin
     raise notice 'running migrations';
 
     if exists (select * from information_schema.tables where table_schema = 'public' and table_name = 'meta') then
-        if exists (select * from meta where version in ('1.0.0', '2.0.0-RC1', '1.0.1')) then
+        if exists (select * from meta where version in ('1.0.0', '2.0.0-RC1', '1.0.1', '1.1')) then
             _statement := $str$                
                 CREATE OR REPLACE FUNCTION public.check_season()
                         RETURNS TRIGGER AS
@@ -51,6 +51,15 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
+            if not exists (select * from config where key = 'scheduled.reports.interval') then
+                _statement := $str$
+                    UPDATE config SET value = 'true' WHERE key = 'scheduled.reports.enabled';
+                    INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.reports.interval', NULL, '24', '2020-05-04 14:56:57.501918+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            
 
             -- new tables creation, if not exist 
             _statement := $str$
@@ -113,6 +122,8 @@ begin
                 INSERT INTO agricultural_practice(id, name) SELECT 2, 'CatchCrop' WHERE NOT EXISTS (SELECT 1 FROM agricultural_practice WHERE id=2);
                 INSERT INTO agricultural_practice(id, name) SELECT 3, 'NFC' WHERE NOT EXISTS (SELECT 1 FROM agricultural_practice WHERE id=3);
                 INSERT INTO agricultural_practice(id, name) SELECT 4, 'Fallow' WHERE NOT EXISTS (SELECT 1 FROM agricultural_practice WHERE id=4);
+
+                UPDATE config SET VALUE = 1333 WHERE key = 'processor.s4c_l4a.pa-train-l';
 
                 create table if not exists product_details_l4a(
                     product_id int not null references product(id) on delete cascade,
@@ -248,7 +259,7 @@ begin
                         JOIN site_names S ON P.site_id = S.id
                         WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
                         AND EXISTS (
-                            SELECT * FROM season WHERE season.site_id = P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date
+                            SELECT * FROM season WHERE season.site_id = P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date + interval '1 day'
                         $sql$;
                         IF $4 IS NOT NULL THEN
                         q := q || $sql$
@@ -912,7 +923,7 @@ begin
                 execute _statement;                
             end if;
             
-            _statement := 'update meta set version = ''1.0.1'';';
+            _statement := 'update meta set version = ''1.1'';';
             raise notice '%', _statement;
             execute _statement;
         end if;

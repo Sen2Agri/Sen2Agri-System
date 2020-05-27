@@ -6,7 +6,7 @@ begin
     raise notice 'running migrations';
 
     if exists (select * from information_schema.tables where table_schema = 'public' and table_name = 'meta') then
-        if exists (select * from meta where version in ('1.0.0', '2.0.0-RC1', '1.0.1')) then
+        if exists (select * from meta where version in ('1.0.0', '2.0.0-RC1', '1.0.1', '1.1')) then
             -- new tables creation, if not exist 
             _statement := $str$
                 CREATE SCHEMA IF NOT EXISTS reports;

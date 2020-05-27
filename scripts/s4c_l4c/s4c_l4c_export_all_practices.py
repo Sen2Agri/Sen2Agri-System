@@ -219,6 +219,7 @@ def getPracticeOutFile(config, conn, site_id, practice):
 
 def hasPracticeImported(conn, site_id, practice, year):
     count_parcels = 0
+    # TODO: Here we should test the existance of the table l4c_practices
     with conn.cursor() as cursor:
         query = SQL(
             """

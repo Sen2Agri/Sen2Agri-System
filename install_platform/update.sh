@@ -3,6 +3,9 @@
 INSTAL_CONFIG_FILE="./config/install_config.conf"
 HAS_S2AGRI_SERVICES=false
 
+: ${GPT_CONFIG_FILE:="./config/gpt.vmoptions"}
+
+
 function get_install_config_property
 {
     grep "^$1=" "${INSTAL_CONFIG_FILE}" | cut -d'=' -f2 | sed -e 's/\r//g'
@@ -53,7 +56,7 @@ function install_sen2agri_services()
                 echo "Updating ${TARGET_SERVICES_DIR}/static folder ..."
                 mkdir -p ${TARGET_SERVICES_DIR}/static && rm -fR ${TARGET_SERVICES_DIR}/static/* && unzip -o ${zipArchive} 'static/*' -d ${TARGET_SERVICES_DIR}
 
-                mkdir -p ${TARGET_SERVICES_DIR}/scripts
+                mkdir -p ${TARGET_SERVICES_DIR}/scripts && rm -fR ${TARGET_SERVICES_DIR}/scripts/* && unzip -o ${zipArchive} 'scripts/*' -d ${TARGET_SERVICES_DIR}
 
                 if [ -f ${TARGET_SERVICES_DIR}/config/sen2agri-services.properties ] ; then
                     mv ${TARGET_SERVICES_DIR}/config/sen2agri-services.properties ${TARGET_SERVICES_DIR}/config/services.properties
@@ -295,17 +298,19 @@ if [ "$DB_NAME" == "sen2agri" ] ; then
     # Reset the download failed products
     resetDownloadFailedProducts
 else
-    # Install and config SNAP
-#    wget http://step.esa.int/downloads/6.0/installers/esa-snap_sentinel_unix_6_0.sh && \
-#    cp -f esa-snap_sentinel_unix_6_0.sh /tmp/ && \
-#    chmod +x /tmp/esa-snap_sentinel_unix_6_0.sh && \
-#    /tmp/esa-snap_sentinel_unix_6_0.sh -q && \
-#    /opt/snap/bin/snap --nosplash --nogui --modules --update-all
-#    rm -f ./esa-snap_sentinel_unix_6_0.sh /tmp/esa-snap_sentinel_unix_6_0.sh
-#    if [ ! -h /usr/local/bin/gpt ]; then sudo ln -s /opt/snap/bin/gpt /usr/local/bin/gpt;fi
-#
-#    cp -f ${GPT_CONFIG_FILE} /opt/snap/bin/
-#
+    # Install and config SNAP if old version
+    if grep -q "6.0" "/opt/snap/VERSION.txt"; then
+        wget http://step.esa.int/downloads/7.0/installers/esa-snap_sentinel_unix_7_0.sh && \
+        cp -f esa-snap_sentinel_unix_7_0.sh /tmp/ && \
+        chmod +x /tmp/esa-snap_sentinel_unix_7_0.sh && \
+        /tmp/esa-snap_sentinel_unix_7_0.sh -q && \
+        /opt/snap/bin/snap --nosplash --nogui --modules --update-all
+        rm -f ./esa-snap_sentinel_unix_7_0.sh /tmp/esa-snap_sentinel_unix_7_0.sh
+        if [ ! -h /usr/local/bin/gpt ]; then sudo ln -s /opt/snap/bin/gpt /usr/local/bin/gpt;fi
+
+        cp -f ${GPT_CONFIG_FILE} /opt/snap/bin/
+    fi
+    
 #    # Install R-devel
 #    yum install -y R-devel
 #    echo 'install.packages(c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily"), repos = c(CRAN = "https://cran.rstudio.com"))' | Rscript -

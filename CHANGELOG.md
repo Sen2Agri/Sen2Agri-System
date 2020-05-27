@@ -6,25 +6,47 @@
  - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
  - The crop type and mask training step sometimes crashes while loading the OpenCV models
  - MACCS can sometimes crash or hang under high load: https://github.com/InsightSoftwareConsortium/ITK/commit/d68c1c0f23fea97ab782c185095b4ef3259cec68
- - The MACCS launcher script does not process different tiles of the same site in parallel
  - The product formatting and tile aggregation steps are inefficient
  - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
  - The trimming step of the Crop Mask processor still uses a large amount of memory
  - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
  - The dashboard previews don't match their bounds rectangle because of projection mismatch
- - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
  - The website has display issues on Safari
  - When deleting a site, the folders for the L2A products that were not processed by MACCS are not deleted and should be deleted manually. Normally these folders contain no valid product and contain only log and EEF files.
 
 # Change Log
-## [2.0.1]
+## [2.0.2]
+### Added
+  - Script for importing THEIA products
+  - Support for using download and usage of Sen2Cor L2A products (configurable via database)
+  - Support for FAPAR and FCOVER production after switching to INRA algorithm in L3B processor
+  
+### Changed
+  - The MAJA training interval was changed to 2 months instead of 3 months
+  - Changed to INRA version algorithm as the default in LAI production
+  - The option to install MACCS was removed and MAJA is considered by default
+  - The dialog for uploading insitu files
+  - The icons in the output of the jobs from the "monitoring" tab were updated to reflect more step states.
+  - L3B automatic scheduling was changed from 10 days to 1 day, ensuring each time that all the previous L2A products before the current scheduled date were processed into L3B products.
+    
+### Fixed
+  - Updates for the new changes in USGS API
+  - Corrections for avoiding skipping one product per page in SciHub
 
+# Change Log
+## [2.0.1]
+### Added
+  - Windows binaries of the L3A and L3B processors
+  
 ### Fixed
   - Upgrades from previous system installations when the first installed version was older than 1.8.3
   - Corrections for SciHub downloads when sites are defined near equator or prime meridian
   - Corrections for USGS queries according to the latest changes in the USGS responses
   - Corrections for MAJA "MTD_ALL.xml is not valid according to JPI" issue.
   - PhenoNDVI processor corrections
+  - Updates of the L3B processor in order to handle during the scheduling also the unprocessed products since the start of the season, not only the ones from the last week
+  - Corrections for handling site polygons that have holes
+  - Update of the insert_l2a_product_to_db.py in order to support also L2A MAJA format.
 
 # Change Log
 ## [2.0]
