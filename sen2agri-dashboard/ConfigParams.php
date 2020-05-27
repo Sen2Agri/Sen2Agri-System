@@ -33,7 +33,7 @@ class ConfigParams {
         // set services url and rest services url
         self::$SERVICES_URL = getenv('SERVICES_URL') ?: self::$DEFAULT_SERVICES_URL;
         self::$REST_SERVICES_URL = (getenv('REST_SERVICES_URL') ?: self::getServicesUrl()) ?: self::$DEFAULT_REST_SERVICES_URL;
-        self::$DB_NAME = self::$DEFAULT_DB_NAME;
+        self::$DB_NAME = getenv('DB_NAME') ?: self::$DEFAULT_DB_NAME;
         
 		// set login information
         if (isset($_SESSION['siteId']) && isset($_SESSION['userId']) && isset($_SESSION['userName'])) {
