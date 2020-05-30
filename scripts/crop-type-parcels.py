@@ -260,7 +260,7 @@ def extract_optical_features(
     command += ["-outcount", count]
     if os.path.exists(mean) and os.path.exists(dev) and os.path.exists(count):
         return
-    run_command(command, env=env, retry=True)
+    run_command(command, env=env)
 
 
 def get_lpis_map(lpis_path, resolution):
