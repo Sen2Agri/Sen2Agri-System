@@ -1314,7 +1314,7 @@ def generate_headers(date_file, headers_mean, headers_dev, red_edge):
         "b11",
     ]
     if red_edge:
-        bands += ["b5" "b6", "b7", "b12"]
+        bands += ["b5", "b6", "b7", "b12"]
     bands += [
         "ndvi",
         "ndwi",
