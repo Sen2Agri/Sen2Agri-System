@@ -311,7 +311,7 @@ $processors = pg_fetch_all($res);
 			}
 			
 			var span = '';
-			if(data.frendly_name !=""){
+			if(data.friendly_name !=""){
 				var span = $('<span/>').attr({class:"help-block"}).text(data.friendly_name);
 				}
 			
