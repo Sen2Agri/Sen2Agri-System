@@ -212,10 +212,15 @@ function migrate_postgres_to_docker() {
     echo "Starting Postgres container"
     cd docker
     docker-compose up -d db
-    cd ..
 
-    echo "Waiting for database to start"
-    sleep 30
+    RETRIES=120
+    until docker-compose run db pg_isready || [ $RETRIES -eq 0 ]; do
+        echo "Waiting for postgres server, $RETRIES remaining attempts..."
+        RETRIES=$((RETRIES-1))
+        sleep 1
+    done
+
+    cd ..
 
     echo "Restoring database backup"
     psql -U postgres -f /tmp/db.sql
@@ -310,7 +315,7 @@ else
 
         cp -f ${GPT_CONFIG_FILE} /opt/snap/bin/
     fi
-    
+
 #    # Install R-devel
 #    yum install -y R-devel
 #    echo 'install.packages(c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily"), repos = c(CRAN = "https://cran.rstudio.com"))' | Rscript -
