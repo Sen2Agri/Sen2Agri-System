@@ -37,20 +37,17 @@ bool PersistenceItfModule::MarkStepFinished(int taskId,
                                             ProcessorExecutionInfos &statistics)
 {
     // Convert ProcessorExecutionInfos to ExecutionStatistics
-    ExecutionStatistics newStats;
-    newStats.diskReadBytes = statistics.strDiskRead.toLong();
-    newStats.diskWriteBytes = statistics.strDiskWrite.toLong();
-    newStats.durationMs = ParseTimeStr(statistics.strCpuTime);
-    newStats.exitCode = statistics.strExitCode.toInt();
-    newStats.maxRssKb = statistics.strMaxRss.toInt();
-    newStats.maxVmSizeKb = statistics.strMaxVmSize.toInt();
-    newStats.node = statistics.strJobNode;
-    newStats.systemCpuMs = ParseTimeStr(statistics.strSystemTime);
-    newStats.userCpuMs = ParseTimeStr(statistics.strUserTime);
-    newStats.stdOutText = statistics.strStdOutText;
-    newStats.stdErrText = statistics.strStdErrText;
-
+    const ExecutionStatistics &newStats = InitStatistics(statistics);
     return clientInterface.MarkStepFinished(taskId, name, newStats);
+}
+
+void PersistenceItfModule::MarkStepFailed(int taskId,
+                                            QString &name,
+                                            ProcessorExecutionInfos &statistics)
+{
+    // Convert ProcessorExecutionInfos to ExecutionStatistics
+    const ExecutionStatistics &newStats = InitStatistics(statistics);
+    clientInterface.MarkStepFailed(taskId, name, newStats);
 }
 
 void PersistenceItfModule::RequestConfiguration()
@@ -160,7 +157,7 @@ bool PersistenceItfModule::GetValueForKey(
     return false;
 }
 
-long PersistenceItfModule::ParseTimeStr(QString &strTime)
+long PersistenceItfModule::ParseTimeStr(const QString &strTime)
 {
     // This function expects a string like [DD-[hh:]]mm:ss.mss
     QString strDays;
@@ -169,10 +166,10 @@ long PersistenceItfModule::ParseTimeStr(QString &strTime)
     QString strSeconds;
     QString strMillis;
 
-    QStringList list = strTime.split(':');
+    const QStringList &list = strTime.split(':');
     int listSize = list.size();
-    QString firstElem = list.at(0);
-    QStringList listDate = firstElem.split('-');
+    const QString &firstElem = list.at(0);
+    const QStringList &listDate = firstElem.split('-');
     if (listDate.size() > 1) {
         strDays = listDate.at(0);
         strHours = listDate.at(1);
@@ -192,7 +189,7 @@ long PersistenceItfModule::ParseTimeStr(QString &strTime)
             return -1;
         }
     }
-    QStringList listSS = strSeconds.split('.');
+    const QStringList &listSS = strSeconds.split('.');
     if (listSS.size() == 2) {
         strSeconds = listSS.at(0);
         strMillis = listSS.at(1);
@@ -205,4 +202,22 @@ long PersistenceItfModule::ParseTimeStr(QString &strTime)
                       1000 +
                   strMillis.toLong();
     return millis;
+}
+
+ExecutionStatistics PersistenceItfModule::InitStatistics(const ProcessorExecutionInfos &statistics) {
+    // Convert ProcessorExecutionInfos to ExecutionStatistics
+    ExecutionStatistics newStats;
+    newStats.diskReadBytes = statistics.strDiskRead.toLong();
+    newStats.diskWriteBytes = statistics.strDiskWrite.toLong();
+    newStats.durationMs = ParseTimeStr(statistics.strCpuTime);
+    newStats.exitCode = statistics.strExitCode.toInt();
+    newStats.maxRssKb = statistics.strMaxRss.toInt();
+    newStats.maxVmSizeKb = statistics.strMaxVmSize.toInt();
+    newStats.node = statistics.strJobNode;
+    newStats.systemCpuMs = ParseTimeStr(statistics.strSystemTime);
+    newStats.userCpuMs = ParseTimeStr(statistics.strUserTime);
+    newStats.stdOutText = statistics.strStdOutText;
+    newStats.stdErrText = statistics.strStdErrText;
+
+    return newStats;
 }

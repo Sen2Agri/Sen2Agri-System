@@ -199,6 +199,9 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobSubm
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFailedEvent &event)
 {
+    // TODO: This function should be revised as marking also job as Failed which is not always OK (we might
+    //      have some steps that could fail without the need of making the whole job failed => ex. processing 99 tiles OK but
+    //       for one the processing is failing)
     Logger::info(QStringLiteral("Processing step failed event with task id %1 and job id %2")
                      .arg(event.taskId)
                      .arg(event.jobId));

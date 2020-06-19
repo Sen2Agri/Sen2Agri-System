@@ -262,15 +262,6 @@ void S4CCropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                     .arg(prodName)
                     .arg(productFolder));
         }
-    } else if (event.module == "s4c-crop-type") {
-        const auto &tasks =ctx.GetJobTasksByStatus(event.jobId, {ExecutionStatus::Error});
-        if (tasks.size() > 0) {
-            ctx.MarkJobFailed(event.jobId);
-            Logger::error(
-                QStringLiteral("Crop type step for job %1 failed. Marking job as failed ...")
-                    .arg(event.jobId));
-            RemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
-        }
     } else if (event.module == "export-product-launcher") {
         ctx.MarkJobFinished(event.jobId);
         // Now remove the job folder containing temporary files

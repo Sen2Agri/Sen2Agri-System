@@ -237,7 +237,7 @@ void GrasslandMowingHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 prodName, quicklook, footPrint, std::experimental::nullopt, TileIdList() });
 
             // Now remove the job folder containing temporary files
-            RemoveJobFolder(ctx, event.jobId, "s4c_l4b");
+            RemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }

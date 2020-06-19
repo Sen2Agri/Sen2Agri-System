@@ -453,9 +453,14 @@ void RessourceManagerItf::HandleProcessorEndedMsg(RequestParamsExecutionInfos *p
             jobExecInfos.strStdErrText = "empty err log";
         }
         jobExecInfos.strExitCode = QString::number(nExitCode);
+        bool bNotifyOrchestrator = true;
+        if (nExitCode == 0) {
+            bNotifyOrchestrator = PersistenceItfModule::GetInstance()->MarkStepFinished(nTaskId, strStepName, jobExecInfos);
+        } else {
+            PersistenceItfModule::GetInstance()->MarkStepFailed(nTaskId, strStepName, jobExecInfos);
+        }
         // Send the statistic infos to the persistence interface module
-        if (PersistenceItfModule::GetInstance()->MarkStepFinished(nTaskId, strStepName,
-                                                                  jobExecInfos)) {
+        if (bNotifyOrchestrator) {
             OrchestratorClient().NotifyEventsAvailable();
         }
     } else {

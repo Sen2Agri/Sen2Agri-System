@@ -27,6 +27,7 @@ public:
     void MarkStepPendingStart(int taskId, QString &name);
     void MarkStepStarted(int taskId, QString &name);
     bool MarkStepFinished(int taskId, QString &name, ProcessorExecutionInfos &statistics);
+    void MarkStepFailed(int taskId, QString &name, ProcessorExecutionInfos &statistics);
 
     QString GetExecutorQos(int processorId);
     QString GetExecutorPartition(int processorId);
@@ -45,7 +46,8 @@ private:
 
     void SaveMainConfigKeys(const ConfigurationParameterValueList &configuration);
     void SaveProcessorsConfigKeys(const ConfigurationParameterValueList &configuration);
-    long ParseTimeStr(QString &strTime);
+    long ParseTimeStr(const QString &strTime);
+    ExecutionStatistics InitStatistics(const ProcessorExecutionInfos &statistics);
 };
 
 #endif // PERSISTENCEITFMODULE_H
