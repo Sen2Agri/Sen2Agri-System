@@ -901,6 +901,11 @@ def get_s2_products(config, conn):
             for tile in tiles :   
                 # print ("Handling tile {} for product : {} ...".format(tile, full_path))
                 # print ("TILE DIRS: {} ...".format(tilesDirs))
+                
+                # Ignore the L8 tiles
+                if re.match("\d{6}", tile) :
+                    print ("Ignoring L8 tile {}".format(tile))
+                    continue
                 tilePaths = fnmatch.filter(tilesDirs, "S2AGRI_L3B_A*_T{}".format(tile))
                 if len(tilePaths) == 1:
                     subPath = tilePaths[0]

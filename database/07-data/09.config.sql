@@ -192,7 +192,9 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processo
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-mask-fused', NULL, 'CropMaskFused.py', '2015-12-17 14:25:14.193131+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-type-fused', NULL, 'CropTypeFused.py', '2015-12-17 14:25:14.193131+02');
 
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-end-of-job', NULL, 'true', '2016-01-12 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-end-of-job', NULL, '/usr/bin/true', '2016-01-12 14:56:57.501918+02');
+-- TODO - this key should be merged with the one above but the code changes must be analysed
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-processor-end-of-job', NULL, '/usr/bin/true', '2016-01-12 14:56:57.501918+02');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.mono_date_ndvi_only', NULL, '0', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.ndvi.tiles_filter', NULL, '', '2017-10-24 14:56:57.501918+02');

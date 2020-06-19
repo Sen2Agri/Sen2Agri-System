@@ -279,6 +279,8 @@ if [ "$DB_NAME" == "sen2agri" ] ; then
     psql -U postgres -f migrations/migration-1.8.3-2.0.sql $DB_NAME
     psql -U postgres -f migrations/migration-2.0.0-2.0.1.sql $DB_NAME
     psql -U postgres -f migrations/migration-2.0.1-2.0.2.sql $DB_NAME
+    psql -U postgres -f migrations/migration-2.0.2-2.0.3.sql $DB_NAME
+    psql -U postgres -f migrations/migration-2.0.2-2.0.3-reports.sql $DB_NAME
 else
     run_migration_scripts "migrations/${DB_NAME}" "${DB_NAME}"
 fi
