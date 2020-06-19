@@ -54,7 +54,17 @@ class SEN2CORMetadataHelper : public MetadataHelper<PixelType, MasksPixelType>
 
         bool IsCloud(TInput val) {
             // cloud medium, high probability but also cloud shadows
-            return ((val == 8) || (val == 9) || (val == 3));
+            switch(val) {
+                case 2: // Dark features / Shadows
+                case 3: // Cloud shadows
+                case 7: // Cloud low probability / Unclassified
+                case 8: // Cloud medium probability
+                case 9: // Cloud high probability
+                case 10: // Thin cirrus
+                    return true;
+                default:
+                    return false;
+            }
         }
         bool IsNoData(TInput val) {
             return (val == 0);
