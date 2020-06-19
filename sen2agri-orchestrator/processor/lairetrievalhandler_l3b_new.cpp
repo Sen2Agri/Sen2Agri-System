@@ -16,10 +16,12 @@ void LaiRetrievalHandlerL3BNew::CreateTasksForNewProduct(EventProcessingContext 
                                                     bool bRemoveTempFiles) {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+    // TODO: see why is genlai for all the flags
     bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_ndvi");
     bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_lai");
     bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_fapar");
     bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_fcover");
+    bool bGenInDomainFlags = IsParamOrConfigKeySet(parameters, configParameters, "indomflags", "processor.l3b.produce_in_domain_flags");
 
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
     int initialTasksNo = outAllTasksList.size();
@@ -50,8 +52,10 @@ void LaiRetrievalHandlerL3BNew::CreateTasksForNewProduct(EventProcessingContext 
                 outAllTasksList.append(TaskToSubmit{"gen-domain-flags", {}});
             }
         }
-        // add the task for generating domain input flags
-        outAllTasksList.append(TaskToSubmit{"gen-domain-flags", {}});
+        if (bGenInDomainFlags) {
+            // add the task for generating domain input flags
+            outAllTasksList.append(TaskToSubmit{"gen-domain-flags", {}});
+        }
     }
     outAllTasksList.append({"lai-processor-product-formatter", {}});
     if(bRemoveTempFiles) {
@@ -108,10 +112,12 @@ void LaiRetrievalHandlerL3BNew::CreateTasksForNewProduct(EventProcessingContext 
                 nCurTaskIdx = CreateBiophysicalIndicatorTasks(nAnglesTaskId, outAllTasksList, productFormatterParentsRefs, nCurTaskIdx);
             }
         }
-        int nInputDomainIdx = nCurTaskIdx++;
-        outAllTasksList[nInputDomainIdx].parentTasks.append(outAllTasksList[flagsTaskIdx]);
-        // add the input domain task to the list of the product formatter corresponding to this product
-        productFormatterParentsRefs.append(outAllTasksList[nInputDomainIdx]);
+        if (bGenInDomainFlags) {
+            int nInputDomainIdx = nCurTaskIdx++;
+            outAllTasksList[nInputDomainIdx].parentTasks.append(outAllTasksList[flagsTaskIdx]);
+            // add the input domain task to the list of the product formatter corresponding to this product
+            productFormatterParentsRefs.append(outAllTasksList[nInputDomainIdx]);
+        }
     }
     int productFormatterIdx = nCurTaskIdx++;
     outAllTasksList[productFormatterIdx].parentTasks.append(productFormatterParentsRefs);
@@ -169,6 +175,7 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
     bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "produce_lai", "processor.l3b.lai.produce_lai");
     bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "produce_fapar", "processor.l3b.lai.produce_fapar");
     bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "produce_fcover", "processor.l3b.lai.produce_fcover");
+    bool bGenInDomainFlags = IsParamOrConfigKeySet(parameters, configParameters, "indomflags", "processor.l3b.produce_in_domain_flags");
 
     // Get the resolution value
     int resolution = 0;
@@ -210,7 +217,9 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
                                                    tileResultFileInfo, steps, cleanupTemporaryFilesList);
             }
         }
-        curTaskIdx = GetStepsForInDomainFlags(allTasksList, curTaskIdx, laiCfgFile, tileResultFileInfo, steps, cleanupTemporaryFilesList);
+        if (bGenInDomainFlags) {
+            curTaskIdx = GetStepsForInDomainFlags(allTasksList, curTaskIdx, laiCfgFile, tileResultFileInfo, steps, cleanupTemporaryFilesList);
+        }
 
         tileResultFileInfos.append(tileResultFileInfo);
     }
