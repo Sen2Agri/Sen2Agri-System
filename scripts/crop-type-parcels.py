@@ -1040,7 +1040,7 @@ class CoherenceSeasonComposite(object):
 
 def get_projection(file):
     ds = gdal.Open(file, gdalconst.GA_ReadOnly)
-    srs = osr.SpatialReference(wkg=ds.GetProjectionRef())
+    srs = osr.SpatialReference(wkt=ds.GetProjectionRef())
     # workaround for gdal-libs-1.11.4-3 not knowing about EPSG:3035
     if srs.IsLocal() and srs.GetAuthorityCode("LOCAL_CS") == "3035":
         srs.ImportFromEPSG(3035)
