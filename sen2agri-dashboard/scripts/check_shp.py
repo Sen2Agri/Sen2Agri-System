@@ -113,7 +113,7 @@ def main():
             if featureCount == 1:
                 union = geometry_clone
             else:
-                union.AddGeometry(geometry_clone)
+                union = union.Union(geometry_clone)
 
     if args.fix:
         layer.SyncToDisk()
