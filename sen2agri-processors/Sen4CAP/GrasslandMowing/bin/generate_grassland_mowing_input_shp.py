@@ -162,6 +162,18 @@ def main():
         layer = dataset.GetLayer()
         feature_count = layer.GetFeatureCount()
         print("{} feature(s) found".format(feature_count))
+        
+        schema = []
+        ldefn = layer.GetLayerDefn()
+        print("Updating existing values (if needed) ...")
+        for n in range(ldefn.GetFieldCount()):
+            fdefn = ldefn.GetFieldDefn(n)
+            name = fdefn.GetName()
+            fieldTypeCode = fdefn.GetType()
+            fieldType = fdefn.GetFieldTypeName(fieldTypeCode)
+            print("Field name = {}, fieldTypeCode= {}, fieldType = {}".format(name, fieldTypeCode, fieldType))
+            schema.append(fdefn.name)        
+        print("Existing column names: ".format(schema))
 
         for newField in newFields:
             dataset.StartTransaction()

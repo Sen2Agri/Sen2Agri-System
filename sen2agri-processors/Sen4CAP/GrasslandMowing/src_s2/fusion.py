@@ -2,6 +2,10 @@ import numpy as np
 import dateutil.parser
 import datetime
 
+import glob, os, shutil
+from pathlib import Path
+import ntpath
+
 from osgeo import osr, ogr
 osr.UseExceptions()
 ogr.UseExceptions()
@@ -106,9 +110,24 @@ def cloneAndUpdateShapefile(source, dest):
 #   None: write a copy of the file with dest file name
 
     print("Cloning source...")
-    drv = ogr.GetDriverByName('ESRI Shapefile')
-    ds = drv.CopyDataSource(ogr.Open(source), dest)
-    layer = ds.GetLayerByIndex(0)
+    # drv = ogr.GetDriverByName('ESRI Shapefile')
+    # ds = drv.CopyDataSource(ogr.Open(source), dest)
+    # layer = ds.GetLayerByIndex(0)
+    parentSrcDir = Path(source).parent
+    destDir = Path(dest).parent
+    fileName = ntpath.basename(source)
+    destFileName = ntpath.basename(dest)
+    fileNameNoExt = os.path.splitext(fileName)[0]
+    destFileNameNoExt = os.path.splitext(destFileName)[0]
+
+    pathToCheck = os.path.join(parentSrcDir, "{}.*".format(fileNameNoExt))
+    files = glob.iglob(pathToCheck)
+    for file in files:
+        if os.path.isfile(file):
+            srcFileExt = os.path.splitext(file)[1]
+            destFilePath = os.path.join(destDir, "{}{}".format(destFileNameNoExt, srcFileExt))
+            print ("Copying source file {} to dest file {}".format(file, destFilePath))
+            shutil.copyfile(file, destFilePath)
     
 #    for i in range(1, max_dates+1):
 #        layer.CreateField(ogr.FieldDefn('m%d_date' % i, ogr.OFTString))

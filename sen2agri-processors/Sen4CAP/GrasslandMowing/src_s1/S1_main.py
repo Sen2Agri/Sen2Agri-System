@@ -846,6 +846,9 @@ def main() :
                        do_cmpl=s4cConfig.do_cmpl, test=s4cConfig.test)
 
 if __name__== "__main__":
+
+    os.environ['SHAPE_ENCODING'] = "utf-8"
+    
     main()
 
 #if __name__== "__main__":
