@@ -46,7 +46,9 @@ TYPE_COHERENCE = 2
 
 
 class TileGroup(object):
-    def __init__(self, prefix, period_type, period, orbit_type, polarization, type, name):
+    def __init__(
+        self, prefix, period_type, period, orbit_type, polarization, type, name
+    ):
         self.prefix = prefix
         self.period_type = period_type
         self.period = period
@@ -56,7 +58,15 @@ class TileGroup(object):
         self.name = name
 
     def erase_period(self):
-        return TileGroup(self.prefix, self.period_type, 0, self.orbit_type, self.polarization, self.type, self.name)
+        return TileGroup(
+            self.prefix,
+            self.period_type,
+            0,
+            self.orbit_type,
+            self.polarization,
+            self.type,
+            self.name,
+        )
 
     def format(self, tile_id, include_prefix=True):
         s = ""
@@ -122,15 +132,23 @@ class TileGroup(object):
         return self.name
 
     def __key(self):
-        return (self.prefix, self.period_type, self.period, self.orbit_type != ORBIT_TYPE_NONE, self.orbit_type, self.polarization, self.type)
+        return (
+            self.prefix,
+            self.period_type,
+            self.period,
+            self.orbit_type != ORBIT_TYPE_NONE,
+            self.orbit_type,
+            self.polarization,
+            self.type,
+        )
 
 
 def get_period_type(s):
-    if s == 'W':
+    if s == "W":
         return PERIOD_TYPE_WEEK
-    elif s == 'M':
+    elif s == "M":
         return PERIOD_TYPE_MONTH
-    elif s == 'S':
+    elif s == "S":
         return PERIOD_TYPE_SEASON
 
 
@@ -142,27 +160,27 @@ def get_period(s):
 
 
 def get_orbit_type(s):
-    if s == 'ASC':
+    if s == "ASC":
         return ORBIT_TYPE_ASC
-    elif s == 'DESC':
+    elif s == "DESC":
         return ORBIT_TYPE_DESC
     elif s is None:
         return ORBIT_TYPE_NONE
 
 
 def get_polarization(s):
-    if s == 'VV':
+    if s == "VV":
         return POLARIZATION_VV
-    elif s == 'VH':
+    elif s == "VH":
         return POLARIZATION_VH
-    elif s == 'RATIO':
+    elif s == "RATIO":
         return POLARIZATION_RATIO
 
 
 def get_type(s):
-    if s == 'BCK':
+    if s == "BCK":
         return TYPE_BACKSCATTER
-    elif s == 'COHE':
+    elif s == "COHE":
         return TYPE_COHERENCE
 
 
@@ -197,11 +215,13 @@ def split_file(file, pos, out1, out2):
 
 def main():
     parser = argparse.ArgumentParser(description="Combine SAR statistics")
-    parser.add_argument('input_path', default='.', help="input statistics path")
-    parser.add_argument('output_path', default='.', help="output statistics path")
+    parser.add_argument("input_path", default=".", help="input statistics path")
+    parser.add_argument("output_path", default=".", help="output statistics path")
     args = parser.parse_args()
 
-    regex = re.compile(r"(SEN4CAP_L2A_\w+_S\d+)_([MWS])(\d+)?_T([A-Z0-9]+)_(?:(\w+)?_)?(\w+)_(\w+)_\w+.csv")
+    regex = re.compile(
+        r"(SEN4CAP_L2A_\w+_S\d+)_([MWS])(\d+)?_T([A-Z0-9]+)_(?:(\w+)?_)?(\w+)_(\w+)_\w+.csv"
+    )
     all_groups = set()
     tile_groups = defaultdict(list)
     for file in glob(os.path.join(args.input_path, "*_MEAN.csv")):
@@ -217,7 +237,9 @@ def main():
             polarization = get_polarization(m.group(6))
             type = get_type(m.group(7))
 
-            group = TileGroup(prefix, period_type, period, orbit_type, polarization, type, name)
+            group = TileGroup(
+                prefix, period_type, period, orbit_type, polarization, type, name
+            )
             tile_groups[tile_id].append(group)
             all_groups.add(group)
         else:
@@ -261,7 +283,7 @@ def main():
     for col in simple_features_columns:
         all_columns.append("XX_" + col + "_DEV")
 
-    with open(sar_features, 'wb') as out_file:
+    with open(sar_features, "wb") as out_file:
         writer = csv.writer(out_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerow(all_columns)
 
@@ -271,7 +293,7 @@ def main():
     for col in temporal_features_columns:
         all_columns.append("XX_" + col + "_DEV")
 
-    with open(sar_temporal, 'wb') as out_file:
+    with open(sar_temporal, "wb") as out_file:
         writer = csv.writer(out_file, quoting=csv.QUOTE_MINIMAL)
         writer.writerow(all_columns)
 
@@ -332,6 +354,9 @@ def main():
                 key.name = name
                 merged.append(key)
             pool.map(run_command, commands)
+
+            if len(merged) == 0:
+                continue
 
             name = "{}_{}".format(merged[0].prefix, tile_id)
             out_mean = pat.format(name, "MEAN")
