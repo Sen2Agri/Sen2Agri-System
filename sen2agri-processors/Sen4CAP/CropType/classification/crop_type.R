@@ -26,25 +26,26 @@ print(variable)
 workdir <- variable[1]  #transform to numeric !!
 InputSAR <- variable[2]
 InputOpt <- variable[3]
-InputSAR_tempStats <- variable[4]
-Shape_filename <- variable[5]
-CTnumL4A <- variable[6]
-LC_monitored <- variable[7]
-AreaDeclared <- variable[8]
-S2pixMIN <- as.numeric(variable[9])
-S1pixMIN <- as.numeric(variable[10])
-PaMIN <- as.numeric(variable[11])
-S2pixBEST <- as.numeric(variable[12])
-PaCalibH <- as.numeric(variable[13])
-PaCalibL <- as.numeric(variable[14])
-Sample_ratioH <- as.numeric(variable[15])
-Sample_ratioL <- as.numeric(variable[16])
-samplingmethod <-variable[17]
-smotesize <- as.numeric(variable[18])
-k <- as.numeric(variable[19])
-numtrees <- as.numeric(variable[20])
-min_node_size <- as.numeric(variable[21])
-LUT <-variable[22]
+InputOptRe <- variable[4]
+InputSAR_tempStats <- variable[5]
+Shape_filename <- variable[6]
+CTnumL4A <- variable[7]
+LC_monitored <- variable[8]
+AreaDeclared <- variable[9]
+S2pixMIN <- as.numeric(variable[10])
+S1pixMIN <- as.numeric(variable[11])
+PaMIN <- as.numeric(variable[12])
+S2pixBEST <- as.numeric(variable[13])
+PaCalibH <- as.numeric(variable[14])
+PaCalibL <- as.numeric(variable[15])
+Sample_ratioH <- as.numeric(variable[16])
+Sample_ratioL <- as.numeric(variable[17])
+samplingmethod <-variable[18]
+smotesize <- as.numeric(variable[19])
+k <- as.numeric(variable[20])
+numtrees <- as.numeric(variable[21])
+min_node_size <- as.numeric(variable[22])
+LUT <-variable[23]
 
 ## Check if parameteres correctly defined: LC and sampling method
 
@@ -84,57 +85,45 @@ names(Shapefile)[which(names(Shapefile)==AreaDeclared)]="AreaDeclared"
 
 ## Join the optical and SAR data to declaration dataset
 
-if (InputSAR==0 & InputOpt!=0) {
-  print("Optical only")
+print("Optical, SAR and SAR temporal features")
 
-  print("Importing Opt_Features...")
-  ncol_Optcsv=system(paste("head -1",InputOpt,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
-  Opt_features=read_csv(InputOpt,col_types=paste0("i",paste(rep("d",as.numeric(ncol_Optcsv)-1),collapse="")))
-  Opt_features[Opt_features==0] <- NA
-  data_joined=inner_join(Shapefile,Opt_features,by="NewID")
-
-} else if (InputOpt==0 & InputSAR!=0) {
-  print("SAR only")
-
-  print("Importing SAR_Features...")
-  SAR_features=read_csv(InputSAR)
-  SAR_features[SAR_features==0] <- NA
-  data_joined=inner_join(Shapefile,SAR_features,by="NewID")
-
-} else if (InputSAR!=0 & InputOpt!=0 & InputSAR_tempStats!=0){
-  print("Optical, SAR and SAR temporal features")
-
-  print("Importing Opt_Features...")
+if (InputOpt != 0) {
+  print("Importing optical features...")
   ncol_Optcsv=system(paste("head -1",InputOpt,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
   Opt_features=read_csv(InputOpt,col_types=paste0("i",paste(rep("d",as.numeric(ncol_Optcsv)-1),collapse="")))
 
-  print("Importing SAR_Features...")
+  data_joined = inner_join(data_joined, Opt_features, by="NewID")
+  rm(Opt_features)
+}
+
+if (InputOptRe != 0) {
+  print("Importing red-edge optical features...")
+  ncol_OptRecsv=system(paste("head -1",InputOptRe,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
+  Opt_Re_features=read_csv(InputOptRe,col_types=paste0("i",paste(rep("d",as.numeric(ncol_OptRecsv)-1),collapse="")))
+
+  data_joined = inner_join(data_joined, Opt_Re_features, by="NewID")
+  rm(Opt_Re_features)
+}
+
+if (InputSAR != 0) {
+  print("Importing SAR features...")
   ncol_SARcsv=system(paste("head -1",InputSAR,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
   SAR_features=read_csv(InputSAR,col_types=paste0("i",paste(rep("d",as.numeric(ncol_SARcsv)-1),collapse="")))
 
-  print("Importing SAR_Temporal_Features...")
+  data_joined = inner_join(Shapefile, SAR_features, by="NewID")
+  rm(SAR_features)
+}
+
+if (InputSAR_tempStats != 0) {
+  print("Importing temporal SAR features...")
   ncol_SARcsv=system(paste("head -1",InputSAR_tempStats,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
   SAR_tempStats=read_csv(InputSAR_tempStats,col_types=paste0("i",paste(rep("d",as.numeric(ncol_SARcsv)-1),collapse="")))
 
-  print("SAR, Optical and SAR temporal features imported successfully")
-
-data_joined=inner_join(Shapefile,SAR_features,by="NewID")
-
-print("join by 1 ok")
-
-data_joined=inner_join(data_joined,Opt_features,by="NewID")
-
-print("join by 2 ok")
-
-data_joined=inner_join(data_joined,SAR_tempStats,by="NewID")
-
-print("join by 3 ok")
-
-} else if (InputSAR==0 & InputOpt==0){
-  print("Define SAR or Optical parameters")
+  data_joined = inner_join(data_joined, SAR_tempStats, by="NewID")
+  rm(SAR_tempStats)
 }
 
-rm(Opt_features,SAR_features,SAR_tempStats)
+print("Features imported successfully")
 
 data_joined=as.data.frame(data_joined)
 print(paste('Dimensions before filtering:',dim(data_joined)))

@@ -225,7 +225,7 @@ def extract_optical_features(
     path, satellite_id, tile, products, ref, dates_file, red_edge
 ):
     satellite = get_satellite_name_long(satellite_id)
-    resolution = get_satellite_resolution(satellite_id)
+    # resolution = get_satellite_resolution(satellite_id)
 
     hdrs = []
     for product in products:
@@ -233,9 +233,16 @@ def extract_optical_features(
         if hdr:
             hdrs.append(hdr)
 
-    mean = "mean-{}.csv".format(tile)
-    dev = "dev-{}.csv".format(tile)
-    count = "count-{}.csv".format(tile)
+    if red_edge:
+        mean = "mean-re-{}.csv".format(tile)
+        dev = "dev-re-{}.csv".format(tile)
+        count = "count-re-{}.csv".format(tile)
+        resolution = 20
+    else:
+        mean = "mean-{}.csv".format(tile)
+        dev = "dev-{}.csv".format(tile)
+        count = "count-{}.csv".format(tile)
+        resolution = 10
 
     mean = os.path.join(path, mean)
     dev = os.path.join(path, dev)
@@ -248,19 +255,18 @@ def extract_optical_features(
 
     command = []
     command += ["otbcli", "OpticalFeatures"]
-    command += ["-il"] + hdrs
     command += ["-pixsize", resolution]
     command += ["-mission", satellite]
     command += ["-ref", ref]
-    if red_edge:
-        command += ["-rededge", "true"]
     command += ["-dates", dates_file]
     command += ["-outmean", mean]
     command += ["-outdev", dev]
     command += ["-outcount", count]
-    if os.path.exists(mean) and os.path.exists(dev) and os.path.exists(count):
-        return
-    run_command(command, env=env)
+    if red_edge:
+        command += ["-rededge", "true"]
+    command += ["-il"] + hdrs
+    if not os.path.exists(mean) or not os.path.exists(dev) or not os.path.exists(count):
+        run_command(command, env=env)
 
 
 def get_lpis_map(lpis_path, resolution):
@@ -359,7 +365,8 @@ def process_optical(config, conn, pool, satellite_id):
         print(site_id, start_date, last_date)
         dates_file = save_dates_file(config.path, site_id, satellite_id, dates)
 
-        ref_map = get_lpis_map(config.lpis_path, 10)
+        ref_map_10m = get_lpis_map(config.lpis_path, 10)
+        ref_map_20m = get_lpis_map(config.lpis_path, 20)
         work = []
         for tile, products in tiles.items():
             filtered_products = [
@@ -367,19 +374,33 @@ def process_optical(config, conn, pool, satellite_id):
                 for product in products
                 if product.date >= start_date and product.date <= last_date
             ]
-            tile_ref = ref_map.get(tile)
-            if tile_ref is not None:
+            tile_ref_10m = ref_map_10m.get(tile)
+            if tile_ref_10m is not None:
                 work.append(
                     (
                         config.path,
                         satellite_id,
                         tile,
                         filtered_products,
-                        tile_ref,
+                        tile_ref_10m,
                         dates_file,
-                        config.re,
+                        False,
                     )
                 )
+            if config.re:
+                tile_ref_20m = ref_map_20m.get(tile)
+                if tile_ref_20m is not None:
+                    work.append(
+                        (
+                            config.path,
+                            satellite_id,
+                            tile,
+                            filtered_products,
+                            tile_ref_20m,
+                            dates_file,
+                            True,
+                        )
+                    )
 
         pool.map(lambda g: extract_optical_features(*g), work)
 
@@ -399,20 +420,58 @@ def process_optical(config, conn, pool, satellite_id):
 
         run_command(command)
 
+        if config.re:
+            command = []
+            command += ["merge-statistics"]
+            command += ["mean-re.csv", "dev-re.csv"]
+            for tile, _ in tiles.items():
+                mean_re = "mean-re-{}.csv".format(tile)
+                dev_re = "dev-re-{}.csv".format(tile)
+                count_re = "count-re-{}.csv".format(tile)
+
+                mean_re = os.path.join(config.path, mean_re)
+                dev_re = os.path.join(config.path, dev_re)
+                count_re = os.path.join(config.path, count_re)
+
+                command += [mean_re, dev_re, count_re]
+
+            run_command(command)
+
         headers_mean = "mean-headers.csv"
         headers_mean = os.path.join(config.path, headers_mean)
 
         headers_dev = "dev-headers.csv"
         headers_dev = os.path.join(config.path, headers_dev)
 
+        headers_re_mean = "mean-re-headers.csv"
+        headers_re_mean = os.path.join(config.path, headers_re_mean)
+
+        headers_re_dev = "dev-re-headers.csv"
+        headers_re_dev = os.path.join(config.path, headers_re_dev)
+
+        generate_headers(
+            dates_file,
+            headers_mean,
+            headers_dev,
+            headers_re_mean,
+            headers_re_dev,
+            config.re,
+        )
+
         optical_features = "optical-features.csv"
         optical_features = os.path.join(config.path, optical_features)
-
-        generate_headers(dates_file, headers_mean, headers_dev, config.re)
 
         if not os.path.exists(optical_features):
             paste_files(headers_mean, headers_dev, optical_features)
             paste_files("mean.csv", "dev.csv", optical_features)
+
+        if config.re:
+            optical_features_re = "optical-features-re.csv"
+            optical_features_re = os.path.join(config.path, optical_features_re)
+
+            if not os.path.exists(optical_features_re):
+                paste_files(headers_re_mean, headers_re_dev, optical_features_re)
+                paste_files("mean-re.csv", "dev-re.csv", optical_features_re)
 
 
 class RadarGroup(object):
@@ -1310,7 +1369,9 @@ def process_radar(config, conn, pool):
     pool.map(lambda c: c.run(), coherence_season_composites)
 
 
-def generate_headers(date_file, headers_mean, headers_dev, red_edge):
+def generate_headers(
+    date_file, headers_mean, headers_dev, headers_re_mean, headers_re_dev, red_edge
+):
     dates = []
     with open(date_file, "r") as file:
         for line in file:
@@ -1323,10 +1384,6 @@ def generate_headers(date_file, headers_mean, headers_dev, red_edge):
         "b4",
         "b8",
         "b11",
-    ]
-    if red_edge:
-        bands += ["b5", "b6", "b7", "b12"]
-    bands += [
         "ndvi",
         "ndwi",
         "brightness",
@@ -1342,6 +1399,29 @@ def generate_headers(date_file, headers_mean, headers_dev, red_edge):
         file.write("\n")
 
     with open(headers_dev, "w") as file:
+        file.write("NewID")
+        for dt in dates:
+            for band in bands:
+                date_string = dt.strftime("%Y_%m_%d")
+                column = "XX_s2_dev_{}_{}".format(date_string, band)
+                file.write("," + column)
+        file.write("\n")
+
+    if not red_edge:
+        return
+
+    bands = ["b5", "b6", "b7", "b12"]
+
+    with open(headers_re_mean, "w") as file:
+        file.write("NewID")
+        for dt in dates:
+            for band in bands:
+                date_string = dt.strftime("%Y_%m_%d")
+                column = "XX_s2_mean_{}_{}".format(date_string, band)
+                file.write("," + column)
+        file.write("\n")
+
+    with open(headers_re_dev, "w") as file:
         file.write("NewID")
         for dt in dates:
             for band in bands:

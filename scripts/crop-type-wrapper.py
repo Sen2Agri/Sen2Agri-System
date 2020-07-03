@@ -289,11 +289,15 @@ def main():
     run_command(command)
 
     optical_features = os.path.join(args.working_path, "features/optical-features.csv")
+    optical_re_features = os.path.join(
+        args.working_path, "features/optical-features-re.csv"
+    )
     sar_features = os.path.join(args.working_path, "features/sar-features.csv")
     sar_temporal = os.path.join(args.working_path, "features/sar-temporal.csv")
 
     if args.mode == "s1-only" or not check_file(optical_features):
         optical_features = "0"
+        optical_re_features = "0"
     if args.mode == "s2-only" or not check_file(sar_features):
         sar_features = "0"
     if args.mode == "s2-only" or not check_file(sar_temporal):
@@ -309,6 +313,7 @@ def main():
     command += [args.out_path + "/"]
     command += [sar_features]
     command += [optical_features]
+    command += [optical_re_features]
     command += [sar_temporal]
     command += [parcels]
     command += ["CTnumL4A"]

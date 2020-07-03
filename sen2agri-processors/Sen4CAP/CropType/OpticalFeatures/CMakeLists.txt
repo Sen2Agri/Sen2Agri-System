@@ -1,13 +1,14 @@
 otb_create_application(
 	NAME           OpticalFeatures
 	SOURCES        OpticalFeatures.cpp
-		  ../../../Common/Filters/otbCropTypeFeatureExtractionFilter.h
-		  ../../../Common/Filters/otbCropTypeFeatureExtractionFilter.txx
-		  ../../../Common/Filters/otbTemporalResamplingFilter.h
-		  ../../../Common/Filters/otbTemporalResamplingFilter.txx
-		  ../../../Common/Filters/otbTemporalMergingFilter.h
-		 ../../../Common/Filters/otbTemporalMergingFilter.txx
-		 ../../../Common/Filters/CropTypePreprocessing.h
+				 ../../../Common/Filters/otbCropTypeFeatureExtractionFilter.h
+				 ../../../Common/Filters/otbCropTypeFeatureExtractionFilter.txx
+				 ../../../Common/Filters/otbTemporalResamplingFilter.h
+				 ../../../Common/Filters/otbTemporalResamplingFilter.txx
+				 ../../../Common/Filters/otbTemporalMergingFilter.h
+				 ../../../Common/Filters/otbTemporalMergingFilter.txx
+				 ../../../Common/Filters/CropTypePreprocessing.h
+				 ../../../Common/Filters/RedEdgeBandsExtractor.h
                  ../../../Common/Filters/MaskedScaleImageFilter.h
                  ../../../Common/Filters/otbStreamingStatisticsMapFromLabelImageFilter.h
                  ../../../Common/Filters/otbStreamingStatisticsMapFromLabelImageFilter.hxx
