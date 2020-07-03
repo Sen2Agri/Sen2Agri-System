@@ -8,6 +8,7 @@ build-*
 packaging/Sen2AgriPlatform/
 packaging/Sen2AgriProcessors/
 packaging/Sen2AgriRPM/
+*.rpm
 
 # rendered FAQ
 FAQ.html
