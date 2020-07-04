@@ -85,7 +85,7 @@ names(Shapefile)[which(names(Shapefile)==AreaDeclared)]="AreaDeclared"
 
 ## Join the optical and SAR data to declaration dataset
 
-print("Optical, SAR and SAR temporal features")
+data_joined = Shapefile
 
 if (InputOpt != 0) {
   print("Importing optical features...")
@@ -110,7 +110,7 @@ if (InputSAR != 0) {
   ncol_SARcsv=system(paste("head -1",InputSAR,"| sed 's/[^,]//g' | wc -c"),intern=TRUE)
   SAR_features=read_csv(InputSAR,col_types=paste0("i",paste(rep("d",as.numeric(ncol_SARcsv)-1),collapse="")))
 
-  data_joined = inner_join(Shapefile, SAR_features, by="NewID")
+  data_joined = inner_join(data_joined, SAR_features, by="NewID")
   rm(SAR_features)
 }
 
