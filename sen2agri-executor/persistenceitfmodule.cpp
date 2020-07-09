@@ -107,43 +107,6 @@ void PersistenceItfModule::SaveMainConfigKeys(const ConfigurationParameterValueL
     }
 }
 
-void
-PersistenceItfModule::SaveProcessorsConfigKeys(const ConfigurationParameterValueList &configuration)
-{
-    int nCurProc = 0;
-    for (const auto &p : configuration) {
-        QStringList listKeys = p.key.split('.');
-        // normally, the first 2 should be "executor" and "processor"
-        // we do not check them again
-        if ((listKeys.size() == 4) && (listKeys.at(3).compare("name", Qt::CaseInsensitive) == 0)) {
-            QString strProcessorName = listKeys.at(2);
-            if (!strProcessorName.isEmpty() && !p.value.isEmpty()) {
-                QString strProcessorPath;
-                if (GetProcessorPathForName(configuration, strProcessorName, strProcessorPath) &&
-                    !strProcessorPath.isEmpty()) {
-                    QString strNameKey = QString("PROCESSOR_%1_NAME").arg(nCurProc + 1);
-                    ConfigurationMgr::GetInstance()->SetValue(strNameKey, p.value);
-                    QString strPathKey = QString("PROCESSOR_%1_PATH").arg(nCurProc + 1);
-                    ConfigurationMgr::GetInstance()->SetValue(strPathKey, strProcessorPath);
-                    nCurProc++;
-                }
-            }
-        }
-    }
-    if (nCurProc > 0) {
-        QString strKey = QString("PROCESSORS_NUMBER");
-        QString strVal = QString::number(nCurProc);
-        ConfigurationMgr::GetInstance()->SetValue(strKey, strVal);
-    }
-}
-
-bool PersistenceItfModule::GetProcessorPathForName(
-    const ConfigurationParameterValueList &configuration, const QString &name, QString &path)
-{
-    const auto &strPathKey = QString("executor.processor.%1.path").arg(name);
-    return GetValueForKey(configuration, strPathKey, path);
-}
-
 bool PersistenceItfModule::GetValueForKey(
     const ConfigurationParameterValueList &configuration, const QString &key, QString &value)
 {

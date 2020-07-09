@@ -41,11 +41,7 @@ private:
 
     bool GetValueForKey(const ConfigurationParameterValueList &configuration,
                         const QString &key, QString &value);
-    bool GetProcessorPathForName(const ConfigurationParameterValueList &configuration,
-                                const QString &name, QString &path);
-
     void SaveMainConfigKeys(const ConfigurationParameterValueList &configuration);
-    void SaveProcessorsConfigKeys(const ConfigurationParameterValueList &configuration);
     long ParseTimeStr(const QString &strTime);
     ExecutionStatistics InitStatistics(const ProcessorExecutionInfos &statistics);
 };
