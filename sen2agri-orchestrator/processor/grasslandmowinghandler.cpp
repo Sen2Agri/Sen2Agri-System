@@ -81,6 +81,7 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
         productFormatterFiles += productFormatterTask.GetFilePath(outShpFileName + ".dbf");
         productFormatterFiles += productFormatterTask.GetFilePath(outShpFileName + ".prj");
         productFormatterFiles += productFormatterTask.GetFilePath(outShpFileName + ".shx");
+        productFormatterFiles += productFormatterTask.GetFilePath(outShpFileName + ".cpg");
         // Add also the intermediate files
         // TODO: see if this path should be better configured in database as
         // the script might use it to detect if vrt and other files were already generated
@@ -108,6 +109,7 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
         productFormatterFiles += s1MowingDetectionTask.GetFilePath(outShpFileName + ".dbf");
         productFormatterFiles += s1MowingDetectionTask.GetFilePath(outShpFileName + ".prj");
         productFormatterFiles += s1MowingDetectionTask.GetFilePath(outShpFileName + ".shx");
+        productFormatterFiles += s1MowingDetectionTask.GetFilePath(outShpFileName + ".cpg");
 
         // Add also the intermediate files
         // TODO: see if this path should be better configured in database as
