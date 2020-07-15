@@ -162,9 +162,7 @@ function build_dir_tree()
 {
    ##set PATH env variable to /usr/bin to avoid
    # cmake finding /lib/cmake before /usr/lib/cmake
-   # also include /usr/local/bin for fpm
-   PATH="/opt/rh/rh-ruby23/root/usr/local/bin:/usr/local/bin:/usr/bin"
-   LD_LIBRARY_PATH=/opt/rh/rh-ruby23/root/usr/lib64:$LD_LIBRARY_PATH
+   export PATH="/usr/bin:$PATH"
 
    ##go to default dir
    cd ${DEFAULT_DIR}
