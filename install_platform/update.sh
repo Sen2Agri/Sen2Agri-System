@@ -220,6 +220,16 @@ function migrate_postgres_to_docker() {
         sleep 1
     done
 
+    echo "Waiting 120 seconds for postgres server to settle..."
+    sleep 120
+
+    RETRIES=120
+    until docker-compose run db pg_isready || [ $RETRIES -eq 0 ]; do
+        echo "Waiting for postgres server, $RETRIES remaining attempts..."
+        RETRIES=$((RETRIES-1))
+        sleep 1
+    done
+
     cd ..
 
     echo "Restoring database backup"
