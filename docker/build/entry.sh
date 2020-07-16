@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 
+export PATH=/opt/rh/rh-ruby23/root/usr/local/bin:$PATH
 export LD_LIBRARY_PATH=/opt/rh/rh-ruby23/root/usr/lib64
 
 cd sen2agri/packaging
