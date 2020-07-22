@@ -341,18 +341,18 @@ function config_docker()
     docker-compose up -d
 
     RETRIES=120
-    until docker-compose run --rm db pg_isready || [ $RETRIES -eq 0 ]; do
-        echo "Waiting for postgres server, $RETRIES remaining attempts..."
+    until docker-compose exec db pg_isready || [ $RETRIES -eq 0 ]; do
+        echo "Waiting for postgres, $RETRIES remaining attempts..."
         RETRIES=$((RETRIES-1))
         sleep 1
     done
 
-    echo "Waiting 120 seconds for postgres server to settle..."
+    echo "Waiting 120 seconds for postgres to settle..."
     sleep 120
 
     RETRIES=120
-    until docker-compose run --rm db pg_isready || [ $RETRIES -eq 0 ]; do
-        echo "Waiting for postgres server, $RETRIES remaining attempts..."
+    until docker-compose exec db pg_isready || [ $RETRIES -eq 0 ]; do
+        echo "Waiting for postgres, $RETRIES remaining attempts..."
         RETRIES=$((RETRIES-1))
         sleep 1
     done
