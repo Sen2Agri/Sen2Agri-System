@@ -517,8 +517,21 @@ add constraint {} unique(ori_crop);"""
                 conn.commit()
 
     def prepare_lpis_staging(
-        self, mode, parcel_id_cols, holding_id_cols, crop_code_col, lpis, parcel_id_offset, holding_id_offset,
+        self,
+        mode,
+        parcel_id_cols,
+        holding_id_cols,
+        crop_code_col,
+        lpis,
+        parcel_id_offset,
+        holding_id_offset,
     ):
+        ds = ogr.Open(lpis, 0)
+        layer = ds.GetLayer()
+        srs = layer.GetSpatialRef()
+        is_projected = srs.IsProjected()
+        del ds
+
         parcel_id_cols = [col.lower() for col in parcel_id_cols]
         holding_id_cols = [col.lower() for col in holding_id_cols]
         crop_code_col = crop_code_col.lower()
@@ -548,7 +561,9 @@ add constraint {} unique(ori_crop);"""
 
                 for col in ["ori_id", "ori_hold", "ori_crop"]:
                     if column_exists(conn, "public", self.lpis_table_staging, col):
-                        logging.error("`{}` is not an allowed LPIS column name".format(col))
+                        logging.error(
+                            "`{}` is not an allowed LPIS column name".format(col)
+                        )
                         sys.exit(1)
 
                 ori_crop_type = get_column_type(
@@ -558,9 +573,9 @@ add constraint {} unique(ori_crop);"""
                     ori_crop_type = "text"
                 elif ori_crop_type == "numeric":
                     ori_crop_type = "int"
-                    query = SQL(
-                        "alter table {} alter column {} type int;"
-                    ).format(lpis_table_staging_id, Identifier(crop_code_col))
+                    query = SQL("alter table {} alter column {} type int;").format(
+                        lpis_table_staging_id, Identifier(crop_code_col)
+                    )
                     logging.debug(query.as_string(conn))
                     cursor.execute(query)
 
@@ -721,7 +736,7 @@ from (
 where new.ogc_fid = t.id;"""
                 ).format(lpis_table_staging_id, lpis_table_id, lpis_table_staging_id)
                 logging.debug(query.as_string(conn))
-                cursor.execute(query, (parcel_id_offset, ))
+                cursor.execute(query, (parcel_id_offset,))
                 # conn.commit()
 
                 print("Copying old holding identifiers")
@@ -752,7 +767,7 @@ from (
 where new.ogc_fid = t.id;"""
                 ).format(lpis_table_staging_id, lpis_table_id, lpis_table_staging_id)
                 logging.debug(query.as_string(conn))
-                cursor.execute(query, (holding_id_offset, ))
+                cursor.execute(query, (holding_id_offset,))
                 # conn.commit()
 
                 conn.commit()
@@ -793,6 +808,14 @@ where not exists (
                 old_cols += SQL("wkb_geometry)")
                 p_old_cols += SQL("old.wkb_geometry)")
                 new_cols += SQL("new.wkb_geometry)")
+                if is_projected:
+                    area_expr = SQL("coalesce(ST_Area(new.wkb_geometry), 0)")
+                    perimeter_expr = SQL("ST_Perimeter(new.wkb_geometry)")
+                else:
+                    area_expr = SQL(
+                        "coalesce(ST_Area(new.wkb_geometry :: geography), 0)"
+                    )
+                    perimeter_expr = SQL("ST_Perimeter(new.wkb_geometry :: geography)")
                 query = SQL(
                     """
 update {} old
@@ -800,8 +823,8 @@ set {} = {},
     "GeomValid" = coalesce(ST_IsValid(new.wkb_geometry), false),
     "Overlap" = false,
     "Duplic" = false,
-    "Area_meters" = coalesce(ST_Area(new.wkb_geometry), 0),
-    "ShapeInd" = ST_Perimeter(new.wkb_geometry) / (2 * sqrt(pi() * nullif(ST_Area(new.wkb_geometry), 0))),
+    "Area_meters" = {},
+    "ShapeInd" = {} / (2 * sqrt(pi() * nullif({}, 0))),
     "S1Pix" = 0,
     "S2Pix" = 0,
     is_deleted = false,
@@ -814,6 +837,9 @@ and {} is distinct from {};"""
                     lpis_table_id,
                     old_cols,
                     new_cols,
+                    area_expr,
+                    perimeter_expr,
+                    area_expr,
                     lpis_table_staging_id,
                     new_cols,
                     p_old_cols,
@@ -830,6 +856,14 @@ and {} is distinct from {};"""
                         if col not in ("ogc_fid", "is_new")
                     ]
                 )
+                if is_projected:
+                    area_expr = SQL("coalesce(ST_Area(wkb_geometry), 0)")
+                    perimeter_expr = SQL("ST_Perimeter(wkb_geometry)")
+                else:
+                    area_expr = SQL(
+                        "coalesce(ST_Area(wkb_geometry :: geography), 0)"
+                    )
+                    perimeter_expr = SQL("ST_Perimeter(wkb_geometry :: geography)")
                 query = SQL(
                     """
 insert into {}({}, "GeomValid", "Duplic", "Overlap", "Area_meters", "ShapeInd")
@@ -837,11 +871,19 @@ select {},
     coalesce(ST_IsValid(wkb_geometry), false) as "GeomValid",
     false as "Duplic",
     false as "Overlap",
-    coalesce(ST_Area(wkb_geometry), 0) as "Area_meters",
-    ST_Perimeter(wkb_geometry) / (2 * sqrt(pi() * nullif(ST_Area(wkb_geometry), 0))) as "ShapeInd"
+    {} as "Area_meters",
+    {} / (2 * sqrt(pi() * nullif({}, 0))) as "ShapeInd"
 from {}
 where is_new;"""
-                ).format(lpis_table_id, insert_cols, insert_cols, lpis_table_staging_id)
+                ).format(
+                    lpis_table_id,
+                    insert_cols,
+                    insert_cols,
+                    area_expr,
+                    perimeter_expr,
+                    area_expr,
+                    lpis_table_staging_id,
+                )
                 logging.debug(query.as_string(conn))
                 cursor.execute(query)
 
@@ -1084,7 +1126,8 @@ set "S2Pix" = s2_pix,
 from (select unnest(%s) as id,
                 unnest(%s) as s2_pix,
                 unnest(%s) as s1_pix) upd
-where upd.id = lpis."NewID";""")
+where upd.id = lpis."NewID";"""
+                )
                 sql = sql.format(Identifier(self.lpis_table))
 
                 with self.get_connection() as conn:
@@ -1105,6 +1148,7 @@ where upd.id = lpis."NewID";""")
 
             commands = []
             for b in batch(updates, self.DB_UPDATE_BATCH_SIZE):
+
                 def f(b=b):
                     update_batch(b)
 
@@ -1115,9 +1159,7 @@ where upd.id = lpis."NewID";""")
             for i in range(len(commands)):
                 progress += q.get()
                 sys.stdout.write(
-                    "\rUpdating pixel counts: {0:.2f}%".format(
-                        100.0 * progress / total
-                    )
+                    "\rUpdating pixel counts: {0:.2f}%".format(100.0 * progress / total)
                 )
                 sys.stdout.flush()
             sys.stdout.write("\n")
@@ -1480,7 +1522,9 @@ def main():
     parser.add_argument("--crop-code-col", help="crop code column")
 
     required_args = parser.add_argument_group("required named arguments")
-    required_args.add_argument("-s", "--site-id", type=int, required=True, help="site ID to filter by")
+    required_args.add_argument(
+        "-s", "--site-id", type=int, required=True, help="site ID to filter by"
+    )
     parser.add_argument(
         "-m",
         "--mode",
@@ -1490,8 +1534,15 @@ def main():
     )
     parser.add_argument("-d", "--debug", help="debug mode", action="store_true")
     parser.add_argument("--working-path", help="working path")
-    parser.add_argument("--parcel-id-offset", help="offset for parcel renumbering", type=int, default=0)
-    parser.add_argument("--holding-id-offset", help="offset for holding renumbering", type=int, default=0)
+    parser.add_argument(
+        "--parcel-id-offset", help="offset for parcel renumbering", type=int, default=0
+    )
+    parser.add_argument(
+        "--holding-id-offset",
+        help="offset for holding renumbering",
+        type=int,
+        default=0,
+    )
 
     args = parser.parse_args()
 
