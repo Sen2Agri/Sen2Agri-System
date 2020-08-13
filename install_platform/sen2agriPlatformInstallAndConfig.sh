@@ -406,6 +406,7 @@ function install_and_config_postgresql()
    populate_from_scripts "$(find ./ -name "database")/08-keys"
    # granting privileges to sen2agri-service and admin users
    populate_from_scripts "$(find ./ -name "database")/09-privileges"
+   populate_from_scripts "$(find ./ -name "database")/10-triggers"
 }
 #-----------------------------------------------------------#
 function populate_from_scripts()
