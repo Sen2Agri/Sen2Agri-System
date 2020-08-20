@@ -9,6 +9,7 @@ conda_user="sen2agri-service"
 script_path="generate_grassland_mowing_input_shp.py"
 config_file="/etc/sen2agri/sen2agri.conf"
 filter_ctnum=""
+add_decl_cols=""
 filter_ids_table=""
 force=0
 
@@ -54,6 +55,12 @@ case $key in
     shift # past argument
     shift # past value
     ;;
+    -a|--add-decl-cols)
+    add_decl_cols="$2"
+    shift # past argument
+    shift # past value
+    ;;
+
     -t|--filter-ids-table)
     filter_ids_table="$2"
     shift # past argument
@@ -150,6 +157,11 @@ if [ ! -z "${filter_ctnum}" ] ; then
     FILTER_CT_NUM_OPT="--filter-ctnum ${filter_ctnum}" 
 fi
 
+ADD_DECL_COLS_OPT=""
+if [ ! -z "${add_decl_cols}" ] ; then
+    ADD_DECL_COLS_OPT="--add-decl-cols ${add_decl_cols}" 
+fi
+
 FILTER_IDS_TABLE_OPT=""
 if [ ! -z "${filter_ids_table}" ] ; then
     FILTER_IDS_TABLE_OPT="--filter-ids-table ${filter_ids_table}" 
@@ -160,7 +172,7 @@ if [ ! -z "${srid}" ] ; then
     SRID_OPT="--srid ${srid}" 
 fi
 
-PY_CMD="python ${script_path} ${CFG_FILE} --site-id ${site_id} --path ${path} --year ${year} ${FILTER_CT_NUM_OPT} ${FILTER_IDS_TABLE_OPT} ${FORCE_OPT} ${SRID_OPT}"
+PY_CMD="python ${script_path} ${CFG_FILE} --site-id ${site_id} --path ${path} --year ${year} ${FILTER_CT_NUM_OPT} ${ADD_DECL_COLS_OPT} ${FILTER_IDS_TABLE_OPT} ${FORCE_OPT} ${SRID_OPT}"
 
 CMD="${CONDA_CMD} && ${PY_CMD}"
 CMD="${CMD}${CMD_TERM}"

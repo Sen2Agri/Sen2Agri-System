@@ -97,6 +97,7 @@ def main():
     parser.add_argument('-p', '--path', default='.', help="working path")
     parser.add_argument('-y', '--year', help="year")
     parser.add_argument('-f', '--filter-ctnum', default="", help="Filtering CTnum fields")
+    parser.add_argument('-a', '--add-decl-cols', default="", help="Additional columns from declarations table to be added to the output shapefile")
     parser.add_argument('--force', help="overwrite field", action='store_true')
     parser.add_argument('--filter-ids-table', help="A table name containing filter ids")
     parser.add_argument('--srid', help="EPSG projection to be used for the output shapefile")
@@ -105,7 +106,7 @@ def main():
     args = parser.parse_args()
 
     config = Config(args)
-    pool = multiprocessing.dummy.Pool(8)
+    pool = multiprocessing.dummy.Pool(1)
 
     pg_path = 'PG:dbname={} host={} port={} user={} password={}'.format(config.dbname, config.host,
                                                                         config.port, config.user, config.password)
@@ -128,20 +129,31 @@ def main():
                     raise
        
         ctnums = []
+        str_ctnums = ""
         if args.filter_ctnum : 
             ctnums = list(map(int, args.filter_ctnum.split(',')))
+            str_ctnums = ', '.join(str(x) for x in ctnums)
+        
+        # Additional column names to be added from the declarations table        
+        add_col_names = []
+        str_add_col_names = ""
+        if args.add_decl_cols : 
+            add_col_names = [x.strip() for x in args.add_decl_cols.split(',')]
+            str_add_col_names = ', '.join(str(x) for x in add_col_names)
+            str_add_col_names = ", " + str_add_col_names
+            
         if len(ctnums) > 0 : 
             if args.filter_ids_table :
-                sql = "select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {} where ctnum in ({}) and \"NewID\" in (select newid from {})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums), args.filter_ids_table)
+                sql = "select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry {} from {} natural join {} where ctnum in ({}) and \"NewID\" in (select newid from {})".format(str_add_col_names, lpis_table, lut_table, str_ctnums, args.filter_ids_table)
             else :
-                sql = "select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} natural join {} where ctnum in ({})".format(lpis_table, lut_table, ', '.join(str(x) for x in ctnums))
+                sql = "select \"NewID\", ctnum as \"CTnum\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry {} from {} natural join {} where ctnum in ({})".format(str_add_col_names, lpis_table, lut_table, str_ctnums)
         else :
             if args.filter_ids_table :
-                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {} where \"NewID\" in (select newid from {})')
-                sql = sql.format(Identifier(lpis_table), Identifier(args.filter_ids_table))
+                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry {} from {} where \"NewID\" in (select newid from {})')
+                sql = sql.format(SQL(str_add_col_names), Identifier(lpis_table), Identifier(args.filter_ids_table))
             else :
-                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry from {}')
-                sql = sql.format(Identifier(lpis_table))
+                sql = SQL('select \"NewID\", ori_hold as \"Ori_hold\", ori_id as \"Ori_id\", ori_crop as \"Ori_crop\", \"Area_meters\" as \"Area_meter\", wkb_geometry {} from {}')
+                sql = sql.format(SQL(str_add_col_names), Identifier(lpis_table))
             sql = sql.as_string(conn)
 
         command = []
