@@ -40,7 +40,7 @@ $BODY$
 				JOIN site_names S ON P.site_id = S.id
 			    WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
 			    AND EXISTS (
-				    SELECT * FROM season WHERE season.site_id =P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date
+				    SELECT * FROM season WHERE season.site_id =P.site_id AND P.created_timestamp BETWEEN season.start_date AND season.end_date + interval '1 day'
 		    $sql$;
 		    IF $3 IS NOT NULL THEN
 			q := q || $sql$
