@@ -253,7 +253,7 @@ systemctl stop sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2ag
 saveOldDownloadCredentials
 migrate_to_docker
 
-yum -y install python-dateutil libcurl-devel openssl-devel libxml2-devel
+yum -y install python-dateutil libcurl-devel openssl-devel libxml2-devel php-pgsql
 yum -y install ../rpm_binaries/*.rpm
 rm -rf /usr/local/bin/gdal_edit.py
 
@@ -296,6 +296,7 @@ else
 fi
 
 systemctl daemon-reload
+systemctl restart httpd
 
 mkdir -p /mnt/archive/reference_data
 echo "Copying reference data"
