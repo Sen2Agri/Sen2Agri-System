@@ -406,7 +406,7 @@ def layer2mask(layerFile, rasterFile, outputFile, layer_type='ROI', class_attrib
     print("input raster projection", osr_data_projection)
 
     # open the vectorial layer file
-    ogr_data = ogr.Open(layerFile,0)
+    ogr_data = ogr.Open(layerFile,1)    # 0 means read-only. 1 means writeable.
     Layer = ogr_data.GetLayer(0)
     LayerName = Layer.GetName()
 
