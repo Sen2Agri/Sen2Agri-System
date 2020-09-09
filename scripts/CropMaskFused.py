@@ -422,6 +422,8 @@ class CropMaskProcessor(ProcessorBase):
             needs_pca = True
             needs_ndvi = True
         else:
+            if os.path.exists(tile_segmented):
+                return
             needs_segmentation_merged = not os.path.exists(tile_segmentation_merged)
             needs_segmentation = needs_segmentation_merged and not os.path.exists(tile_segmentation)
             needs_tile_smoothed = needs_segmentation and not os.path.exists(tile_smoothed)
