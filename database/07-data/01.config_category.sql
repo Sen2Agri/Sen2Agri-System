@@ -1,5 +1,5 @@
 ﻿INSERT INTO config_category VALUES (1, 'General', 0, true);
-INSERT INTO config_category VALUES (2, 'L2A Atmospheric Corrections', 1, true);
+INSERT INTO config_category VALUES (2, 'L2A Atmospheric Correction', 1, false);
 INSERT INTO config_category VALUES (3, 'L3A Composite', 2, true);
 INSERT INTO config_category VALUES (4, 'L3B Vegetation Status', 3, true);
 INSERT INTO config_category VALUES (5, 'L4A Crop Mask', 5, true);
