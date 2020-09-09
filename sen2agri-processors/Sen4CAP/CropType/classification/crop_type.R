@@ -566,8 +566,6 @@ main_class <- matrr[order(matrr$sum_dec,decreasing = T),]
 conf_user <- main_class[,c('CTnumL4A','CTL4A','sum_class','well_class','user_accuracy')]
 conf_user[,c('conf_class1','conf_per1','conf_class2','conf_per2','conf_class3','conf_per3')]<-0
 
-main_class['num',]<-as.numeric(colnames(main_class))
-
 matrice1 <-as.data.frame.matrix(Results_Ranger$table)
 
 tmatrice1<-t(matrice1)
@@ -647,8 +645,6 @@ main_class_p <- matrr_p[order(matrr_p$sum_dec,decreasing = T),]
 
 conf_prod <- main_class_p[,c('CTnumL4A','CTL4A','sum_dec','well_class','producer_accuracy')]
 conf_prod[,c('conf_class1','conf_per1','conf_class2','conf_per2','conf_class3','conf_per3','conf_class4','conf_per4')]<-0
-
-main_class_p['num',]<-as.numeric(colnames(main_class_p))
 
 matrice1 <-as.data.frame.matrix(Results_Ranger$table)
 
