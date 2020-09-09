@@ -252,6 +252,6 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.skip.e
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.crop-mask', NULL, '', '2019-04-12 14:56:57.501918+02');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b_lai.sub_products', NULL, 'L3B,L3C,L3D', '2019-04-12 14:56:57.501918+02');
-
-
-
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l2a.s2.implementation', NULL, 'maja', '2020-09-07 14:17:52.846794+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l2a.s2.retry-interval', NULL, '1 day', '2020-09-07 14:36:37.906825+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l2a.optical.num-workers', NULL, '4', '2020-09-07 14:36:37.906825+03');

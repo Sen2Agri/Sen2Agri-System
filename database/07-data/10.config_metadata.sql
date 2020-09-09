@@ -245,6 +245,6 @@ INSERT INTO config_metadata VALUES ('downloader.l8.forcestart', 'Forces the L8 d
 INSERT INTO config_metadata VALUES ('downloader.s1.forcestart', 'Forces the S1 download to start again from the beginning of the season', 'bool', false, 15);
 
 INSERT INTO config_metadata VALUES ('downloader.skip.existing', 'If enabled, products downloaded for another site will be duplicated, in database only, for the current site', 'bool', false, 15);
-
-
-
+INSERT INTO config_metadata VALUES ('processor.l2a.s2.implementation', 'L2A processor to use for Sentinel-2 products (`maja` or `sen2cor`)', 'string', false, 2);
+INSERT INTO config_metadata VALUES ('processor.l2a.s2.retry-interval', 'Retry interval for the L2A processor', 'string', false, 2);
+INSERT INTO config_metadata VALUES ('processor.l2a.optical.num-workers', 'Parallelism degree of the L2A processor', 'int', false, 2);
