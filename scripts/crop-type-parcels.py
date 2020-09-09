@@ -1174,6 +1174,9 @@ def process_radar(config, conn, pool):
         )
         groups[group].append(product)
 
+    if input_srs is None:
+        return
+
     wgs84_srs = osr.SpatialReference()
     wgs84_srs.ImportFromEPSG(4326)
 
