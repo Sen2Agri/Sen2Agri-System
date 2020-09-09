@@ -14,7 +14,7 @@ begin
         from l1_tile_history
         where downloader_history_id = _downloader_history_id
           and (status_id = 3 -- done
-            or retry_count = 3 and status_id = 2) -- failed
+            or retry_count >= 3 and status_id = 2) -- failed
     ) then
         if exists(
             select *
