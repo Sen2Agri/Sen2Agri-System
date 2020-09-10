@@ -271,6 +271,7 @@ def main():
 
     if args.mode != "s1-only":
         os.rename("optical/optical-features.csv", "features/optical-features.csv")
+        os.rename("optical/optical-features-re.csv", "features/optical-features-re.csv")
     if args.mode != "s2-only":
         os.rename("sar-merged/sar-features.csv", "features/sar-features.csv")
         os.rename("sar-merged/sar-temporal.csv", "features/sar-temporal.csv")
