@@ -211,7 +211,7 @@ int CzeCountryInfo::HandleFileLine(const MapHdrIdx &header,
                                    int fileIdx) {
     if (m_year == "2018") {
         return Handle2018FileLine(header, line, fileIdx);
-    } else if (m_year == "2019") {
+    } else if (m_year == "2019" || m_year == "2020") {
         return Handle2019FileLine(header, line, fileIdx);
     }
     return false;
