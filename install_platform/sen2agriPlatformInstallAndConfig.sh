@@ -886,6 +886,9 @@ function install_sen2agri_services()
         # ensure the execution flag
         chmod a+x /usr/share/sen2agri/sen2agri-services/bin/start.sh
 
+        # it might happen that some files to be packaged with the wrong read rights
+        chmod -R a+r /usr/share/sen2agri/sen2agri-services
+
         # update the database name if needed in the sen2agri-services
         DB_NAME=$(get_install_config_property "DB_NAME")
         if [[ ! -z $DB_NAME ]] ; then
@@ -998,3 +1001,4 @@ echo "Please edit the USGS and SciHub credentials in the sen2agri-services.prope
 #echo "Please edit the following files to set up your USGS and SciHub credentials:"
 #echo "/usr/share/sen2agri/sen2agri-downloaders/usgs.txt"
 #echo "/usr/share/sen2agri/sen2agri-downloaders/apihub.txt"
+

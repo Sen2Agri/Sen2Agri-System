@@ -74,6 +74,8 @@ function install_sen2agri_services()
         fi
         HAS_S2AGRI_SERVICES=true
     fi
+    # it might happen that some files to be packaged with the wrong read rights
+    chmod -R a+r ${TARGET_SERVICES_DIR}
 }
 
 SCIHUB_USER=""
@@ -346,18 +348,10 @@ else
         sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b"
         # sudo su -l sen2agri-service -c bash -c "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh -b -p /mnt/archive/sen4cap_miniconda/miniconda3/"
         # sudo -u sen2agri-service bash -c 'echo ". /mnt/archive/sen4cap_miniconda/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
+        sudo su -l sen2agri-service -c bash -c "conda update -y -n base -c defaults conda"
         echo "Updating bashrc ..."
         sudo -u sen2agri-service bash -c 'echo ". /home/sen2agri-service/miniconda3/etc/profile.d/conda.sh" >> /home/sen2agri-service/.bashrc'
     fi
-    echo "Updating R packages..."
-    Rscript - <<- EOF
-    packages <- c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily", "caTools", "tidyverse", "data.table")
-    diff <- setdiff(packages, rownames(installed.packages()))
-    if (length(diff) > 0) {
-        install.packages(diff, repos = c(CRAN = "https://cran.rstudio.com"))
-    }
-EOF
-
     echo "Setting report_errors to false..."
     sudo su -l sen2agri-service -c bash -c "conda config --set report_errors false"
     CUR_SEN4CAP_ENV_VAL=$(sudo su -l sen2agri-service -c bash -c "conda info --envs" | grep sen4cap)
@@ -374,6 +368,15 @@ EOF
 
     rm "/mnt/archive/Miniconda3-latest-Linux-x86_64.sh"
     rm "/mnt/archive/sen4cap_conda.yml"
+
+    echo "Updating R packages..."
+    Rscript - <<- EOF
+    packages <- c("e1071", "caret", "dplyr", "gsubfn", "ranger", "readr", "smotefamily", "caTools", "tidyverse", "data.table")
+    diff <- setdiff(packages, rownames(installed.packages()))
+    if (length(diff) > 0) {
+        install.packages(diff, repos = c(CRAN = "https://cran.rstudio.com"))
+    }
+EOF
 
 fi
 
