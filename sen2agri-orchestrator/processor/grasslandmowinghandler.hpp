@@ -48,6 +48,7 @@ namespace grassland_mowing {
         QString siteShortName;
         QString year;
         QString ctNumFilter;
+        QString additionalCols;
         QString l4bCfgFile;
 
     } GrasslandMowingExecConfig;
