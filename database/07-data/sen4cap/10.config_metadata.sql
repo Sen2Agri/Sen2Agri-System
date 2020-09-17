@@ -32,7 +32,6 @@ INSERT INTO config_metadata VALUES ('downloader.s1.write-dir', 'Write directory 
 INSERT INTO config_metadata VALUES ('executor.listen-ip', 'Executor IP Address', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.listen-port', 'Executor Port', 'int', true, 8);
 
-INSERT INTO config_metadata VALUES ('executor.module.path.bands-extractor', 'BandsExtractor Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.color-mapping', 'Color Mapping Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.compression', 'Compression Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.compute-confusion-matrix', 'Compute Confusion Matrix Path', 'file', true, 8);
@@ -41,31 +40,13 @@ INSERT INTO config_metadata VALUES ('executor.module.path.compute-images-statist
 INSERT INTO config_metadata VALUES ('executor.module.path.concatenate-images', 'Concatenate Images Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.crop-mask-fused', 'Crop mask script with stratification', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.crop-type-fused', 'Crop type script with stratification', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.data-smoothing', 'Data smoothing', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.dimensionality-reduction', 'Dimensionality reduction', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.dummy-module', 'Dummy module path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.files-remover', 'Removes the given files (ex. cleanup of intermediate files)', 'file', false, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.gdalbuildvrt', 'Path for gdalbuildvrt', 'bool', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.gdal_translate', 'Path for gdal_translate', 'bool', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.image-classifier', 'Image Classifier Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.image-compression', 'Image compression', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-bv-err-image-invertion', 'Applies the error regression model to the set of input reflectances', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-bv-image-invertion', 'Applies the regression model to the set of input reflectances', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-bv-input-variable-generation', 'BV input variables generator', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-end-of-job', 'End of LAI monodate job', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-err-time-series-builder', 'Builds a raster with all error images time series', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-inverse-model-learning', 'Inverse model learning', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-local-window-reproc-splitter', 'Splits the local window LAI as image for each date', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-local-window-reprocessing', 'Executes the local window reprocessing', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-models-extractor', 'Determines the model to be used for the current execution', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-mono-date-mask-flags', 'Extracts the mask flags for the monodate LAI', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-msk-flags-time-series-builder', 'Builds a raster with all masks from the time series', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-ndvi-rvi-extractor', 'LAI NDVI and RVI features extractor', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-prosail-simulator', 'Prosail simulator', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-time-series-builder', 'Builds a raster with all time series', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.lai-training-data-generator', 'Training data generator', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.product-formatter', 'Product Formatter Path', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.xml-statistics', 'XML Statistics', 'file', true, 8);
+INSERT INTO config_metadata VALUES ('executor.module.path.end-of-job', 'End of a multi root steps job', 'file', true, 8);
 
 INSERT INTO config_metadata VALUES ('executor.module.path.s4c-crop-type', 'L4A Crop Type main execution script path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.s4c-grassland-mowing-s1', 'L4B S1 main execution script path', 'file', true, 8);
@@ -76,7 +57,7 @@ INSERT INTO config_metadata VALUES ('executor.processor.l2a.path', 'L2A Processo
 INSERT INTO config_metadata VALUES ('executor.processor.l3b.keep_job_folders', 'Keep L3B/C/D temporary product files for the orchestrator jobs', 'int', false, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l3b.name', 'L3B Processor Name', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l3b.path', 'L3B Processor Path', 'file', false, 8);
-INSERT INTO config_metadata VALUES ('executor.processor.l3b_lai.slurm_qos', 'Slurm QOS for LAI processor', 'string', true, 8);
+INSERT INTO config_metadata VALUES ('executor.processor.l3b.slurm_qos', 'Slurm QOS for LAI processor', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.s4c_l4a.slurm_qos', 'Slurm QOS for L4A processor', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.s4c_l4b.slurm_qos', 'Slurm QOS for L4B processor', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.s4c_l4c.slurm_qos', 'Slurm QOS for L4C processor', 'string', true, 8);
@@ -88,7 +69,7 @@ INSERT INTO config_metadata VALUES ('executor.wrp-send-retries-no', 'Number of w
 INSERT INTO config_metadata VALUES ('executor.wrp-timeout-between-retries', 'Timeout between wrapper retries to executor when TCP error', 'int', true, 8);
 
 INSERT INTO config_metadata VALUES ('general.scratch-path', 'Default path for temporary files', 'string', false, 1);
-INSERT INTO config_metadata VALUES ('general.scratch-path.l3b_lai', 'Path for L3B/L3C/L3D temporary files', 'string', false, 1);
+INSERT INTO config_metadata VALUES ('general.scratch-path.l3b', 'Path for L3B/L3C/L3D temporary files', 'string', false, 1);
 INSERT INTO config_metadata VALUES ('general.scratch-path.s4c_l4a', 'Path for L4A temporary files', 'string', false, 1);
 INSERT INTO config_metadata VALUES ('general.scratch-path.s4c_l4b', 'Path for L4B temporary files', 'string', false, 1);
 INSERT INTO config_metadata VALUES ('general.scratch-path.s4c_l4c', 'Path for L4C temporary files', 'string', false, 1);
@@ -102,28 +83,21 @@ INSERT INTO config_metadata VALUES ('monitor-agent.disk-path', 'Disk Path To Mon
 INSERT INTO config_metadata VALUES ('monitor-agent.scan-interval', 'Measurement Interval (s)', 'int', true, 13);
 
 INSERT INTO config_metadata VALUES ('processor.l3b.cloud_optimized_geotiff_output', 'Generate L3B Cloud Optimized Geotiff outputs', 'bool', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.fitted', 'Specifies if fitting reprocessing (end of season) should be performed for LAI', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.generate_models', 'Specifies if models should be generated or not for LAI', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.global_bv_samples_file', 'Common LAI BV sample distribution file', 'file', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.laibandscfgfile', 'Configuration of the bands to be used for LAI', 'file', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.lai.link_l3c_to_l3b', 'Trigger an L3C product creation after L3B product creation', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.lai.localwnd.bwr', 'Backward radius of the window for the local algorithm', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.lai.localwnd.fwr', 'Forward radius of the window for the local algorithm', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.lut_path', 'L3B LUT file path', 'file', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.modelsfolder', 'Folder where the models are located', 'directory', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_fapar', 'L3B LAI processor will produce FAPAR', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_fcover', 'L3B LAI processor will produce FCOVER', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_lai', 'L3B LAI processor will produce LAI', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.lai.produce_ndvi', 'L3B LAI processor will produce NDVI', 'int', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.filter.produce_fapar', 'L3B LAI processor will produce FAPAR', 'int', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.filter.produce_fcover', 'L3B LAI processor will produce FCOVER', 'int', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.filter.produce_lai', 'L3B LAI processor will produce LAI', 'int', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.filter.produce_ndvi', 'L3B LAI processor will produce NDVI', 'int', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.filter.produce_in_domain_flags', 'L3B processor will input domain flags', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.rsrcfgfile', 'L3B RSR file configuration for ProsailSimulator', 'file', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.tiles_filter', 'processor.l3b.lai.tiles_filter', 'string', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.use_inra_version', 'L3B LAI processor will use INRA algorithm implementation', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.use_lai_bands_cfg', 'Use LAI bands configuration file', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.mono_date_lai', 'Specifies if monodate processing should be performed for LAI', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.mono_date_ndvi_only', 'L3B processor will generate only NDVI', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.ndvi.tiles_filter', 'L3B NDVI only processor tiles filter', 'string', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.production_interval', 'The backward processing interval from the scheduled date for L3B products', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.reprocess', 'Specifies if N-Day reprocessing should be performed for LAI', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.reproc_production_interval', 'The backward processing interval from the scheduled date for L3C products', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.sched_wait_proc_inputs', 'L3B/L3C/L3D LAI scheduled jobs wait for products to become available', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.l1c_availability_days', 'Number of days before current scheduled date within we must have L1C processed (default 20)', 'int', false, 4);

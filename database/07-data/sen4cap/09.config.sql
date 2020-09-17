@@ -32,7 +32,6 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s1.wri
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.listen-ip', NULL, '127.0.0.1', '2015-06-03 17:03:39.541136+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.listen-port', NULL, '7777', '2015-07-07 12:17:06.182674+03');
 
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.bands-extractor', NULL, '/usr/bin/otbcli', '2015-08-12 10:27:24.844182+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.color-mapping', NULL, '/usr/bin/otbcli_ColorMapping', '2015-11-17 17:06:25.784583+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.compression', NULL, '/usr/bin/otbcli_Convert', '2015-11-17 17:06:34.7028+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.compute-confusion-matrix', NULL, '/usr/bin/otbcli_ComputeConfusionMatrix', '2015-08-12 17:09:22.060276+03');
@@ -41,35 +40,14 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.p
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.concatenate-images', NULL, '/usr/bin/otbcli_ConcatenateImages', '2015-09-07 10:20:52.117401+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-mask-fused', NULL, 'CropMaskFused.py', '2015-12-17 14:25:14.193131+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-type-fused', NULL, 'CropTypeFused.py', '2015-12-17 14:25:14.193131+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.data-smoothing', NULL, '/usr/bin/otbcli', '2016-02-23 12:29:52.38366+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.dimensionality-reduction', NULL, 'otbcli_DimensionalityReduction', '2016-02-22 22:39:08.262715+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.dummy-module', NULL, '/usr/bin/cp', '2015-07-10 11:16:14.384866+03');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.feature-extraction', NULL, '/usr/bin/otbcli', '2015-08-12 17:09:15.485436+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.files-remover', NULL, '/usr/bin/rm', '2015-08-24 17:44:38.29255+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.gdalbuildvrt', NULL, '/usr/local/bin/gdalbuildvrt', '2018-08-30 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.gdal_translate', NULL, '/usr/local/bin/gdal_translate', '2018-08-30 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.ogr2ogr',  NULL, '/usr/local/bin/ogr2ogr', '2019-10-18 22:39:08.407059+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.image-classifier', NULL, '/usr/bin/otbcli_ImageClassifier', '2015-08-12 17:09:20.418973+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.image-compression', NULL, '/usr/bin/otbcli_Convert', '2016-02-22 22:39:08.386406+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-bv-err-image-invertion', NULL, '/usr/bin/otbcli', '2016-01-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-bv-image-invertion', NULL, '/usr/bin/otbcli', '2016-01-12 14:56:56.618005+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-bv-input-variable-generation', NULL, '/usr/bin/otbcli', '2016-02-15 18:45:57.225692+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-end-of-job', NULL, '/usr/bin/true', '2016-01-12 14:56:57.501918+02');
--- TODO - this key should be merged with the one above but the code changes must be analysed
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-processor-end-of-job', NULL, '/usr/bin/true', '2016-01-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-err-time-series-builder', NULL, '/usr/bin/otbcli', '2016-01-12 14:56:59.934442+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-inverse-model-learning', NULL, '/usr/bin/otbcli', '2016-02-15 18:46:01.765134+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-local-window-reproc-splitter', NULL, '/usr/bin/otbcli', '2016-01-12 14:57:01.522161+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-local-window-reprocessing', NULL, '/usr/bin/otbcli', '2016-01-12 14:57:00.637874+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-models-extractor', NULL, '/usr/bin/otbcli', '2016-01-12 14:56:55.693633+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-mono-date-mask-flags', NULL, '/usr/bin/otbcli', '2016-02-02 17:07:31.362185+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-msk-flags-time-series-builder', NULL, '/usr/bin/otbcli', '2016-02-02 17:17:09.511591+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-ndvi-rvi-extractor', NULL, '/usr/bin/otbcli', '2016-01-12 14:56:54.909962+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-prosail-simulator', NULL, '/usr/bin/otbcli', '2016-02-15 18:46:00.023288+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-time-series-builder', NULL, '/usr/bin/otbcli', '2016-01-12 14:56:58.365972+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-training-data-generator', NULL, '/usr/bin/otbcli', '2016-02-15 18:46:00.887944+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.product-formatter', NULL, '/usr/bin/otbcli', '2015-11-17 17:06:45.334415+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.xml-statistics', NULL, '/usr/bin/otbcli', '2016-02-22 22:39:08.407059+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.end-of-job', NULL, '/usr/bin/true', '2016-01-12 14:56:57.501918+02');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lpis_import', NULL, '/usr/bin/data-preparation.py', '2019-10-22 22:39:08.407059+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.l4b_cfg_import', NULL, '/usr/bin/s4c_l4b_import_config.py', '2019-10-22 22:39:08.407059+02');
@@ -90,7 +68,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processo
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b.name', NULL, 'L3B', '2015-06-03 17:02:50.028002+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b.path', NULL, '/bin/false', '2015-07-20 16:31:23.208369+03');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b_lai.slurm_qos', NULL, 'qoslai', '2015-08-24 17:44:38.29255+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b.slurm_qos', NULL, 'qoslai', '2015-08-24 17:44:38.29255+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.s4c_l4a.slurm_qos', NULL, 'qoscroptype', '2015-08-24 17:44:38.29255+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.s4c_l4b.slurm_qos', NULL, 'qoscropmask', '2015-08-24 17:44:38.29255+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.s4c_l4c.slurm_qos', NULL, 'qoscomposite', '2015-08-24 17:44:38.29255+03');
@@ -102,7 +80,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.wrp-send
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.wrp-timeout-between-retries', NULL, '1000', '2015-06-03 17:03:39.541136+03');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('general.scratch-path', NULL, '/mnt/archive/orchestrator_temp/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('general.scratch-path.l3b_lai', NULL, '/mnt/archive/orchestrator_temp/l3b/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('general.scratch-path.l3b', NULL, '/mnt/archive/orchestrator_temp/l3b/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('general.scratch-path.s4c_l4a', NULL, '/mnt/archive/orchestrator_temp/s4c_l4a/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('general.scratch-path.s4c_l4b', NULL, '/mnt/archive/orchestrator_temp/s4c_l4b/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('general.scratch-path.s4c_l4c', NULL, '/mnt/archive/orchestrator_temp/s4c_l4c/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
@@ -116,28 +94,21 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('monitor-agent.dis
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('monitor-agent.scan-interval', NULL, '60', '2015-07-20 10:28:08.27395+03');
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.cloud_optimized_geotiff_output', NULL, '0', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.fitted', NULL, '0', '2016-02-29 12:03:27.438284+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.generate_models', NULL, '1', '2016-02-29 12:03:08.445828+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.global_bv_samples_file', NULL, '/usr/share/sen2agri/LaiCommonBVDistributionSamples.txt', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.laibandscfgfile', NULL, '/usr/share/sen2agri/Lai_Bands_Cfgs_Belcam.cfg', '2016-02-16 11:54:47.223904+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.link_l3c_to_l3b', NULL, '0', '2016-02-29 14:08:07.963143+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.localwnd.bwr', NULL, '2', '2016-01-12 14:54:40.30341+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.localwnd.fwr', NULL, '0', '2016-01-12 14:54:40.387588+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.lut_path', NULL, '/usr/share/sen2agri/lai.map', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.modelsfolder', NULL, '/mnt/archive/L3B_GeneratedModels/', '2016-02-16 11:54:47.123972+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.produce_fapar', NULL, '1', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.produce_fcover', NULL, '1', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.produce_lai', NULL, '1', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.produce_ndvi', NULL, '1', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.filter.produce_fapar', NULL, '1', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.filter.produce_fcover', NULL, '1', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.filter.produce_lai', NULL, '1', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.filter.produce_ndvi', NULL, '1', '2017-10-24 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.filter.produce_in_domain_flags', NULL, '0', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.rsrcfgfile', NULL, '/usr/share/sen2agri/rsr_cfg.txt', '2016-02-16 11:54:47.223904+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.tiles_filter', NULL, '', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.use_inra_version', NULL, '1', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.use_lai_bands_cfg', NULL, '1', '2016-02-16 11:54:47.223904+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.mono_date_lai', NULL, '0', '2016-02-29 12:03:15.149961+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.mono_date_ndvi_only', NULL, '0', '2017-10-24 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.ndvi.tiles_filter', NULL, '', '2017-10-24 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.production_interval', NULL, '10', '2016-02-29 12:03:31.197823+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.reprocess', NULL, '0', '2016-02-29 12:03:21.142049+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.reproc_production_interval', NULL, '30', '2016-02-29 12:03:31.197823+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.sched_wait_proc_inputs', NULL, '0', '2015-07-10 17:54:17.288095+03');
 
@@ -238,8 +209,13 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s1.for
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.skip.existing', NULL, 'false', '2019-04-12 14:56:57.501918+02');
 
--- INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b_lai.sub_products', NULL, 'L3B,L3C', '2019-04-12 14:56:57.501918+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b_lai.sub_products', NULL, 'L3B', '2019-04-12 14:56:57.501918+02');
-
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.reports.enabled', NULL, 'true', '2020-05-04 14:56:57.501918+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('scheduled.reports.interval', NULL, '24', '2020-05-04 14:56:57.501918+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s1.query.days.back', NULL, '0', '2020-07-02 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.query.days.back', NULL, '0', '2020-07-02 14:56:57.501918+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.query.days.back', NULL, '0', '2020-07-02 14:56:57.501918+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l2a.s2.implementation', NULL, 'maja', '2020-09-07 14:17:52.846794+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l2a.s2.retry-interval', NULL, '1 day', '2020-09-07 14:36:37.906825+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l2a.optical.num-workers', NULL, '4', '2020-09-07 14:36:37.906825+03');

@@ -6,7 +6,7 @@ VALUES
 INSERT INTO processor
 (id, name, short_name, label)
 VALUES
-(3, 'L3B Vegetation Status','l3b_lai', 'L3B &mdash; LAI/NDVI');
+(3, 'L3B Vegetation Status','l3b', 'L3B &mdash; LAI/FAPAR/FCOVER/NDVI');
 
 INSERT INTO processor
 (id, name, short_name, label)

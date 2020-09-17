@@ -13,3 +13,5 @@ INSERT INTO config_category VALUES (15, 'Downloader', 12, true);
 INSERT INTO config_category VALUES (16, 'Demmaccs', 13, false);
 INSERT INTO config_category VALUES (17, 'Site', 14, false);
 INSERT INTO config_category VALUES (18, 'L3E Pheno NDVI', 4, true);
+INSERT INTO config_category VALUES (24, 'S2A L3C LAI N-Days Reprocessing', 4, true);
+INSERT INTO config_category VALUES (25, 'S2A L3D LAI Fitted Reprocessing', 4, true);
