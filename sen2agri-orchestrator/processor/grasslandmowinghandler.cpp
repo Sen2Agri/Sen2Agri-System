@@ -392,6 +392,12 @@ QStringList GrasslandMowingHandler::GetInputShpGeneratorArgs(GrasslandMowingExec
         retArgs += "-f";
         retArgs += cfg.ctNumFilter;
     }
+
+    if (cfg.additionalCols.size() > 0) {
+        retArgs += "-a";
+        retArgs += cfg.additionalCols;
+    }
+
     return retArgs;
 }
 
@@ -515,6 +521,7 @@ bool GrasslandMowingHandler::LoadConfigFileAdditionalValues(GrasslandMowingExecC
 
     QString cmnSectionKey("GENERAL_CONFIG/");
     cfg.ctNumFilter = GetStringValue(settings, cmnSectionKey + "CTNUM_FILTER");
+    cfg.additionalCols = GetStringValue(settings, cmnSectionKey + "ADDITIONAL_COLUMNS");
 
     return true;
 }
