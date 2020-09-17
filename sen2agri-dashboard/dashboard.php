@@ -86,13 +86,6 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 	$processorId = $_REQUEST ['processorId'];
 
 	$processor_params = null;
-	//if L3B and sen2agri DB
-	if(ConfigParams::isSen2Agri() && $processorId == '3'){
-		$processor_params = json_encode ( array (
-				"general_params" => array (
-						"product_type" => $_REQUEST['product']))
-				);
-	}
 
 	$pg_date = date ( 'Y-m-d H:i:s', strtotime ( $startdate ) );
 
@@ -142,7 +135,7 @@ if (isset ( $_REQUEST ['schedule_submit_delete'] ) && $_REQUEST ['schedule_submi
 $all_processors = array();
 
 $db = pg_connect ( ConfigParams::getConnection() ) or die ( "Could not connect" );
-$sql = "SELECT id, short_name, name as label FROM processor WHERE short_name NOT LIKE 'l2%'";
+$sql = "SELECT id, short_name, name as label FROM processor WHERE short_name NOT LIKE 'l2%' order by id";
 $rows = pg_query($db, $sql) or die ("An error occurred.");
 $all_processors =  pg_fetch_all($rows);
 
@@ -156,26 +149,32 @@ $all_processors =  pg_fetch_all($rows);
 					<!-- L3A Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<?php 
 					$processorList = array();
-					if(sizeof($all_processors)>0){
-					    
+					if (sizeof($all_processors) > 0) { ?>
+						<div class="tab-labels"><?php
+							foreach ($all_processors as $processor) {
+								if (!isset($active_proc)) {
+									$active_proc = (isset($_SESSION['active_proc']) ? $_SESSION['active_proc'] : $processor['id']);
+									unset($_SESSION['active_proc']);
+								}
+								$proc_name = $processor['short_name'];
+								?>
+								<a href="" data-tabid="tab_<?=$proc_name ?>"<?= ($active_proc == $processor['id'] ? " class='active'" : "") ?> title="<?= $processor['label'] ?>"><?= $processor['label'] ?></a>
+								<?php
+							}
+							?>
+							<div class="labels-slider">
+								<a href class="left" ><i class="glyphicon glyphicon-chevron-left"></i></a>
+								<a href class="right"><i class="glyphicon glyphicon-chevron-right"></i></a>
+							</div>
+						</div>
+						<?php
 					    foreach ($all_processors as $processor){
-					        if(!isset($active_proc)){
-					            if(isset($_SESSION['active_proc'])){
-					                $active_proc = $_SESSION['active_proc'];
-    					            unset($_SESSION['active_proc']);
-					            }else{
-					                $active_proc = $processor['id'];
-					            }
-					        }
 					        $proc_id = $processor['id'];
 					        $proc_name = $processor['short_name'];
 					        $processorList[] = $proc_name;
-					        $nr_proc = sizeof($all_processors);
-					      //  $minWidth = 100/$nr_proc;
-					?>
-					<div id="tab_<?=$proc_name ?>"  class="proc_tab " style="width:<?=1018/$nr_proc ?>px;">
-						<a href=""<?=  $active_proc==  $processor['id'] ? " class='active'" : "" ?> style="width:85%;white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<?=  $processor['label']?>"><?=  $processor['label']?> </a>
-						<div >
+						?>
+					<div id="tab_<?=$proc_name ?>" class="proc_tab">
+						<div>
 							<div class="panel_resources_and_output_container dash_panel" id="pnl_<?=$proc_name ?>_resources_and_output_container">
 								<div class="panel_resources_container" id="pnl_<?=$proc_name ?>_resources_container">
 									<div class="panel panel-default panel_resources" id="pnl_<?=$proc_name ?>_resources">
@@ -232,6 +231,16 @@ $all_processors =  pg_fetch_all($rows);
 		</div>
 	</div>
 </div>
+<style>
+	#tab_control .tab-labels{width:100%;white-space:nowrap;overflow:hidden;line-height:31px}
+	#tab_control .tab-labels>a{overflow:hidden;display:inline-block;line-height:17px;float:none}
+	#tab_control .labels-slider{display:none;position:absolute;right:0;top:0;bottom:auto;left:auto;padding:0;border:0;z-index: 999 !important;background:none}
+	#tab_control .labels-slider a{padding:3px 6px;font-size:20px;font-weight:700;border:1px solid #cccccc;float:left;line-height:20px;text-decoration:none;background-color:white}
+	#tab_control .labels-slider a.right{margin-left:1px}
+	
+	#tab_control .tab-labels.scroll-enabled{width:calc(100% - 70px)}
+	#tab_control .tab-labels.scroll-enabled .labels-slider{display:block}
+</style>
 <script>var processorList = [];
 processorList = <?php echo json_encode( $processorList)?>;
 </script>
@@ -366,18 +375,46 @@ processorList = <?php echo json_encode( $processorList)?>;
 			document.getElementById("schedule_submit"+x).disabled = false;
 		}
 	}
+	function checkTabLabesPosition() {
+		var tabW = $("#tab_control").width();
+		var $last = $(".tab-labels>a:last-of-type", "#tab_control");
+		var labelsW = $last.offset().left + $last.width();
+		if (tabW < labelsW) {
+			$(".tab-labels", "#tab_control").addClass("scroll-enabled");
+		}
+	}
 	$(document).ready(function() {
-		// START tab control
-		$('.tabControl>div>a.active').parent().find(">div").css("z-index", "999");
-		$('.tabControl>div>a').click(function(e) {
+		
+		checkTabLabesPosition();
+		$("#tab_control .labels-slider a").on("click", function (e) {
 			e.preventDefault();
-			// set active tab header and deactivate all other headers
+			var offset = $(".tab-labels").scrollLeft();
+			if ($(this).hasClass("left")) {
+				// slide left
+				offset = offset - 50;
+				offset = offset < 0 ? 0 : offset;
+				$(".tab-labels").scrollLeft(offset);
+			} else {
+				// slide right
+				offset = offset + 50;
+				$(".tab-labels").scrollLeft(offset + 50);
+			}
+		});
+		
+		// START tab control
+		var tabid = $(".tabControl .tab-labels a.active").data("tabid");
+		$(">div", "#" + tabid).css("z-index", "999");
+		$('.tabControl>div>a').click(function(e) {
+			tabid = $(this).data("tabid");
+			
+			e.preventDefault();
+			// deactivate all tab headers then activate selected one
 			$('.tabControl>div>a').removeClass("active");
 			$(this).addClass("active");
-			// display current tab content and hide all other tabs
-			$('.tabControl>div>div').css("z-index", "-1");
-			$(this).parent().find(">div").css("z-index", "999");
-
+			// hide all tabs then display active one
+			$('.tabControl div.proc_tab>div').css("z-index", "-1");
+			$(">div", "#" + tabid).css("z-index", "999");
+			
 			return false;
 		});
 		// END tab control
