@@ -35,7 +35,9 @@ SOURCES += main.cpp \
     processor/compositehandler.cpp \
     processor/lairetrievalhandler.cpp \
     processor/lairetrievalhandler_l3b.cpp \
+    processor/lairetrhandler_multidt_base.cpp \
     processor/lairetrievalhandler_l3c.cpp \
+    processor/lairetrievalhandler_l3d.cpp \
     processor/maccshdrmeananglesreader.cpp \
     processor/phenondvihandler.cpp \
     processorhandlerhelper.cpp \
@@ -60,7 +62,9 @@ HEADERS += \
     processor/compositehandler.hpp \
     processor/lairetrievalhandler.hpp \
     processor/lairetrievalhandler_l3b.hpp \
+    processor/lairetrhandler_multidt_base.hpp \
     processor/lairetrievalhandler_l3c.hpp \
+    processor/lairetrievalhandler_l3d.hpp \
     processor/maccshdrmeananglesreader.hpp \
     processor/phenondvihandler.hpp \
     processorhandlerhelper.h \
