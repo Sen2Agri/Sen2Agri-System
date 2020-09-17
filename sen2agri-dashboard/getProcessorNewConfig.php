@@ -226,40 +226,25 @@ if (ConfigParams::isSen2Agri()) {
 		$json_param = json_encode( array_filter($params) );
 
 		// set job name and description and save job
-		$name = "l3a_processor" . date ( "m.d.y" );
+		$name = $processor_short_name . "_processor" . date ( "m.d.y" );
 		$description = "generated new configuration from site for ".$processor_short_name;
 		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
 	} /* -------------------------------------------------------l3b_lai------------------------------------------------------ */
-	elseif (isset ( $_POST ['l3b_lai'] )) {
-		$processor_short_name = "l3b_lai";
+	elseif (isset ( $_POST ['l3b_lai'] ) || isset ( $_POST ['l3b'] )) {
+		$processor_short_name = "l3b";
 
 		// default parameters
 		$siteId         = $_POST ['siteId'];
 		$input_products = $_POST ['inputFiles'];
 		$resolution     = $_POST ['resolution'];
-		$monolai        = isset($_POST['lai']) && ($_POST['lai'] == 'monolai') ? 1 : 0;
-		$reproc         = isset($_POST['lai']) && ($_POST['lai'] == 'reproc')  ? 1 : 0;
-		$fitted         = isset($_POST['lai']) && ($_POST['lai'] == 'fitted')  ? 1 : 0;
-		$bwr            = $_POST ['bwr'];
-		$fwr            = $_POST ['fwr'];
 
 		// advanced parameters
 		$genmodel = $_POST ['genmodel'];
 
 		$config = array (
-			array ( "key"   => "processor.l3b.lai.localwnd.bwr",
-					"value" => $bwr ),
-			array ( "key"   => "processor.l3b.lai.localwnd.fwr",
-					"value" => $fwr ),
 			array ( "key"   => "processor.l3b.generate_models",
-					"value" => $genmodel ),
-			array ( "key"   => "processor.l3b.reprocess",
-					"value" => $reproc ),
-			array ( "key"   => "processor.l3b.fitted",
-					"value" => $fitted ),
-			array ( "key"   => "processor.l3b.mono_date_lai",
-					"value" => $monolai )
+					"value" => $genmodel )
 		);
 
 		// generate json_config (skip configuration parameters with empty values)
@@ -278,13 +263,83 @@ if (ConfigParams::isSen2Agri()) {
 		$json_param = json_encode( array_filter($params) );
 
 		// set job name and description and save job
-		$name = "l3b_processor" . date ( "m.d.y" );
+		$name = $processor_short_name . "_processor" . date ( "m.d.y" );
 		$description = "generated new configuration from site for ".$processor_short_name;
 		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
-	} /* -------------------------------------------------------l3e_pheno------------------------------------------------------ */
-	elseif (isset ( $_POST ['l3e_pheno'] )) {
-		$processor_short_name = "l3e_pheno";
+	}
+/* -------------------------------------------------------s2a_l3c------------------------------------------------------ */
+	elseif (isset ( $_POST ['s2a_l3c'] )) {
+		$processor_short_name = "s2a_l3c";
+
+		// default parameters
+		$siteId         = $_POST ['siteId'];
+		$input_products = $_POST ['inputFiles'];
+		$resolution     = $_POST ['resolution'];
+		$bwr            = $_POST ['bwr'];
+		$fwr            = $_POST ['fwr'];
+
+		$config = array (
+			array ( "key"   => "processor.l3b.lai.localwnd.bwr",
+					"value" => $bwr ),
+			array ( "key"   => "processor.l3b.lai.localwnd.fwr",
+					"value" => $fwr )
+		);
+
+		// generate json_config (skip configuration parameters with empty values)
+		$fconfig = array();
+		foreach($config as $cfg) {
+			if ($cfg["value"] != "") {
+				array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+			}
+		}
+		$json_config = json_encode( $fconfig );
+
+		// generate json_param (skip parameters with empty values)
+		$params = array (	"resolution"     => $resolution,
+							"input_products" => $input_products
+						);
+		$json_param = json_encode( array_filter($params) );
+
+		// set job name and description and save job
+		$name = $processor_short_name . "_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
+		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
+	}/* -------------------------------------------------------s2a_l3d------------------------------------------------------ */
+	elseif (isset ( $_POST ['s2a_l3d'] )) {
+		$processor_short_name = "s2a_l3d";
+
+		// default parameters
+		$siteId         = $_POST ['siteId'];
+		$input_products = $_POST ['inputFiles'];
+		$resolution     = $_POST ['resolution'];
+		$config = array ();
+
+		// generate json_config (skip configuration parameters with empty values)
+		$fconfig = array();
+		foreach($config as $cfg) {
+			if ($cfg["value"] != "") {
+				array_push($fconfig,  array ( "key"   => $cfg["key"], "value" => $cfg["value"] ));
+			}
+		}
+		$json_config = json_encode( $fconfig );
+
+		// generate json_param (skip parameters with empty values)
+		$params = array (	"resolution"     => $resolution,
+							"input_products" => $input_products
+						);
+		$json_param = json_encode( array_filter($params) );
+
+		// set job name and description and save job
+		$name = $processor_short_name . "_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for ".$processor_short_name;
+		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
+	}
+    /* -------------------------------------------------------l3e_pheno------------------------------------------------------ */
+	elseif (isset ( $_POST ['l3e_pheno'] ) || isset ( $_POST ['l3e'] )) {
+		$processor_short_name = "l3e";
 
 		// default parameters
 		$siteId         = $_POST ['siteId'];
@@ -303,7 +358,7 @@ if (ConfigParams::isSen2Agri()) {
 		$json_param = json_encode( array_filter($params) );
 
 		// set job name and description and save job
-		$name = "l3e_pheno_processor" . date ( "m.d.y" );
+		$name = $processor_short_name . "_processor" . date ( "m.d.y" );
 		$description = "generated new configuration from site for ".$processor_short_name;
 		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
@@ -420,7 +475,7 @@ if (ConfigParams::isSen2Agri()) {
 			$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
 
 			// set job name and description and save job
-			$name = "l4a_processor" . date ( "m.d.y" );
+			$name = $processor_short_name . "_processor" . date ( "m.d.y" );
 			$description = "generated new configuration from site for ".$processor_short_name;
 			insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 			redirect_page("l4a_wo", "OK", "Your job has been successfully submitted!");
@@ -490,7 +545,7 @@ if (ConfigParams::isSen2Agri()) {
 			$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
 
 			// set job name and description and save job
-			$name = "l4b_processor" . date ( "m.d.y" );
+			$name = $processor_short_name . "_processor" . date ( "m.d.y" );
 			$description = "generated new configuration from site for ".$processor_short_name;
 			insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 			redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
@@ -502,36 +557,21 @@ if (ConfigParams::isSen2Agri()) {
 // sen4cap
 else {
 /* -------------------------------------------------------l3b_lai------------------------------------------------------ */
-	if (isset ( $_POST ['l3b_lai'] )) {
+	if (isset ( $_POST ['l3b_lai'] ) || isset ( $_POST ['l3b'] )) {
         // TODO: A lot of Duplicated code with the previous ifs. To be made more generic
-		$processor_short_name = "l3b_lai";
+		$processor_short_name = "l3b";
 
 		// default parameters
 		$siteId         = $_POST ['siteId'];
 		$input_products = $_POST ['inputFiles'];
 		$resolution     = $_POST ['resolution'];
-		$monolai        = isset($_POST['lai']) && ($_POST['lai'] == 'monolai') ? 1 : 0;
-		$reproc         = isset($_POST['lai']) && ($_POST['lai'] == 'reproc')  ? 1 : 0;
-		$fitted         = isset($_POST['lai']) && ($_POST['lai'] == 'fitted')  ? 1 : 0;
-		$bwr            = $_POST ['bwr'];
-		$fwr            = $_POST ['fwr'];
 
 		// advanced parameters
 		$genmodel = $_POST ['genmodel'];
 
 		$config = array (
-			array ( "key"   => "processor.l3b.lai.localwnd.bwr",
-					"value" => $bwr ),
-			array ( "key"   => "processor.l3b.lai.localwnd.fwr",
-					"value" => $fwr ),
 			array ( "key"   => "processor.l3b.generate_models",
-					"value" => $genmodel ),
-			array ( "key"   => "processor.l3b.reprocess",
-					"value" => $reproc ),
-			array ( "key"   => "processor.l3b.fitted",
-					"value" => $fitted ),
-			array ( "key"   => "processor.l3b.mono_date_lai",
-					"value" => $monolai )
+					"value" => $genmodel )
 		);
 
 		// generate json_config (skip configuration parameters with empty values)
@@ -550,7 +590,7 @@ else {
 		$json_param = json_encode( array_filter($params) );
 
 		// set job name and description and save job
-		$name = "l3b_processor" . date ( "m.d.y" );
+		$name = $processor_short_name . "_processor" . date ( "m.d.y" );
 		$description = "generated new configuration from site for ".$processor_short_name;
 		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");

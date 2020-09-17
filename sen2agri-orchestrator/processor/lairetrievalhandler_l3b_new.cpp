@@ -17,11 +17,11 @@ void LaiRetrievalHandlerL3BNew::CreateTasksForNewProduct(EventProcessingContext 
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
     // TODO: see why is genlai for all the flags
-    bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_ndvi");
-    bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_lai");
-    bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_fapar");
-    bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_fcover");
-    bool bGenInDomainFlags = IsParamOrConfigKeySet(parameters, configParameters, "indomflags", "processor.l3b.produce_in_domain_flags");
+    bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.filter.produce_ndvi");
+    bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.filter.produce_lai");
+    bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.filter.produce_fapar");
+    bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.filter.produce_fcover");
+    bool bGenInDomainFlags = IsParamOrConfigKeySet(parameters, configParameters, "indomflags", "processor.l3b.filter.produce_in_domain_flags");
 
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
     int initialTasksNo = outAllTasksList.size();
@@ -171,11 +171,11 @@ NewStepList LaiRetrievalHandlerL3BNew::GetStepsForMonodateLai(EventProcessingCon
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
     const auto &laiCfgFile = configParameters["processor.l3b.lai.laibandscfgfile"];
-    bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "produce_ndvi", "processor.l3b.lai.produce_ndvi");
-    bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "produce_lai", "processor.l3b.lai.produce_lai");
-    bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "produce_fapar", "processor.l3b.lai.produce_fapar");
-    bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "produce_fcover", "processor.l3b.lai.produce_fcover");
-    bool bGenInDomainFlags = IsParamOrConfigKeySet(parameters, configParameters, "indomflags", "processor.l3b.produce_in_domain_flags");
+    bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "produce_ndvi", "processor.l3b.filter.produce_ndvi");
+    bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "produce_lai", "processor.l3b.filter.produce_lai");
+    bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "produce_fapar", "processor.l3b.filter.produce_fapar");
+    bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "produce_fcover", "processor.l3b.filter.produce_fcover");
+    bool bGenInDomainFlags = IsParamOrConfigKeySet(parameters, configParameters, "indomflags", "processor.l3b.filter.produce_in_domain_flags");
 
     // Get the resolution value
     int resolution = 0;
@@ -417,10 +417,10 @@ void LaiRetrievalHandlerL3BNew::SubmitEndOfLaiTask(EventProcessingContext &ctx,
     }
     // we add a task in order to wait for all product formatter to finish.
     // This will allow us to mark the job as finished and to remove the job folder
-    TaskToSubmit endOfJobDummyTask{"lai-processor-end-of-job", {}};
+    TaskToSubmit endOfJobDummyTask{"end-of-job", {}};
     endOfJobDummyTask.parentTasks.append(prdFormatterTasksListRef);
     SubmitTasks(ctx, event.jobId, {endOfJobDummyTask});
-    ctx.SubmitSteps({endOfJobDummyTask.CreateStep("EndOfLAIDummy", QStringList())});
+    ctx.SubmitSteps({endOfJobDummyTask.CreateStep("EndOfJob", QStringList())});
 
 }
 
@@ -429,14 +429,6 @@ void LaiRetrievalHandlerL3BNew::HandleJobSubmittedImpl(EventProcessingContext &c
 {
     auto parameters = QJsonDocument::fromJson(evt.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(evt.jobId, "processor.l3b.");
-    const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
-
-    bool bMonoDateLai = IsParamOrConfigKeySet(parameters, configParameters, "monolai", "processor.l3b.mono_date_lai");
-    if(!bMonoDateLai) {
-        ctx.MarkJobFailed(evt.jobId);
-        throw std::runtime_error(
-            QStringLiteral("LAI mono-date processing needs to be defined").toStdString());
-    }
 
     // Moved this from the GetProcessingDefinitionImpl function as it might be time consuming and scheduler will
     // throw exception if timeout exceeded
@@ -450,20 +442,14 @@ void LaiRetrievalHandlerL3BNew::HandleJobSubmittedImpl(EventProcessingContext &c
                                          arg(event.jobId).arg(event.siteId).toStdString());
     }
 
-    bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "genndvi", "processor.l3b.lai.produce_ndvi");
-    bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.lai.produce_lai");
-    bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "genfapar", "processor.l3b.lai.produce_fapar");
-    bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "genfcover", "processor.l3b.lai.produce_fcover");
+    bool bGenNdvi = IsParamOrConfigKeySet(parameters, configParameters, "genndvi", "processor.l3b.filter.produce_ndvi");
+    bool bGenLai = IsParamOrConfigKeySet(parameters, configParameters, "genlai", "processor.l3b.filter.produce_lai");
+    bool bGenFapar = IsParamOrConfigKeySet(parameters, configParameters, "genfapar", "processor.l3b.filter.produce_fapar");
+    bool bGenFCover = IsParamOrConfigKeySet(parameters, configParameters, "genfcover", "processor.l3b.filter.produce_fcover");
     if (!bGenNdvi && !bGenLai && !bGenFapar && !bGenFCover) {
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(
             QStringLiteral("No vedgetation index (NDVI, LAI, FAPAR or FCOVER) was configured to be generated").toStdString());
-    }
-
-    if(!QDir::root().mkpath(modelsFolder)) {
-        ctx.MarkJobFailed(event.jobId);
-        throw std::runtime_error(
-                    QStringLiteral("Unable to create path %1 for creating models!").arg(modelsFolder).toStdString());
     }
 
     // create and submit the tasks for the received products
@@ -509,10 +495,10 @@ void LaiRetrievalHandlerL3BNew::HandleJobSubmittedImpl(EventProcessingContext &c
 void LaiRetrievalHandlerL3BNew::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    if (event.module == "lai-processor-end-of-job") {
+    if (event.module == "end-of-job") {
         ctx.MarkJobFinished(event.jobId);
         // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId, "l3b");
+        RemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
     }
     if ((event.module == "lai-processor-product-formatter")) {
         QString prodName = GetProductFormatterProductName(ctx, event);
@@ -547,9 +533,6 @@ void LaiRetrievalHandlerL3BNew::HandleTaskFinishedImpl(EventProcessingContext &c
                                 productFolder, maxDate, prodName,
                                 quicklook, footPrint, std::experimental::nullopt, prodTiles });
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
-
-            // submit a new job for the L3C product corresponding to this one
-            SubmitL3CJobForL3BProduct(ctx, event, satId, prodName);
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
             // We might have several L3B products, we should not mark it at failed here as
@@ -862,18 +845,7 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3BNew::GetProcessingDefinitionI
     int startSeasonOffset = mapCfg["processor.l3b.start_season_offset"].value.toInt();
     seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
 
-    int generateLai = false;
-    if(requestOverrideCfgValues.contains("product_type")) {
-        const ConfigurationParameterValue &productType = requestOverrideCfgValues["product_type"];
-        if(productType.value == "L3B") {
-            generateLai = true;
-            params.jsonParameters = "{ \"scheduled_job\": \"1\", \"monolai\": \"1\"";
-        }
-    }
-    // we need to have at least one flag set
-    if(!generateLai) {
-        return params;
-    }
+    params.jsonParameters = "{ \"scheduled_job\": \"1\"";
 
     // by default the start date is the season start date
     QDateTime startDate = seasonStartDate;
@@ -922,35 +894,6 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3BNew::GetProcessingDefinitionI
 //    }
 
     return params;
-}
-
-void LaiRetrievalHandlerL3BNew::SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, const TaskFinishedEvent &event,
-                                                       const ProcessorHandlerHelper::SatelliteIdType &satId, const QString &l3bProdName)
-{
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.link_l3c_to_l3b");
-    bool bLinkL3CToL3B = ((configParameters["processor.l3b.lai.link_l3c_to_l3b"]).toInt() == 1);
-    // generate automatically only for Sentinel2
-    if (bLinkL3CToL3B) {
-        if(satId == ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2) {
-
-            NewJob newJob;
-            newJob.processorId = event.processorId;  //here we have for now the same processor ID
-            newJob.siteId = event.siteId;
-            newJob.startType = JobStartType::Triggered;
-
-            QJsonObject processorParamsObj;
-            QJsonArray prodsJsonArray;
-            prodsJsonArray.append(l3bProdName);
-            processorParamsObj["input_products"] = prodsJsonArray;
-            processorParamsObj["resolution"] = "10";
-            processorParamsObj["reproc"] = "1";
-            processorParamsObj["inputs_are_l3b"] = "1";
-            processorParamsObj["max_l3b_per_tile"] = "3";
-            newJob.parametersJson = jsonToString(processorParamsObj);
-
-            ctx.SubmitJob(newJob);
-        }
-    }
 }
 
 int LaiRetrievalHandlerL3BNew::UpdateJobSubmittedParamsFromSchedReq(EventProcessingContext &ctx,

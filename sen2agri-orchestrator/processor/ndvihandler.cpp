@@ -200,10 +200,10 @@ void NdviHandler::SubmitEndOfNdviTask(EventProcessingContext &ctx,
     }
     // we add a task in order to wait for all product formatter to finish.
     // This will allow us to mark the job as finished and to remove the job folder
-    TaskToSubmit endOfJobDummyTask{"ndvi-end-of-job", {}};
+    TaskToSubmit endOfJobDummyTask{"end-of-job", {}};
     endOfJobDummyTask.parentTasks.append(prdFormatterTasksListRef);
     SubmitTasks(ctx, event.jobId, {endOfJobDummyTask});
-    ctx.SubmitSteps({endOfJobDummyTask.CreateStep("EndOfLAIDummy", QStringList())});
+    ctx.SubmitSteps({endOfJobDummyTask.CreateStep("EndOfJob", QStringList())});
 
 }
 
@@ -213,13 +213,6 @@ void NdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
 
-    bool bMonoDateLai = IsGenMonoDate(parameters, configParameters);
-    if(!bMonoDateLai) {
-        ctx.MarkJobFailed(event.jobId);
-        throw std::runtime_error(
-            QStringLiteral("LAI mono-date processing needs to be defined").toStdString());
-    }
-    
     // create and submit the tasks for the received products
     QMap<QString, QStringList> inputProductToTilesMap;
     QStringList listTilesMetaFiles = GetL2AInputProductsTiles(ctx, event, inputProductToTilesMap);
@@ -260,10 +253,10 @@ void NdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void NdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    if (event.module == "ndvi-end-of-job") {
+    if (event.module == "end-of-job") {
         ctx.MarkJobFinished(event.jobId);
         // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId, "l3b");
+        RemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
     }
     if ((event.module == "ndvi-product-formatter")) {
         QString prodName = GetProductFormatterProductName(ctx, event);
@@ -396,21 +389,6 @@ const QString& NdviHandler::GetDefaultCfgVal(std::map<QString, QString> &configP
     return defVal;
 }
 
-
-bool NdviHandler::IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
-    bool bMonoDateNdvi = true;
-    if(parameters.contains("monolai")) {
-        const auto &value = parameters["monolai"];
-        if(value.isDouble())
-            bMonoDateNdvi = (value.toInt() != 0);
-        else if(value.isString()) {
-            bMonoDateNdvi = (value.toString() == "1");
-        }
-    } else {
-        bMonoDateNdvi = ((configParameters["processor.l3b.mono_date_lai"]).toInt() != 0);
-    }
-    return bMonoDateNdvi && ((configParameters["processor.l3b.mono_date_ndvi_only"]).toInt() != 0);
-}
 
 QSet<QString> NdviHandler::GetTilesFilter(const QJsonObject &parameters, std::map<QString, QString> &configParameters)
 {

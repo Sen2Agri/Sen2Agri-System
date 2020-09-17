@@ -366,7 +366,7 @@ void LaiRetrievalHandlerL3B::HandleProduct(EventProcessingContext &ctx, const Jo
     const std::map<QString, QString> &configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
 
     bool bForceGenModels = IsForceGenModels(parameters, configParameters);
-    bool bRemoveTempFiles = NeedRemoveJobFolder(ctx, event.jobId, "l3b");
+    bool bRemoveTempFiles = NeedRemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
 
     int tasksStartIdx = allTasksList.size();
     // create the tasks
@@ -401,10 +401,10 @@ void LaiRetrievalHandlerL3B::SubmitEndOfLaiTask(EventProcessingContext &ctx,
     }
     // we add a task in order to wait for all product formatter to finish.
     // This will allow us to mark the job as finished and to remove the job folder
-    TaskToSubmit endOfJobDummyTask{"lai-end-of-job", {}};
+    TaskToSubmit endOfJobDummyTask{"end-of-job", {}};
     endOfJobDummyTask.parentTasks.append(prdFormatterTasksListRef);
     SubmitTasks(ctx, event.jobId, {endOfJobDummyTask});
-    ctx.SubmitSteps({endOfJobDummyTask.CreateStep("EndOfLAIDummy", QStringList())});
+    ctx.SubmitSteps({endOfJobDummyTask.CreateStep("EndOfJob", QStringList())});
 
 }
 
@@ -415,13 +415,6 @@ void LaiRetrievalHandlerL3B::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
     const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
 
-    bool bMonoDateLai = IsGenMonoDate(parameters, configParameters);
-    if(!bMonoDateLai) {
-        ctx.MarkJobFailed(event.jobId);
-        throw std::runtime_error(
-            QStringLiteral("LAI mono-date processing needs to be defined").toStdString());
-    }
-    
     if(!QDir::root().mkpath(modelsFolder)) {
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(
@@ -476,10 +469,10 @@ void LaiRetrievalHandlerL3B::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    if (event.module == "lai-end-of-job") {
+    if (event.module == "end-of-job") {
         ctx.MarkJobFinished(event.jobId);
         // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId, "l3b");
+        RemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
     }
     if ((event.module == "lai-mono-date-product-formatter")) {
         QString prodName = GetProductFormatterProductName(ctx, event);
@@ -514,9 +507,6 @@ void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 productFolder, maxDate, prodName,
                                 quicklook, footPrint, std::experimental::nullopt, prodTiles });
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
-
-            // submit a new job for the L3C product corresponding to this one
-            SubmitL3CJobForL3BProduct(ctx, event, satId, prodName);
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
             // We might have several L3B products, we should not mark it at failed here as
@@ -691,20 +681,6 @@ QStringList LaiRetrievalHandlerL3B::GetProSailSimulatorNewArgs(const QString &pr
                 "-laicfgs", laiBandsCfg
     };
 }
-/*
-QStringList LaiRetrievalHandlerL3B::GetProSailSimulatorArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
-                                                         const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters) {
-    //QString noiseVar = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.noisevar", DEFAULT_NOISE_VAR);
-    return { "ProSailSimulator",
-                "-xml", product,
-                "-bvfile", bvFileName,
-                "-rsrcfg", rsrCfgFileName,
-                "-out", outSimuReflsFile,
-                "-outangles", outAngles
-//                "-noisevar", noiseVar
-    };
-}
-*/
 
 QStringList LaiRetrievalHandlerL3B::GetTrainingDataGeneratorNewArgs(const QString &product, const QString &biovarsFile,
                                                               const QString &simuReflsFile, const QString &outTrainingFile,
@@ -717,19 +693,6 @@ QStringList LaiRetrievalHandlerL3B::GetTrainingDataGeneratorNewArgs(const QStrin
                 "-laicfgs", laiBandsCfg
     };
 }
-
-/*
-QStringList LaiRetrievalHandlerL3B::GetTrainingDataGeneratorArgs(const QString &product, const QString &biovarsFile,
-                                                              const QString &simuReflsFile, const QString &outTrainingFile) {
-    return { "TrainingDataGenerator",
-                "-xml", product,
-                "-biovarsfile", biovarsFile,
-                "-simureflsfile", simuReflsFile,
-                "-outtrainfile", outTrainingFile,
-                "-addrefls", "1"
-    };
-}
-*/
 
 QStringList LaiRetrievalHandlerL3B::GetInverseModelLearningArgs(const QString &trainingFile, const QString &product, const QString &modelFile,
                                                              const QString &errEstFile, const QString &modelsFolder,
@@ -756,21 +719,6 @@ bool LaiRetrievalHandlerL3B::IsForceGenModels(const QJsonObject &parameters, con
         bForceGenModels = ((ProcessorHandlerHelper::GetMapValue(configParameters, "processor.l3b.generate_models")).toInt() != 0);
     }
     return bForceGenModels;
-}
-
-bool LaiRetrievalHandlerL3B::IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
-    bool bMonoDateLai = true;
-    if(parameters.contains("monolai")) {
-        const auto &value = parameters["monolai"];
-        if(value.isDouble())
-            bMonoDateLai = (value.toInt() != 0);
-        else if(value.isString()) {
-            bMonoDateLai = (value.toString() == "1");
-        }
-    } else {
-        bMonoDateLai = ((configParameters["processor.l3b.mono_date_lai"]).toInt() != 0);
-    }
-    return bMonoDateLai;
 }
 
 ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
@@ -811,19 +759,6 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     // we might have an offset in days from starting the downloading products to start the L3B production
     int startSeasonOffset = mapCfg["processor.l3b.start_season_offset"].value.toInt();
     seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
-
-    int generateLai = false;
-    if(requestOverrideCfgValues.contains("product_type")) {
-        const ConfigurationParameterValue &productType = requestOverrideCfgValues["product_type"];
-        if(productType.value == "L3B") {
-            generateLai = true;
-            params.jsonParameters = "{ \"monolai\": \"1\"}";
-        }
-    }
-    // we need to have at least one flag set
-    if(!generateLai) {
-        return params;
-    }
 
     // by default the start date is the season start date
     QDateTime startDate = seasonStartDate;
@@ -878,35 +813,6 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     }
 
     return params;
-}
-
-void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, const TaskFinishedEvent &event,
-                                                       const ProcessorHandlerHelper::SatelliteIdType &satId, const QString &l3bProdName)
-{
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.link_l3c_to_l3b");
-    bool bLinkL3CToL3B = ((configParameters["processor.l3b.lai.link_l3c_to_l3b"]).toInt() == 1);
-    // generate automatically only for Sentinel2
-    if (bLinkL3CToL3B) {
-        if(satId == ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2) {
-
-            NewJob newJob;
-            newJob.processorId = event.processorId;  //here we have for now the same processor ID
-            newJob.siteId = event.siteId;
-            newJob.startType = JobStartType::Triggered;
-
-            QJsonObject processorParamsObj;
-            QJsonArray prodsJsonArray;
-            prodsJsonArray.append(l3bProdName);
-            processorParamsObj["input_products"] = prodsJsonArray;
-            processorParamsObj["resolution"] = "10";
-            processorParamsObj["reproc"] = "1";
-            processorParamsObj["inputs_are_l3b"] = "1";
-            processorParamsObj["max_l3b_per_tile"] = "3";
-            newJob.parametersJson = jsonToString(processorParamsObj);
-
-            ctx.SubmitJob(newJob);
-        }
-    }
 }
 
 void LaiRetrievalHandlerL3B::GetModelFileList(const QString &folderName, const QString &modelPrefix, QStringList &outModelsList) {

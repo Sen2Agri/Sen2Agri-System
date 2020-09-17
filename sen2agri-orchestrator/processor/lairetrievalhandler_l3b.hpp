@@ -62,16 +62,10 @@ private:
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
     bool IsForceGenModels(const QJsonObject &parameters, const std::map<QString, QString> &configParameters);
-    bool IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
-    bool IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
-    bool IsFittedReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     void HandleProduct(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QList<TileInfos> &prdTilesList,
                        QList<TaskToSubmit> &allTasksList);
     void SubmitEndOfLaiTask(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                             const QList<TaskToSubmit> &allTasksList);
-    void SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, const TaskFinishedEvent &event,
-                                   const ProcessorHandlerHelper::SatelliteIdType &satId,
-                                   const QString &l3bProdName);
     QMap<QDate, QStringList> GroupProductTilesByDate(const QMap<QString, QStringList> &inputProductToTilesMap);
 
     bool InRange(double middle, double distance, double value);

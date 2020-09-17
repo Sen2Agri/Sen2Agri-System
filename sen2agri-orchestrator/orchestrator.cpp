@@ -11,6 +11,8 @@
 #include "processor/croptypehandler.hpp"
 #include "processor/compositehandler.hpp"
 #include "processor/lairetrievalhandler.hpp"
+#include "processor/lairetrievalhandler_l3c.hpp"
+#include "processor/lairetrievalhandler_l3d.hpp"
 #include "processor/phenondvihandler.hpp"
 #include "processor/s4c_croptypehandler.hpp"
 #include "processor/grasslandmowinghandler.hpp"
@@ -30,9 +32,9 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
             bAdded = false;
         } else if(procDescr.shortName == "l3a") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<CompositeHandler>());
-        } else if(procDescr.shortName == "l3b_lai") {
+        } else if(procDescr.shortName == "l3b_lai" || procDescr.shortName == "l3b") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<LaiRetrievalHandler>());
-        } else if(procDescr.shortName == "l3e_pheno") {
+        } else if(procDescr.shortName == "l3e_pheno" || procDescr.shortName == "l3e") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<PhenoNdviHandler>());
         } else if(procDescr.shortName == "l4a") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<CropMaskHandler>());
@@ -44,6 +46,10 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
             handlersMap.emplace(procDescr.processorId, std::make_unique<GrasslandMowingHandler>());
         } else if(procDescr.shortName == "s4c_l4c") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<AgricPracticesHandler>());
+        } else if(procDescr.shortName == "s2a_l3c") {
+            handlersMap.emplace(procDescr.processorId, std::make_unique<LaiRetrievalHandlerL3C>());
+        } else if(procDescr.shortName == "s2a_l3d") {
+            handlersMap.emplace(procDescr.processorId, std::make_unique<LaiRetrievalHandlerL3D>());
         } else {
             bAdded = false;
             Logger::error(QStringLiteral("Invalid processor configuration found in database: %1, "

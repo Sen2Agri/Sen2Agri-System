@@ -18,7 +18,7 @@ function getParameters($current_processor_name, $adv){
             FROM config_metadata cm
             INNER JOIN config_category cfc ON cm.config_category_id = cfc.id
             LEFT JOIN config cf ON lower(cf.key) = lower(cm.key)
-            WHERE cfc.id IN (3,4,5,6,18,19,20,21) AND cm.Key ilike 'processor.{$current_processor_name}.%' AND is_site_visible=true 
+            WHERE cfc.id IN (3,4,5,6,18,19,20,21,22,23,24,25) AND cm.Key ilike 'processor.{$current_processor_name}.%' AND is_site_visible=true 
             AND is_advanced='".$adv."' 
             ORDER BY cfc.display_order";
 	
@@ -121,36 +121,6 @@ $processors = pg_fetch_all($res);
 												<input type="text" class="form-control" id="synthDate" name="synthDate">
 												<span class="help-block">The synthesis date [YYYYMMDD].</span>
 											</div>										
-											<?php }?>
-											
-											
-											<?php if($processor['short_name'] == "l3b_lai"){?> 
-											<div class="subgroup lai">
-												<label class="control-label">Generate LAI mono-dates:</label>
-												<div class="form-group form-group-sm">
-													<input class="form-control" id="monolai" type="radio" name="lai" value="monolai" checked="checked">
-													<label class="control-label" for="monolai">Generate LAI mono-dates</label>
-													<span class="help-block">(Generate LAI mono-dates)</span>
-												</div>
-												<div class="form-group form-group-sm">
-													<input class="form-control" id="reproc" type="radio" name="lai" value="reproc">
-													<label class="control-label" for="reproc">Reprocessing with the last N-Days</label>
-													<span class="help-block">(Performe reprocessing with the last N-Days)</span>
-												</div>
-                                                <?php if($isSen2Agri){?> 
-                                                    <div class="form-group form-group-sm">
-                                                        <input class="form-control" id="fitted" type="radio" name="lai" value="fitted">
-                                                        <label class="control-label" for="fitted">LAI time series fitting at the end of the season</label>
-                                                        <span class="help-block">(Performe reprocessing at the end of the season)</span>
-                                                    </div>
-                                                <?php }?>
-											</div>
-
-											<div class="form-group form-group-sm">
-												<label class="control-label" for="bwr">Backward window:</label>
-												<input type="number" class="form-control" id="bwr" name="bwr" value="2">
-												<span class="help-block">Backward window for LAI N-Day reprocessing</span>
-											</div>
 											<?php }?>
 											
 											<?php if(($processor['short_name'] == "l4a" || $processor['short_name'] == "l4b") && $isSen2Agri){?> 

@@ -35,21 +35,6 @@ function getSubSteps($processorId, $stepAreSubPrds) {
 
 function getAction($processorId) {
 	$action = "dashboard.php";
-	/*
-	if ($processorId == '2') {
-		$action = "dashboard.php#tab_l3a";
-	} elseif ($processorId == '3') {
-		$action = "dashboard.php#tab_l3b";
-	} elseif ($processorId == '4'){
-		$action = "dashboard.php#tab_l3e_pheno";
-	} elseif ($processorId == '5') {
-		$action = "dashboard.php#tab_l4a";
-	} elseif ($processorId == '6') {
-		$action = "dashboard.php#tab_l4b";
-	} else {
-		$action = "dashboard.php";
-	}
-	*/
 	return $action;
 }
 function get_scheduled_jobs_header($processorId) {
@@ -58,9 +43,6 @@ function get_scheduled_jobs_header($processorId) {
 		<span>Job name</span>
 		<span>Site name</span>
 		<span>Season name</span>
-		<?php if ($processorId == 3) { ?>
-		<span>Product</span>
-		<?php } ?>
 		<span>Schedule type</span>
 		<span>First run time</span>
 		<span style="min-width:150px">Repeat</span>
@@ -130,19 +112,6 @@ function add_new_scheduled_jobs_layout($processorId) {
                 </select>
             </span>
         <?php } ?>
-<!--		<?php //if ($processorId == 3) { ?>
-		<span class="schedule_format">
-			<select id="product_add<?//= $processorId ?>" name="product_add" required="true">
-				<option value="" selected>Select a product</option>
-				<option value="L3B">L3B</option>
-				<option value="L3C">L3C</option>
-				<?php// if (ConfigParams::isSen2Agri()) { ?>                
-				    <option value="L3D">L3D</option>
-				<?php// } ?>
-			</select>
-		</span>
-		<?php// } ?>
--->        
 		<span class="schedule_format">
 			<select id="schedule_add<?= $processorId ?>" name="schedule_add" onchange="selectedScheduleAdd(event, <?= $processorId ?>)">
 				<option value="" selected>Select a schedule</option>
@@ -220,17 +189,6 @@ function update_scheduled_jobs_layout($processorId) {
 			<span class="schedule_format"><?= $jobName ?></span>
 			<span class="schedule_format"><?= $siteName ?></span>
 			<span class="schedule_format"><?= $seasonName ?></span>
-			<?php if ($processorId == 3) { $product = json_decode($task[9],true)['general_params']['product_type']; ?>
-			<span class="schedule_format">
-				<select id="product<?= $jobId ?>" name="product" onchange="activateButton(<?= $jobId ?>)">
-					<option value="L3B"<?= $product == "L3B" ? " selected" : "" ?>>L3B</option>
-					<option value="L3C"<?= $product == "L3C" ? " selected" : "" ?>>L3C</option>
-					<?php if (ConfigParams::isSen2Agri()) { ?>                
-					    <option value="L3D"<?= $product == "L3D" ? " selected" : "" ?>>L3D</option>
-					<?php } ?>                        
-				</select>
-			</span>
-			<?php } ?>
 			<span class="schedule_format">
 				<select id="schedule<?= $jobId ?>" name="schedule" onchange="selectedSchedule(event, <?= $jobId ?>)">
 					<option value="0"<?= $repeatType == 0 ? " selected" : "" ?>>Once</option>

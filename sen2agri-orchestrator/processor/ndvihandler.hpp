@@ -38,7 +38,6 @@ private:
 
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
-    bool IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     QSet<QString> GetTilesFilter(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool FilterTile(const QSet<QString> &tilesSet, const QString &prdTileFile);
     void HandleProduct(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QList<TileInfos> &prdTilesList,
