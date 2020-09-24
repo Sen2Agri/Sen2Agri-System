@@ -5,5 +5,5 @@ Requires=docker.service
 
 [Service]
 Type=simple
-ExecStart=/usr/share/sen2agri/sen2agri-demmaccs/demmaccs_launcher.py
+ExecStart=/usr/share/sen2agri/sen2agri-demmaccs/l2a_launcher.py
 User=sen2agri-service

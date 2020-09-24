@@ -45,6 +45,7 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from threading import Thread
 import threading
+from datetime import timedelta
 
 #FAKE_COMMAND = 1
 DEBUG = True
@@ -55,6 +56,7 @@ LANDSAT8_SATELLITE_ID = int(2)
 L1C_UNKNOWN_PROCESSOR_OUTPUT_FORMAT = int(0)
 L1C_MACCS_PROCESSOR_OUTPUT_FORMAT = int(1)
 L1C_MAJA_PROCESSOR_OUTPUT_FORMAT = int(2)
+L1C_SEN2COR_PROCESSOR_OUTPUT_FORMAT = int(3)
 FILES_IN_LANDSAT_L1_PRODUCT = int(13)
 UNKNOWN_SATELLITE_ID = int(-1)
 #should not exceed 11 !!!!
@@ -86,18 +88,24 @@ MAX_NUMBER_OF_KEPT_LOG_FILES = int(4) #number of maximum logfiles to be kept
 
 g_exit_flag = False
 
-def log(location, info, log_filename = ""):
+def delete_file_if_match(fullFilePath, fileName, regex, fileType) :
+    isMatch = re.match(regex, fileName)
+    if isMatch is not None:
+        print("Deleting {} file {}".format(fileType, fullFilePath))
+        os.remove(fullFilePath)
+
+def log(location, info, log_filename = ""):    
     try:
         if DEBUG:
             print("{}:[{}]:{}".format(str(datetime.datetime.now()), os.getpid(), str(info)))
             sys.stdout.flush()
-        if len(location) > 0 and len(log_filename) > 0:
-            logfile = os.path.join(location, log_filename)
-            log = open(logfile, 'a')
+        if len(location) > 0 and len(log_filename) > 0: 
+            log_path = os.path.join(location, log_filename)   
+            log = open(log_path, 'a')
             log.write("{}:[{}]:{}\n".format(str(datetime.datetime.now()), os.getpid(), str(info)))
             log.close()
     except:
-        print("Could NOT write inside the log file {}".format(logfile))
+        print("Could NOT write inside the log file {}".format(log_filename))
 
 def manage_log_file(location, log_filename):
     try:
@@ -152,7 +160,10 @@ def run_command(cmd_array, log_path = "", log_filename = "", fake_command = Fals
     log(log_path, "Running command: {}".format(cmd_str), log_filename)
     res = 0
     if not fake_command:
-        res = subprocess.call(cmd_array, shell=False)
+        try:
+            res = subprocess.call(cmd_array, shell=False)
+        except:
+            res = 1 
     ok = "OK"
     nok = "NOK"
     log(log_path, "Command finished {} (res = {}) in {} : {}".format((ok if res == 0 else nok), res, datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
@@ -211,7 +222,6 @@ def get_footprint(image_filename):
     target_srs.ImportFromEPSG(4326)
 
     wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
-    print("FOOTPRINT: wgs84_extent= {} |  extent= {}".format(wgs84_extent, extent))
     return (wgs84_extent, extent)
 
 
@@ -336,6 +346,13 @@ def get_l1c_processor_output_format(working_directory, tile_id):
     for maja_out in working_dir_content:
         if os.path.isdir(maja_out) and re.search(".*_L2A_T{}_.*".format(tile_id), maja_out, re.IGNORECASE) and check_maja_valid_output(maja_out, tile_id):
             return L1C_MAJA_PROCESSOR_OUTPUT_FORMAT, maja_out
+	#check for Sen2Cor format
+	pvi_pattern = "S2[A|B|C|D]_MSIL2A_*/GRANULE/L2A*_T{}_*/QI_DATA/*PVI.[jp2|tif|jpeg]".format(tile_id)
+	pvi_path = os.path.join(working_directory,pvi_pattern)
+	pvi_files = glob.glob(pvi_path)
+	if len(pvi_files) == 1:
+		return L1C_SEN2COR_PROCESSOR_OUTPUT_FORMAT, None
+		
     return L1C_UNKNOWN_PROCESSOR_OUTPUT_FORMAT, None
 
 #def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearArray):
@@ -1229,36 +1246,6 @@ class LandsatAOIInfo(AOIInfo):
 
 
 ###########################################################################
-class DEMMACCSConfig(object):
-    def __init__(self, output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir):
-        self.output_path = output_path
-        self.gips_path = gips_path
-        self.srtm_path = srtm_path
-        self.swbd_path = swbd_path
-        self.maccs_ip_address = maccs_ip_address
-        self.maccs_launcher = maccs_launcher
-        self.l1c_processor = L1C_UNKNOWN_PROCESSOR_OUTPUT_FORMAT 
-        if re.search("maccs", maccs_launcher, re.IGNORECASE):
-            self.l1c_processor = L1C_MACCS_PROCESSOR_OUTPUT_FORMAT
-        elif re.search("maja", maccs_launcher, re.IGNORECASE):
-            self.l1c_processor = L1C_MAJA_PROCESSOR_OUTPUT_FORMAT
-        self.working_dir = working_dir
-
-        self.compressTiffs = False;
-        self.cogTiffs = False;
-        self.removeSreFiles = False;
-        self.removeFreFiles = False;
-        
-    def setPostprocessingParams(self, compressTiffs, cogTiffs, removeSreFiles, removeFreFiles) :
-        self.compressTiffs = (compressTiffs == "1" or compressTiffs.lower() == "true");
-        self.cogTiffs = (cogTiffs == "1" or cogTiffs.lower() == "true");
-        self.removeSreFiles = (removeSreFiles == "1" or removeSreFiles.lower() == "true");
-        self.removeFreFiles = (removeFreFiles == "1" or removeFreFiles.lower() == "true");
-        if ((self.removeFreFiles == True) and (self.removeSreFiles == True)) :
-            self.removeFreFiles = False
-        
-
-###########################################################################
 class L1CInfo(object):
     def __init__(self, server_ip, database_name, user, password, log_file=None):
         self.server_ip = server_ip
@@ -1293,66 +1280,6 @@ class L1CInfo(object):
             self.is_connected = False
             #print("{}: Database disconnected...".format(threading.currentThread().getName()))
 
-    def get_demmaccs_config(self):
-        if not self.database_connect():
-            return None
-        try:
-            self.cursor.execute("select * from sp_get_parameters('demmaccs')")
-            rows = self.cursor.fetchall()
-        except:
-            self.database_disconnect()
-            return None
-        output_path = ""
-        gips_path = ""
-        srtm_path = ""
-        swbd_path = ""
-        maccs_ip_address = ""
-        maccs_launcher = ""
-        working_dir = ""
-        compressTiffs = ""
-        cogTiffs = ""
-        removeSreFiles = ""
-        removeFreFiles = ""
-
-        for row in rows:
-            if len(row) != 3:
-                continue
-            if row[0] == DATABASE_DEMMACCS_OUTPUT_PATH:
-                output_path = row[2]
-            if row[0] == DATABASE_DEMMACCS_GIPS_PATH:
-                gips_path = row[2]
-            elif row[0] == DATABASE_DEMMACCS_SRTM_PATH:
-                srtm_path = row[2]
-            elif row[0] == DATABASE_DEMMACCS_SWBD_PATH:
-                swbd_path = row[2]
-            elif row[0] == DATABASE_DEMMACCS_MACCS_IP_ADDRESS:
-                #optional, may not exist in DB
-                maccs_ip_address = row[2]
-            elif row[0] == DATABASE_DEMMACCS_MACCS_LAUNCHER:
-                maccs_launcher = row[2]
-            elif row[0] == DATABASE_DEMMACCS_WORKING_DIR:
-                working_dir = row[2]
-            elif row[0] == DATABASE_DEMMACCS_COMPRESS_TIFFS:
-                compressTiffs = row[2]
-            elif row[0] == DATABASE_DEMMACCS_COG_TIFFS:
-                cogTiffs = row[2]
-            elif row[0] == DATABASE_DEMMACCS_REMOVE_SRE:
-                removeSreFiles = row[2]
-            elif row[0] == DATABASE_DEMMACCS_REMOVE_FRE:
-                removeFreFiles = row[2]
-                
-        self.database_disconnect()
-        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_launcher) == 0 or len(working_dir) == 0:
-            return None
-
-        demmaccsConfig = DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir)
-        print("CompressTiffs = {}, CogTiffs = {}, RemoveSRE = {}, RemoveFre = {}".format(compressTiffs, cogTiffs, removeSreFiles, removeFreFiles))
-        demmaccsConfig.setPostprocessingParams(compressTiffs, cogTiffs, removeSreFiles, removeFreFiles)
-        
-        print("CompressTiffs = {}, CogTiffs = {}, RemoveSRE = {}, RemoveFre = {}".format(demmaccsConfig.compressTiffs, demmaccsConfig.cogTiffs, demmaccsConfig.removeSreFiles, demmaccsConfig.removeFreFiles))
-        
-        return demmaccsConfig
-
     def to_bool(self, value):
         valid = {'true': True, 't': True, '1': True,
                  'false': False, 'f': False, '0': False,
@@ -1369,422 +1296,3 @@ class L1CInfo(object):
             return valid[lower_value]
         else:
             return False
-
-
-    def is_site_enabled(self, site_id):
-        if self.database_connect():
-            try:
-                self.cursor.execute("select enabled from site where id = %s;", (site_id, ))
-                return self.cursor.fetchone()[0]
-            finally:
-                try:
-                    self.database_disconnect()
-                except:
-                    pass
-
-    def is_sensor_enabled(self, site_id, sensor_id):
-        if self.database_connect():
-            try:
-                self.cursor.execute("select satellite_name from satellite where id = %s;", (sensor_id, ))
-                satName = self.cursor.fetchone()[0]
-                # TODO: We better add a column "short_name" in the satellite table
-                shortSatName = "s2"
-                if (satName == "landsat8") :
-                    shortSatName = "l8"
-                elif (satName == "sentinel1") :
-                    shortSatName = "s1"
-                # make it to lower case in case the short name is read from the satellite table
-                shortSatName = shortSatName.lower()
-                self.cursor.execute("select value from config where key = '{}.enabled' and site_id = {};".format(shortSatName, site_id))
-                rows = self.cursor.fetchall()
-                if len(rows) > 0:
-                    print("Found key {}.enabled for site {} with value {}".format(shortSatName, site_id, rows[0][0]))
-                    return self.to_bool("" + rows[0][0])
-                self.cursor.execute("select value from config where key = '{}.enabled' and site_id is NULL;".format(shortSatName))
-                rows = self.cursor.fetchall()
-                if len(rows) > 0:
-                    print("Found key {}.enabled for all sites with value {}".format(shortSatName, rows[0][0]))
-                    return self.to_bool("" + rows[0][0])
-                
-                # if neither the site key nor the default value is not set, then return True
-                # TODO: Should we return False???
-                print("Couldn't find at all the key {}.enabled for site {}!".format(shortSatName, site_id))
-                return True
-            finally:
-                try:
-                    self.database_disconnect()
-                except:
-                    pass
-                    
-    def get_short_name(self, table, use_id):
-        if not self.database_connect():
-            return ""
-        if table != "site" and table != "processor":
-            return ""
-        try:
-            self.cursor.execute("select short_name from {} where id={}".format(table, use_id))
-            rows = self.cursor.fetchall()
-        except:
-            self.database_disconnect()
-            return ""
-        self.database_disconnect()
-        return rows[0][0]
-
-    # will return a list with lists for each unique pair (satellite_id, site_id)
-    def get_unprocessed_l1c(self):
-        if not self.database_connect():
-            return []
-        try:
-            self.cursor.execute("select id from satellite")
-            satellite_ids = self.cursor.fetchall()
-            if len(satellite_ids) != 1 and len(satellite_ids[0]) == 0:
-                print("No satellite ids found in satellite table")
-                return []
-            #print("----{}".format(satellite_ids))
-            self.cursor.execute("select id from site")
-            site_ids = self.cursor.fetchall()
-            if len(site_ids) != 1 and len(site_ids[0]) == 0:
-                print("No site ids found in satellite table")
-                return []
-            retArray = []
-            for satellite_id in satellite_ids:
-                for site_id in site_ids:
-                    self.cursor.execute("""SELECT id, site_id, satellite_id, full_path, product_date, orbit_id FROM downloader_history WHERE
-                                        satellite_id = %(satellite_id)s :: smallint and
-                                        site_id = %(site_id)s  :: smallint and
-                                        status_id = %(status_id)s :: smallint ORDER BY product_date ASC""",
-                                        {
-                                            "satellite_id" : satellite_id[0],
-                                            "status_id" : DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE,
-                                            "site_id" : site_id[0]
-                                        })
-                    rows = self.cursor.fetchall()
-                    if len(rows) > 0:
-                        retArray.append(rows)
-        except:
-            self.database_disconnect()
-            return []
-        self.database_disconnect()
-        return retArray
-
-    def sql_commit(self):
-        if not self.is_connected:
-            print("Postgres commit: There is no transaction in progress...")
-            return False, False
-        serialization_failure = False
-        ret_val = True
-        try:
-            self.conn.commit()
-        except psycopg2.Error as e:
-            ret_val = False
-            if e.pgcode in (SERIALIZATION_FAILURE, DEADLOCK_DETECTED):
-                print("{}:{}: Exception: SERIALIZATION_FAILURE when trying to commit ".format(threading.currentThread().getName(), id(self)))
-                serialization_failure = True
-            else:
-                print("{}:{}: Exception {} when trying to commit ".format(threading.currentThread().getName(), id(self), e.pgcode))                
-        return serialization_failure, ret_val
-
-    def sql_rollback(self):
-        if not self.is_connected:
-            print("Postgres rollback: There is no transaction in progress...")
-            return False
-        self.conn.rollback()
-        self.database_disconnect()                
-        return True
-
-    # general function for sql queries. it supports retrying when postgres serialization failure / deadlock occur
-    def general_sql_query(self, strings, separated=False, disconnect_db_when_finish=True):
-        if len(strings) == 0:
-            print("general_sql_query: Now sql query to perform")
-            return []
-        if not self.database_connect():
-            print("Database connection failed...")
-            return []
-        retries = 0
-        max_number_of_retries = 3
-        ret_array = []
-        query = ""
-        while True:
-            try:
-                for query in strings:
-                    rows = ""
-                    self.cursor.execute("{}".format(query))
-                    if(separated):
-                        rows = self.cursor.fetchall()
-                        if len(rows) > 0:
-                            ret_array.append(rows)
-                if not separated:
-                    rows = self.cursor.fetchall()
-                    if len(rows) > 0:
-                        ret_array.append(rows)
-                    #print("{}:{}: ret_array = {}".format(threading.currentThread().getName(), id(self), ret_array))
-                if disconnect_db_when_finish:
-                    #print("{}:{}: commit....".format(threading.currentThread().getName(), id(self)))
-                    self.conn.commit()
-                    #print("{}:{}: commit performed!".format(threading.currentThread().getName(), id(self)))
-            except psycopg2.Error as e:
-                #print("{}:{}: EXCEPTION!!!".format(threading.currentThread().getName(), id(self)))
-                #print("{}:{}: retries = {} | max_number_of_retries = {}".format(threading.currentThread().getName(), id(self), retries, max_number_of_retries))
-                if e.pgcode in (SERIALIZATION_FAILURE, DEADLOCK_DETECTED) and retries < max_number_of_retries:
-                    self.conn.rollback()
-                    print("{}:{}: Exception: SERALIZATION_FAILURE, rolling back and will retry for query: {}".format(threading.currentThread().getName(), id(self), query))
-                    time.sleep(2)
-                    retries += 1
-                    ret_array = []
-                    print("{}:{}: Retrying query {}".format(threading.currentThread().getName(), id(self), query))
-                    continue
-                else:
-                    print("{}:{}: Exception {} received when trying to execute sql queries: {}. Number of retries = {} ".format(threading.currentThread().getName(), id(self), e.pgcode, query, retries))
-                    if disconnect_db_when_finish:
-                        self.conn.rollback()
-                        self.database_disconnect()
-                    return None
-            if disconnect_db_when_finish:
-                #print("{}:{}: Disconnecting DB....".format(threading.currentThread().getName(), id(self)))
-                self.database_disconnect()
-            return ret_array        
-
-    # will return the next tile to process. The returned format is [satellite_id, orbit_id, tile_id, downloader_history_id, l1c_path, previous_l2a_path]
-    def get_unprocessed_l1c_tile(self):
-        strings = []
-        strings.append("set transaction isolation level serializable;")
-        strings.append("select * from sp_start_l1_tile_processing();")
-        return self.general_sql_query(strings)
-        
-    def clear_pending_l1_tiles(self):
-        strings = []
-        strings.append("select * from sp_clear_pending_l1_tiles();")
-        return self.general_sql_query(strings)
-
-    def mark_l1_tile_done(self, downloader_product_id, tile_id, cloud_coverage, snow_coverage):
-        strings = []
-        if not self.database_connect():
-            print("Database connection failed...")
-            return False
-        strings.append("set transaction isolation level serializable;")
-        strings.append(self.cursor.mogrify("""SELECT * FROM sp_mark_l1_tile_done(%(downloader_history_id)s :: integer,
-                                                                                %(tile_id)s,
-                                                                                %(cloud_coverage)s :: integer,
-                                                                                %(snow_coverage)s :: integer);""",
-                                {
-                                    "downloader_history_id" : downloader_product_id,
-                                    "tile_id" : tile_id,
-                                    "cloud_coverage" : cloud_coverage,
-                                    "snow_coverage" : snow_coverage
-                                }))
-        #print("{}:{}: mark_l1_tile_done: strings = {}".format(threading.currentThread().getName(), id(self), strings))
-        ret_array = self.general_sql_query(strings, False, False)
-        if ret_array == None:
-            # an unhandled exception came from db
-            print("mark_l1_tile_done: Unhandled exception from general_sql_query")
-        else:
-            if ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and ret_array[0][0][0] == True:
-                # commit to database will be perfomed later within set_processed_product function
-                print("The query to mark the tile {} as done will be commited later when insertion in product table is performed".format(tile_id))
-                return True
-
-        return False
-
-    def mark_l1_tile_failed(self, downloader_product_id, tile_id, reason, should_retry, cloud_coverage, snow_coverage):        
-        strings = []
-        pg_should_retry = False
-        product_finished = False
-        if not self.database_connect():
-            print("Database connection failed...")
-            return pg_should_retry, product_finished
-        #print("error on tile id {} | reason: {}".format(tile_id, reason))
-        strings.append("set transaction isolation level serializable;")
-        strings.append(self.cursor.mogrify("""SELECT * FROM sp_mark_l1_tile_failed(%(downloader_history_id)s :: integer,
-                                                                                  %(tile_id)s, 
-                                                                                  %(reason)s, 
-                                                                                  %(should_retry)s :: boolean,
-                                                                                  %(cloud_coverage)s :: integer,
-                                                                                  %(snow_coverage)s :: integer);""",
-                                {
-                                    "downloader_history_id" : downloader_product_id,
-                                    "tile_id" : tile_id,
-                                    "reason" : reason,
-                                    "should_retry" : should_retry,
-                                    "cloud_coverage" : cloud_coverage,
-                                    "snow_coverage" : snow_coverage
-                                }))
-        
-        #print("{}:{}: mark_l1_tile_failed: strings = {}".format(threading.currentThread().getName(), id(self), strings))
-        ret_array = self.general_sql_query(strings, False, False)
-        if ret_array == None:
-            # an unhandled exception came from db
-            print("mark_l1_tile_failed: Unhandled exception from general_sql_query")
-        else:
-            if ret_array[0] != None and ret_array[0][0] != None and ret_array[0][0][0] != None and ret_array[0][0][0] == True:
-                # commit to database will be perfomed later within set_processed_product function
-                print("The query to mark the tile {} as failed will be commited later when insertion in product table is performed".format(tile_id))
-                return True
-
-        return False
-
-
-    def get_previous_l2a_tile_path(self, satellite_id, tile_id, l1c_date, l1c_orbit_id, site_id):
-        if not self.database_connect():
-            return ""
-        path = ""
-        try:
-            self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(site_id)s :: smallint,
-                                                                            %(tile_id)s,
-                                                                            %(satellite_id)s :: smallint,
-                                                                            %(l1c_orbit_id)s :: integer,
-                                                                            %(l1c_date)s :: timestamp)""",
-                                {
-                                    "site_id" : site_id,
-                                    "tile_id" : tile_id,
-                                    "satellite_id" : satellite_id,
-                                    "l1c_orbit_id" : l1c_orbit_id,
-                                    "l1c_date" : l1c_date.strftime("%Y%m%dT%H%M%S")
-                                })
-            rows = self.cursor.fetchall()
-            if len(rows) == 1:
-                path = rows[0][0]
-        except:
-            print("Database query failed in get_previous_l2a_tile_path !")
-            self.conn.rollback()
-            self.database_disconnect()
-            return path
-        self.database_disconnect()
-        return path
-
-    def set_processed_product(self, processor_id, site_id, l1c_id, l2a_processed_tiles, full_path, product_name, footprint, sat_id, acquisition_date, orbit_id):
-        #input params:
-        #l1c_id is the id for the found L1C product in the downloader_history table. It shall be marked as being processed
-        #product type by default is 1
-        #processor id
-        #site id
-        #job id has to be NULL
-        #full path is the whole path to the product including the name
-        #created timestamp NULL
-        #name product (basename from the full path)
-        #quicklook image has to be NULL
-        #footprint
-        if not self.database_connect():
-            return False
-        try:
-            processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSING_ERR_VALUE
-            if len(l2a_processed_tiles) > 0:
-                processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE
-            print("Update downloader history product {} with status: {}".format(l1c_id, processingStatusValue))
-            self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: integer """,
-                                {
-                                    "status_id": processingStatusValue,
-                                    "l1c_id": l1c_id
-                                })
-            #self.conn.commit()
-            if len(l2a_processed_tiles) > 0:
-                #normally , sp_insert_product should upsert the record
-                self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
-                               %(processor_id)s :: smallint,
-                               %(satellite_id)s :: smallint,
-                               %(site_id)s :: smallint,
-                               %(job_id)s :: smallint,
-                               %(full_path)s :: character varying,
-                               %(created_timestamp)s :: timestamp,
-                               %(name)s :: character varying,
-                               %(quicklook_image)s :: character varying,
-                               %(footprint)s,
-                               %(orbit_id)s :: integer,
-                               %(tiles)s :: json,
-                               %(orbit_type_id)s :: smallint,
-                               %(downloader_history_id)s :: integer)""",
-                                {
-                                    "product_type_id" : 1,
-                                    "processor_id" : processor_id,
-                                    "satellite_id" : sat_id,
-                                    "site_id" : site_id,
-                                    "job_id" : None,
-                                    "full_path" : full_path,
-                                    "created_timestamp" : acquisition_date,
-                                    "name" : product_name,
-                                    "quicklook_image" : "mosaic.jpg",
-                                    "footprint" : footprint,
-                                    "orbit_id" : orbit_id,
-                                    "downloader_history_id" : l1c_id,
-                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']',
-                                    "orbit_type_id" : None,
-                                    "downloader_history_id" : l1c_id
-                                })
-            self.conn.commit()
-        except Exception, e:
-            print("Database update query failed: {}".format(e))
-            self.conn.rollback()
-            self.database_disconnect()
-            return False
-        self.database_disconnect()
-        return True
-
-    def set_l2a_product(self, processor_id, site_id, l1c_id, l2a_processed_tiles, full_path, product_name, footprint, sat_id, acquisition_date, orbit_id):
-        #input params:
-        #l1c_id is the id for the found L1C product in the downloader_history table. It shall be marked as being processed
-        #product type by default is 1
-        #processor id
-        #site id
-        #job id has to be NULL
-        #full path is the whole path to the product including the name
-        #created timestamp NULL
-        #name product (basename from the full path)
-        #quicklook image has to be NULL
-        #footprint
-        if not self.database_connect():
-            return False, False
-        try:
-            serialization_failure = False
-            ret_val = True
-            processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSING_ERR_VALUE
-            if len(l2a_processed_tiles) > 0:
-                processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE
-            print("Update downloader history product {} with status: {}".format(l1c_id, processingStatusValue))
-            self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: integer """,
-                                {
-                                    "status_id": processingStatusValue,
-                                    "l1c_id": l1c_id
-                                })
-            #self.conn.commit()
-            if len(l2a_processed_tiles) > 0:
-                #normally , sp_insert_product should upsert the record
-                self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
-                               %(processor_id)s :: smallint,
-                               %(satellite_id)s :: smallint,
-                               %(site_id)s :: smallint,
-                               %(job_id)s :: smallint,
-                               %(full_path)s :: character varying,
-                               %(created_timestamp)s :: timestamp,
-                               %(name)s :: character varying,
-                               %(quicklook_image)s :: character varying,
-                               %(footprint)s,
-                               %(orbit_id)s :: integer,
-                               %(tiles)s :: json,
-                               %(orbit_type_id)s :: smallint,
-                               %(downloader_history_id)s :: integer)""",
-                                {
-                                    "product_type_id" : 1,
-                                    "processor_id" : processor_id,
-                                    "satellite_id" : sat_id,
-                                    "site_id" : site_id,
-                                    "job_id" : None,
-                                    "full_path" : full_path,
-                                    "created_timestamp" : acquisition_date,
-                                    "name" : product_name,
-                                    "quicklook_image" : "mosaic.jpg",
-                                    "footprint" : footprint,
-                                    "orbit_id" : orbit_id,
-                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']',
-                                    "orbit_type_id" : None,
-                                    "downloader_history_id" : l1c_id
-                                })
-            #self.conn.commit()
-        except psycopg2.Error as e:
-            ret_val = False
-            if e.pgcode in (SERIALIZATION_FAILURE, DEADLOCK_DETECTED):
-                print("{}:{}: Exception when setting l2a product: SERIALIZATION_FAILURE when trying to execute sql queries".format(threading.currentThread().getName(), id(self)))
-                serialization_failure = True
-            else:
-                print("{}:{}: Exception {} when trying to set l2a product".format(threading.currentThread().getName(), id(self), e.pgcode))                
-        return serialization_failure, ret_val
-            
-
