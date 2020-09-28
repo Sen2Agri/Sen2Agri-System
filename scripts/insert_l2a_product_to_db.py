@@ -284,7 +284,7 @@ def insert_product(product_dir):
     if(site_id == ''):
         sys.exit('Cannot find in the database the provided site name!!!')
 
-    l2a_db.set_processed_product(processor_id, product_type_id, site_id, l2a_processed_tiles, product_dir, os.path.basename(product_dir[:len(product_dir) - 1]), wkt, sat_id, acquisition_date, orbit_id, mosaic_img)
+    l2a_db.set_processed_product(processor_id, product_type_id, site_id, l2a_processed_tiles, product_dir, os.path.basename(product_dir[:len(product_dir) - 1]), wkt, sat_id, acquisition_date, orbit_id, mosaic_img, args.insert_l1c)
 
 ###########################################################################
 
@@ -442,7 +442,43 @@ class L2AInfo(object):
         self.database_disconnect()
         return rows[0][0]
 
-    def set_processed_product(self, processor_id, product_type_id, site_id, l2a_processed_tiles, full_path, product_name, footprint, sat_id, acquisition_date, orbit_id, mosaic_img):
+    def get_l1c_product_id(self, name, site_id):
+        if not self.database_connect():
+            return ""
+        try:
+            self.cursor.execute("select id from downloader_history where product_name='{}' and site_id = {}".format(name, site_id))
+            rows = self.cursor.fetchall()
+        except:
+            print("Unable to execute id from downloader_history for site_id = {} and product name = {}".format(site_id, name))
+            self.database_disconnect()
+            return ""
+        self.database_disconnect()
+        count = (len(rows))
+        if count == 0 :
+            print("Product for site_id = {} and product name = {} does not exist in downloader_history table".format(site_id, name))
+            return ""
+        print("Extracted id {} from downloader_history for site_id = {} and product name = {}".format(rows[0][0], site_id, name))
+        return rows[0][0]
+
+    def get_l2a_geog(self, name, site_id):
+        if not self.database_connect():
+            return ""
+        try:
+            self.cursor.execute("select geog from product where name='{}' and site_id = {}".format(name, site_id))
+            rows = self.cursor.fetchall()
+        except:
+            print("Unable to execute geog from product for site_id = {} and product name = {}".format(site_id, name))
+            self.database_disconnect()
+            return ""
+        self.database_disconnect()
+        count = (len(rows))
+        if count == 0 :
+            print("L2A product for site_id = {} and product name = {} does not exist in product table".format(site_id, name))
+            return ""
+        print("Extracted geography {} from product for site_id = {} and product name = {}".format(rows[0][0], site_id, name))
+        return rows[0][0]
+
+    def set_processed_product(self, processor_id, product_type_id, site_id, l2a_processed_tiles, full_path, product_name, footprint, sat_id, acquisition_date, orbit_id, mosaic_img,                         insert_l1c):
         # input params:
         # product type by default is 1
         # processor id
@@ -485,6 +521,43 @@ class L2AInfo(object):
                                         "tiles": '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']'
                                     })
                 self.conn.commit()
+
+                if insert_l1c == True :
+                    l1c_product_name = product_name.replace("L2A", "L1C")
+                    l1c_prd_id = self.get_l1c_product_id(l1c_product_name, site_id)
+                    if l1c_prd_id == '':
+                        l1c_geog = self.get_l2a_geog(product_name, site_id)
+                        if l1c_geog != '': 
+                            print("Insert info in downloader_history table for product {}".format(l1c_product_name))
+                            l1c_full_path = full_path
+                            if self.is_connected == False : 
+                                self.database_connect()
+                            self.cursor.execute("""insert into downloader_history (site_id, satellite_id, product_name, full_path, created_timestamp, status_id, no_of_retries,         product_date, orbit_id, tiles, footprint) values (%(site_id)s :: smallint,
+                                           %(satellite_id)s :: smallint,
+                                           %(product_name)s :: character varying,
+                                           %(full_path)s :: character varying,
+                                           %(created_timestamp)s :: timestamp,
+                                           %(status_id)s :: smallint,
+                                           %(no_of_retries)s :: smallint,
+                                           %(product_date)s :: timestamp,
+                                           %(orbit_id)s :: integer,
+                                           %(tiles)s :: text[],
+                                           %(footprint)s :: geography)""",
+                                                {
+                                                    "site_id": site_id,
+                                                    "satellite_id": sat_id,
+                                                    "product_name": l1c_product_name,
+                                                    "full_path": l1c_full_path,
+                                                    "created_timestamp": datetime.datetime.now().isoformat(),
+                                                    "status_id": 5,
+                                                    "no_of_retries": 0,
+                                                    "product_date" : acquisition_date,
+                                                    "orbit_id": orbit_id,
+                                                    "tiles": '{' + ', '.join([t for t in l2a_processed_tiles]) + '}',
+                                                    "footprint": l1c_geog
+                                                })
+                            self.conn.commit()
+                
         except Exception, e:
             print("Database update query failed: {}".format(e))
             self.database_disconnect()
@@ -502,6 +575,7 @@ parser.add_argument('-t', '--product_type', help="The product type")
 parser.add_argument('-s', '--site_name', help="The site name for the product")
 parser.add_argument('--start-date', help="Start date filter (YYYYMMDD, inclusive)")
 parser.add_argument('--end-date', help="End date filter (YYYYMMDD, inclusive)")
+parser.add_argument('-l', '--insert-l1c', help="Insert also a dummy L1C product", required=False, type=bool, default=False)
 parser.add_argument('-m', '--multi', required=False, type=bool, default=False, help="If false, dir is considered product folder otherwise it is considered a cotainer of products")
 
 args = parser.parse_args()
