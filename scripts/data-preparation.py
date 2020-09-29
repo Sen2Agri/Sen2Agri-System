@@ -809,13 +809,17 @@ where not exists (
                 p_old_cols += SQL("old.wkb_geometry)")
                 new_cols += SQL("new.wkb_geometry)")
                 if is_projected:
-                    area_expr = SQL("coalesce(ST_Area(new.wkb_geometry), 0)")
-                    perimeter_expr = SQL("ST_Perimeter(new.wkb_geometry)")
+                    area_expr = SQL(
+                        "coalesce(ST_Area(ST_MakeValid(new.wkb_geometry)), 0)"
+                    )
+                    perimeter_expr = SQL("ST_Perimeter(ST_MakeValid(new.wkb_geometry))")
                 else:
                     area_expr = SQL(
-                        "coalesce(ST_Area(new.wkb_geometry :: geography), 0)"
+                        "coalesce(ST_Area(ST_MakeValid(new.wkb_geometry) :: geography), 0)"
                     )
-                    perimeter_expr = SQL("ST_Perimeter(new.wkb_geometry :: geography)")
+                    perimeter_expr = SQL(
+                        "ST_Perimeter(ST_MakeValid(new.wkb_geometry) :: geography)"
+                    )
                 query = SQL(
                     """
 update {} old
@@ -857,13 +861,15 @@ and {} is distinct from {};"""
                     ]
                 )
                 if is_projected:
-                    area_expr = SQL("coalesce(ST_Area(wkb_geometry), 0)")
-                    perimeter_expr = SQL("ST_Perimeter(wkb_geometry)")
+                    area_expr = SQL("coalesce(ST_Area(ST_MakeValid(wkb_geometry)), 0)")
+                    perimeter_expr = SQL("ST_Perimeter(ST_MakeValid(wkb_geometry))")
                 else:
                     area_expr = SQL(
-                        "coalesce(ST_Area(wkb_geometry :: geography), 0)"
+                        "coalesce(ST_Area(ST_MakeValid(wkb_geometry) :: geography), 0)"
                     )
-                    perimeter_expr = SQL("ST_Perimeter(wkb_geometry :: geography)")
+                    perimeter_expr = SQL(
+                        "ST_Perimeter(ST_MakeValid(wkb_geometry) :: geography)"
+                    )
                 query = SQL(
                     """
 insert into {}({}, "GeomValid", "Duplic", "Overlap", "Area_meters", "ShapeInd")
