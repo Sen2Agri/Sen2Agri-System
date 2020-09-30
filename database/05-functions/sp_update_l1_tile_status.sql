@@ -13,8 +13,28 @@ begin
         select tile_id
         from l1_tile_history
         where downloader_history_id = _downloader_history_id
-          and (status_id = 3 -- done
-            or retry_count >= 3 and status_id = 2) -- failed
+          and (l1_tile_history.status_id = 3 -- done
+            or l1_tile_history.status_id = 2 -- failed
+                and l1_tile_history.retry_count >= (
+                    select
+                        coalesce(
+                            (
+                                select value
+                                from config
+                                where key = 'processor.l2a.optical.max-retries'
+                                and site_id = (
+                                    select site_id
+                                    from downloader_history
+                                    where id = _downloader_history_id)
+                            ), (
+                                select value
+                                from config
+                                where key = 'processor.l2a.optical.max-retries'
+                                and site_id is null
+                            )
+                        ) :: int
+                )
+          )
     ) then
         if exists(
             select *
