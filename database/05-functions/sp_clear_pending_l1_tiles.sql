@@ -3,6 +3,10 @@ returns void
 as
 $$
 begin
+    if (select current_setting('transaction_isolation') not ilike 'serializable') then
+        raise exception 'Please set the transaction isolation level to serializable.' using errcode = 'UE001';
+    end if;
+
     delete
     from l1_tile_history
     where status_id = 1; -- processing
