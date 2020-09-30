@@ -19,7 +19,25 @@ begin
         status_timestamp = now(),
         retry_count = case _should_retry
             when true then retry_count + 1
-            else 4
+            else (
+                    select
+                        coalesce(
+                            (
+                                select value
+                                from config
+                                where key = 'processor.l2a.optical.max-retries'
+                                and site_id = (
+                                    select site_id
+                                    from downloader_history
+                                    where id = _downloader_history_id)
+                            ), (
+                                select value
+                                from config
+                                where key = 'processor.l2a.optical.max-retries'
+                                and site_id is null
+                            )
+                        ) :: int
+                ) + 1
         end,
         failed_reason = _reason,
         cloud_coverage = _cloud_coverage,
