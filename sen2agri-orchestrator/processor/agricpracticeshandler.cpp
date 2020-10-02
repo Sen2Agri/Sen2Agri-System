@@ -529,7 +529,7 @@ QStringList AgricPracticesHandler::GetDataExtractionArgs(const AgricPracticesJob
                                                          const ProductType &prdType, const QString &uidField,
                                                          const QStringList &inputFiles, const QString &outDir)
 {
-    QStringList retArgs = { "AgricPractDataExtraction", "-oldnf", "0", "-minmax", "0", "-csvcompact", "1", "-field", uidField,
+    QStringList retArgs = { "AgricPractDataExtraction", "-minmax", "0", "-csvcompact", "1", "-field", uidField,
                             "-prdtype", GetShortNameForProductType(prdType), "-filterids", filterIds, "-outdir", outDir, "-il" };
     retArgs += inputFiles;
     const QString *idsGeomShapePath;
