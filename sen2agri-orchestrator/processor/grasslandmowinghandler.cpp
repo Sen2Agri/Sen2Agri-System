@@ -414,6 +414,12 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
     if (segParcelIdAttrName.size() == 0) {
         segParcelIdAttrName = "NewID";
     }
+    QDateTime startDate = cfg.startDate;
+    int s1s2StartDateDiff = ProcessorHandlerHelper::GetIntConfigValue(cfg.parameters, cfg.configParameters,
+                                                                                 "s1_s2_startdate_diff", L4B_GM_CFG_PREFIX);
+    if (s1s2StartDateDiff != 0) {
+        startDate.addDays(s1s2StartDateDiff);
+    }
 
     QStringList retArgs = {
                             "--script-path", scriptToInvoke,
@@ -421,7 +427,7 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
                             "--config-file", cfg.l4bCfgFile,
                             "--input-shape-file", inputShpLocation,
                             "--output-data-dir", outDataDir,
-                            "--start-date", cfg.startDate.toString("yyyy-MM-dd"),
+                            "--start-date", startDate.toString("yyyy-MM-dd"),
                             "--end-date", cfg.endDate.toString("yyyy-MM-dd"),
                             "--seg-parcel-id-attribute", segParcelIdAttrName,
                             "--output-shapefile", outFile,
