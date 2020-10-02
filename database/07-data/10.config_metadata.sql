@@ -79,9 +79,6 @@ INSERT INTO config_metadata VALUES ('executor.module.path.lsms-segmentation', 'L
 INSERT INTO config_metadata VALUES ('executor.module.path.lsms-small-regions-merging', 'LSMS small regions merging', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.image-compression', 'Image compression', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.compute-image-statistics', 'Compute image statistics', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.erosion', 'Erosion', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.trimming', 'Trimming', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.train-images-classifier-new', 'TrainImagesClassifierNew', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('processor.l3a.synth_date_sched_offset', 'Difference in days between the scheduled and the synthesis date', 'int', false, 3);
 INSERT INTO config_metadata VALUES ('processor.l3a.half_synthesis', 'Half synthesis interval in days', 'int', false, 3, true, 'Half synthesis');
 INSERT INTO config_metadata VALUES ('processor.l3a.generate_20m_s2_resolution', 'Specifies if composite for S2 20M resolution should be generated', 'int', false, 3);
