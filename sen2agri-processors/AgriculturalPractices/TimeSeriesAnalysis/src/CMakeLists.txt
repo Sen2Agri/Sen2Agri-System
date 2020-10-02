@@ -29,6 +29,8 @@ otb_create_application(
                  StatisticsInfosXmlReader.h
                  StatisticsInfosSingleCsvReader.h
                  StatisticsInfosSingleCsvReader.cpp
+                 Markers1CsvReader.h
+                 Markers1CsvReader.cpp
                  TsaCSVWriter.h
                  TsaCSVWriter.cpp
                  TsaPlotsWriter.h

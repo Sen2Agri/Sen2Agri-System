@@ -528,7 +528,7 @@ private:
         std::string inputType = "csv";
         if (HasValue("intype")) {
             const std::string &inType = GetParameterAsString("intype");
-            if (inType == "dir" || inType == "xml" || inType == "csv") {
+            if (inType == "dir" || inType == "xml" || inType == "csv" || inType == "mcsv") {
                 inputType = inType;
             } else {
                 itkExceptionMacro("Invalid value provided for parameter intype " << inType
