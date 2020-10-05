@@ -30,44 +30,69 @@ from os.path import isdir, join
 import sys
 from signal import signal, SIGINT, SIG_IGN
 from multiprocessing import Pool, TimeoutError
-from sen2agri_common_db import GetExtent, ReprojectCoords, create_recursive_dirs, log, run_command
+from sen2agri_common_db import (
+    GetExtent,
+    ReprojectCoords,
+    create_recursive_dirs,
+    log,
+    run_command,
+)
 
 
 def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y):
-    print("{}|{}|{}|{}".format(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y))
+    print(
+        "{}|{}|{}|{}".format(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y)
+    )
     dataset = gdal.Open(src_file_name, gdal.gdalconst.GA_ReadOnly)
 
     src_x_size = dataset.RasterXSize
     src_y_size = dataset.RasterYSize
 
-    print("Source dataset {} of size {}x{}".format(src_file_name, src_x_size, src_y_size))
+    print(
+        "Source dataset {} of size {}x{}".format(src_file_name, src_x_size, src_y_size)
+    )
 
     src_geo_transform = dataset.GetGeoTransform()
     (ulx, uly) = (src_geo_transform[0], src_geo_transform[3])
-    (lrx, lry) = (src_geo_transform[0] + src_geo_transform[1] * src_x_size,
-                  src_geo_transform[3] + src_geo_transform[5] * src_y_size)
+    (lrx, lry) = (
+        src_geo_transform[0] + src_geo_transform[1] * src_x_size,
+        src_geo_transform[3] + src_geo_transform[5] * src_y_size,
+    )
 
     print("Source coordinates ({}, {})-({},{})".format(ulx, uly, lrx, lry))
 
     dst_x_size = int(round((lrx - ulx) / dst_spacing_x))
     dst_y_size = int(round((lry - uly) / dst_spacing_y))
 
-    print("Destination dataset {} of size {}x{}".format(dst_file_name, dst_x_size, dst_y_size))
+    print(
+        "Destination dataset {} of size {}x{}".format(
+            dst_file_name, dst_x_size, dst_y_size
+        )
+    )
 
-    dst_geo_transform = (ulx, dst_spacing_x, src_geo_transform[2],
-                         uly, src_geo_transform[4], dst_spacing_y)
+    dst_geo_transform = (
+        ulx,
+        dst_spacing_x,
+        src_geo_transform[2],
+        uly,
+        src_geo_transform[4],
+        dst_spacing_y,
+    )
 
     (ulx, uly) = (dst_geo_transform[0], dst_geo_transform[3])
-    (lrx, lry) = (dst_geo_transform[0] + dst_geo_transform[1] * dst_x_size,
-                  dst_geo_transform[3] + dst_geo_transform[5] * dst_y_size)
+    (lrx, lry) = (
+        dst_geo_transform[0] + dst_geo_transform[1] * dst_x_size,
+        dst_geo_transform[3] + dst_geo_transform[5] * dst_y_size,
+    )
     print("Destination coordinates ({}, {})-({},{})".format(ulx, uly, lrx, lry))
 
-    drv = gdal.GetDriverByName('GTiff')
+    drv = gdal.GetDriverByName("GTiff")
     dest = drv.Create(dst_file_name, dst_x_size, dst_y_size, 1, gdal.GDT_Float32)
     dest.SetGeoTransform(dst_geo_transform)
     dest.SetProjection(dataset.GetProjection())
-    gdal.ReprojectImage(dataset, dest, dataset.GetProjection(), dest.GetProjection(),
-                        gdal.GRA_Bilinear)
+    gdal.ReprojectImage(
+        dataset, dest, dataset.GetProjection(), dest.GetProjection(), gdal.GRA_Bilinear
+    )
 
 
 def get_dtm_tiles(points):
@@ -82,37 +107,44 @@ def get_dtm_tiles(points):
         b_bb_x = int(math.floor((b_x + 5) / 5) * 5)
         b_bb_y = int(math.floor(b_y / 5) * 5)
 
-        print("bounding box {} {} {} {}".format(
-            a_bb_x, a_bb_y, b_bb_x, b_bb_y))
+        print("bounding box {} {} {} {}".format(a_bb_x, a_bb_y, b_bb_x, b_bb_y))
 
-        x_numbers_list = [(x + 180) / 5 + 1
-                          for x in range(min(a_bb_x, b_bb_x), max(a_bb_x, b_bb_x), 5)]
+        x_numbers_list = [
+            (x + 180) / 5 + 1
+            for x in range(min(a_bb_x, b_bb_x), max(a_bb_x, b_bb_x), 5)
+        ]
         x_numbers_list_format = ["%02d" % (x,) for x in x_numbers_list]
 
-        y_numbers_list = [(60 - x) / 5
-                          for x in range(min(a_bb_y, b_bb_y), max(a_bb_y, b_bb_y), 5)]
+        y_numbers_list = [
+            (60 - x) / 5 for x in range(min(a_bb_y, b_bb_y), max(a_bb_y, b_bb_y), 5)
+        ]
         y_numbers_list_format = ["%02d" % (x,) for x in y_numbers_list]
 
-        srtm_zips = ["srtm_" + str(x) + "_" + str(y) + ".tif"
-                     for x in x_numbers_list_format
-                     for y in y_numbers_list_format]
+        srtm_zips = [
+            "srtm_" + str(x) + "_" + str(y) + ".tif"
+            for x in x_numbers_list_format
+            for y in y_numbers_list_format
+        ]
 
         return srtm_zips
 
 
-#def run_command(args):
+# def run_command(args):
 #    print(" ".join(map(pipes.quote, args)))
 #    subprocess.call(args)
 
 
 def get_landsat_tile_id(image):
-    m = re.match("[A-Z][A-Z]\d(\d{6})\d{4}\d{3}[A-Z]{3}\d{2}_B\d{1,2}\.TIF|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_(\d{6})_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}_\w\d{1,2}\.TIF", image)
-    return m and ('L8', m.group(1) or m.group(2))
+    m = re.match(
+        "[A-Z][A-Z]\d(\d{6})\d{4}\d{3}[A-Z]{3}\d{2}_B\d{1,2}\.TIF|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_(\d{6})_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}_\w\d{1,2}\.TIF",
+        image,
+    )
+    return m and ("L8", m.group(1) or m.group(2))
 
 
 def get_sentinel2_tile_id(image):
     m = re.match("\w+_T(\w{5})_B\d{2}\.\w{3}|T(\w{5})_\d{8}T\d{6}_B\d{2}.\w{3}", image)
-    return m and ('S2', m.group(1) or m.group(2))
+    return m and ("S2", m.group(1) or m.group(2))
 
 
 def get_tile_id(image):
@@ -121,14 +153,17 @@ def get_tile_id(image):
 
 
 def get_landsat_dir_info(name):
-    m = re.match("[A-Z][A-Z]\d\d{6}(\d{4}\d{3})[A-Z]{3}\d{2}|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_\d{6}_(\d{8})_\d{8}_\d{2}_[A-Z0-9]{2}", name)
-    return m and ('L8', m.group(1) or m.group(2))
+    m = re.match(
+        "[A-Z][A-Z]\d\d{6}(\d{4}\d{3})[A-Z]{3}\d{2}|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_\d{6}_(\d{8})_\d{8}_\d{2}_[A-Z0-9]{2}",
+        name,
+    )
+    return m and ("L8", m.group(1) or m.group(2))
 
 
 def get_sentinel2_dir_info(name):
     m = re.match("S2\w+_(\d{8}T\d{6})\w+.SAFE", name)
 
-    return m and ('S2', m.group(1))
+    return m and ("S2", m.group(1))
 
 
 def get_dir_info(dir_name):
@@ -137,7 +172,6 @@ def get_dir_info(dir_name):
 
 
 class Context(object):
-
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
@@ -154,26 +188,36 @@ def create_context(args):
         print("The path does not exist ! {}".format(dir_base))
         return []
     log_path = dir_base
-    if dir_base.rfind('/') + 1 == len(dir_base):
-        dir_base = dir_base[0:len(dir_base)-1]
+    if dir_base.rfind("/") + 1 == len(dir_base):
+        dir_base = dir_base[0 : len(dir_base) - 1]
     mode, date = get_dir_info(dir_base)
     context_array = []
-    #if mode == None:
-        #print("Error in reading directory, is not in S2 neither L8 format")
-        #return context_array
+    # if mode == None:
+    # print("Error in reading directory, is not in S2 neither L8 format")
+    # return context_array
 
     images = []
     tiles_to_process = []
     if args.tiles_list is not None and len(args.tiles_list) > 0:
         tiles_to_process = args.tiles_list
-    if mode == 'L8':
+    if mode == "L8":
         images.append("{}/{}_B1.TIF".format(dir_base, os.path.basename(dir_base)))
-    elif mode == 'S2':
+    elif mode == "S2":
         dir_base += "/GRANULE/"
         if not os.path.exists(dir_base) or not os.path.isdir(dir_base):
-            log(log_path, "The path for Sentinel 2 (with GRANULE) does not exist ! {}".format(dir_base), "dem.log")
+            log(
+                log_path,
+                "The path for Sentinel 2 (with GRANULE) does not exist ! {}".format(
+                    dir_base
+                ),
+                "dem.log",
+            )
             return []
-        tile_dirs = ["{}{}".format(dir_base, f) for f in os.listdir(dir_base) if isdir(join(dir_base, f))]
+        tile_dirs = [
+            "{}{}".format(dir_base, f)
+            for f in os.listdir(dir_base)
+            if isdir(join(dir_base, f))
+        ]
         for tile_dir in tile_dirs:
             tile_dir += "/IMG_DATA/"
             image_band2 = glob.glob("{}*_B02.jp2".format(tile_dir))
@@ -212,98 +256,160 @@ def create_context(args):
         directory_template = "{0}_TEST_AUX_REFDE2_{1}_{2}_0001.DBL.DIR"
         if not create_recursive_dirs(args.output):
             return context_array
-        image_directory = os.path.join(args.output, directory_template.format(mode, tile_id, date))
+        image_directory = os.path.join(
+            args.output, directory_template.format(mode, tile_id, date)
+        )
         if not create_recursive_dirs(args.working_dir):
             return context_array
-        temp_directory = os.path.join(args.working_dir, directory_template.format(mode, tile_id, date))
+        temp_directory = os.path.join(
+            args.working_dir, directory_template.format(mode, tile_id, date)
+        )
 
         metadata_template = "{0}_TEST_AUX_REFDE2_{1}_{2}_0001.HDR"
 
-        d = dict(image=image_filename,
-                 mode=mode,
-                 srtm_directory=args.srtm,
-                 swbd_directory=args.swbd,
-                 working_directory=args.working_dir,
-                 temp_directory=temp_directory,
-                 output=args.output,
-                 image_directory=image_directory,
-                 metadata_file=os.path.join(args.output, metadata_template.format(mode, tile_id, date)),
-                 swbd_list=os.path.join(temp_directory, "swbd.txt"),
-                 tile_id=tile_id,
-                 dem_vrt=os.path.join(temp_directory, "dem.vrt"),
-                 dem_nodata=os.path.join(temp_directory, "dem.tif"),
-                 dem_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ALC")),
-                 slope_degrees=os.path.join(temp_directory, "slope_degrees.tif"),
-                 aspect_degrees=os.path.join(temp_directory, "aspect_degrees.tif"),
-                 slope_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "SLC")),
-                 aspect_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ASC")),
-                 wb=os.path.join(temp_directory, "wb.shp"),
-                 wb_reprojected=os.path.join(temp_directory, "wb_reprojected.shp"),
-                 water_mask=os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "MSK")),
-                 size_x=size_x, size_y=size_y,
-                 spacing_x=spacing_x, spacing_y=spacing_y,
-                 extent=extent, wgs84_extent=wgs84_extent,
-                 epsg_code=epsg_code)
+        d = dict(
+            image=image_filename,
+            mode=mode,
+            srtm_directory=args.srtm,
+            swbd_directory=args.swbd,
+            working_directory=args.working_dir,
+            temp_directory=temp_directory,
+            output=args.output,
+            image_directory=image_directory,
+            metadata_file=os.path.join(
+                args.output, metadata_template.format(mode, tile_id, date)
+            ),
+            swbd_list=os.path.join(temp_directory, "swbd.txt"),
+            tile_id=tile_id,
+            dem_vrt=os.path.join(temp_directory, "dem.vrt"),
+            dem_nodata=os.path.join(temp_directory, "dem.tif"),
+            dem_coarse=os.path.join(
+                image_directory, format_filename(mode, image_directory, tile_id, "ALC")
+            ),
+            slope_degrees=os.path.join(temp_directory, "slope_degrees.tif"),
+            aspect_degrees=os.path.join(temp_directory, "aspect_degrees.tif"),
+            slope_coarse=os.path.join(
+                image_directory, format_filename(mode, image_directory, tile_id, "SLC")
+            ),
+            aspect_coarse=os.path.join(
+                image_directory, format_filename(mode, image_directory, tile_id, "ASC")
+            ),
+            wb=os.path.join(temp_directory, "wb.shp"),
+            wb_reprojected=os.path.join(temp_directory, "wb_reprojected.shp"),
+            water_mask=os.path.join(
+                image_directory, format_filename(mode, image_directory, tile_id, "MSK")
+            ),
+            size_x=size_x,
+            size_y=size_y,
+            spacing_x=spacing_x,
+            spacing_y=spacing_y,
+            extent=extent,
+            wgs84_extent=wgs84_extent,
+            epsg_code=epsg_code,
+        )
 
-        if mode == 'L8':
-            d['dem_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ALT"))
-            d['slope_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "SLP"))
-            d['aspect_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ASP"))
+        if mode == "L8":
+            d["dem_r1"] = os.path.join(
+                image_directory, format_filename(mode, image_directory, tile_id, "ALT")
+            )
+            d["slope_r1"] = os.path.join(
+                image_directory, format_filename(mode, image_directory, tile_id, "SLP")
+            )
+            d["aspect_r1"] = os.path.join(
+                image_directory, format_filename(mode, image_directory, tile_id, "ASP")
+            )
 
-            d['dem_r2'] = None
-            d['slope_r2'] = None
-            d['aspect_r2'] = None
+            d["dem_r2"] = None
+            d["slope_r2"] = None
+            d["aspect_r2"] = None
         else:
-            d['dem_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ALT_R1"))
-            d['dem_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ALT_R2"))
-            d['slope_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "SLP_R1"))
-            d['slope_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "SLP_R2"))
-            d['aspect_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ASP_R1"))
-            d['aspect_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ASP_R2"))
+            d["dem_r1"] = os.path.join(
+                image_directory,
+                format_filename(mode, image_directory, tile_id, "ALT_R1"),
+            )
+            d["dem_r2"] = os.path.join(
+                image_directory,
+                format_filename(mode, image_directory, tile_id, "ALT_R2"),
+            )
+            d["slope_r1"] = os.path.join(
+                image_directory,
+                format_filename(mode, image_directory, tile_id, "SLP_R1"),
+            )
+            d["slope_r2"] = os.path.join(
+                image_directory,
+                format_filename(mode, image_directory, tile_id, "SLP_R2"),
+            )
+            d["aspect_r1"] = os.path.join(
+                image_directory,
+                format_filename(mode, image_directory, tile_id, "ASP_R1"),
+            )
+            d["aspect_r2"] = os.path.join(
+                image_directory,
+                format_filename(mode, image_directory, tile_id, "ASP_R2"),
+            )
 
         context_array.append(Context(**d))
     return context_array
 
 
 def create_metadata(context):
-    file_names = [context.dem_r1, context.dem_r2, context.dem_coarse,
-                  context.slope_r1, context.slope_r2, context.slope_coarse,
-                  context.aspect_r1, context.aspect_r2, context.aspect_coarse,
-                  context.water_mask]
+    file_names = [
+        context.dem_r1,
+        context.dem_r2,
+        context.dem_coarse,
+        context.slope_r1,
+        context.slope_r2,
+        context.slope_coarse,
+        context.aspect_r1,
+        context.aspect_r2,
+        context.aspect_coarse,
+        context.water_mask,
+    ]
 
     files = []
     index = 1
     for f in file_names:
         if f is not None:
             files.append(
-                    E.Packaged_DBL_File(
-                        E.Relative_File_Path(os.path.relpath(f, context.output)),
-                        sn=str(index)))
+                E.Packaged_DBL_File(
+                    E.Relative_File_Path(os.path.relpath(f, context.output)),
+                    sn=str(index),
+                )
+            )
             index = index + 1
     mission = "LANDSAT_8"
-    if context.mode == 'S2':
+    if context.mode == "S2":
         mission = "SENTINEL-2_"
 
     return E.Earth_Explorer_Header(
-            E.Fixed_Header(
-                E.Mission(mission),
-                E.File_Type('AUX_REFDE2')),
-            E.Variable_Header(
-                E.Specific_Product_Header(
-                    E.DBL_Organization(
-                        E.List_of_Packaged_DBL_Files(
-                            *files,
-                            count=str(len(files)))))))
+        E.Fixed_Header(E.Mission(mission), E.File_Type("AUX_REFDE2")),
+        E.Variable_Header(
+            E.Specific_Product_Header(
+                E.DBL_Organization(
+                    E.List_of_Packaged_DBL_Files(*files, count=str(len(files)))
+                ),
+                E.Instance_Id(E.Applicable_Site_Nick_Name("PlaceholderSiteName")),
+            )
+        ),
+        E.DEM_Information(
+            E.Cartographic(
+                E.Coordinate_Reference_System(E.Code(str(context.epsg_code)))
+            )
+        ),
+    )
 
 
 def process_DTM(context):
-    dtm_tiles = get_dtm_tiles([context.wgs84_extent[0][0],
-                               context.wgs84_extent[0][1],
-                               context.wgs84_extent[2][0],
-                               context.wgs84_extent[2][1]])
+    dtm_tiles = get_dtm_tiles(
+        [
+            context.wgs84_extent[0][0],
+            context.wgs84_extent[0][1],
+            context.wgs84_extent[2][0],
+            context.wgs84_extent[2][1],
+        ]
+    )
 
-    dtm_tiles = [os.path.join(context.srtm_directory, tile)
-                 for tile in dtm_tiles]
+    dtm_tiles = [os.path.join(context.srtm_directory, tile) for tile in dtm_tiles]
 
     missing_tiles = []
     for tile in dtm_tiles:
@@ -311,23 +417,50 @@ def process_DTM(context):
             missing_tiles.append(tile)
 
     if missing_tiles:
-        print("The following SRTM tiles are missing: {}. Please provide them in the SRTM directory ({}). Will try to continue, but unreliable results".format(
-            [os.path.basename(tile) for tile in missing_tiles], context.srtm_directory))
-#        return False
+        print(
+            "The following SRTM tiles are missing: {}. Please provide them in the SRTM directory ({}). Will try to continue, but unreliable results".format(
+                [os.path.basename(tile) for tile in missing_tiles],
+                context.srtm_directory,
+            )
+        )
+    #        return False
 
-    run_command(["gdalbuildvrt", "-q",
-                 context.dem_vrt] + dtm_tiles)
-    run_command(["otbcli_BandMath",
-                 "-il", context.dem_vrt,
-                 "-out", context.dem_nodata,
-                 "-exp", "im1b1 == -32768 ? 0 : im1b1",
-                 "-progress", "false"])
-    run_command(["gdalwarp", "-q", "-overwrite", "-multi",
-                 "-r", "cubic",
-                 "-t_srs", "EPSG:" + str(context.epsg_code),
-                 "-tr", str(context.spacing_x), str(context.spacing_y),
-                 "-te", str(context.extent[1][0]), str(context.extent[1][1]), str(context.extent[3][0]), str(context.extent[3][1]),
-                 context.dem_nodata, context.dem_r1])
+    run_command(["gdalbuildvrt", "-q", context.dem_vrt] + dtm_tiles)
+    run_command(
+        [
+            "otbcli_BandMath",
+            "-il",
+            context.dem_vrt,
+            "-out",
+            context.dem_nodata,
+            "-exp",
+            "im1b1 == -32768 ? 0 : im1b1",
+            "-progress",
+            "false",
+        ]
+    )
+    run_command(
+        [
+            "gdalwarp",
+            "-q",
+            "-overwrite",
+            "-multi",
+            "-r",
+            "cubic",
+            "-t_srs",
+            "EPSG:" + str(context.epsg_code),
+            "-tr",
+            str(context.spacing_x),
+            str(context.spacing_y),
+            "-te",
+            str(context.extent[1][0]),
+            str(context.extent[1][1]),
+            str(context.extent[3][0]),
+            str(context.extent[3][1]),
+            context.dem_nodata,
+            context.dem_r1,
+        ]
+    )
 
     if context.dem_r2:
         # run_command(["gdal_translate",
@@ -342,7 +475,7 @@ def process_DTM(context):
         #              "-transform.type.id.scalex", "0.5",
         #              "-transform.type.id.scaley", "0.5"])
 
-    if context.mode == 'L8':
+    if context.mode == "L8":
         scale = 1.0 / 8
         inv_scale = 8.0
     else:
@@ -362,61 +495,138 @@ def process_DTM(context):
     #              "-transform.type.id.scalex", str(scale),
     #              "-transform.type.id.scaley", str(scale)])
 
-    run_command(["gdaldem", "slope", "-q",
-                 # "-s", "111120",
-                 "-compute_edges",
-                 context.dem_r1,
-                 context.slope_degrees])
-    run_command(["gdaldem", "aspect", "-q",
-                 # "-s", "111120",
-                 "-compute_edges",
-                 context.dem_r1,
-                 context.aspect_degrees])
+    run_command(
+        [
+            "gdaldem",
+            "slope",
+            "-q",
+            # "-s", "111120",
+            "-compute_edges",
+            context.dem_r1,
+            context.slope_degrees,
+        ]
+    )
+    run_command(
+        [
+            "gdaldem",
+            "aspect",
+            "-q",
+            # "-s", "111120",
+            "-compute_edges",
+            context.dem_r1,
+            context.aspect_degrees,
+        ]
+    )
 
-    run_command(["gdal_translate", "-q",
-                 "-ot", "Int16",
-                 "-scale", "0", "90", "0", "157",
-                 context.slope_degrees,
-                 context.slope_r1])
-    run_command(["gdal_translate", "-q",
-                 "-ot", "Int16",
-                 "-scale", "0", "368", "0", "628",
-                 context.aspect_degrees,
-                 context.aspect_r1])
+    run_command(
+        [
+            "gdal_translate",
+            "-q",
+            "-ot",
+            "Int16",
+            "-scale",
+            "0",
+            "90",
+            "0",
+            "157",
+            context.slope_degrees,
+            context.slope_r1,
+        ]
+    )
+    run_command(
+        [
+            "gdal_translate",
+            "-q",
+            "-ot",
+            "Int16",
+            "-scale",
+            "0",
+            "368",
+            "0",
+            "628",
+            context.aspect_degrees,
+            context.aspect_r1,
+        ]
+    )
 
     if context.slope_r2:
-        run_command(["gdalwarp", "-q",
-                     "-r", "cubic",
-                     "-tr", "20", "20",
-                     context.slope_r1, context.slope_r2])
+        run_command(
+            [
+                "gdalwarp",
+                "-q",
+                "-r",
+                "cubic",
+                "-tr",
+                "20",
+                "20",
+                context.slope_r1,
+                context.slope_r2,
+            ]
+        )
 
     if context.aspect_r2:
-        run_command(["gdalwarp", "-q",
-                     "-r", "cubic",
-                     "-tr", "20", "20",
-                     context.aspect_r1, context.aspect_r2])
+        run_command(
+            [
+                "gdalwarp",
+                "-q",
+                "-r",
+                "cubic",
+                "-tr",
+                "20",
+                "20",
+                context.aspect_r1,
+                context.aspect_r2,
+            ]
+        )
 
-    run_command(["gdalwarp", "-q",
-                 "-r", "cubic",
-                 "-tr", "240", "240",
-                 context.slope_r1, context.slope_coarse])
+    run_command(
+        [
+            "gdalwarp",
+            "-q",
+            "-r",
+            "cubic",
+            "-tr",
+            "240",
+            "240",
+            context.slope_r1,
+            context.slope_coarse,
+        ]
+    )
 
-    run_command(["gdalwarp", "-q",
-                 "-r", "cubic",
-                 "-tr", "240", "240",
-                 context.aspect_r1, context.aspect_coarse])
+    run_command(
+        [
+            "gdalwarp",
+            "-q",
+            "-r",
+            "cubic",
+            "-tr",
+            "240",
+            "240",
+            context.aspect_r1,
+            context.aspect_coarse,
+        ]
+    )
 
     return True
 
 
 def process_WB(context):
-    run_command(["otbcli",
-                 "DownloadSWBDTiles",
-                 "-il", context.dem_r1,
-                 "-mode", "list",
-                 "-mode.list.indir", context.swbd_directory,
-                 "-mode.list.outlist", context.swbd_list,
-                 "-progress", "false"])
+    run_command(
+        [
+            "otbcli",
+            "DownloadSWBDTiles",
+            "-il",
+            context.dem_r1,
+            "-mode",
+            "list",
+            "-mode.list.indir",
+            context.swbd_directory,
+            "-mode.list.outlist",
+            context.swbd_list,
+            "-progress",
+            "false",
+        ]
+    )
 
     with open(context.swbd_list) as f:
         swbd_tiles = f.read().splitlines()
@@ -427,23 +637,46 @@ def process_WB(context):
     elif len(swbd_tiles) == 1:
         run_command(["ogr2ogr", context.wb, swbd_tiles[0]])
     else:
-        run_command(["otbcli_ConcatenateVectorData",
-                     "-progress", "false",
-                     "-out", context.wb,
-                     "-vd"] + swbd_tiles)
+        run_command(
+            [
+                "otbcli_ConcatenateVectorData",
+                "-progress",
+                "false",
+                "-out",
+                context.wb,
+                "-vd",
+            ]
+            + swbd_tiles
+        )
 
-    run_command(["ogr2ogr",
-                 "-s_srs", "EPSG:4326",
-                 "-t_srs", "EPSG:" + context.epsg_code,
-                 context.wb_reprojected,
-                 context.wb])
+    run_command(
+        [
+            "ogr2ogr",
+            "-s_srs",
+            "EPSG:4326",
+            "-t_srs",
+            "EPSG:" + context.epsg_code,
+            context.wb_reprojected,
+            context.wb,
+        ]
+    )
 
-    run_command(["otbcli_Rasterization",
-                 "-in", context.wb_reprojected,
-                 "-out", context.water_mask, "uint8",
-                 "-im", context.dem_coarse,
-                 "-mode.binary.foreground", "1",
-                 "-progress", "false"])
+    run_command(
+        [
+            "otbcli_Rasterization",
+            "-in",
+            context.wb_reprojected,
+            "-out",
+            context.water_mask,
+            "uint8",
+            "-im",
+            context.dem_coarse,
+            "-mode.binary.foreground",
+            "1",
+            "-progress",
+            "false",
+        ]
+    )
 
 
 def change_extension(file, new_extension):
@@ -460,17 +693,22 @@ def process_context(context):
     except:
         pass
     metadata = create_metadata(context)
-    with open(context.metadata_file, 'w') as f:
+    with open(context.metadata_file, "w") as f:
         lxml.etree.ElementTree(metadata).write(f, pretty_print=True)
 
     if not process_DTM(context):
         return
     process_WB(context)
 
-    files = [context.swbd_list,
-             context.dem_vrt, context.dem_nodata,
-             context.slope_degrees, context.aspect_degrees,
-             context.wb, context.wb_reprojected]
+    files = [
+        context.swbd_list,
+        context.dem_vrt,
+        context.dem_nodata,
+        context.slope_degrees,
+        context.aspect_degrees,
+        context.wb,
+        context.wb_reprojected,
+    ]
 
     for file in [context.wb, context.wb_reprojected]:
         for extension in [".shx", ".prj", ".dbf"]:
@@ -489,17 +727,26 @@ def process_context(context):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(
-        description="Creates DEM and WB data for MACCS")
-    parser.add_argument('input', help="input L1C directory")
-    parser.add_argument('--srtm', required=True, help="SRTM dataset path")
-    parser.add_argument('--swbd', required=True, help="SWBD dataset path")
-    parser.add_argument('-l', '--tiles-list', required=False, nargs='+', help="If set, only these tiles will be processed")
-    parser.add_argument('-w', '--working-dir', required=True,
-                        help="working directory")
-    parser.add_argument('-p', '--processes-number', required=False,
-                        help="number of processed to run", default="3")
-    parser.add_argument('output', help="output location")
+    parser = argparse.ArgumentParser(description="Creates DEM and WB data for MACCS")
+    parser.add_argument("input", help="input L1C directory")
+    parser.add_argument("--srtm", required=True, help="SRTM dataset path")
+    parser.add_argument("--swbd", required=True, help="SWBD dataset path")
+    parser.add_argument(
+        "-l",
+        "--tiles-list",
+        required=False,
+        nargs="+",
+        help="If set, only these tiles will be processed",
+    )
+    parser.add_argument("-w", "--working-dir", required=True, help="working directory")
+    parser.add_argument(
+        "-p",
+        "--processes-number",
+        required=False,
+        help="number of processed to run",
+        default="3",
+    )
+    parser.add_argument("output", help="output location")
 
     args = parser.parse_args()
 
