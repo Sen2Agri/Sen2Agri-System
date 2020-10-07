@@ -11,9 +11,7 @@
 
 using namespace grassland_mowing;
 
-#define DEFAULT_SHP_GEN_PATH "/mnt/archive/grassland_mowing_files/{site}/{year}/InputShp/SEN4CAP_L4B_GeneratedInputShp.shp"
 #define L4B_GM_DEF_CFG_DIR   "/mnt/archive/grassland_mowing_files/{site}/{year}/config/"
-#define DEFAULT_WORKING_DIR_PATH "/mnt/archive/grassland_mowing_files/{site}/{year}/working_dir"
 
 void GrasslandMowingHandler::CreateTasks(GrasslandMowingExecConfig &cfg,
                                          QList<TaskToSubmit> &outAllTasksList)
@@ -50,14 +48,7 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
     QStringList productFormatterFiles;
 
     TaskToSubmit &genInputShpTask = allTasksList[curTaskIdx++];
-    QString inputShpLocation;
-    if (cfg.isScheduled) {
-        inputShpLocation = GetProcessorDirValue(cfg, "gen_input_shp_path", DEFAULT_SHP_GEN_PATH);
-        // create folder for the file if it doesn't exist
-        QDir().mkpath(QFileInfo(inputShpLocation).absolutePath());
-    } else {
-        inputShpLocation = genInputShpTask.GetFilePath("SEN4CAP_L4B_GeneratedInputShp.shp");
-    }
+    const QString &inputShpLocation = genInputShpTask.GetFilePath("SEN4CAP_L4B_GeneratedInputShp.shp");
     const QStringList &inShpGenArgs = GetInputShpGeneratorArgs(cfg, inputShpLocation);
     steps.append(genInputShpTask.CreateStep("MowingInputShpGenerator", inShpGenArgs));
 
@@ -71,7 +62,7 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
                                       "SEN4CAP_L4B_S2_MowingDetection");
         TaskToSubmit &s2MowingDetectionTask = allTasksList[curTaskIdx++];
         const QString &s2MowingDetectionOutFile = productFormatterTask.GetFilePath(outShpFileName + ".shp");
-        const QString &s2OutDir = GetOutputDataDir(cfg, s2MowingDetectionTask, "SEN4CAP_L4B_S2_OutputData");
+        const QString &s2OutDir = s2MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S2_OutputWorkingData");
         const QStringList &s2MowingDetectionArgs = GetMowingDetectionArgs(cfg, L3B, inputShpLocation,
                                                                           s2OutDir, s2MowingDetectionOutFile);
         steps.append(s2MowingDetectionTask.CreateStep("S2MowingDetection", s2MowingDetectionArgs));
@@ -99,7 +90,7 @@ void GrasslandMowingHandler::CreateSteps(GrasslandMowingExecConfig &cfg, QList<T
                                       "SEN4CAP_L4B_S1_MowingDetection");
         TaskToSubmit &s1MowingDetectionTask = allTasksList[curTaskIdx++];
         const QString &s1MowingDetectionOutFile = productFormatterTask.GetFilePath(outShpFileName + ".shp");
-        const QString &s1OutDir = GetOutputDataDir(cfg, s1MowingDetectionTask, "SEN4CAP_L4B_S1_OutputData");
+        const QString &s1OutDir = s1MowingDetectionTask.GetFilePath("SEN4CAP_L4B_S1_OutputWorkingData");
         const QStringList &s1MowingDetectionArgs = GetMowingDetectionArgs(cfg, L2_S1, s1InputShpLocation,
                                                                           s1OutDir, s1MowingDetectionOutFile);
         steps.append(s1MowingDetectionTask.CreateStep("S1MowingDetection", s1MowingDetectionArgs));
@@ -417,8 +408,10 @@ QStringList GrasslandMowingHandler::GetMowingDetectionArgs(GrasslandMowingExecCo
     QDateTime startDate = cfg.startDate;
     int s1s2StartDateDiff = ProcessorHandlerHelper::GetIntConfigValue(cfg.parameters, cfg.configParameters,
                                                                                  "s1_s2_startdate_diff", L4B_GM_CFG_PREFIX);
-    if (s1s2StartDateDiff != 0) {
-        startDate.addDays(s1s2StartDateDiff);
+    if ((prdType == L2_S1) && (s1s2StartDateDiff != 0)) {
+        Logger::debug(QStringLiteral("S4C_L4B : Using an offset of %1 days for the S1 start date that is initially %2...")
+                      .arg(s1s2StartDateDiff).arg(startDate.toString()));
+        startDate = startDate.addDays(s1s2StartDateDiff);
     }
 
     QStringList retArgs = {
@@ -542,20 +535,6 @@ QString GrasslandMowingHandler::GetStringValue(const QSettings &settings, const 
       string = value.toString();
     }
     return string;
-}
-
-QString GrasslandMowingHandler::GetOutputDataDir(GrasslandMowingExecConfig &cfg, TaskToSubmit&task, const QString &outDataDirName) {
-    if (cfg.isScheduled) {
-        const QString &workingDirStr = GetProcessorDirValue(cfg, "working_dir", DEFAULT_WORKING_DIR_PATH);
-        QDir directory(workingDirStr);
-        const QString &strOutDataPath = directory.filePath(outDataDirName);
-        QDir dir2(strOutDataPath);
-        // create folder for the file if it doesn't exist
-        dir2.mkpath(".");
-        return strOutDataPath;
-    } else {
-        return task.GetFilePath(outDataDirName);
-    }
 }
 
 // ###################### GrasslandMowingExecConfig functions ############################
