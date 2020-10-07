@@ -128,7 +128,6 @@ private:
 
 private:
     bool GetL4CConfigForSiteId(AgricPracticesJobCfg &jobCfg);
-    bool GetSiteConfigForSiteId2(AgricPracticesJobCfg &jobCfg);
 
     QString GetL4CConfigFilePath(AgricPracticesJobCfg &jobCfg);
     bool LoadL4CConfigFile(AgricPracticesJobCfg &jobCfg, const QString &siteCfgFilePath);

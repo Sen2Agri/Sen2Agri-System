@@ -956,53 +956,6 @@ void ProcessorHandlerHelper::SortTemporalTileInfoFiles(TileTemporalFilesInfo &te
     qSort(temporalTileInfo.temporalTilesFileInfos.begin(), temporalTileInfo.temporalTilesFileInfos.end(), compareTileInfoFilesDates);
 }
 
-/**
- * @brief ProcessorHandlerHelper::TrimLeftSecondarySatellite
- * @param productsList
- * @param temporalTileInfo
- * Removes from the list of products and from the map of tiles the secondary products that appear before the primary products.
- * This is needed to avoid any import the wrong UTM or other infos from the secondary product in the final composition product.
- * The difference of the previous function is that this ones checks at tile level if there are secondary products before primary
- * ones and it removes from the tile infos but also from the list of products if does not appears anymore in the list of map tiles
- */
-void ProcessorHandlerHelper::TrimLeftSecondarySatellite(QStringList &productsList, QMap<QString, TileTemporalFilesInfo> mapTiles)
-{
-    for(auto tileId : mapTiles.keys())
-    {
-        const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
-        QList<InfoTileFile> fileInfos;
-        bool bAddAllowed = false;
-        for(const InfoTileFile &fileInfo: listTemporalTiles.temporalTilesFileInfos) {
-            if(fileInfo.satId == listTemporalTiles.primarySatelliteId) {
-                bAddAllowed = true;
-            }
-            if(bAddAllowed) {
-                fileInfos.append(fileInfo);
-            }
-        }
-        mapTiles[tileId].temporalTilesFileInfos = fileInfos;
-    }
-
-    QStringList tempProdList(productsList);
-    // now search the products that do not exist in any of the tile temporal files
-    for(const QString &prod: tempProdList) {
-        bool prodFound = false;
-        for(const TileTemporalFilesInfo &listTemporalTiles : mapTiles.values()) {
-            for(const InfoTileFile &infoFile : listTemporalTiles.temporalTilesFileInfos) {
-                if(infoFile.file == prod) {
-                    prodFound = true;
-                    break;
-                }
-            }
-        }
-        // if the product was not found anymore in none of the tiles temporal files, then remove it also from
-        // the input product list
-        if(!prodFound) {
-            productsList.removeAll(prod);
-        }
-    }
-}
-
 ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::ConvertSatelliteType(Satellite satId)
 {
     switch (satId)

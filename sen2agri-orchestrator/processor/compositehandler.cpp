@@ -12,15 +12,6 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
                                                 const TileTemporalFilesInfo &tileTemporalFilesInfo)
 {
-    bool bFootprintTaskPresent = false;
-    // if we have multiple satellites and we don't have yet the shape file for this tile, then we must
-    // create the footprint for the primary satellite ID
-    if(tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "") {
-        // add the task for creating the footprint
-        outAllTasksList.append(TaskToSubmit{ "composite-create-footprint", {} });
-        bFootprintTaskPresent = true;
-    }
-
     int nbProducts = tileTemporalFilesInfo.temporalTilesFileInfos.size();
     // just create the tasks but with no information so far
     for (int i = 0; i < nbProducts; i++) {
@@ -45,15 +36,8 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
         if (i > 0) {
             // update the mask handler with the reference of the previous composite splitter
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
-            nCurTaskIdx++;
-        } else {
-            nCurTaskIdx++;
-            // if it is the case, add the CreateFootprint as parent to first maskhandler
-            if(bFootprintTaskPresent) {
-                outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
-                nCurTaskIdx++;
-            }
         }
+        nCurTaskIdx++;
         // the others comme naturally updated
         // composite-preprocessing -> mask-handler
         outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
@@ -105,7 +89,6 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     NewStepList &steps = globalExecInfos.allStepsList;
     int nCurTaskIdx = 0;
 
-    QString shapePath = tileTemporalFilesInfo.shapePath;
     QString primaryTileMetadata;
     for(int i = 0; i<tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
         if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId == tileTemporalFilesInfo.primarySatelliteId) {
@@ -113,19 +96,6 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             break;
         }
     }
-    // if we have multiple satellites and we don't have yet the shape file for this tile, then we must
-    // create the footprint for the primary satellite ID
-    if(tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "") {
-        // CreateFootprint should execute on the first primary product metadatafrom the tile
-        TaskToSubmit &createFootprintTaskHandler = allTasksList[nCurTaskIdx++];
-        SubmitTasks(ctx, cfg.jobId, {createFootprintTaskHandler});
-        shapePath = ProcessorHandlerHelper::BuildShapeName(cfg.shapeFilesFolder, tileTemporalFilesInfo.tileId,
-                                                           cfg.jobId, createFootprintTaskHandler.taskId);
-        QStringList createFootprintArgs = { "CreateFootprint", "-in", primaryTileMetadata,
-                                            "-mode", "metadata", "-out", shapePath};
-        steps.append(createFootprintTaskHandler.CreateStep("CreateFootprint", createFootprintArgs));
-    }
-
     QString prevL3AProdRefls;
     QString prevL3AProdWeights;
     QString prevL3AProdFlags;
@@ -383,7 +353,6 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     int resolution = cfg.resolution;
     const QMap<QString, TileTemporalFilesInfo> &mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
                                                                ProductType::L2AProductTypeId);
-    //ProcessorHandlerHelper::TrimLeftSecondarySatellite(listProducts, mapTiles);
 
     QList<CompositeProductFormatterParams> listParams;
 
@@ -450,13 +419,12 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
         // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId, "l3a");
+        RemoveJobFolder(ctx, event.jobId, processorDescr.shortName);
     }
 }
 
 void CompositeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CompositeJobConfig &cfg) {
     cfg.allCfgMap = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
-    std::map<QString, QString> executorConfigParameters = ctx.GetJobConfigurationParameters(event.jobId, "executor.shapes_dir");
     auto execProcConfigParameters = ctx.GetJobConfigurationParameters(event.jobId, "executor.processor.l3a.keep_job_folders");
     //auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.working-mem");
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -496,8 +464,6 @@ void CompositeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmitt
     cfg.sigmaSmallCloud = cfg.allCfgMap["processor.l3a.weight.cloud.sigmasmall"];
     cfg.sigmaLargeCloud = cfg.allCfgMap["processor.l3a.weight.cloud.sigmalarge"];
     cfg.weightDateMin = cfg.allCfgMap["processor.l3a.weight.total.weightdatemin"];
-
-    cfg.shapeFilesFolder = executorConfigParameters["executor.shapes_dir"];
 
     // by default, do not keep job files
     cfg.keepJobFiles = false;

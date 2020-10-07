@@ -69,8 +69,6 @@ public:
         //the unique sattelites ids from the above list
         QList<SatelliteIdType> uniqueSatteliteIds;
         SatelliteIdType primarySatelliteId;
-        QString shapePath;
-        QString projectionPath;
         QMap<SatelliteIdType, TileList> satIntersectingTiles;
     } TileTemporalFilesInfo;
 
@@ -118,8 +116,6 @@ public:
     static QStringList GetTemporalTileAcquisitionDates(const TileTemporalFilesInfo &temporalTileInfo);
     static bool TemporalTileInfosHasFile(const TileTemporalFilesInfo &temporalTileInfo, const QString &filePath);
     static void SortTemporalTileInfoFiles(TileTemporalFilesInfo &temporalTileInfo);
-    static void TrimLeftSecondarySatellite(QStringList &productsList);
-    static void TrimLeftSecondarySatellite(QStringList &productsList, QMap<QString, TileTemporalFilesInfo> mapTiles);
     static SatelliteIdType ConvertSatelliteType(Satellite satId);
 
     static void UpdateMinMaxTimes(const QDateTime &newTime, QDateTime &minTime, QDateTime &maxTime);

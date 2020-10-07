@@ -44,8 +44,6 @@ typedef struct {
     QString sigmaLargeCloud;
     QString weightDateMin;
 
-    QString shapeFilesFolder;
-
     bool keepJobFiles;
 
     std::map<QString, QString> allCfgMap;

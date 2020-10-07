@@ -476,10 +476,6 @@ QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
         // at this stage we know that the infos have only one unique satellite id
         // we keep in the returning map only the tiles from the primary satellite
         if(isPrimarySatIdInfo) {
-            // now search to see if we can find a shapefile already created for the current tile
-            info.shapePath = ProcessorHandlerHelper::GetShapeForTile(shapeFilesFolder, info.tileId);
-            info.projectionPath = ProcessorHandlerHelper::GetProjectionForTile(shapeFilesFolder, info.tileId);
-
             // Sort the products by date as maybe we added secondary products at the end
             ProcessorHandlerHelper::SortTemporalTileInfoFiles(info);
 
