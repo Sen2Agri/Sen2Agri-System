@@ -75,43 +75,43 @@ class ProcessingContext(object):
         self.maja_gipp = {"default": ""}
 
     def add_parameter(self, row):
-        if len(row) == 3 and row[0] != None and row[2] != None:
+        if len(row) == 3 and row[0] is not None and row[2] is not None:
             parameter = row[0]
             site = row[1]
             value = row[2]
             if parameter == "processor.l2a.s2.implementation":
-                if site != None:
+                if site is not None:
                     self.implementation[site] = value
                 else:
                     self.implementation["default"] = value
             elif parameter == "processor.l2a.srtm-path":
-                if site != None:
+                if site is not None:
                     self.srtm_path[site] = value
                 else:
                     self.srtm_path["default"] = value
             elif parameter == "processor.l2a.swbd-path":
-                if site != None:
+                if site is not None:
                     self.swbd_path[site] = value
                 else:
                     self.swbd_path["default"] = value
             elif parameter == "processor.l2a.working-dir":
-                if site != None:
+                if site is not None:
                     self.working_dir[site] = value
                 else:
                     self.working_dir["default"] = value
             elif parameter == "processor.l2a.optical.output-path":
-                if site != None:
+                if site is not None:
                     self.output_path[site] = value
                 else:
                     self.output_path["default"] = value
             elif parameter == "processor.l2a.optical.num-workers":
-                if site != None:
+                if site is not None:
                     self.num_workers[site] = int(value)
                 else:
                     self.num_workers["default"] = int(value)
             elif parameter == "processor.l2a.optical.cog-tiffs":
                 cogTiffs = value
-                if site != None:
+                if site is not None:
                     self.cogTiffs[site] = cogTiffs == "1" or cogTiffs.lower() == "true"
                 else:
                     self.cogTiffs["default"] = (
@@ -119,7 +119,7 @@ class ProcessingContext(object):
                     )
             elif parameter == "processor.l2a.optical.compress-tiffs":
                 compressTiffs = value
-                if site != None:
+                if site is not None:
                     self.cogTiffs[site] = (
                         compressTiffs == "1" or compressTiffs.lower() == "true"
                     )
@@ -128,18 +128,18 @@ class ProcessingContext(object):
                         compressTiffs == "1" or compressTiffs.lower() == "true"
                     )
             elif parameter == "processor.l2a.maja.gipp-path":
-                if site != None:
+                if site is not None:
                     self.maja_gipp[site] = value
                 else:
                     self.maja_gipp["default"] = value
             elif parameter == "processor.l2a.maja.launcher":
-                if site != None:
+                if site is not None:
                     self.maja_launcher[site] = value
                 else:
                     self.maja_launcher["default"] = value
             elif parameter == "processor.l2a.maja.remove-fre":
                 removeFreFiles = value
-                if site != None:
+                if site is not None:
                     self.removeFreFiles[site] = (
                         removeFreFiles == "1" or removeFreFiles.lower() == "true"
                     )
@@ -149,7 +149,7 @@ class ProcessingContext(object):
                     )
             elif parameter == "processor.l2a.maja.remove-sre":
                 removeSreFiles = value
-                if site != None:
+                if site is not None:
                     self.removeSreFiles[site] = (
                         removeSreFiles == "1" or removeSreFiles.lower() == "true"
                     )
@@ -158,7 +158,7 @@ class ProcessingContext(object):
                         removeSreFiles == "1" or removeSreFiles.lower() == "true"
                     )
             elif parameter == "processor.l2a.sen2cor.gipp-path":
-                if site != None:
+                if site is not None:
                     self.sen2cor_gipp[site] = value
                 else:
                     self.sen2cor_gipp["default"] = value
@@ -467,7 +467,7 @@ class L2aMaster(object):
                 sleeping_workers.append(msg_to_master.worker_id)
                 while len(sleeping_workers) > 0:
                     unprocessed_tile = db_get_unprocessed_tile()
-                    if unprocessed_tile != None:
+                    if unprocessed_tile is not None:
                         processing_context = db_get_processing_context()
                         site_context = processing_context.get_site_context(
                             unprocessed_tile.site_id
@@ -854,7 +854,7 @@ class L2aProcessor(object):
                 extracted_file_path = self.untar(extracted_archive_dir, archive_file)
         except Exception as e:
             extracted_file_path = None
-        if extracted_file_path != None:
+        if extracted_file_path is not None:
             self.launcher_log("Archive extracted to: {}".format(extracted_file_path))
             return True, extracted_file_path
         # this isn't and archive, so no need for the temporary directory
@@ -929,14 +929,14 @@ class L2aProcessor(object):
         if product_name.startswith("S2"):
             m = re.match("\w+_V(\d{8}T\d{6})_\w+.SAFE", product_name)
             # check if the new convention naming aplies
-            if m == None:
+            if m is None:
                 m = re.match("\w+_(\d{8}T\d{6})_\w+.SAFE", product_name)
-            if m != None:
+            if m is not None:
                 satellite_id = SENTINEL2_SATELLITE_ID
                 acquisition_date = m.group(1)
         elif product_name.startswith("LC8") or product_name.startswith("LC08"):
             m = re.match("LC8\d{6}(\d{7})[A-Z]{3}\d{2}", product_name)
-            if m != None:
+            if m is not None:
                 acquisition_date = datetime.datetime.strptime(
                     "{} {}".format(m.group(1)[0:4], m.group(1)[4:]), "%Y %j"
                 ).strftime("%Y%m%dT%H%M%S")
@@ -944,14 +944,14 @@ class L2aProcessor(object):
                 m = re.match(
                     "LC08_[A-Z0-9]+_\d{6}_(\d{8})_\d{8}_\d{2}_[A-Z0-9]{2}", product_name
                 )
-                if m != None:
+                if m is not None:
                     acquisition_date = datetime.datetime.strptime(
                         "{} {} {}".format(
                             m.group(1)[0:4], m.group(1)[4:6], m.group(1)[6:]
                         ),
                         "%Y %m %d",
                     ).strftime("%Y%m%dT%H%M%S")
-            if m != None:
+            if m is not None:
                 satellite_id = LANDSAT8_SATELLITE_ID
 
         return satellite_id and (satellite_id, acquisition_date)
@@ -1071,7 +1071,7 @@ class L2aProcessor(object):
 
     def update_rejection_reason(self, message):
         messages_separator = "\n "
-        if self.lin.rejection_reason == None:
+        if self.lin.rejection_reason is None:
             self.lin.rejection_reason = message
         else:
             self.lin.rejection_reason = (
@@ -1378,9 +1378,9 @@ class Maja(L2aProcessor):
                 is not None
             ):
                 qkl_file = True
-            if os.path.isdir(filename) and re.search(".*\DATA$", filename) != None:
+            if os.path.isdir(filename) and re.search(".*\DATA$", filename) is not None:
                 data_dir = True
-            if os.path.isdir(filename) and re.search(".*\MASKS$", filename) != None:
+            if os.path.isdir(filename) and re.search(".*\MASKS$", filename) is not None:
                 masks_dir = True
 
         # check the name of the l2a product
@@ -1431,7 +1431,7 @@ class Maja(L2aProcessor):
                 )
             )
             return False
-        if acquisition_date == None:
+        if acquisition_date is None:
             self.update_rejection_reason("Aquisition date could not be retrieved.")
             self.l2a_log("Aquisition date could not be retrieved.")
             return False
@@ -1478,7 +1478,7 @@ class Maja(L2aProcessor):
                 tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)
             elif self.lin.satellite_id == LANDSAT8_SATELLITE_ID:
                 tile = re.search(r"_L2VALD_([\d]{6})_[\w\.]+$", tile_dbl_dir)
-            if (tile != None) and (tile.group(1) == self.lin.tile_id):
+            if (tile is not None) and (tile.group(1) == self.lin.tile_id):
                 self.l2a.processed_tiles.append(self.lin.tile_id)
                 self.l2a.product_path = tile_dbl_dir
                 self.l2a.name = os.path.basename(tile_dbl_dir)
@@ -1517,7 +1517,7 @@ class Maja(L2aProcessor):
     def run_script(self):
         l2a_tiles_paths = []
         l2a_tiles = []
-        if self.lin.previous_l2a_path != None:
+        if self.lin.previous_l2a_path is not None:
             l2a_tiles.append(self.lin.tile_id)
             l2a_tiles_paths.append(self.lin.previous_l2a_path)
 
@@ -1600,12 +1600,12 @@ class Maja(L2aProcessor):
 
                         if self.context.cogTiffs:
                             isMask = re.match(".*_((MSK)|(QLT))_*.\.DBL\.TIF", filename)
-                            if isMask == None:
+                            if isMask is None:
                                 # check for MAJA mask rasters
                                 isMask = re.match(
                                     ".*_((CLM)|(MG2)|(EDG)|(DFP))_.*\.tif", filename
                                 )
-                            if isMask != None:
+                            if isMask is not None:
                                 optgtiffArgs += " --resampler"
                                 optgtiffArgs += " nearest"
                             else:
@@ -1651,7 +1651,7 @@ class Maja(L2aProcessor):
                         self.lin.should_retry = False
                         break
 
-            if self.lin.should_retry == None:
+            if self.lin.should_retry is None:
                 self.lin.should_retry = True
 
     def run(self):
@@ -2274,7 +2274,7 @@ def db_postrun_update(input_prod, l2a_prod):
     products_db.cursor.execute("set transaction isolation level serializable;")
 
     # updating l1_tile_history
-    if reason != None:
+    if reason is not None:
         products_db.cursor.execute(
             """SELECT * FROM sp_mark_l1_tile_failed(%(downloader_history_id)s :: integer,
                                                                                         %(tile_id)s,
@@ -2312,7 +2312,7 @@ def db_postrun_update(input_prod, l2a_prod):
     )
 
     # update product table
-    if (reason == None) and (
+    if reason is None and (
         processing_status == DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE
     ):
         products_db.cursor.execute(
@@ -2460,7 +2460,7 @@ products_db = L1CInfo(config.host, config.database, config.user, config.password
 
 # get the processing context
 processing_context = db_get_processing_context()
-if processing_context == None:
+if processing_context is None:
     log(
         LAUCHER_LOG_DIR,
         "Could not load the config from database",

@@ -82,7 +82,7 @@ def CheckInput():
         L1C_input_path = args.input_dir
 
     L1C_file_name = os.path.basename(L1C_input_path)
-    if re.match(r"S2[A|B|C|D]_\w*L1C\w*.SAFE", L1C_file_name) != None:
+    if re.match(r"S2[A|B|C|D]_\w*L1C\w*.SAFE", L1C_file_name) is not None:
         if os.path.isdir(L1C_input_path) is False:
             log(
                 SEN2COR_LOG_DIR_PATH,
@@ -1052,7 +1052,7 @@ def RunScript():
         run_script_ok = True
 
         # initialisation operations
-        if InitLog() == True:
+        if InitLog():
             print("(sen2cor info) NOMINAL initialisation of Sen2Cor script.")
         else:
             print("(sen2cor err) NON-NOMINAL initialisation of Sen2Cor script.")
@@ -1063,8 +1063,8 @@ def RunScript():
             )
             run_script_ok = False
 
-        if run_script_ok == True:
-            if CheckInput() == True:
+        if run_script_ok:
+            if CheckInput():
                 print("(sen2cor info) NOMINAL input.")
             else:
                 print("(sen2cor err) NON-NOMINAL input.")
@@ -1076,8 +1076,8 @@ def RunScript():
                 run_script_ok = False
 
         # run Sen2Cor processor
-        if run_script_ok == True:
-            if RunSen2Cor() == True:
+        if run_script_ok:
+            if RunSen2Cor():
                 print("(sen2cor info) NOMINAL execution of Sen2Cor.")
             else:
                 print("(sen2cor err) NON-NOMINAL execution of Sen2Cor.")
@@ -1089,9 +1089,9 @@ def RunScript():
                 run_script_ok = False
 
         # check the output product of Sen2cor processor
-        if run_script_ok == True:
+        if run_script_ok:
             output_ok, L2A_product_name = CheckOutput()
-            if (output_ok == True) and (L2A_product_name != None):
+            if output_ok and L2A_product_name is not None:
                 print("(sen2cor info) NOMINAL output of Sen2Cor processor.")
             else:
                 print("(sen2cor err) NON-NOMINAL output of Sen2Cor processor.")
@@ -1103,8 +1103,8 @@ def RunScript():
                 run_script_ok = False
 
         # convert TCI and PVI files to jpeg format
-        if run_script_ok == True:
-            if ConvertPreviews(L2A_product_name) == True:
+        if run_script_ok:
+            if ConvertPreviews(L2A_product_name):
                 print(
                     "(sen2cor info) NOMINAL conversion of preview images (TCI, PVI) to jpeg format."
                 )
@@ -1120,13 +1120,13 @@ def RunScript():
                 run_script_ok = False
 
         # translate jp2 images to jpeg format if neccessary
-        if run_script_ok == True:
+        if run_script_ok:
             if args.tif or args.cog:
                 translate_ok = TranslateToTif(L2A_product_name)
             else:
                 translate_ok = True
 
-            if translate_ok == True:
+            if translate_ok:
                 if args.tif:
                     log(
                         SEN2COR_LOG_DIR_PATH,
@@ -1148,8 +1148,8 @@ def RunScript():
                 )
                 run_script_ok = False
 
-        if run_script_ok == True:
-            if CopyOutput(L2A_product_name) == True:
+        if run_script_ok:
+            if CopyOutput(L2A_product_name):
                 print(
                     "(sen2cor info) NOMIMAL copying of the product from working directory to output directory."
                 )
