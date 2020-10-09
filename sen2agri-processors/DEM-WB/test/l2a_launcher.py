@@ -526,7 +526,7 @@ class L2aMaster(object):
 
         except (KeyboardInterrupt, SystemExit):
             print("\n(launcher err) <master>: Keyboard interrupted.")
-        except Exception, e:
+        except Exception as e:
             print("\n(launcher err) <master>: Exception {} encountered".format(e))
         finally:
             self.stop_workers()
@@ -582,7 +582,7 @@ class L2aWorker(Thread):
                     )
                     self.notify_end_of_tile_processing(lin, l2a)
                     self.worker_q.task_done()
-        except Exception, e:
+        except Exception as e:
             print(
                 "\n(launcher err) <worker {}>: Exception {} encountered".format(
                     self.worker_id, e
@@ -805,7 +805,7 @@ class L2aProcessor(object):
                 return self.check_if_flat_archive(
                     output_dir, self.path_filename(input_file)
                 )
-        except Exception, e:
+        except Exception as e:
             self.launcher_log(
                 "Exception when trying to unzip file {}:  {} ".format(input_file, e)
             )
@@ -824,7 +824,7 @@ class L2aProcessor(object):
             return self.check_if_flat_archive(
                 output_dir, self.path_filename(input_file)
             )
-        except Exception, e:
+        except Exception as e:
             self.launcher_log(
                 "Exception when trying to untar file {}:  {} ".format(input_file, e)
             )
@@ -847,12 +847,12 @@ class L2aProcessor(object):
         try:
             if zipfile.is_zipfile(archive_file):
                 extracted_file_path = self.unzip(extracted_archive_dir, archive_file)
-        except Exception, e:
+        except Exception as e:
             extracted_file_path = None
         try:
             if tarfile.is_tarfile(archive_file):
                 extracted_file_path = self.untar(extracted_archive_dir, archive_file)
-        except Exception, e:
+        except Exception as e:
             extracted_file_path = None
         if extracted_file_path != None:
             self.launcher_log("Archive extracted to: {}".format(extracted_file_path))
@@ -871,7 +871,7 @@ class L2aProcessor(object):
         # First check if the product path actually exists
         try:
             os.stat(self.lin.path)
-        except OSError, e:
+        except OSError as e:
             self.update_rejection_reason(
                 "Can NOT check if product root dir path {} exists or it is a valid symlink. Error was: {}".format(
                     self.lin.path, e.errno
@@ -884,7 +884,7 @@ class L2aProcessor(object):
                 subdir_path = os.path.join(root, subdir)
                 try:
                     os.stat(subdir_path)
-                except OSError, e:
+                except OSError as e:
                     self.update_rejection_reason(
                         "Cannot check if dir path {} exists or it is a valid symlink. Error was: {}".format(
                             subdir_path, e.errno
@@ -896,7 +896,7 @@ class L2aProcessor(object):
                 file_path = os.path.join(root, filename)
                 try:
                     os.stat(file_path)
-                except OSError, e:
+                except OSError as e:
                     self.update_rejection_reason(
                         "Cannot check if file path {} exists or is a valid symlink. Error was: {}".format(
                             subdir_path, e.errno
@@ -1141,7 +1141,7 @@ class Maja(L2aProcessor):
                         if len(numbers) > 0:
                             self.l2a.snow_ice_percentage = numbers[0]
                             snow_coverage_acq = True
-            except Exception, e:
+            except Exception as e:
                 self.update_rejection_reason(
                     "Exception received when trying to read the MAJA report text from file {}: {}".format(
                         maccs_report_file, e
@@ -1210,7 +1210,7 @@ class Maja(L2aProcessor):
                         "code return: 0", msg_text, re.IGNORECASE
                     ):
                         pass
-            except Exception, e:
+            except Exception as e:
                 self.update_rejection_reason(
                     "Exception received when trying to read the MAJA report text from file {}: {}".format(
                         maccs_report_file, e
@@ -1261,7 +1261,7 @@ class Maja(L2aProcessor):
                                     jpi_file
                                 )
                             )
-            except Exception, e:
+            except Exception as e:
                 self.update_rejection_reason(
                     "Exception received when trying to read the MAJA JPI from file {}: {}".format(
                         jpi_file, e

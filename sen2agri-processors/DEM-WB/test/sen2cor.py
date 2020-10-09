@@ -1179,7 +1179,7 @@ def RunScript():
             SEN2COR_LOG_FILE_NAME,
         )
         sys.exit(1)
-    except Exception, e:
+    except Exception as e:
         print("(sen2cor err): Exception {} encountered".format(e))
         log(
             SEN2COR_LOG_DIR_PATH,
