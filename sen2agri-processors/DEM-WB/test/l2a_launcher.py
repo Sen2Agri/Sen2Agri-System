@@ -563,16 +563,16 @@ class L2aWorker(Thread):
         try:
             while True:
                 msg_to_worker = self.worker_q.get()
-                if msg_to_worker == None:
+                if msg_to_worker is None:
                     # efectively stops the worker
                     break
                 if (
-                    msg_to_worker.unprocessed_tile == None
-                    or msg_to_worker.site_context == None
+                    msg_to_worker.unprocessed_tile is None
+                    or msg_to_worker.site_context is None
                 ):
                     print(
                         "\n(launcher err) <worker {}>: Either the tile or site context is None".format(
-                            self.worker_id, e
+                            self.worker_id
                         )
                     )
                     os._exit(1)
