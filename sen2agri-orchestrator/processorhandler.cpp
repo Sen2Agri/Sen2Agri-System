@@ -434,22 +434,19 @@ QString ProcessorHandler::GetL2AProductForTileMetaFile(const QMap<QString, QStri
 }
 
 QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
-        EventProcessingContext &ctx, int siteId, int jobId,
+        EventProcessingContext &ctx, int siteId,
         const QStringList &listAllProductsTiles, ProductType productType)
 {
     // perform a first iteration to see the satellites IDs in all tiles
     QList<ProcessorHandlerHelper::SatelliteIdType> satIds;
     // Get the primary satellite id
     ProcessorHandlerHelper::SatelliteIdType primarySatId;
-    QMap<QString, TileTemporalFilesInfo>  mapTiles = ProcessorHandlerHelper::GroupTiles(listAllProductsTiles, satIds, primarySatId);
+    QMap<QString, TileTemporalFilesInfo>  mapTiles = ProcessorHandlerHelper::GroupTiles(listAllProductsTiles, productType,
+                                                                                        satIds, primarySatId);
     if(productType != ProductType::L2AProductTypeId) return mapTiles;
 
     // if we have only one sattelite id for all tiles, then perform no filtering
     if(satIds.size() == 1) return mapTiles;
-
-    std::map<QString, QString> configParameters =
-        ctx.GetJobConfigurationParameters(jobId, "executor.shapes_dir");
-    QString shapeFilesFolder = configParameters["executor.shapes_dir"];
 
     // second iteration: add for each primary satelitte tile the intersecting secondary products
     QMap<QString, TileTemporalFilesInfo>  retMapTiles;
@@ -462,7 +459,7 @@ QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
         for(ProcessorHandlerHelper::SatelliteIdType satId: satIds) {
             // if is a secondary satellite id, then get the tiles from the database
             if(isPrimarySatIdInfo && (info.primarySatelliteId != satId)) {
-                ProductList satSecProds = ctx.GetProductsForTile(siteId, info.tileId, productType, primarySatId, satId);
+                const ProductList &satSecProds = ctx.GetProductsForTile(siteId, info.tileId, productType, primarySatId, satId);
                 // get the metadata tiles for all found products intersecting the current tile
                 QStringList listProductsTiles;
                 for(const Product &prod: satSecProds) {

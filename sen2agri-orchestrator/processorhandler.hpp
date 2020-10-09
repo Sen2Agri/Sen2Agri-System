@@ -62,7 +62,7 @@ protected:
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     QString GetL2AProductForTileMetaFile(const QMap<QString, QStringList> &mapProductToTilesMetaFiles, const QString &tileMetaFile);
 
-    QMap<QString, TileTemporalFilesInfo> GroupTiles(EventProcessingContext &ctx, int siteId, int jobId, const QStringList &listAllProductsTiles, ProductType productType);
+    QMap<QString, TileTemporalFilesInfo> GroupTiles(EventProcessingContext &ctx, int siteId, const QStringList &listAllProductsTiles, ProductType productType);
     QString GetProductFormatterTile(const QString &tile);
 
     void SubmitTasks(EventProcessingContext &ctx, int jobId, const QList<std::reference_wrapper<TaskToSubmit> > &tasks);

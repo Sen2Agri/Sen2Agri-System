@@ -578,7 +578,7 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
     QStringList tileIdsList;
     for(const TileInfos &tileInfo: prdTilesInfosList) {
         ProcessorHandlerHelper::SatelliteIdType satId;
-        QString tileId = ProcessorHandlerHelper::GetTileId(tileInfo.tileFile, satId);
+        const QString &tileId = ProcessorHandlerHelper::GetTileId(tileInfo.tileFile, satId);
         tileIdsList.append(tileId);
     }
 

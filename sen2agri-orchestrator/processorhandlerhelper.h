@@ -78,7 +78,7 @@ public:
     static ProductType GetProductTypeFromFileName(const QString &path, bool useParentDirIfDir = true);
     static QString GetTileId(const QString &path, SatelliteIdType &satelliteId);
     static QStringList GetTileIdsFromHighLevelProduct(const QString &prodFolder);
-    static QMap<QString, TileTemporalFilesInfo> GroupTiles(const QStringList &listAllProductsTiles, QList<SatelliteIdType> &outAllSatIds, SatelliteIdType &outPrimarySatelliteId);
+    static QMap<QString, TileTemporalFilesInfo> GroupTiles(const QStringList &listAllProductsTiles, ProductType productType, QList<SatelliteIdType> &outAllSatIds, SatelliteIdType &outPrimarySatelliteId);
     static QMap<QDate, QStringList> GroupL2AProductTilesByDate(const QMap<QString, QStringList> &inputProductToTilesMap);
     static SatelliteIdType GetPrimarySatelliteId(const QList<ProcessorHandlerHelper::SatelliteIdType> &satIds);
     static QString GetMissionNamePrefixFromSatelliteId(SatelliteIdType satId);

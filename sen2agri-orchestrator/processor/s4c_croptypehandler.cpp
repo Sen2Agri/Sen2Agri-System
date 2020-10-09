@@ -348,7 +348,7 @@ QStringList S4CCropTypeHandler::GetTileIdsFromProducts(EventProcessingContext &c
 {
 
     const QMap<QString, TileTemporalFilesInfo> &mapTiles =
-        GroupTiles(ctx, event.siteId, event.jobId, listProducts, ProductType::L2AProductTypeId);
+        GroupTiles(ctx, event.siteId, listProducts, ProductType::L2AProductTypeId);
 
     // normally, we can use only one list by we want (not necessary) to have the
     // secondary satellite tiles after the main satellite tiles

@@ -98,7 +98,7 @@ NewStepList CropTypeHandler::CreateSteps(EventProcessingContext &ctx, const JobS
 QStringList CropTypeHandler::GetCropTypeTaskArgs(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                     const CropTypeJobConfig &cfg, const QStringList &listProducts, TaskToSubmit &cropTypeTask) {
 
-    QMap<QString, TileTemporalFilesInfo>  mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
+    const QMap<QString, TileTemporalFilesInfo>  &mapTiles = GroupTiles(ctx, event.siteId, listProducts,
                                                                 ProductType::L2AProductTypeId);
 
     const auto &outputDir = cropTypeTask.GetFilePath("");

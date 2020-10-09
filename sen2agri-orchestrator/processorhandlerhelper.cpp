@@ -157,27 +157,39 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &
     return QString(EMPTY_TILE_ID);
 }
 
-QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHelper::GroupTiles(const QStringList &listAllProductsTiles,
+QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHelper::GroupTiles(const QStringList &listAllProductsTiles, ProductType productType,
                                                                                                 QList<ProcessorHandlerHelper::SatelliteIdType> &outAllSatIds,
                                                                                                 ProcessorHandlerHelper::SatelliteIdType &outPrimarySatelliteId) {
     QMap<QString, TileTemporalFilesInfo> mapTiles;
     for(const QString &tileFile: listAllProductsTiles) {
         // get from the tile ID also the info about tile to determine satellite ID
         SatelliteIdType satId;
-        QString tileId = GetTileId(tileFile, satId);
+        const QString &tileId = GetTileId(tileFile, satId);
+        QString acqTimeStr;
+        if (productType == ProductType::L2AProductTypeId) {
+            const QDateTime &acqTime = GetL2AProductDateFromPath(tileFile);
+            if (acqTime.isValid()) {
+                acqTimeStr = acqTime.toString("yyyyMMdd");
+            }
+        } else {
+            QDateTime minDate, maxDate;
+            if (GetHigLevelProductAcqDatesFromName(tileFile, minDate, maxDate)) {
+                acqTimeStr = minDate.toString("yyyyMMdd");
+            }
+        }
         if(!outAllSatIds.contains(satId))
             outAllSatIds.append(satId);
         if(mapTiles.contains(tileId)) {
             TileTemporalFilesInfo &infos = mapTiles[tileId];
             // The tile acquisition date should be filled later
-            infos.temporalTilesFileInfos.append({tileFile, satId, "", {}});
+            infos.temporalTilesFileInfos.append({tileFile, satId, acqTimeStr, {}});
             if(!infos.uniqueSatteliteIds.contains(satId))
                 infos.uniqueSatteliteIds.append(satId);
         } else {
             TileTemporalFilesInfo infos;
             infos.tileId = tileId;
             // The tile acquisition date should be filled later
-            infos.temporalTilesFileInfos.append({tileFile, satId, "", {}});
+            infos.temporalTilesFileInfos.append({tileFile, satId, acqTimeStr, {}});
             infos.uniqueSatteliteIds.append(satId);
             mapTiles[tileId] = infos;
         }

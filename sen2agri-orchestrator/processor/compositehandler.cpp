@@ -91,8 +91,9 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
 
     QString primaryTileMetadata;
     for(int i = 0; i<tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
-        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId == tileTemporalFilesInfo.primarySatelliteId) {
-            primaryTileMetadata = tileTemporalFilesInfo.temporalTilesFileInfos[i].file;
+        const ProcessorHandlerHelper::InfoTileFile &tempFileInfo = tileTemporalFilesInfo.temporalTilesFileInfos[i];
+        if(tempFileInfo.satId == tileTemporalFilesInfo.primarySatelliteId) {
+            primaryTileMetadata = tempFileInfo.file;
             break;
         }
     }
@@ -351,7 +352,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     GetJobConfig(ctx, event, cfg);
 
     int resolution = cfg.resolution;
-    const QMap<QString, TileTemporalFilesInfo> &mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
+    const QMap<QString, TileTemporalFilesInfo> &mapTiles = GroupTiles(ctx, event.siteId, listProducts,
                                                                ProductType::L2AProductTypeId);
 
     QList<CompositeProductFormatterParams> listParams;
@@ -480,11 +481,16 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
 
     WriteExecutionInfosFile(executionInfosPath, cfg, listProducts);
 
+    QDateTime dtStartDate, dtEndDate;
+    QString timePeriod = cfg.l3aSynthesisDate + "_" + cfg.l3aSynthesisDate;
+    if(ProcessorHandlerHelper::GetL2AIntevalFromProducts(listProducts, dtStartDate, dtEndDate)) {
+        timePeriod = dtStartDate.toString("yyyyMMdd") + "_" + dtEndDate.toString("yyyyMMdd");
+    }
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot", targetFolder,
                                          "-fileclass", "SVT1",
                                          "-level", "L3A",
-                                         "-timeperiod", cfg.l3aSynthesisDate,
+                                         "-timeperiod", timePeriod,
                                          "-baseline", "01.00",
                                          "-siteid", QString::number(cfg.siteId),
                                          "-processor", "composite",
