@@ -2454,7 +2454,7 @@ if not config.loadConfig(args.config):
         "Could not load the config from configuration file",
         LAUCHER_LOG_FILE_NAME,
     )
-    sys.exit(-1)
+    sys.exit(1)
 # load configuration from db for maja/sen2cor processor
 products_db = L1CInfo(config.host, config.database, config.user, config.password)
 
@@ -2466,12 +2466,12 @@ if processing_context == None:
         "Could not load the config from database",
         LAUCHER_LOG_FILE_NAME,
     )
-    sys.exit(-1)
+    sys.exit(1)
 
 default_site_context = processing_context.get_site_context("default")
 if default_site_context.is_valid() == False:
     log(LAUCHER_LOG_DIR, "Invalid processing context", LAUCHER_LOG_FILE_NAME)
-    sys.exit(-1)
+    sys.exit(1)
 
 # woking dir operations
 # create working dir
@@ -2485,7 +2485,7 @@ if not os.path.isdir(default_site_context.working_dir) and not create_recursive_
         ),
         LAUCHER_LOG_FILE_NAME,
     )
-    sys.exit(-1)
+    sys.exit(1)
 # delete all the temporary content from a previous run
 remove_dir_content(default_site_context.working_dir)
 # create directory for the eventual archives like l1c products
