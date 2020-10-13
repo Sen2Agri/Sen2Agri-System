@@ -1397,7 +1397,7 @@ def generate_headers(
         for dt in dates:
             for band in bands:
                 date_string = dt.strftime("%Y_%m_%d")
-                column = "XX_s2_mean_{}_{}".format(date_string, band)
+                column = "XX_{}_s2_mean_{}".format(date_string, band)
                 file.write("," + column)
         file.write("\n")
 
@@ -1406,7 +1406,7 @@ def generate_headers(
         for dt in dates:
             for band in bands:
                 date_string = dt.strftime("%Y_%m_%d")
-                column = "XX_s2_dev_{}_{}".format(date_string, band)
+                column = "XX_{}_s2_dev_{}".format(date_string, band)
                 file.write("," + column)
         file.write("\n")
 
@@ -1420,7 +1420,7 @@ def generate_headers(
         for dt in dates:
             for band in bands:
                 date_string = dt.strftime("%Y_%m_%d")
-                column = "XX_s2_mean_{}_{}".format(date_string, band)
+                column = "XX_{}_s2_mean_{}".format(date_string, band)
                 file.write("," + column)
         file.write("\n")
 
@@ -1429,7 +1429,7 @@ def generate_headers(
         for dt in dates:
             for band in bands:
                 date_string = dt.strftime("%Y_%m_%d")
-                column = "XX_s2_dev_{}_{}".format(date_string, band)
+                column = "XX_{}_s2_dev_{}".format(date_string, band)
                 file.write("," + column)
         file.write("\n")
 
