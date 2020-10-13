@@ -234,6 +234,8 @@ def main():
         command += ["--season-start", format_date(config.season_start)]
         command += ["--season-end", format_date(config.season_end)]
         command += ["--lpis-path", lpis_path]
+        if args.mode != "both":
+            command += ["--no-re"]
         if config.tiles:
             command += ["--tiles"] + config.tiles
         if config.products:
@@ -271,6 +273,7 @@ def main():
 
     if args.mode != "s1-only":
         os.rename("optical/optical-features.csv", "features/optical-features.csv")
+    if args.mode == "both":
         os.rename("optical/optical-features-re.csv", "features/optical-features-re.csv")
     if args.mode != "s2-only":
         os.rename("sar-merged/sar-features.csv", "features/sar-features.csv")
@@ -298,6 +301,7 @@ def main():
 
     if args.mode == "s1-only" or not check_file(optical_features):
         optical_features = "0"
+    if args.mode != "both" or not check_file(optical_re_features):
         optical_re_features = "0"
     if args.mode == "s2-only" or not check_file(sar_features):
         sar_features = "0"
