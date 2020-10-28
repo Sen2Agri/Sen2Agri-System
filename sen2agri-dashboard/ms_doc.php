@@ -11,7 +11,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta http-equiv="content-language" content="" />
 	
-	<link href="http://fonts.googleapis.com/css?family=Roboto+Condensed&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
+	<link rel="stylesheet" href="styles/fonts/roboto-condensed/roboto-condensed.css" type="text/css" />
 	<link rel="stylesheet" href="libraries/bootstrap-3.3.6/css/bootstrap.min.css" />
 	<link rel="stylesheet" href="libraries/bootstrap-3.3.6/css/bootstrap-theme.min.css" />
 	<link rel="stylesheet" href="styles/styles.css?<?php echo rand(10,10000);?>" />
