@@ -38,6 +38,11 @@ from sen2agri_common_db import (
     run_command,
 )
 
+try:
+    from typing import List
+except:
+    pass
+
 
 def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y):
     print(
@@ -95,38 +100,291 @@ def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y)
     )
 
 
-def get_dtm_tiles(points):
-    """
-    Returns a list of dtm tiles covering the given extent
-    """
-    a_x, a_y, b_x, b_y = points
+def get_raster_nodata_value(path):
+    ds = gdal.Open(path, gdal.gdalconst.GA_ReadOnly)
+    band = ds.GetRasterBand(1)
+    return band.GetNoDataValue()
 
-    if a_x < b_x and a_y > b_y:
-        a_bb_x = int(math.floor(a_x / 5) * 5)
-        a_bb_y = int(math.floor((a_y + 5) / 5) * 5)
-        b_bb_x = int(math.floor((b_x + 5) / 5) * 5)
-        b_bb_y = int(math.floor(b_y / 5) * 5)
 
-        print("bounding box {} {} {} {}".format(a_bb_x, a_bb_y, b_bb_x, b_bb_y))
+class DemBase(object):
+    def __init__(self, path):
+        self.path = path
 
-        x_numbers_list = [
-            (x + 180) / 5 + 1
-            for x in range(min(a_bb_x, b_bb_x), max(a_bb_x, b_bb_x), 5)
-        ]
-        x_numbers_list_format = ["%02d" % (x,) for x in x_numbers_list]
+    def get_nodata_value(self):
+        # type: () -> int | None
 
-        y_numbers_list = [
-            (60 - x) / 5 for x in range(min(a_bb_y, b_bb_y), max(a_bb_y, b_bb_y), 5)
-        ]
-        y_numbers_list_format = ["%02d" % (x,) for x in y_numbers_list]
+        return None
 
-        srtm_zips = [
-            "srtm_" + str(x) + "_" + str(y) + ".tif"
-            for x in x_numbers_list_format
-            for y in y_numbers_list_format
-        ]
+    def needs_nodata_translation(self):
+        # type: () -> bool
 
-        return srtm_zips
+        return False
+
+    def get_dem_tiles(self, points):
+        # type: (List[float]) -> List[str]
+
+        return []
+
+    def get_tile_path(self, tile):
+        # type: (str) -> str | None
+
+        return None
+
+
+class DemSrtm3ArcSec(DemBase):
+    def __init__(self, path):
+        super(DemSrtm3ArcSec, self).__init__(path)
+
+    def get_nodata_value(self):
+        # type: () -> int | None
+
+        return -32768
+
+    def needs_nodata_translation(self):
+        # type: () -> bool
+
+        return True
+
+    def get_dem_tiles(self, points):
+        # type: (List[float]) -> List[str]
+
+        a_x, a_y, b_x, b_y = points
+        if a_x < b_x and a_y > b_y:
+            a_bb_x = int(math.floor(a_x / 5) * 5)
+            a_bb_y = int(math.floor((a_y + 5) / 5) * 5)
+            b_bb_x = int(math.floor((b_x + 5) / 5) * 5)
+            b_bb_y = int(math.floor(b_y / 5) * 5)
+
+            print("bounding box {} {} {} {}".format(a_bb_x, a_bb_y, b_bb_x, b_bb_y))
+
+            x_numbers_list = [
+                (x + 180) / 5 + 1
+                for x in range(min(a_bb_x, b_bb_x), max(a_bb_x, b_bb_x), 5)
+            ]
+            x_numbers_list_format = ["%02d" % (x,) for x in x_numbers_list]
+
+            y_numbers_list = [
+                (60 - x) / 5 for x in range(min(a_bb_y, b_bb_y), max(a_bb_y, b_bb_y), 5)
+            ]
+            y_numbers_list_format = ["%02d" % (x,) for x in y_numbers_list]
+
+            srtm_zips = [
+                "srtm_" + str(x) + "_" + str(y) + ".tif"
+                for x in x_numbers_list_format
+                for y in y_numbers_list_format
+            ]
+
+            return srtm_zips
+        return []
+
+    def get_tile_path(self, tile):
+        # type: (str) -> str | None
+
+        tile_path = os.path.join(self.path, tile)
+        if os.path.exists(tile_path):
+            return tile_path
+        return None
+
+    @staticmethod
+    def detect(path):
+        # type: (str) -> DemBase | None
+
+        if glob.glob(os.path.join(path, "srtm*.tif")):
+            return DemSrtm3ArcSec(path)
+        return None
+
+
+class DemSrtm1ArcSec(DemBase):
+    def __init__(self, path):
+        super(DemSrtm1ArcSec, self).__init__(path)
+
+    def get_nodata_value(self):
+        # type: () -> int | None
+
+        return None
+
+    def needs_nodata_translation(self):
+        # type: () -> bool
+
+        return True
+
+    def get_dem_tiles(self, points):
+        # type: (List[float]) -> List[str]
+
+        a_x, a_y, b_x, b_y = points
+        wgs84_srs = osr.SpatialReference()
+        wgs84_srs.ImportFromEPSG(4326)
+        x_l = int(math.floor(a_x))
+        x_r = int(math.floor(b_x))
+        y_b = int(math.floor(b_y))
+        y_t = int(math.floor(a_y))
+        tiles = []
+        for x in range(x_l, x_r + 1):
+            for y in range(y_b, y_t + 1):
+                if y > 0:
+                    yp = y
+                    lat = "N"
+                else:
+                    yp = -y
+                    lat = "S"
+                if x > 0:
+                    xp = x
+                    lon = "E"
+                else:
+                    xp = -x
+                    lon = "W"
+                tile = "{}{}{}{}".format(lat, str(yp).zfill(2), lon, str(xp).zfill(3))
+                tiles.append(tile)
+        return tiles
+
+    def get_tile_path(self, tile):
+        # type: (str) -> str | None
+
+        tile_path = os.path.join(self.path, "{}.hgt".format(tile))
+        if os.path.exists(tile_path):
+            return tile_path
+        tile_path = os.path.join(self.path, "{}.SRTMGL1.hgt.zip".format(tile))
+        if os.path.exists(tile_path):
+            return "/vsizip/{}/{}.hgt".format(tile_path, tile)
+        return None
+
+    @staticmethod
+    def detect(path):
+        # type: (str) -> DemBase | None
+
+        if glob.glob(os.path.join(path, "*.SRTMGL1.hgt.zip")) or glob.glob(
+            os.path.join(path, "*.hgt")
+        ):
+            return DemSrtm1ArcSec(path)
+        return None
+
+
+class DemAsterV3(DemBase):
+    def __init__(self, path):
+        super(DemAsterV3, self).__init__(path)
+
+    def get_nodata_value(self):
+        # type: () -> int | None
+
+        return None
+
+    def needs_nodata_translation(self):
+        # type: () -> bool
+
+        return False
+
+    def get_dem_tiles(self, points):
+        # type: (List[float]) -> List[str]
+
+        a_x, a_y, b_x, b_y = points
+        wgs84_srs = osr.SpatialReference()
+        wgs84_srs.ImportFromEPSG(4326)
+        x_l = int(math.floor(a_x))
+        x_r = int(math.floor(b_x))
+        y_b = int(math.floor(b_y))
+        y_t = int(math.floor(a_y))
+        tiles = []
+        for x in range(x_l, x_r + 1):
+            for y in range(y_b, y_t + 1):
+                if y > 0:
+                    yp = y
+                    lat = "N"
+                else:
+                    yp = -y
+                    lat = "S"
+                if x > 0:
+                    xp = x
+                    lon = "E"
+                else:
+                    xp = -x
+                    lon = "W"
+                tile = "ASTGTMV003_{}{}{}{}".format(
+                    lat, str(yp).zfill(2), lon, str(xp).zfill(3)
+                )
+                tiles.append(tile)
+        return tiles
+
+    def get_tile_path(self, tile):
+        # type: (str) -> str | None
+
+        tile_path = os.path.join(self.path, "{}_dem.tif".format(tile))
+        if os.path.exists(tile_path):
+            return tile_path
+        tile_path = os.path.join(self.path, "{}.zip".format(tile))
+        if os.path.exists(tile_path):
+            return "/vsizip/{}/{}_dem.tif".format(tile_path, tile)
+        return None
+
+    @staticmethod
+    def detect(path):
+        # type: (str) -> DemBase | None
+
+        if glob.glob(os.path.join(path, "ASTGTM*.*")):
+            return DemAsterV3(path)
+        return None
+
+
+class DemEuDem(DemBase):
+    def __init__(self, path):
+        super(DemEuDem, self).__init__(path)
+
+    def get_nodata_value(self):
+        # type: () -> int | None
+
+        return None
+
+    def needs_nodata_translation(self):
+        # type: () -> bool
+
+        return True
+
+    def get_dem_tiles(self, points):
+        # type: (List[float]) -> List[str]
+
+        a_x, a_y, b_x, b_y = points
+        wgs84_srs = osr.SpatialReference()
+        wgs84_srs.ImportFromEPSG(4326)
+        laea_srs = osr.SpatialReference()
+        laea_srs.ImportFromEPSG(3035)
+        transform = osr.CoordinateTransformation(wgs84_srs, laea_srs)
+        pt = transform.TransformPoints([[a_x, a_y], [b_x, b_y]])
+        x_l = int(pt[0][0] / 1000000)
+        x_r = int(pt[1][0] / 1000000)
+        y_b = int(pt[1][1] / 1000000)
+        y_t = int(pt[0][1] / 1000000)
+        tiles = []
+        for x in range(x_l, x_r + 1):
+            for y in range(y_b, y_t + 1):
+                tile = "eu_dem_v11_E{}N{}.TIF".format(x * 10, y * 10)
+                tiles.append(tile)
+        return tiles
+
+    def get_tile_path(self, tile):
+        # type: (str) -> str | None
+
+        tile_path = os.path.join(self.path, tile)
+        if os.path.exists(tile_path):
+            return tile_path
+        return None
+
+    @staticmethod
+    def detect(path):
+        # type: (str) -> DemBase | None
+
+        if glob.glob(os.path.join(path, "eu_dem_*.*")):
+            return DemEuDem(path)
+        return None
+
+
+def get_dem_type(path):
+    # type: (str) -> DemBase | None
+
+    return (
+        DemSrtm3ArcSec.detect(path)
+        or DemSrtm1ArcSec.detect(path)
+        or DemAsterV3.detect(path)
+        or DemEuDem.detect(path)
+    )
 
 
 # def run_command(args):
@@ -136,14 +394,14 @@ def get_dtm_tiles(points):
 
 def get_landsat_tile_id(image):
     m = re.match(
-        "[A-Z][A-Z]\d(\d{6})\d{4}\d{3}[A-Z]{3}\d{2}_B\d{1,2}\.TIF|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_(\d{6})_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}_\w\d{1,2}\.TIF",
+        r"[A-Z][A-Z]\d(\d{6})\d{4}\d{3}[A-Z]{3}\d{2}_B\d{1,2}\.TIF|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_(\d{6})_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}_\w\d{1,2}\.TIF",
         image,
     )
     return m and ("L8", m.group(1) or m.group(2))
 
 
 def get_sentinel2_tile_id(image):
-    m = re.match("\w+_T(\w{5})_B\d{2}\.\w{3}|T(\w{5})_\d{8}T\d{6}_B\d{2}.\w{3}", image)
+    m = re.match(r"\w+_T(\w{5})_B\d{2}\.\w{3}|T(\w{5})_\d{8}T\d{6}_B\d{2}.\w{3}", image)
     return m and ("S2", m.group(1) or m.group(2))
 
 
@@ -154,14 +412,14 @@ def get_tile_id(image):
 
 def get_landsat_dir_info(name):
     m = re.match(
-        "[A-Z][A-Z]\d\d{6}(\d{4}\d{3})[A-Z]{3}\d{2}|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_\d{6}_(\d{8})_\d{8}_\d{2}_[A-Z0-9]{2}",
+        r"[A-Z][A-Z]\d\d{6}(\d{4}\d{3})[A-Z]{3}\d{2}|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_\d{6}_(\d{8})_\d{8}_\d{2}_[A-Z0-9]{2}",
         name,
     )
     return m and ("L8", m.group(1) or m.group(2))
 
 
 def get_sentinel2_dir_info(name):
-    m = re.match("S2\w+_(\d{8}T\d{6})\w+.SAFE", name)
+    m = re.match(r"S2\w+_(\d{8}T\d{6})\w+.SAFE", name)
 
     return m and ("S2", m.group(1))
 
@@ -270,7 +528,7 @@ def create_context(args):
         d = dict(
             image=image_filename,
             mode=mode,
-            srtm_directory=args.srtm,
+            dem_directory=args.dem,
             swbd_directory=args.swbd,
             working_directory=args.working_dir,
             temp_directory=temp_directory,
@@ -400,44 +658,64 @@ def create_metadata(context):
 
 
 def process_DTM(context):
-    dtm_tiles = get_dtm_tiles(
-        [
-            context.wgs84_extent[0][0],
-            context.wgs84_extent[0][1],
-            context.wgs84_extent[2][0],
-            context.wgs84_extent[2][1],
-        ]
-    )
-
-    dtm_tiles = [os.path.join(context.srtm_directory, tile) for tile in dtm_tiles]
+    dem = get_dem_type(context.dem_directory)
+    points = [
+        context.wgs84_extent[0][0],
+        context.wgs84_extent[0][1],
+        context.wgs84_extent[2][0],
+        context.wgs84_extent[2][1],
+    ]
+    dtm_tiles = dem.get_dem_tiles(points)
+    dem_nodata_value = dem.get_nodata_value()
 
     missing_tiles = []
+    dtm_tiles_nodata = []
     for tile in dtm_tiles:
-        if not os.path.exists(tile):
+        tile_path = dem.get_tile_path(tile)
+        if not tile_path:
             missing_tiles.append(tile)
+            continue
+
+        if (
+            not dem.needs_nodata_translation()
+            or get_raster_nodata_value(tile_path) == 0
+        ):
+            dtm_tiles_nodata.append(tile_path)
+            continue
+
+        tile_name = "{}_nodata.vrt".format(os.path.splitext(tile)[0])
+        tile_nodata = os.path.join(context.working_directory, tile_name)
+
+        command = [
+            "gdalbuildvrt",
+            "-q",
+            "-overwrite",
+            "-vrtnodata",
+            "0",
+        ]
+        if dem_nodata_value:
+            command += ["-srcnodata", str(dem_nodata_value)]
+        command += [
+            tile_nodata,
+            tile_path,
+        ]
+
+        run_command(command)
+        dtm_tiles_nodata.append(tile_nodata)
 
     if missing_tiles:
-        print(
-            "The following SRTM tiles are missing: {}. Please provide them in the SRTM directory ({}). Will try to continue, but unreliable results".format(
-                [os.path.basename(tile) for tile in missing_tiles],
-                context.srtm_directory,
-            )
-        )
-    #        return False
+        print("The following DEM tiles are missing: {}".format(missing_tiles))
 
-    run_command(["gdalbuildvrt", "-q", context.dem_vrt] + dtm_tiles)
     run_command(
         [
-            "otbcli_BandMath",
-            "-il",
+            "/usr/local/bin/gdalbuildvrt",
+            "-q",
+            "-overwrite",
+            "-r",
+            "cubic",
             context.dem_vrt,
-            "-out",
-            context.dem_nodata,
-            "-exp",
-            "im1b1 == -32768 ? 0 : im1b1",
-            "-progress",
-            "false",
         ]
+        + dtm_tiles_nodata
     )
     run_command(
         [
@@ -449,6 +727,8 @@ def process_DTM(context):
             "cubic",
             "-t_srs",
             "EPSG:" + str(context.epsg_code),
+            "-et",
+            "0",
             "-tr",
             str(context.spacing_x),
             str(context.spacing_y),
@@ -457,7 +737,7 @@ def process_DTM(context):
             str(context.extent[1][1]),
             str(context.extent[3][0]),
             str(context.extent[3][1]),
-            context.dem_nodata,
+            context.dem_vrt,
             context.dem_r1,
         ]
     )
@@ -500,7 +780,6 @@ def process_DTM(context):
             "gdaldem",
             "slope",
             "-q",
-            # "-s", "111120",
             "-compute_edges",
             context.dem_r1,
             context.slope_degrees,
@@ -511,7 +790,6 @@ def process_DTM(context):
             "gdaldem",
             "aspect",
             "-q",
-            # "-s", "111120",
             "-compute_edges",
             context.dem_r1,
             context.aspect_degrees,
@@ -729,7 +1007,9 @@ def process_context(context):
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Creates DEM and WB data for MACCS")
     parser.add_argument("input", help="input L1C directory")
-    parser.add_argument("--srtm", required=True, help="SRTM dataset path")
+    parser.add_argument(
+        "--dem", "--srtm", dest="dem", required=True, help="DEM dataset path"
+    )
     parser.add_argument("--swbd", required=True, help="SWBD dataset path")
     parser.add_argument(
         "-l",
@@ -759,6 +1039,7 @@ if len(contexts) == 0:
     print("No context could be created")
     sys.exit(-1)
 
+p = None
 try:
     p = Pool(int(proc_number), lambda: signal(SIGINT, SIG_IGN))
     res = p.map_async(process_context, contexts)
@@ -770,5 +1051,6 @@ try:
             pass
     p.close()
 except KeyboardInterrupt:
-    p.terminate()
-    p.join()
+    if p:
+        p.terminate()
+        p.join()
